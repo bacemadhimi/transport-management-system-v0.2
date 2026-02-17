@@ -1,0 +1,116 @@
+<mat-card *ngIf="!showingAlert" class="convoyeur-form-card">
+  <header class="convoyeur-form-card__header">
+    <div>
+      <!-- <h2>{{ data.convoyeurId ? 'Modifier Convoyeur' : 'Ajouter Convoyeur' }}</h2> -->
+       <h2>{{ t(data.convoyeurId ? 'CONVOYEUR_EDIT_TITLE' : 'CONVOYEUR_ADD_TITLE') }}</h2>
+    </div>
+  </header>
+
+  <form [formGroup]="convoyeurForm" (ngSubmit)="onSubmit()" class="convoyeur-form-grid">
+    <!-- <mat-label>Nom du convoyeur</mat-label> -->
+     <mat-label>{{ t('CONVOYEUR_NAME_LABEL') }}</mat-label>
+    <mat-form-field appearance="outline" class="convoyeur-field">
+      <input matInput formControlName="name" placeholder="Ex: Jean Dupont" />
+      <mat-error *ngIf="convoyeurForm.get('name')?.hasError('required')">Le nom est obligatoire</mat-error>
+    </mat-form-field>
+
+    <!-- <mat-label>Numéro de permis</mat-label> -->
+     <mat-label>{{ t('LICENSE_NUMBER_LABEL') }}</mat-label>
+    <mat-form-field appearance="outline" class="convoyeur-field">
+      <input matInput formControlName="permisNumber" placeholder="Ex: P-1234567" />
+      <mat-error *ngIf="convoyeurForm.get('permisNumber')?.hasError('required')">Le numéro du permis est obligatoire</mat-error>
+    </mat-form-field>
+<!-- Zone Field -->
+
+<!-- <mat-label>Zone</mat-label> -->
+ <mat-label>{{ t('ZONE') }}</mat-label>
+<mat-form-field appearance="outline" class="convoyeur-field">
+  <mat-select formControlName="zoneId" [disabled]="isSubmitting || loadingZones" required>
+    <mat-option *ngIf="loadingZones" disabled>
+      <div class="flex items-center">
+        <mat-spinner diameter="20" class="mr-2"></mat-spinner>
+        <!-- <span>Chargement des zones...</span> -->
+         <span>{{ t('LOADING_ZONES') }}</span>
+      </div>
+    </mat-option>
+   
+    <mat-option *ngIf="!loadingZones && zones.length === 0" disabled>
+      <div class="text-gray-500 italic">
+        Aucune zone active disponible
+      </div>
+    </mat-option>
+   
+    <mat-option *ngFor="let zone of zones" [value]="zone.id">
+      {{ zone.name }}
+    </mat-option>
+  </mat-select>
+  <mat-error *ngIf="convoyeurForm.get('zoneId')?.invalid && convoyeurForm.get('zoneId')?.touched">
+    {{ getErrorMessage('zoneId') }}
+  </mat-error>
+</mat-form-field>
+
+<!-- City Field -->
+<!-- <mat-label>Ville</mat-label> -->
+ <mat-label>{{ t('CITY') }}</mat-label>
+<mat-form-field appearance="outline" class="convoyeur-field">
+  <mat-select formControlName="cityId" [disabled]="isSubmitting || loadingCities || !convoyeurForm.get('zoneId')?.value" required>
+    <mat-option *ngIf="!convoyeurForm.get('zoneId')?.value" disabled>
+      <div class="text-gray-500 italic">
+         {{ t('SELECT_ZONE_FIRST') }}
+       
+      </div>
+    </mat-option>
+   
+    <mat-option *ngIf="loadingCities" disabled>
+      <div class="flex items-center">
+        <mat-spinner diameter="20" class="mr-2"></mat-spinner>
+        <span>Chargement des villes...</span>
+      </div>
+    </mat-option>
+   
+    <mat-option *ngIf="!loadingCities && convoyeurForm.get('zoneId')?.value && cities.length === 0" disabled>
+      <div class="text-gray-500 italic">
+        Aucune ville disponible pour cette zone
+      </div>
+    </mat-option>
+   
+    <mat-option *ngFor="let city of cities" [value]="city.id">
+      {{ city.name }}
+    </mat-option>
+  </mat-select>
+  <mat-error *ngIf="convoyeurForm.get('cityId')?.invalid && convoyeurForm.get('cityId')?.touched">
+    {{ getErrorMessage('cityId') }}
+  </mat-error>
+</mat-form-field>
+    <div class="mat-phone-field w-full">
+
+  <div class="mat-phone-wrapper">
+    <input
+      matInput
+      formControlName="phone"
+      #phoneInput
+      [readonly]="isSubmitting"
+    />
+  </div>
+
+  <mat-error *ngIf="convoyeurForm.get('phone')?.invalid && convoyeurForm.get('phone')?.touched">
+    {{ getErrorMessage('phone') }}
+  </mat-error>
+</div>
+
+    <mat-label>Statut</mat-label>
+    <mat-form-field appearance="outline" class="convoyeur-field">
+      <mat-select formControlName="status">
+        <mat-option *ngFor="let s of statuses" [value]="s">{{ s }}</mat-option>
+      </mat-select>
+      <mat-error *ngIf="convoyeurForm.get('status')?.hasError('required')">Le statut est obligatoire</mat-error>
+    </mat-form-field>
+
+    <div class="form-footer">
+      <button mat-flat-button color="primary" type="submit" [disabled]="convoyeurForm.invalid || isSubmitting">  
+         {{ t(data.convoyeurId ? 'SAVE_BTN' : 'ADD_BTN') }}
+      </button>
+      <button mat-button type="button" (click)="onCancel()">{{ t('CANCEL') }}</button>
+    </div>
+  </form>
+</mat-card>

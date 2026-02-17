@@ -1,0 +1,365 @@
+:host {
+  --brand-blue: #5ea2ff;
+  --brand-green: #10b981;
+  --bg: #f4f6fb;
+  --card-bg: #ffffff;
+  --radius: 1.25rem;
+  --shadow: 0 18px 40px rgba(15, 23, 42, 0.12);
+
+  display: block;
+  background: var(--bg);
+  min-height: 100vh;
+  padding: 1.5rem 2rem;
+  font-family: 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.user-page {
+  max-width: none;
+  width: 100%; 
+  padding: 24px; 
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.06);
+  border: 1px solid #eef2f6; 
+  border-radius: 12px; 
+  background: #fff; 
+  margin: 0 auto; 
+}
+
+.user-header {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.user-title {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.user-header__actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.user-search {
+  flex: 1 1 auto;
+}
+
+/* Beautify Angular Material field */
+::ng-deep .user-search .mdc-text-field {
+  border-radius: 999px;
+  background: #edf3ff;
+  box-shadow: inset 0 0 0 1px rgba(94, 162, 255, 0.25);
+}
+
+::ng-deep .user-search .mdc-notched-outline {
+  border-radius: 999px;
+  border-color: transparent;
+}
+
+/* remove inner black outline/vertical line */
+::ng-deep .user-search .mdc-notched-outline__leading,
+::ng-deep .user-search .mdc-notched-outline__trailing,
+::ng-deep .user-search .mdc-notched-outline__notch {
+  border-color: transparent !important;
+  border-width: 0 !important;
+}
+
+.user-add-btn {
+  flex: 0 0 auto;
+  background: var(--brand-green) !important;
+  color: #ffffff !important;
+  border-radius: 999px !important;
+  padding: 0.75rem 2rem !important;
+  font-weight: 500;
+  box-shadow: 0 10px 25px rgba(16, 185, 129, 0.35);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+}
+
+.user-add-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 14px 30px rgba(16, 185, 129, 0.4);
+  opacity: 0.97;
+}
+
+.user-add-btn:focus-visible {
+  outline: 3px solid rgba(94, 162, 255, 0.6);
+  outline-offset: 3px;
+}
+
+/* Export buttons (Excel/CSV/PDF) styling used on user header */
+.export-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.6rem;
+}
+
+.export-btn {
+  width: 48px;
+  height: 48px;
+  border-radius: 0.75rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8px 20px rgba(15,23,42,0.06);
+  border: 1px solid rgba(15,23,42,0.04);
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+  background: #fff;
+}
+
+.export-btn:hover { transform: translateY(-2px); box-shadow: 0 14px 30px rgba(15,23,42,0.12); }
+
+.export-icon { width: 28px; height: 28px; display: block; }
+
+.export-excel .export-icon rect { fill: #107C10; }
+.export-csv .export-icon rect { fill: #1E90FF; }
+.export-pdf .export-icon rect { fill: #D32F2F; }
+
+.user-header__actions { display: flex; justify-content: space-between; gap: 1rem; align-items: flex-start; }
+.user-header__left { display: flex; flex-direction: column; align-items: flex-start; flex: 1 1 auto; }
+.user-header__right { display: flex; align-items: center; }
+
+@media (max-width: 768px) {
+  .user-header__actions { flex-direction: column; align-items: stretch; }
+  .user-header__right { justify-content: flex-end; }
+  .export-actions { margin-top: 0.5rem; }
+}
+
+/* Responsive: stack search + button on small screens */
+@media (max-width: 640px) {
+  :host {
+    padding: 1rem;
+  }
+
+  .user-page {
+    padding: 1.25rem 1.25rem 1.5rem;
+  }
+
+  .user-header__actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .user-add-btn {
+    width: 100%;
+    text-align: center;
+  }
+
+  /* Global dialog styles */
+.user-form-dialog {
+  .mat-mdc-dialog-container {
+    max-width: none !important;
+  }
+  
+  .mdc-dialog__surface {
+    border-radius: 20px !important;
+    overflow: hidden;
+  }
+}
+
+/* Make sure dialog content scrolls properly */
+.mat-mdc-dialog-content {
+  max-height: 85vh !important;
+}
+
+/* Remove the panelClass from edit method if you used it */
+.m-auto {
+  // This might be causing issues, remove it
+}
+/* Password Strength Indicator - Black Theme */
+.password-strength-indicator {
+  margin-top: 8px;
+  margin-bottom: 12px;
+}
+
+.strength-bar {
+  height: 4px;
+  background-color: #e0e0e0;
+  border-radius: 2px;
+  overflow: hidden;
+  position: relative;
+}
+
+.strength-level {
+  height: 100%;
+  background-color: #212121; /* Black color for the bar */
+  transition: width 0.3s ease;
+  position: absolute;
+  left: 0;
+  top: 0;
+  
+  /* You can keep these color variations if you want, or remove them for pure black */
+  &[style*="width: 20%"] { background-color: #212121; }
+  &[style*="width: 40%"] { background-color: #212121; }
+  &[style*="width: 60%"] { background-color: #212121; }
+  &[style*="width: 80%"] { background-color: #212121; }
+  &[style*="width: 100%"] { background-color: #212121; }
+}
+
+.strength-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 4px;
+}
+
+.strength-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: #212121; /* Black text */
+}
+
+/* Password Requirements List */
+.password-requirements-list {
+  margin-top: 12px;
+  padding: 0;
+}
+
+.requirement-item {
+  display: flex;
+  align-items: center;
+  margin-bottom: 6px;
+  padding: 4px 0;
+  
+  &.satisfied {
+    .requirement-icon {
+      color: #212121; /* Black for satisfied */
+    }
+    
+    .requirement-text {
+      color: #212121; /* Black for satisfied */
+      font-weight: 500;
+    }
+  }
+  
+  &:not(.satisfied) {
+    .requirement-icon {
+      color: #9e9e9e; /* Grey for not satisfied */
+    }
+    
+    .requirement-text {
+      color: #757575; /* Darker grey for not satisfied */
+    }
+  }
+}
+
+.requirement-icon {
+  font-size: 16px;
+  width: 16px;
+  height: 16px;
+  margin-right: 8px;
+}
+
+.requirement-text {
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+/* Password match indicator */
+.password-match-indicator {
+  display: flex;
+  align-items: center;
+  margin-top: 8px;
+  padding: 6px 8px;
+  border-radius: 4px;
+  background-color: #f5f5f5;
+  border: 1px solid #e0e0e0;
+  
+  .match-icon {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+    margin-right: 8px;
+    color: #f44336; /* Red for mismatch */
+    
+    &.matched {
+      color: #212121; /* Black for match */
+    }
+  }
+  
+  .match-text {
+    font-size: 12px;
+    color: #757575;
+    font-weight: 500;
+    
+    &.matched {
+      color: #212121; /* Black for match */
+    }
+  }
+  
+  &.matched {
+    background-color: #f5f5f5;
+    border-color: #e0e0e0;
+  }
+}
+
+/* Error styling */
+mat-error {
+  font-size: 12px;
+  color: #f44336; /* Red for errors */
+  margin-top: 4px;
+}
+
+/* Hint styling */
+mat-hint {
+  font-size: 11px;
+  color: #757575;
+}
+
+/* Update form layout for password fields */
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .form-row {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+}
+
+/* Animation for strength bar */
+.strength-level {
+  animation: fillBar 0.5s ease-out;
+}
+
+@keyframes fillBar {
+  from { width: 0; }
+  to { width: attr(style width); }
+}
+
+/* Material form field adjustments */
+::ng-deep {
+  .user-form-card {
+    .mat-form-field-outline {
+      color: #e0e0e0;
+    }
+    
+    .mat-form-field-label {
+      color: #212121;
+    }
+    
+    .mat-input-element {
+      color: #212121;
+    }
+    
+    .mat-form-field.mat-focused {
+      .mat-form-field-label {
+        color: #212121;
+      }
+      
+      .mat-form-field-outline-thick {
+        color: #212121;
+      }
+    }
+  }
+}
+}
+

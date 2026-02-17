@@ -1,0 +1,200 @@
+.historic-page {
+	padding: 24px;
+	font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+
+	.historic-card {
+		background: #fff;
+		border-radius: 12px;
+		padding: 24px;
+		box-shadow: 0 6px 18px rgba(15, 23, 42, 0.06);
+		border: 1px solid #eef2f6;
+
+		.historic-header {
+			display: flex;
+			flex-direction: column;
+			gap: 16px;
+
+			h1 {
+				font-size: 22px;
+				margin: 0 0 8px 0;
+			}
+
+			.filters {
+				display: flex;
+				gap: 12px;
+				align-items: center;
+				flex-wrap: wrap;
+
+				.filter-item {
+					display: flex;
+					flex-direction: column;
+					font-size: 13px;
+
+					mat-label {
+						color: #333;
+						margin-bottom: 6px;
+						font-weight: 600;
+					}
+
+					mat-form-field {
+						min-width: 220px;
+						width: 300px;
+
+						.mat-form-field-wrapper { padding-left: 0; }
+
+						.mat-form-field-infix { display:flex; align-items:center; height:56px; }
+						input.mat-input-element { height:56px; padding-top:0; padding-bottom:0; }
+						.mat-select-trigger { height:56px; display:flex; align-items:center; }
+
+						
+						&.mat-form-field-appearance-fill { background: transparent; border-radius: 8px; }
+
+						&.mat-form-field-appearance-fill .mat-form-field-flex {
+							background: #eef1f7; 
+							border-radius: 8px;
+							padding: 0 12px;
+							align-items: center;
+							
+							border-bottom: 2px solid #1f2937;
+						}
+
+						&.mat-form-field-appearance-fill .mat-form-field-infix { display:flex; align-items:center; height:56px; padding:0; }
+
+						&.mat-form-field-appearance-fill .mat-form-field-label {
+							transform: none !important;
+							top: -18px !important;
+							font-weight: 700;
+							color: #111827;
+							font-size: 13px;
+						}
+					}
+
+					&.actions { margin-left: 8px; align-self: center; }
+
+					.left-icon { margin-right: 8px; }
+				}
+
+				.btn-search {
+					height: 40px;
+					align-self: center;
+					padding: 8px 14px;
+					border-radius: 8px;
+					font-weight: 600;
+				}
+			}
+
+			.export-row {
+				margin-top: 6px;
+				display: flex;
+				gap: 12px;
+
+				
+				.btn.export {
+					padding: 8px 14px;
+					border-radius: 20px;
+					font-weight: 700;
+					color: #fff;
+					border: none;
+					box-shadow: 0 6px 18px rgba(15,23,42,0.06);
+					transition: transform .12s ease, box-shadow .12s ease;
+				}
+
+				.btn.export:hover { transform: translateY(-3px); }
+
+				.btn.xls { background: linear-gradient(180deg,#16a34a,#13803d); }
+				.btn.csv { background: linear-gradient(180deg,#0ea5ff,#0284c7); }
+				.btn.pdf { background: linear-gradient(180deg,#f97316,#ef4444); }
+			}
+		}
+
+		.historic-table-wrap {
+			margin-top: 18px;
+
+			.historic-table {
+				width: 100%;
+				border-collapse: collapse;
+
+				thead th {
+					text-align: left;
+					padding: 14px 12px;
+					color: #0f172a; 
+					font-weight: 700;
+					border-bottom: 1px solid #e6eef6;
+					font-size: 13px;
+				}
+
+				tbody td {
+					padding: 18px 12px;
+					vertical-align: top;
+					border-bottom: 1px solid #f1f5f9;
+					color: #111827; 
+					font-size: 14px;
+				}
+
+				tbody tr:hover td {
+					background: #fbfdff;
+				}
+
+				.delivered { color: #ff7a18; font-weight: 600; margin-top: 6px; }
+
+				.status-pill {
+					display: inline-block;
+					padding: 6px 10px;
+					border-radius: 12px;
+					font-size: 12px;
+					font-weight: 600;
+				}
+
+				.status-pill.planned {
+					color: #b45309;
+					background: #fff7ed;
+					border: 1px solid rgba(180,83,9,0.12);
+				}
+
+				.actions-col { display: flex; gap: 8px; align-items: center; }
+				.icon-btn { background: transparent; border: none; font-size: 18px; }
+
+				.btn { padding: 8px 12px; border-radius: 10px; border: none; cursor: pointer; }
+				.btn.primary { background: #2b86f6; color: #fff; }
+				.btn.danger { background: #e04b4b; color: #fff; }
+			}
+
+			.table-footer {
+				display: flex;
+				justify-content: space-between;
+				align-items: center;
+				padding: 12px 6px;
+				color: #6b7280;
+				font-size: 13px;
+				position: relative;
+				z-index: 5;
+				
+				pointer-events: auto;
+			}
+
+			.pagination-controls {
+				display: flex;
+				align-items: center;
+				gap: 8px;
+			}
+
+			.page-buttons { display:flex; gap:6px; }
+
+			.page-buttons .btn {
+				min-width: 34px;
+				height: 34px;
+				padding: 0 8px;
+				border-radius: 6px;
+				background: transparent;
+				border: 1px solid transparent;
+				cursor: pointer;
+			}
+
+			.page-buttons .btn.active {
+				background: #2b86f6;
+				color: #fff;
+				border-color: rgba(43,134,246,0.2);
+			}
+		}
+	}
+}

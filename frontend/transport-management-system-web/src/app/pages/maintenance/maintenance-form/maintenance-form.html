@@ -1,0 +1,226 @@
+<!-- maintenance-form.html -->
+<mat-card class="form-card p-8">
+  <mat-card-title>
+    {{ data.maintenanceId ? 'Modifier Maintenance' : 'Ajouter Maintenance' }}
+  </mat-card-title>
+
+  <form [formGroup]="maintenanceForm" (ngSubmit)="onSubmit()">
+    <!-- Trip Selection -->
+    <mat-form-field class="w-full">
+      <mat-label>Voyage</mat-label>
+      <mat-select formControlName="tripId">
+        <mat-option *ngFor="let trip of trips" [value]="trip.id">
+          Voyage #{{ trip.id }} - ({{ trip.bookingId }})
+        </mat-option>
+      </mat-select>
+      <mat-error *ngIf="maintenanceForm.get('tripId')?.hasError('required')">
+        La Voyage est obligatoire
+      </mat-error>
+    </mat-form-field>
+
+<!-- Maintenance Type -->
+<mat-form-field class="w-full">
+  <mat-label>Type de Maintenance</mat-label>
+  <mat-select formControlName="maintenanceType" (selectionChange)="onMaintenanceTypeChange($event.value)">
+    <mat-option value="Général">Général</mat-option>
+    <mat-option value="Vidange">Vidange</mat-option>
+    <mat-option value="Révision">Révision</mat-option>
+    <mat-option value="Réparation">Réparation</mat-option>
+    <mat-option value="Contrôle Technique">Contrôle Technique</mat-option>
+  </mat-select>
+</mat-form-field>
+
+<!-- Conditional fields for Vidange -->
+<div *ngIf="maintenanceForm.get('maintenanceType')?.value === 'Vidange'" class="grid grid-cols-2 gap-4 mt-4">
+  
+  <!-- Oil Type -->
+  <mat-form-field class="w-full">
+    <mat-label>Type d'Huile</mat-label>
+    <mat-select formControlName="oilType">
+      <mat-option value="15W40">15W40</mat-option>
+      <mat-option value="10W40">10W40</mat-option>
+      <mat-option value="5W30">5W30</mat-option>
+      <mat-option value="Synthétique">Synthétique</mat-option>
+      <mat-option value="Minérale">Minérale</mat-option>
+    </mat-select>
+  </mat-form-field>
+
+  <!-- Oil Quantity -->
+  <mat-form-field class="w-full">
+    <mat-label>Quantité d'Huile (L)</mat-label>
+    <input matInput type="number" formControlName="oilQuantity" min="0" step="0.1" />
+  </mat-form-field>
+
+  <!-- Oil Filter -->
+  <mat-form-field class="w-full">
+    <mat-label>Filtre à Huile</mat-label>
+    <input matInput formControlName="oilFilter" />
+  </mat-form-field>
+
+  <!-- Next Vidange KM -->
+  <mat-form-field class="w-full">
+    <mat-label>Prochaine Vidange (KM)</mat-label>
+    <input matInput type="number" formControlName="nextVidangeKm" min="0" />
+    <mat-hint>Ex: 5000 km</mat-hint>
+  </mat-form-field>
+
+  <!-- Next Vidange Date -->
+  <mat-form-field class="w-full">
+    <mat-label>Date Prochaine Vidange</mat-label>
+    <input matInput [matDatepicker]="nextVidangePicker" formControlName="nextVidangeDate">
+    <mat-datepicker-toggle matSuffix [for]="nextVidangePicker"></mat-datepicker-toggle>
+    <mat-datepicker #nextVidangePicker></mat-datepicker>
+  </mat-form-field>
+</div>
+    <!-- Vendor Selection -->
+    <mat-form-field class="w-full">
+      <mat-label>Fournisseur</mat-label>
+      <mat-select formControlName="vendorId">
+        <mat-option *ngFor="let vendor of vendors" [value]="vendor.id">
+          {{ vendor.name }}
+        </mat-option>
+      </mat-select>
+      <mat-error *ngIf="maintenanceForm.get('vendorId')?.hasError('required')">
+        Le fournisseur est obligatoire
+      </mat-error>
+    </mat-form-field>
+
+    <!-- Mechanic Selection -->
+    <mat-form-field class="w-full">
+      <mat-label>Mécanicien</mat-label>
+      <mat-select formControlName="mechanicId"> <!-- Correction: "mechaicId" -> "mechanicId" -->
+        <mat-option *ngFor="let mechanic of mechanics" [value]="mechanic.id">
+          {{ mechanic.name }} 
+        </mat-option>
+      </mat-select>
+      <mat-error *ngIf="maintenanceForm.get('mechanicId')?.hasError('required')">
+        Le mécanicien est obligatoire
+      </mat-error>
+    </mat-form-field>
+
+    <!-- Status -->
+    <mat-form-field class="w-full">
+      <mat-label>Statut</mat-label>
+      <mat-select formControlName="status">
+        <mat-option value="Planifié">Planifié</mat-option>
+        <mat-option value="En cours">En cours</mat-option>
+        <mat-option value="Terminé">Terminé</mat-option>
+        <mat-option value="Annulé">Annulé</mat-option>
+      </mat-select>
+      <mat-error *ngIf="maintenanceForm.get('status')?.hasError('required')">
+        Le statut est obligatoire
+      </mat-error>
+    </mat-form-field>
+
+    <div class="grid grid-cols-2 gap-4">
+      <!-- Start Date -->
+      <mat-form-field class="w-full">
+        <mat-label>Date Début</mat-label>
+        <input matInput [matDatepicker]="startPicker" formControlName="startDate" readonly>
+        <mat-datepicker-toggle matSuffix [for]="startPicker"></mat-datepicker-toggle>
+        <mat-datepicker #startPicker></mat-datepicker>
+        <mat-error *ngIf="maintenanceForm.get('startDate')?.hasError('required')">
+          La date de début est obligatoire
+        </mat-error>
+      </mat-form-field>
+
+      <!-- End Date -->
+      <mat-form-field class="w-full">
+        <mat-label>Date Fin</mat-label>
+        <input matInput [matDatepicker]="endPicker" formControlName="endDate" readonly>
+        <mat-datepicker-toggle matSuffix [for]="endPicker"></mat-datepicker-toggle>
+        <mat-datepicker #endPicker></mat-datepicker>
+        <mat-error *ngIf="maintenanceForm.get('endDate')?.hasError('required')">
+          La date de fin est obligatoire
+        </mat-error>
+      </mat-form-field>
+    </div>
+
+    <div class="grid grid-cols-2 gap-4">
+      <!-- Odometer Reading -->
+      <mat-form-field class="w-full">
+        <mat-label>Compteur KM</mat-label>
+        <input matInput type="number" formControlName="odometerReading" min="0" />
+        <mat-error *ngIf="maintenanceForm.get('odometerReading')?.hasError('required')">
+          Le compteur KM est obligatoire
+        </mat-error>
+        <mat-error *ngIf="maintenanceForm.get('odometerReading')?.hasError('min')">
+          Le compteur KM doit être positif
+        </mat-error>
+      </mat-form-field>
+
+      <!-- Total Cost -->
+      <mat-form-field class="w-full">
+        <mat-label>Coût Total (€)</mat-label>
+        <input matInput type="number" formControlName="totalCost" min="0" step="0.01" />
+        <mat-error *ngIf="maintenanceForm.get('totalCost')?.hasError('required')">
+          Le coût total est obligatoire
+        </mat-error>
+        <mat-error *ngIf="maintenanceForm.get('totalCost')?.hasError('min')">
+          Le coût total doit être positif
+        </mat-error>
+      </mat-form-field>
+    </div>
+
+    <!-- Service Details -->
+    <mat-form-field class="w-full">
+      <mat-label>Détails du Service</mat-label>
+      <textarea matInput formControlName="serviceDetails" rows="3"></textarea>
+      <mat-error *ngIf="maintenanceForm.get('serviceDetails')?.hasError('required')">
+        Les détails du service sont obligatoires
+      </mat-error>
+    </mat-form-field>
+
+    <div class="grid grid-cols-2 gap-4">
+      <!-- Parts Name -->
+      <mat-form-field class="w-full">
+        <mat-label>Pièces</mat-label>
+        <input matInput formControlName="partsName" />
+      </mat-form-field>
+
+      <!-- Quantity -->
+      <mat-form-field class="w-full">
+        <mat-label>Quantité</mat-label>
+        <input matInput type="number" formControlName="quantity" min="0" />
+        <mat-error *ngIf="maintenanceForm.get('quantity')?.hasError('min')">
+          La quantité doit être positive
+        </mat-error>
+      </mat-form-field>
+    </div>
+
+    <!-- Notification Type -->
+    <mat-form-field class="w-full">
+      <mat-label>Type de Notification</mat-label>
+      <mat-select formControlName="notificationType">
+        <mat-option value="Email">Email</mat-option>
+        <mat-option value="SMS">SMS</mat-option>
+        <mat-option value="Both">Email et SMS</mat-option>
+      </mat-select>
+      <mat-error *ngIf="maintenanceForm.get('notificationType')?.hasError('required')">
+        Le type de notification est obligatoire
+      </mat-error>
+    </mat-form-field>
+
+    <!-- Members -->
+    <mat-form-field class="w-full">
+      <mat-label>Membres (séparés par des virgules)</mat-label>
+      <input matInput formControlName="members" placeholder="ex: Jean Dupont, Pierre Martin" />
+    </mat-form-field>
+
+    <div class="flex justify-center mt-4 space-x-4">
+      <button
+        mat-raised-button
+        color="primary"
+        type="submit"
+        [disabled]="maintenanceForm.invalid"
+      >
+        {{ data.maintenanceId ? 'Modifier' : 'Ajouter' }}
+      </button>
+
+      <button mat-button type="button" (click)="onCancel()">
+        Annuler
+      </button>
+    </div>
+
+  </form>
+</mat-card>

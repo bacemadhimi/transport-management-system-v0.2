@@ -1,0 +1,149 @@
+:host {
+  --brand-blue: #5ea2ff;
+  --brand-green: #10b981;
+  --bg: #f4f6fb;
+  --card-bg: #ffffff;
+  --radius: 1.25rem;
+  --shadow: 0 18px 40px rgba(15, 23, 42, 0.12);
+
+  display: block;
+  background: var(--bg);
+  min-height: 100vh;
+  padding: 1.5rem 2rem;
+  font-family: 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.dayoff-page {
+  max-width: 1200px;
+  margin: 0 auto;
+  background: var(--card-bg);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 1.75rem 2rem;
+}
+
+.dayoff-header {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.dayoff-title {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.dayoff-header__actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.dayoff-search {
+  flex: 1 1 auto;
+}
+
+
+::ng-deep .dayoff-search .mdc-text-field {
+  border-radius: 999px;
+  background: #edf3ff;
+  box-shadow: inset 0 0 0 1px rgba(94, 162, 255, 0.25);
+}
+
+::ng-deep .dayoff-search .mdc-notched-outline {
+  border-radius: 999px;
+  border-color: transparent;
+}
+
+::ng-deep .dayoff-search .mdc-notched-outline__leading,
+::ng-deep .dayoff-search .mdc-notched-outline__trailing,
+::ng-deep .dayoff-search .mdc-notched-outline__notch {
+  border-color: transparent !important;
+  border-width: 0 !important;
+}
+
+.dayoff-add-btn {
+  flex: 0 0 auto;
+  background: var(--brand-green) !important;
+  color: #ffffff !important;
+  border-radius: 999px !important;
+  padding: 0.75rem 2rem !important;
+  font-weight: 500;
+  box-shadow: 0 10px 25px rgba(16, 185, 129, 0.35);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+}
+
+.dayoff-add-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 14px 30px rgba(16, 185, 129, 0.4);
+  opacity: 0.97;
+}
+
+.dayoff-add-btn:focus-visible {
+  outline: 3px solid rgba(94, 162, 255, 0.6);
+  outline-offset: 3px;
+}
+
+
+.export-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.6rem;
+}
+
+.export-btn {
+  width: 48px;
+  height: 48px;
+  border-radius: 0.75rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8px 20px rgba(15,23,42,0.06);
+  border: 1px solid rgba(15,23,42,0.04);
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+  background: #fff;
+}
+
+.export-btn:hover { transform: translateY(-2px); box-shadow: 0 14px 30px rgba(15,23,42,0.12); }
+
+.export-icon { width: 28px; height: 28px; display: block; }
+
+.export-excel .export-icon rect { fill: #107C10; }
+.export-csv .export-icon rect { fill: #1E90FF; }
+.export-pdf .export-icon rect { fill: #D32F2F; }
+
+
+.dayoff-header__actions { display: flex; justify-content: space-between; gap: 1rem; align-items: flex-start; }
+.dayoff-header__left { display: flex; flex-direction: column; align-items: flex-start; flex: 1 1 auto; }
+.dayoff-header__right { display: flex; align-items: center; }
+
+@media (max-width: 768px) {
+  .dayoff-header__actions { flex-direction: column; align-items: stretch; }
+  .dayoff-header__right { justify-content: flex-end; }
+  .export-actions { margin-top: 0.5rem; }
+}
+
+@media (max-width: 640px) {
+  :host {
+    padding: 1rem;
+  }
+
+  .dayoff-page {
+    padding: 1.25rem 1.25rem 1.5rem;
+  }
+
+  .dayoff-header__actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .dayoff-add-btn {
+    width: 100%;
+    text-align: center;
+  }
+}
+
+

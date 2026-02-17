@@ -1,0 +1,517 @@
+
+.cancelled-trips-content {
+  --background: transparent;
+  position: relative;
+  overflow-x: hidden;
+}
+
+.background-gradient {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg,
+    #fef2f2 0%,
+    #fee2e2 25%,
+    #fecaca 50%,
+    #fca5a5 75%,
+    #f87171 100%);
+  background-size: 400% 400%;
+  animation: gradientShift 20s ease infinite;
+  opacity: 0.1;
+}
+
+@keyframes gradientShift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.header-section {
+  position: relative;
+  z-index: 2;
+  padding: 24px;
+  text-align: center;
+}
+
+.page-title {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+
+  .title-icon {
+    font-size: 48px;
+    color: #dc2626;
+  }
+
+  h2 {
+    font-size: 24px;
+    font-weight: 700;
+    color: #1f2937;
+    margin: 0;
+  }
+
+  p {
+    font-size: 14px;
+    color: #6b7280;
+    margin: 0;
+  }
+}
+
+.trips-section {
+  position: relative;
+  z-index: 2;
+  padding: 0 24px 24px;
+}
+
+.loading-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 200px;
+}
+
+.loading-card {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(20px);
+  border-radius: 16px;
+  padding: 32px;
+  text-align: center;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+
+  ion-spinner {
+    margin-bottom: 16px;
+  }
+
+  p {
+    color: #718096;
+    margin: 0;
+    font-size: 14px;
+  }
+}
+
+.trips-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.trip-card {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(20px);
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  animation: fadeInUp 0.6s ease-out both;
+
+  &:nth-child(1) { animation-delay: 0.1s; }
+  &:nth-child(2) { animation-delay: 0.2s; }
+  &:nth-child(3) { animation-delay: 0.3s; }
+  &:nth-child(4) { animation-delay: 0.4s; }
+}
+
+.trip-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 16px;
+}
+
+.trip-reference h3 {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1f2937;
+  margin: 0 0 8px 0;
+}
+
+.trip-status {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+
+  &.status-cancelled {
+    background: #fef2f2;
+    color: #dc2626;
+  }
+}
+
+.cancelled-date {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #6b7280;
+
+  ion-icon {
+    font-size: 14px;
+  }
+}
+
+.trip-details {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.trip-info-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  animation: slideInGrid 0.6s ease-out;
+}
+
+@keyframes slideInGrid {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.info-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: 12px;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+    transition: left 0.5s ease;
+  }
+
+  &:hover {
+    transform: translateY(-2px) scale(1.02);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    background: rgba(255, 255, 255, 0.95);
+
+    &::before {
+      left: 100%;
+    }
+  }
+
+  &:nth-child(1) { animation-delay: 0.1s; }
+  &:nth-child(2) { animation-delay: 0.2s; }
+}
+
+.info-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+
+  &.calendar {
+    background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+    ion-icon { color: #2563eb; }
+  }
+
+  &.time {
+    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+    ion-icon { color: #d97706; }
+  }
+
+  &.distance {
+    background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+    ion-icon { color: #059669; }
+  }
+
+  &.truck {
+    background: linear-gradient(135deg, #f3e8ff 0%, #e9d5ff 100%);
+    ion-icon { color: #7c3aed; }
+  }
+
+  ion-icon {
+    font-size: 18px;
+  }
+}
+
+.info-content {
+  min-width: 0;
+  flex: 1;
+}
+
+.info-label {
+  display: block;
+  font-size: 11px;
+  color: #6b7280;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 2px;
+}
+
+.info-value {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1f2937;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.driver-section {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: 12px;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.driver-avatar {
+  width: 36px;
+  height: 36px;
+  background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  ion-icon {
+    font-size: 18px;
+    color: #3730a3;
+  }
+}
+
+.driver-info {
+  flex: 1;
+}
+
+.driver-label {
+  font-size: 11px;
+  color: #6b7280;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 2px;
+}
+
+.driver-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.cancellation-reason {
+  background: rgba(254, 242, 242, 0.8);
+  border: 1px solid rgba(252, 165, 165, 0.3);
+  border-radius: 12px;
+  padding: 16px;
+  margin-top: 8px;
+}
+
+.reason-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+
+  .reason-icon {
+    font-size: 20px;
+    color: #dc2626;
+  }
+
+  h4 {
+    font-size: 14px;
+    font-weight: 600;
+    color: #dc2626;
+    margin: 0;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+}
+
+.reason-content {
+  p {
+    font-size: 14px;
+    color: #374151;
+    line-height: 1.5;
+    margin: 0;
+    font-style: italic;
+  }
+}
+
+.empty-state {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(20px);
+  border-radius: 16px;
+  padding: 48px 24px;
+  text-align: center;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.empty-icon {
+  width: 64px;
+  height: 64px;
+  background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 20px;
+
+  ion-icon {
+    font-size: 32px;
+    color: #9ca3af;
+  }
+}
+
+.empty-state h3 {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1f2937;
+  margin: 0 0 8px 0;
+}
+
+.empty-state p {
+  font-size: 14px;
+  color: #6b7280;
+  margin: 0;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 480px) {
+  .trip-info-grid {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .info-card {
+    padding: 10px;
+    gap: 10px;
+
+    &:hover {
+      transform: translateY(-1px) scale(1.01);
+    }
+  }
+
+  .info-icon {
+    width: 36px;
+    height: 36px;
+
+    ion-icon {
+      font-size: 16px;
+    }
+  }
+
+  .info-value {
+    font-size: 13px;
+  }
+
+  .driver-section {
+    padding: 10px 12px;
+    gap: 10px;
+  }
+
+  .driver-avatar {
+    width: 32px;
+    height: 32px;
+
+    ion-icon {
+      font-size: 16px;
+    }
+  }
+
+  .driver-name {
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 360px) {
+  .trip-info-grid {
+    gap: 6px;
+  }
+
+  .info-card {
+    padding: 8px;
+  }
+
+  .info-icon {
+    width: 32px;
+    height: 32px;
+
+    ion-icon {
+      font-size: 14px;
+    }
+  }
+
+  .info-label {
+    font-size: 10px;
+  }
+
+  .info-value {
+    font-size: 12px;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  .header-section, .trip-card, .loading-card, .empty-state {
+    background: rgba(30, 30, 30, 0.95);
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+
+  .page-title h2, .trip-reference h3, .empty-state h3 {
+    color: #f9fafb;
+  }
+
+  .page-title p, .cancelled-date, .info-label, .driver-label, .empty-state p {
+    color: #9ca3af;
+  }
+
+  .info-value, .driver-name {
+    color: #f3f4f6;
+  }
+
+  .trip-status.status-cancelled {
+    background: rgba(220, 38, 38, 0.2);
+    color: #fca5a5;
+  }
+
+  .cancellation-reason {
+    background: rgba(254, 242, 242, 0.1);
+    border-color: rgba(252, 165, 165, 0.2);
+  }
+
+  .reason-content p {
+    color: #d1d5db;
+  }
+}

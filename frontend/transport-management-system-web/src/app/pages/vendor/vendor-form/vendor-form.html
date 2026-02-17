@@ -1,0 +1,61 @@
+<mat-card class="form-card p-8">
+  <mat-card-title>
+    {{ data.vendorId ? 'Modifier vendeur' : 'Ajouter vendeur' }}
+  </mat-card-title>
+
+  <form [formGroup]="vendorForm" (ngSubmit)="onSubmit()">
+
+    <!-- Nom -->
+    <mat-form-field class="w-full">
+      <mat-label>Nom du vendeur</mat-label>
+      <input matInput formControlName="name" />
+      <mat-error *ngIf="vendorForm.get('name')?.hasError('required')">
+        Le nom est obligatoire
+      </mat-error>
+    </mat-form-field>
+
+    <!-- Email -->
+    <mat-form-field class="w-full">
+      <mat-label>Email</mat-label>
+      <input matInput type="email" formControlName="email" />
+      <mat-error *ngIf="vendorForm.get('email')?.hasError('required')">
+        L'email est obligatoire
+      </mat-error>
+      <mat-error *ngIf="vendorForm.get('email')?.hasError('email')">
+        Veuillez entrer un email valide
+      </mat-error>
+    </mat-form-field>
+
+ <!-- Téléphone -->
+<div class="mat-phone-field w-full">
+  <div class="mat-phone-wrapper">
+    <input
+      matInput
+      formControlName="phone"
+      #phoneInput
+      [readonly]="isSubmitting"
+    />
+  </div>
+  <mat-error *ngIf="vendorForm.get('phone')?.invalid && vendorForm.get('phone')?.touched">
+    {{ getErrorMessage('phone') }}
+  </mat-error>
+</div>
+
+
+    <div class="flex justify-center mt-4">
+      <button
+        mat-raised-button
+        color="primary"
+        type="submit"
+        [disabled]="vendorForm.invalid"
+      >
+        {{ data.vendorId ? 'Modifier' : 'Ajouter' }}
+      </button>
+
+      <button mat-button type="button" (click)="onCancel()">
+        Annuler
+      </button>
+    </div>
+
+  </form>
+</mat-card>

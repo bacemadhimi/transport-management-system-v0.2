@@ -1,0 +1,374 @@
+<ion-content [fullscreen]="true" class="profile-content">
+  <div class="profile-background-gradient"></div>
+
+
+  <div class="profile-header-section">
+    <div class="profile-info">
+      <div class="header-actions">
+      <ion-button fill="clear" class="return-home-btn" (click)="returnHome()">
+        <ion-icon name="arrow-back-outline"></ion-icon>
+      </ion-button>
+      <div class="header-title">
+        <h2>Profile Settings</h2>
+      </div>
+      <div class="header-spacer"></div> 
+    </div>
+      <div class="profile-avatar-container">
+        <div class="profile-avatar" (click)="triggerFileInput()">
+          @if (user?.profileImage) {
+            <img [src]="profileImageSrc" alt="Profile" />
+          } @else {
+            <ion-icon name="person-circle-outline"></ion-icon>
+          }
+          <div class="avatar-change-overlay">
+            <ion-icon name="camera-outline"></ion-icon>
+          </div>
+        </div>
+        <input 
+          #fileInput 
+          type="file" 
+          accept="image/*" 
+          (change)="onFileSelected($event)" 
+          hidden 
+        />
+      </div>
+      
+      <div class="profile-details">
+        <h1>{{ user?.name || 'User' }}</h1>
+        <p class="user-email">{{ user?.email || 'user@example.com' }}</p>
+        @if (user?.role) {
+          <span class="user-role">{{ user.role }}</span>
+        }
+      </div>
+    </div>
+  </div>
+
+  <!-- Segment Navigation -->
+  <div class="profile-segment-section">
+    <ion-segment 
+      [value]="selectedSegment" 
+      (ionChange)="onSegmentChange($event)"
+      swipeGesture="true"
+    >
+      <ion-segment-button value="profile">
+        <ion-label>Profile</ion-label>
+      </ion-segment-button>
+      <ion-segment-button value="password">
+        <ion-label>Password</ion-label>
+      </ion-segment-button>
+    </ion-segment>
+  </div>
+
+  <!-- Content Section -->
+  <div class="profile-content-section">
+    <!-- Loading State -->
+    @if (isLoading) {
+      <div class="loading-container">
+        <div class="loading-card">
+          <ion-spinner name="crescent" color="primary"></ion-spinner>
+          <p>Loading profile...</p>
+        </div>
+      </div>
+    }
+
+    <!-- Profile Form -->
+    @if (selectedSegment === 'profile') {
+      <div class="profile-card" [formGroup]="profileForm">
+        <div class="card-header">
+          <div class="card-icon">
+            <ion-icon name="person-outline"></ion-icon>
+          </div>
+          <h2>Personal Information</h2>
+        </div>
+
+        <!-- Name Field -->
+        <div class="form-group">
+          <label class="form-label">
+            <ion-icon name="person-outline"></ion-icon>
+            Full Name <span class="required">*</span>
+          </label>
+          <div class="input-with-icon">
+            <ion-icon name="person-outline" class="input-icon"></ion-icon>
+            <ion-input 
+              formControlName="name"
+              class="form-input input-with-icon"
+              placeholder="Enter your full name"
+              [clearInput]="true"
+            ></ion-input>
+          </div>
+          @if (profileForm.get('name')?.invalid && profileForm.get('name')?.touched) {
+            <div class="error-message">
+              <ion-icon name="alert-circle-outline"></ion-icon>
+              {{ getProfileFieldError('name') }}
+            </div>
+          }
+        </div>
+
+        <!-- Email Field -->
+        <div class="form-group">
+          <label class="form-label">
+            <ion-icon name="mail-outline"></ion-icon>
+            Email <span class="required">*</span>
+          </label>
+          <div class="input-with-icon">
+            <ion-icon name="mail-outline" class="input-icon"></ion-icon>
+            <ion-input 
+              formControlName="email"
+              class="form-input input-with-icon"
+              type="email"
+              placeholder="Enter your email"
+              [clearInput]="true"
+            ></ion-input>
+          </div>
+          @if (profileForm.get('email')?.invalid && profileForm.get('email')?.touched) {
+            <div class="error-message">
+              <ion-icon name="alert-circle-outline"></ion-icon>
+              {{ getProfileFieldError('email') }}
+            </div>
+          }
+        </div>
+
+        <!-- Phone Field -->
+        <div class="form-group">
+          <label class="form-label">
+            <ion-icon name="call-outline"></ion-icon>
+            Phone Number
+          </label>
+          <div class="input-with-icon">
+            <ion-icon name="call-outline" class="input-icon"></ion-icon>
+            <ion-input 
+              formControlName="phone"
+              class="form-input input-with-icon"
+              type="tel"
+              placeholder="Enter your phone number"
+              [clearInput]="true"
+            ></ion-input>
+          </div>
+          @if (profileForm.get('phone')?.invalid && profileForm.get('phone')?.touched) {
+            <div class="error-message">
+              <ion-icon name="alert-circle-outline"></ion-icon>
+              {{ getProfileFieldError('phone') }}
+            </div>
+          }
+        </div>
+
+        <!-- Update Button -->
+        <div class="action-buttons">
+          <ion-button 
+            expand="block" 
+            class="primary-btn" 
+            (click)="updateProfile()"
+            [disabled]="profileForm.invalid || isUpdatingProfile"
+          >
+            @if (isUpdatingProfile) {
+              <ion-spinner name="crescent"></ion-spinner>
+            } @else {
+              <ion-icon name="save-outline" slot="start"></ion-icon>
+              Update Profile
+            }
+          </ion-button>
+        </div>
+      </div>
+
+      <!-- Account Information -->
+      <div class="profile-card">
+        <div class="card-header">
+          <div class="card-icon">
+            <ion-icon name="shield-outline"></ion-icon>
+          </div>
+          <h2>Account Information</h2>
+        </div>
+
+        <div class="account-info-grid">
+          <div class="info-item">
+            <div class="info-icon">
+              <ion-icon name="person-circle-outline"></ion-icon>
+            </div>
+            <div class="info-content">
+              <div class="info-label">User ID</div>
+              <div class="info-value">{{ user?.id || 'N/A' }}</div>
+            </div>
+          </div>
+
+          <div class="info-item">
+            <div class="info-icon">
+              <ion-icon name="calendar-outline"></ion-icon>
+            </div>
+            <div class="info-content">
+              <div class="info-label">Member Since</div>
+              <div class="info-value">{{ user?.createdAt | date:'MMM yyyy' }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    }
+
+    <!-- Password Form -->
+    @if (selectedSegment === 'password') {
+      <div class="profile-card" [formGroup]="passwordForm">
+        <div class="card-header">
+          <div class="card-icon">
+            <ion-icon name="lock-closed-outline"></ion-icon>
+          </div>
+          <h2>Change Password</h2>
+        </div>
+
+        <!-- Current Password -->
+        <div class="form-group">
+          <label class="form-label">
+            <ion-icon name="key-outline"></ion-icon>
+            Current Password <span class="required">*</span>
+          </label>
+          <div class="input-with-icon">
+            <ion-icon name="lock-closed-outline" class="input-icon"></ion-icon>
+            <ion-input 
+              formControlName="oldPassword"
+              class="form-input input-with-icon"
+              [type]="showoldPassword ? 'text' : 'password'"
+              placeholder="Enter current password"
+            ></ion-input>
+            <button 
+              type="button" 
+              class="password-toggle"
+              (click)="togglePasswordVisibility('current')"
+            >
+              <ion-icon [name]="showoldPassword ? 'eye-off-outline' : 'eye-outline'"></ion-icon>
+            </button>
+          </div>
+          @if (passwordForm.get('oldPassword')?.invalid && passwordForm.get('oldPassword')?.touched) {
+            <div class="error-message">
+              <ion-icon name="alert-circle-outline"></ion-icon>
+              {{ getPasswordFieldError('oldPassword') }}
+            </div>
+          }
+        </div>
+
+        <!-- New Password -->
+        <div class="form-group">
+          <label class="form-label">
+            <ion-icon name="lock-closed-outline"></ion-icon>
+            New Password <span class="required">*</span>
+          </label>
+          <div class="input-with-icon">
+            <ion-icon name="lock-closed-outline" class="input-icon"></ion-icon>
+            <ion-input 
+              formControlName="newPassword"
+              class="form-input input-with-icon"
+              [type]="showNewPassword ? 'text' : 'password'"
+              placeholder="Enter new password"
+            ></ion-input>
+            <button 
+              type="button" 
+              class="password-toggle"
+              (click)="togglePasswordVisibility('new')"
+            >
+              <ion-icon [name]="showNewPassword ? 'eye-off-outline' : 'eye-outline'"></ion-icon>
+            </button>
+          </div>
+          @if (passwordForm.get('newPassword')?.invalid && passwordForm.get('newPassword')?.touched) {
+            <div class="error-message">
+              <ion-icon name="alert-circle-outline"></ion-icon>
+              {{ getPasswordFieldError('newPassword') }}
+            </div>
+          }
+
+          <!-- Password Strength Meter -->
+          @if (showPasswordStrength) {
+            <div class="password-strength-section">
+              <div class="strength-header">
+                <span class="strength-label">Password Strength</span>
+                <span class="strength-value {{ passwordStrength.class }}">
+                  {{ passwordStrength.text }}
+                </span>
+              </div>
+              <div class="strength-meter">
+                <div class="strength-bar {{ passwordStrength.class }}"></div>
+              </div>
+              <div class="requirements-grid">
+                <div class="requirement-item" [class.met]="passwordRequirements.minLength">
+                  <ion-icon [name]="passwordRequirements.minLength ? 'checkmark-circle' : 'close-circle'"></ion-icon>
+                  <span>7+ characters</span>
+                </div>
+                <div class="requirement-item" [class.met]="passwordRequirements.hasUppercase">
+                  <ion-icon [name]="passwordRequirements.hasUppercase ? 'checkmark-circle' : 'close-circle'"></ion-icon>
+                  <span>Uppercase letter</span>
+                </div>
+                <div class="requirement-item" [class.met]="passwordRequirements.hasLowercase">
+                  <ion-icon [name]="passwordRequirements.hasLowercase ? 'checkmark-circle' : 'close-circle'"></ion-icon>
+                  <span>Lowercase letter</span>
+                </div>
+                <div class="requirement-item" [class.met]="passwordRequirements.hasNumber">
+                  <ion-icon [name]="passwordRequirements.hasNumber ? 'checkmark-circle' : 'close-circle'"></ion-icon>
+                  <span>Number</span>
+                </div>
+                <div class="requirement-item" [class.met]="passwordRequirements.hasSpecialChar">
+                  <ion-icon [name]="passwordRequirements.hasSpecialChar ? 'checkmark-circle' : 'close-circle'"></ion-icon>
+                  <span>Special character</span>
+                </div>
+              </div>
+            </div>
+          }
+        </div>
+
+        <!-- Confirm Password -->
+        <div class="form-group">
+          <label class="form-label">
+            <ion-icon name="lock-closed-outline"></ion-icon>
+            Confirm Password <span class="required">*</span>
+          </label>
+          <div class="input-with-icon">
+            <ion-icon name="lock-closed-outline" class="input-icon"></ion-icon>
+            <ion-input 
+              formControlName="confirmPassword"
+              class="form-input input-with-icon"
+              [type]="showConfirmPassword ? 'text' : 'password'"
+              placeholder="Confirm new password"
+            ></ion-input>
+            <button 
+              type="button" 
+              class="password-toggle"
+              (click)="togglePasswordVisibility('confirm')"
+            >
+              <ion-icon [name]="showConfirmPassword ? 'eye-off-outline' : 'eye-outline'"></ion-icon>
+            </button>
+          </div>
+          @if (passwordMismatch || (passwordForm.get('confirmPassword')?.invalid && passwordForm.get('confirmPassword')?.touched)) {
+            <div class="error-message">
+              <ion-icon name="alert-circle-outline"></ion-icon>
+              {{ getPasswordFieldError('confirmPassword') }}
+            </div>
+          }
+        </div>
+
+        <!-- Change Password Button -->
+        <div class="action-buttons">
+          <ion-button 
+            expand="block" 
+            class="primary-btn" 
+            (click)="changePassword()"
+            [disabled]="passwordForm.invalid || isChangingPassword || passwordMismatch"
+          >
+            @if (isChangingPassword) {
+              <ion-spinner name="crescent"></ion-spinner>
+            } @else {
+              <ion-icon name="key-outline" slot="start"></ion-icon>
+              Change Password
+            }
+          </ion-button>
+        </div>
+      </div>
+    }
+  </div>
+
+  <!-- Logout Section -->
+  <div class="logout-section">
+    <ion-button 
+      expand="block" 
+      class="logout-btn"
+      (click)="logout()"
+    >
+      <ion-icon name="log-out-outline" slot="start"></ion-icon>
+      Logout
+    </ion-button>
+  </div>
+</ion-content>

@@ -1,0 +1,463 @@
+<div class="statistics-container">
+  
+  <!-- ========== EN-TÊTE DE LA PAGE ========== -->
+  <div class="page-header">
+    <h1 class="page-title">
+      <i class="fas fa-map-marked-alt"></i>
+      Cartes des Opérations
+    </h1>
+    <p class="page-subtitle">Visualisation des camions et chauffeurs en temps réel - 24 Gouvernorats</p>
+  </div>
+
+  <!-- ========== MESSAGES ========== -->
+  <div *ngIf="errorMessage" class="alert alert-error" role="alert">
+    <i class="fas fa-exclamation-circle"></i>
+    {{ errorMessage }}
+    <button type="button" class="btn-close" (click)="clearError()">
+      <i class="fas fa-times"></i>
+    </button>
+  </div>
+  
+  <div *ngIf="successMessage" class="alert alert-success" role="alert">
+    <i class="fas fa-check-circle"></i>
+    {{ successMessage }}
+    <button type="button" class="btn-close" (click)="clearSuccess()">
+      <i class="fas fa-times"></i>
+    </button>
+  </div>
+
+  <!-- ========== SECTION CARTES JUMELÉES ========== -->
+  <div class="maps-row">
+    
+    <!-- === CARTE DES CAMIONS (GAUCHE) - 24 GOUVERNORATS === -->
+    <div class="card map-card left-map">
+      <div class="card-header">
+        <div class="header-left">
+          <h3>
+            <i class="fas fa-truck"></i>
+            Carte des Camions - 24 Gouvernorats
+          </h3>
+          <div class="map-status-badge">
+            <span class="live-indicator"></span>
+            <span class="live-text">Temps réel</span>
+          </div>
+        </div>
+        <div class="map-actions">
+          <button class="btn btn-icon" (click)="centerMap('truck')" title="Centrer Tunisie">
+            <i class="fas fa-crosshairs"></i>
+          </button>
+          <button class="btn btn-icon" (click)="refreshMap('truck')" title="Actualiser">
+            <i class="fas fa-sync-alt"></i>
+          </button>
+        </div>
+      </div>
+      
+      <div class="card-body">
+        <div class="map-container-wrapper">
+          
+          <!-- FILTRES RAPIDES PAR RÉGION - CAMIONS -->
+          <div class="map-region-filters">
+            <button class="region-filter-btn" 
+                    [class.active]="activeTruckRegionFilter === 'all'"
+                    (click)="centerMap('truck')">
+              <i class="fas fa-map"></i> Toutes
+            </button>
+            <button class="region-filter-btn" 
+                    *ngFor="let region of Object.keys(ZONES_BY_REGION)" 
+                    [class.active]="activeTruckRegionFilter === region"
+                    (click)="focusOnRegion(region, 'truck')">
+              <i class="fas fa-map-marker-alt"></i> {{ region }}
+            </button>
+          </div>
+          
+          <!-- Carte Leaflet Camions -->
+          <div id="trucksMap" class="transport-map" 
+               [class.map-loading]="mapsLoading.trucks"
+               [class.map-error]="mapsError.trucks"></div>
+          
+          <!-- Overlay de chargement -->
+          <div *ngIf="mapsLoading.trucks" class="map-loading-overlay">
+            <div class="loading-content">
+              <div class="spinner-small"></div>
+              <span>Chargement des 24 gouvernorats...</span>
+            </div>
+          </div>
+          
+          <!-- Message d'erreur -->
+          <div *ngIf="mapsError.trucks && !mapsLoading.trucks" class="map-error-overlay">
+            <div class="error-content">
+              <i class="fas fa-exclamation-triangle"></i>
+              <span>Erreur de chargement de la carte</span>
+              <button class="btn btn-sm btn-primary" (click)="refreshMap('truck')">
+                <i class="fas fa-redo"></i> Réessayer
+              </button>
+            </div>
+          </div>
+          
+          <!-- Légende Camions -->
+          <div class="map-legend">
+            <h4><i class="fas fa-truck"></i> Légende Camions</h4>
+            <div class="legend-grid">
+              <div class="legend-section">
+                <h5>Zones</h5>
+                <div class="legend-item">
+                  <span class="legend-dot" style="background: #1cc88a;"></span>
+                  <span class="legend-label">Très active (>5 camions)</span>
+                </div>
+                <div class="legend-item">
+                  <span class="legend-dot" style="background: #4e73df;"></span>
+                  <span class="legend-label">Active (2-5 camions)</span>
+                </div>
+                <div class="legend-item">
+                  <span class="legend-dot" style="background: #f6c23e;"></span>
+                  <span class="legend-label">Peu active (1-2 camions)</span>
+                </div>
+                <div class="legend-item">
+                  <span class="legend-dot" style="background: #e74a3b;"></span>
+                  <span class="legend-label">Inactive</span>
+                </div>
+              </div>
+              
+              <div class="legend-section">
+                <h5>Camions</h5>
+                <div class="legend-item">
+                  <i class="fas fa-check-circle" style="color: #1cc88a;"></i>
+                  <span class="legend-label">Disponible</span>
+                </div>
+                <div class="legend-item">
+                  <i class="fas fa-truck" style="color: #4e73df;"></i>
+                  <span class="legend-label">En mission</span>
+                </div>
+                <div class="legend-item">
+                  <i class="fas fa-tools" style="color: #f6c23e;"></i>
+                  <span class="legend-label">Maintenance</span>
+                </div>
+                <div class="legend-item">
+                  <i class="fas fa-exclamation-circle" style="color: #e74a3b;"></i>
+                  <span class="legend-label">Hors service</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Statistiques rapides camions -->
+          <div class="map-stats">
+            <div class="stats-row">
+              <div class="stat-item">
+                <span class="stat-value">{{ truckStats.total }}</span>
+                <span class="stat-label">Camions</span>
+              </div>
+              <div class="stat-item">
+                <span class="stat-value">{{ truckStats.activeZones }}/24</span>
+                <span class="stat-label">Zones actives</span>
+              </div>
+              <div class="stat-item">
+                <span class="stat-value">{{ truckStats.onMission }}</span>
+                <span class="stat-label">En mission</span>
+              </div>
+            </div>
+            <div class="stats-row">
+              <div class="stat-item small">
+                <i class="fas fa-check-circle" style="color: #1cc88a;"></i>
+                <span>{{ truckStats.available }}</span>
+              </div>
+              <div class="stat-item small">
+                <i class="fas fa-tools" style="color: #f6c23e;"></i>
+                <span>{{ truckStats.maintenance }}</span>
+              </div>
+              <div class="stat-item small">
+                <i class="fas fa-exclamation-circle" style="color: #e74a3b;"></i>
+                <span>{{ truckStats.outOfService }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- === CARTE DES CHAUFFEURS (DROITE) - 24 GOUVERNORATS === -->
+    <div class="card map-card right-map">
+      <div class="card-header">
+        <div class="header-left">
+          <h3>
+            <i class="fas fa-user-tie"></i>
+            Carte des Chauffeurs - 24 Gouvernorats
+          </h3>
+          <div class="map-status-badge">
+            <span class="live-indicator" style="background: #36b9cc;"></span>
+            <span class="live-text">Temps réel</span>
+          </div>
+        </div>
+        <div class="map-actions">
+          <button class="btn btn-icon" (click)="centerMap('driver')" title="Centrer Tunisie">
+            <i class="fas fa-crosshairs"></i>
+          </button>
+          <button class="btn btn-icon" (click)="refreshMap('driver')" title="Actualiser">
+            <i class="fas fa-sync-alt"></i>
+          </button>
+        </div>
+      </div>
+      
+      <div class="card-body">
+        <div class="map-container-wrapper">
+          
+          <!-- FILTRES RAPIDES PAR RÉGION - CHAUFFEURS -->
+          <div class="map-region-filters">
+            <button class="region-filter-btn" 
+                    [class.active]="activeDriverRegionFilter === 'all'"
+                    (click)="centerMap('driver')">
+              <i class="fas fa-map"></i> Toutes
+            </button>
+            <button class="region-filter-btn" 
+                    *ngFor="let region of Object.keys(ZONES_BY_REGION)" 
+                    [class.active]="activeDriverRegionFilter === region"
+                    (click)="focusOnRegion(region, 'driver')">
+              <i class="fas fa-map-marker-alt"></i> {{ region }}
+            </button>
+          </div>
+          
+          <!-- Carte Leaflet Chauffeurs -->
+          <div id="driversMap" class="transport-map" 
+               [class.map-loading]="mapsLoading.drivers"
+               [class.map-error]="mapsError.drivers"></div>
+          
+          <!-- Overlay de chargement -->
+          <div *ngIf="mapsLoading.drivers" class="map-loading-overlay">
+            <div class="loading-content">
+              <div class="spinner-small"></div>
+              <span>Chargement des 24 gouvernorats...</span>
+            </div>
+          </div>
+          
+          <!-- Message d'erreur -->
+          <div *ngIf="mapsError.drivers && !mapsLoading.drivers" class="map-error-overlay">
+            <div class="error-content">
+              <i class="fas fa-exclamation-triangle"></i>
+              <span>Erreur de chargement de la carte</span>
+              <button class="btn btn-sm btn-primary" (click)="refreshMap('driver')">
+                <i class="fas fa-redo"></i> Réessayer
+              </button>
+            </div>
+          </div>
+          
+          <!-- Légende Chauffeurs -->
+          <div class="map-legend">
+            <h4><i class="fas fa-user-tie"></i> Légende Chauffeurs</h4>
+            <div class="legend-grid">
+              <div class="legend-section">
+                <h5>Zones</h5>
+                <div class="legend-item">
+                  <span class="legend-dot" style="background: #1cc88a;"></span>
+                  <span class="legend-label">Très active (>5 chauffeurs)</span>
+                </div>
+                <div class="legend-item">
+                  <span class="legend-dot" style="background: #4e73df;"></span>
+                  <span class="legend-label">Active (2-5 chauffeurs)</span>
+                </div>
+                <div class="legend-item">
+                  <span class="legend-dot" style="background: #f6c23e;"></span>
+                  <span class="legend-label">Peu active (1-2 chauffeurs)</span>
+                </div>
+                <div class="legend-item">
+                  <span class="legend-dot" style="background: #e74a3b;"></span>
+                  <span class="legend-label">Inactive</span>
+                </div>
+              </div>
+              
+              <div class="legend-section">
+                <h5>Chauffeurs</h5>
+                <div class="legend-item">
+                  <i class="fas fa-check-circle" style="color: #1cc88a;"></i>
+                  <span class="legend-label">Disponible</span>
+                </div>
+                <div class="legend-item">
+                  <i class="fas fa-truck" style="color: #4e73df;"></i>
+                  <span class="legend-label">En mission</span>
+                </div>
+                <div class="legend-item">
+                  <i class="fas fa-clock" style="color: #f6c23e;"></i>
+                  <span class="legend-label">Heures sup.</span>
+                </div>
+                <div class="legend-item">
+                  <i class="fas fa-exclamation-triangle" style="color: #e74a3b;"></i>
+                  <span class="legend-label">Conflit</span>
+                </div>
+                <div class="legend-item">
+                  <i class="fas fa-user-slash" style="color: #858796;"></i>
+                  <span class="legend-label">Hors service</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Statistiques rapides chauffeurs -->
+          <div class="map-stats">
+            <div class="stats-row">
+              <div class="stat-item">
+                <span class="stat-value">{{ driverStats.total }}</span>
+                <span class="stat-label">Chauffeurs</span>
+              </div>
+              <div class="stat-item">
+                <span class="stat-value">{{ driverActiveZones }}/24</span>
+                <span class="stat-label">Zones actives</span>
+              </div>
+              <div class="stat-item">
+                <span class="stat-value">{{ driverStats.onMission }}</span>
+                <span class="stat-label">En mission</span>
+              </div>
+            </div>
+            <div class="stats-row">
+              <div class="stat-item small">
+                <i class="fas fa-check-circle" style="color: #1cc88a;"></i>
+                <span>{{ driverStats.available }}</span>
+              </div>
+              <div class="stat-item small">
+                <i class="fas fa-clock" style="color: #f6c23e;"></i>
+                <span>{{ driverStats.overtime }}</span>
+              </div>
+              <div class="stat-item small">
+                <i class="fas fa-exclamation-triangle" style="color: #e74a3b;"></i>
+                <span>{{ driverStats.conflict }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== SECTION ZONES - 24 GOUVERNORATS ========== -->
+  <div class="card zones-card">
+    <div class="card-header">
+      <div class="header-left">
+        <h4>
+          <i class="fas fa-map-pin"></i>
+          Zones d'Opération - 24 Gouvernorats
+        </h4>
+      </div>
+      <div class="zone-tabs">
+        <button class="zone-tab" [class.active]="activeZoneView === 'trucks'" (click)="switchZoneView('trucks')">
+          <i class="fas fa-truck"></i> Camions
+        </button>
+        <button class="zone-tab" [class.active]="activeZoneView === 'drivers'" (click)="switchZoneView('drivers')">
+          <i class="fas fa-user-tie"></i> Chauffeurs
+        </button>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="zones-grid">
+        <div class="zone-card" *ngFor="let zone of zones" 
+             [class.active]="activeZoneName === zone.name"
+             (click)="focusOnZone(zone.name)">
+          
+          <!-- En-tête de zone -->
+          <div class="zone-header">
+            <div class="zone-icon" 
+                 [style.background]="activeZoneView === 'trucks' ? getZoneColor(zone.name) : getDriverZoneColor(zone.name)">
+              {{ zone.name.substring(0, 3) }}
+            </div>
+            <div class="zone-info">
+              <h5>{{ zone.name }}</h5>
+              <span class="zone-count" *ngIf="activeZoneView === 'trucks'">
+                {{ getZoneStats(zone.name).total }} camions
+              </span>
+              <span class="zone-count" *ngIf="activeZoneView === 'drivers'">
+                {{ getDriverZoneStats(zone.name).total }} chauffeurs
+              </span>
+            </div>
+            <div class="zone-percentage" *ngIf="activeZoneView === 'trucks'">
+              <div class="percentage-circle" 
+                   [style.background]="'linear-gradient(135deg, ' + getZoneColor(zone.name) + ', #764ba2)'">
+                {{ getZoneUtilizationPercentage(zone.name) }}%
+              </div>
+            </div>
+            <div class="zone-percentage" *ngIf="activeZoneView === 'drivers'">
+              <div class="percentage-circle" 
+                   [style.background]="'linear-gradient(135deg, ' + getDriverZoneColor(zone.name) + ', #764ba2)'">
+                {{ getDriverUtilizationPercentage(zone.name) }}%
+              </div>
+            </div>
+          </div>
+          
+          <!-- Statistiques Camions -->
+          <div class="zone-stats" *ngIf="activeZoneView === 'trucks'">
+            <div class="stat-badge available">
+              <i class="fas fa-check-circle"></i>
+              {{ getZoneStats(zone.name).available }}
+            </div>
+            <div class="stat-badge mission">
+              <i class="fas fa-truck"></i>
+              {{ getZoneStats(zone.name).onMission }}
+            </div>
+            <div class="stat-badge maintenance">
+              <i class="fas fa-tools"></i>
+              {{ getZoneStats(zone.name).maintenance }}
+            </div>
+            <div class="stat-badge out">
+              <i class="fas fa-exclamation-circle"></i>
+              {{ getZoneStats(zone.name).outOfService }}
+            </div>
+          </div>
+          
+          <!-- Statistiques Chauffeurs -->
+          <div class="zone-stats" *ngIf="activeZoneView === 'drivers'">
+            <div class="stat-badge available">
+              <i class="fas fa-check-circle"></i>
+              {{ getDriverZoneStats(zone.name).available }}
+            </div>
+            <div class="stat-badge mission">
+              <i class="fas fa-truck"></i>
+              {{ getDriverZoneStats(zone.name).onMission }}
+            </div>
+            <div class="stat-badge overtime">
+              <i class="fas fa-clock"></i>
+              {{ getDriverZoneStats(zone.name).overtime }}
+            </div>
+            <div class="stat-badge conflict">
+              <i class="fas fa-exclamation-triangle"></i>
+              {{ getDriverZoneStats(zone.name).conflict }}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== SECTION AIDE ========== -->
+  <div class="help-section">
+    <div class="help-toggle" (click)="toggleHelp()">
+      <i class="fas fa-question-circle"></i>
+      <span>Besoin d'Aide ?</span>
+    </div>
+    
+    <div *ngIf="showHelp" class="help-content">
+      <h4><i class="fas fa-info-circle"></i> Comment Utiliser les Cartes</h4>
+      <ul>
+        <li><strong>Cartes jumelées :</strong> Visualisez camions et chauffeurs côte à côte</li>
+        <li><strong>Régions :</strong> Cliquez sur les boutons pour zoomer sur une région spécifique</li>
+        <li><strong>Zones :</strong> Cliquez sur une zone pour la centrer sur la carte active</li>
+        <li><strong>Marqueurs :</strong> Cliquez sur un marqueur pour voir les détails</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ========== PIED DE PAGE ========== -->
+  <div class="page-footer">
+    <div class="footer-content">
+      <span class="footer-text">
+        <i class="fas fa-database"></i>
+        Source : Système de Gestion de Transport
+      </span>
+      <span class="footer-separator">•</span>
+      <span class="footer-text">
+        <i class="fas fa-clock"></i>
+        Mise à Jour : {{ lastUpdateTime }}
+      </span>
+      <span class="footer-separator">•</span>
+      <span class="footer-text">
+        <i class="fas fa-shield-alt"></i>
+        24 Gouvernorats - Temps réel
+      </span>
+    </div>
+  </div>
+</div>

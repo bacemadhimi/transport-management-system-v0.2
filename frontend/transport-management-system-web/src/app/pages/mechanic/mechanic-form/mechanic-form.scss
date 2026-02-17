@@ -1,0 +1,51 @@
+
+.mat-phone-field {
+  width: 100%;
+  display: block;
+  margin-bottom: 1.25rem;
+  font-family: Roboto, "Helvetica Neue", sans-serif;
+}
+
+
+.mat-phone-label {
+  font-size: 12px;
+  color: rgba(0, 0, 0, 0.6);
+  display: block;
+  margin-bottom: 4px;
+}
+
+
+.mat-phone-wrapper {
+  position: relative;
+  width: 100%;
+  height: 56px; 
+  border: 1px solid rgba(0, 0, 0, 0.38);
+  border-radius: 4px;
+  box-sizing: border-box;
+}
+
+
+.mat-phone-wrapper input {
+  width: 100%;
+  height: 100%;
+  border: none;
+  outline: none;
+  padding: 16.5px 14px 16.5px 60px; 
+  font-size: 16px;
+  box-sizing: border-box;
+  background: transparent;
+}
+
+.mat-phone-wrapper:focus-within {
+  border-color: #3f51b5;
+  border-width: 2px;
+}
+
+.iti {
+  width: 100%;
+  height: 100%;
+}
+
+.iti__country-list {
+  z-index: 999999 !important;
+}

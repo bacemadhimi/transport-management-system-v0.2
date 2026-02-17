@@ -1,0 +1,127 @@
+<div class="historic-page">
+	<div class="historic-card">
+		<header class="historic-header">
+			<!-- <h1>La liste des voyages</h1> -->
+			<h1>{{ t('TRIPS_LIST_TITLE')}}</h1>
+			<div class="filters">
+				<div class="filter-item">
+					<mat-form-field appearance="fill">
+						<!-- <mat-label>Date de début</mat-label> -->
+						 <mat-label>{{ t('START_DATE_LABEL') }}</mat-label>
+						<button mat-icon-button matPrefix class="left-icon" aria-label="Ouvrir calendrier" (click)="openStart()">
+							<mat-icon>calendar_month</mat-icon>
+						</button>
+						<input matInput [matDatepicker]="startPicker" [formControl]="startDate" placeholder="Sélectionner">
+						<mat-datepicker #startPicker></mat-datepicker>
+					</mat-form-field>
+				</div>
+
+				<div class="filter-item">
+					<mat-form-field appearance="fill">
+						<mat-label>{{ t('END_DATE_LABEL') }}</mat-label>
+						<button mat-icon-button matPrefix class="left-icon" aria-label="Ouvrir calendrier" (click)="openEnd()">
+							<mat-icon>calendar_month</mat-icon>
+						</button>
+						<input matInput [matDatepicker]="endPicker" [formControl]="endDate" placeholder="Sélectionner">
+						<mat-datepicker #endPicker></mat-datepicker>
+					</mat-form-field>
+				</div>
+
+				<div class="filter-item">
+					<mat-form-field appearance="fill">
+						<mat-label>Trucks</mat-label>
+						<mat-select [formControl]="truckControl" placeholder="Sélectionner un camion">
+							<mat-option value="">{{t('ALL')}}</mat-option>
+							<mat-option *ngFor="let t of trucks" [value]="t">{{ t }}</mat-option>
+						</mat-select>
+					</mat-form-field>
+				</div>
+
+				<div class="filter-item">
+					<mat-form-field appearance="fill">
+						<mat-label>Driver</mat-label>
+						<mat-select [formControl]="driverControl" placeholder="Sélectionner un chauffeur">
+							<mat-option value="">{{t('ALL')}}</mat-option>
+							<mat-option *ngFor="let d of drivers" [value]="d">{{ d }}</mat-option>
+						</mat-select>
+					</mat-form-field>
+				</div>
+
+				<div class="filter-item actions">
+					<button class="btn btn-search" style="background:#13a34a;color:#fff;" (click)="onSearch()">{{ t('SEARCH_BUTTON')}}</button>
+				</div>
+			</div>
+
+			<div class="export-row">
+				<button class="btn export xls" (click)="exportExcel()">XLS</button>
+				<button class="btn export csv" (click)="exportCSV()">CSV</button>
+				<button class="btn export pdf" (click)="exportPDF()">PDF</button>
+			</div>
+		</header>
+
+		<div class="historic-table-wrap">
+			<table class="historic-table">
+				<thead>
+					<tr>
+						<th>ID</th>
+						<!-- <th>Référence</th> -->
+						 <th>{{ t('REFERENCE_LABEL') }}</th>
+						<!-- <th>Référence métier</th> -->
+						 <th>{{ t('BUSINESS_REFERENCE') }}</th>
+						<!-- <th>Camion & Chauffeur</th> -->
+						 <th>{{ t('TRUCK_DRIVER') }}</th>
+						<!-- <th>Livraisons</th> -->
+						 <th>{{ t('DELIVERIES') }}</th>
+						<!-- <th>Dates estimées</th> -->
+						 <th>{{ t('ESTIMATED_DATES') }}</th>
+						<!-- <th>Distance & Durée</th> -->
+						 <th>{{ t('DISTANCE_DURATION') }}</th>
+						<!-- <th>Statut</th> -->
+						<th>{{ t('STATUS') }}</th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr *ngFor="let trip of pagedTripsArray; let i = index; trackBy: trackByTrip">
+						<td>{{ (pageIndex * pageSize) + i + 1 }}</td>
+						<td>{{ trip.bookingId ?? '' }}</td>
+						<td>{{ trip.tripReference ?? '' }}</td>
+						<td>
+							<div>Camion: {{ trip.truck ?? 'N/A' }}</div>
+							<div>Chauffeur: {{ trip.driver ?? 'N/A' }}</div>
+						</td>
+						<td>
+							<div>Total: {{ trip.deliveryCount ?? 0 }}</div>
+							<div class="delivered">Livrées: {{ trip.completedDeliveries ?? 0 }}</div>
+						</td>
+						<td>
+							<div>Début: {{ trip.estimatedStartDate ? (trip.estimatedStartDate | date:'dd/MM/yyyy') : 'N/A' }}</div>
+							<div>Fin: {{ trip.estimatedEndDate ? (trip.estimatedEndDate | date:'dd/MM/yyyy') : 'N/A' }}</div>
+						</td>
+						<td>
+							<div>Distance: {{ trip.estimatedDistance ?? 0 }} km</div>
+							<div>Durée: {{ trip.estimatedDuration ?? 0 }} h</div>
+						</td>
+						<td><span class="status-pill planned">{{ trip.tripStatus ?? 'N/A' }}</span></td>
+						
+					</tr>
+
+					<tr *ngIf="visibleTrips.length === 0">
+						<td colspan="9" style="text-align:center; padding: 20px;">Aucun résultat. Utilisez les filtres et cliquez sur Rechercher.</td>
+					</tr>
+				</tbody>
+			</table>
+
+				<div class="table-footer">
+					<div>Items par page: {{ pageSize }}</div>
+					<div class="pagination-controls">
+						<button class="btn" (click)="prevPage()" [disabled]="!canPrev()">Préc</button>
+						<span class="page-info">{{ pageRangeText }}</span>
+						<div class="page-buttons">
+							<button class="btn" *ngFor="let p of pages" (click)="goToPage(p)" [class.active]="p===pageIndex">{{ p + 1 }}</button>
+						</div>
+						<button class="btn" (click)="nextPage()" [disabled]="!canNext()">Suiv</button>
+					</div>
+				</div>
+		</div>
+	</div>
+</div>

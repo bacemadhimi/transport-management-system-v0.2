@@ -1,0 +1,59 @@
+<h2 class="permissions-header mb-4">
+  <img src="/permissions.jpg" alt="Logo" class="permissions-logo">
+  <span>Gestion des Permissions</span>
+</h2>
+
+<mat-accordion *ngIf="roles.length > 0" multi>
+
+  <mat-expansion-panel *ngFor="let module of modules">
+    <mat-expansion-panel-header>
+      <mat-panel-title>
+        {{ module.name }}
+      </mat-panel-title>
+    </mat-expansion-panel-header>
+
+    <table class="permission-table">
+      <thead>
+        <tr>
+          <th>Action</th>
+          <th *ngFor="let role of roles">{{ role.name }}</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        <!-- Tout autoriser -->
+        <tr>
+          <td><strong>Tout autoriser</strong></td>
+          <td *ngFor="let role of roles">
+            <mat-checkbox
+              [checked]="isModuleChecked(role, module)"
+              [disabled]="role.name === 'SuperAdmin' || role.name === 'Admin'"
+              (change)="toggleModule(role, module, $event.checked)">
+            </mat-checkbox>
+          </td>
+        </tr>
+
+        <!-- Actions -->
+        <tr *ngFor="let action of module.actions">
+          <td>{{ action.label }}</td>
+          <td *ngFor="let role of roles">
+            <mat-checkbox
+              [disabled]="role.name === 'SuperAdmin' || role.name === 'Admin'"
+              [(ngModel)]="role.permissions[module.key + '_' + action.key]">
+            </mat-checkbox>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+  </mat-expansion-panel>
+
+</mat-accordion>
+
+<button
+  mat-raised-button
+  color="primary"
+  class="mt-4"
+  (click)="save()">
+  Sauvegarder
+</button>

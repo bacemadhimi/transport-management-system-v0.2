@@ -1,0 +1,137 @@
+<div class="trips-page">
+  <div class="trips-header">
+    <!-- <h1 class="trips-title">La liste des voyages</h1> -->
+    <h1 class="trips-title">{{ t('TRIPS_LIST_TITLE') }}</h1>
+
+    <div class="trips-header__actions">
+      <div class="trips-header__left">
+        <!-- Search Field -->
+        <mat-form-field appearance="outline" class="trips-search">
+          <!-- <mat-label>Chercher voyage</mat-label> -->
+           <mat-label>{{ t('SEARCH_TRIP') }}</mat-label>
+          <input
+            matInput
+            type="text"
+            [formControl]="searchControl"
+            placeholder="{{ t('SEARCH_TRIP_PLACEHOLDER') }}"
+          />
+        </mat-form-field>
+
+        <!-- Status Filter -->
+        <mat-form-field appearance="outline" class="status-filter">
+          <mat-label>{{ t('DRIVER_STATUS') }}</mat-label>
+          <mat-select [formControl]="statusControl">
+            <mat-option [value]="null">{{ t('ALL_STATUSES') }}</mat-option>
+            <mat-option *ngFor="let status of tripStatuses" [value]="status.value">
+              {{ status.label }}
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <!-- Truck Filter -->
+        <mat-form-field appearance="outline" class="truck-filter">
+          <mat-label>{{ t('TRUCK') }}</mat-label>
+          <mat-select [formControl]="truckControl">
+            <mat-option [value]="null">{{ t('ALL_TRUCKS') }}</mat-option>
+            <mat-option *ngFor="let truck of trucks" [value]="truck.id">
+              {{ truck.immatriculation }} - {{ truck.brand }}
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <!-- Driver Filter -->
+        <mat-form-field appearance="outline" class="driver-filter">
+          <mat-label>{{ t('DRIVER') }}</mat-label>
+          <mat-select [formControl]="driverControl">
+            <mat-option [value]="null">{{ t('ALL_DRIVERS') }}</mat-option>
+            <mat-option *ngFor="let driver of drivers" [value]="driver.id">
+              {{ driver.name }} 
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <!-- Start Date Filter -->
+        <mat-form-field appearance="outline" class="date-filter">
+          <mat-label>{{ t('START_DATE') }}</mat-label>
+          <input matInput [matDatepicker]="startPicker" [formControl]="startDateControl">
+          <mat-datepicker-toggle matSuffix [for]="startPicker"></mat-datepicker-toggle>
+          <mat-datepicker #startPicker></mat-datepicker>
+        </mat-form-field>
+
+        <!-- End Date Filter -->
+        <mat-form-field appearance="outline" class="date-filter">
+          <mat-label>{{ t('END_DATE') }}</mat-label>
+          <input matInput [matDatepicker]="endPicker" [formControl]="endDateControl">
+          <mat-datepicker-toggle matSuffix [for]="endPicker"></mat-datepicker-toggle>
+          <mat-datepicker #endPicker></mat-datepicker>
+        </mat-form-field>
+
+        <!-- Clear Sort Button (visible only when sorting is active) -->
+        <button *ngIf="sortColumn" mat-stroked-button 
+                (click)="clearSorting()" 
+                class="clear-sort-btn"
+                style="margin-right: 8px; color: #666; border-color: #ddd;"
+                title="Effacer le tri actuel">
+          <mat-icon style="font-size: 18px; height: 18px; width: 18px; margin-right: 4px;">clear_all</mat-icon>
+           {{ t('CLEAR_SORT') }}
+        </button>
+
+        <!-- Export Buttons -->
+        <div class="export-actions" aria-label="Export actions">
+          <button mat-icon-button class="export-btn export-excel" (click)="exportExcel()" title="Export Excel">
+            <svg viewBox="0 0 24 24" class="export-icon" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <rect x="2" y="3" width="20" height="18" rx="2" fill="#107C10"></rect>
+              <text x="12" y="16" text-anchor="middle" font-size="10" font-weight="700" fill="#fff">XLS</text>
+            </svg>
+          </button>
+
+          <button mat-icon-button class="export-btn export-csv" (click)="exportCSV()" title="Export CSV">
+            <svg viewBox="0 0 24 24" class="export-icon" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <rect x="2" y="3" width="20" height="18" rx="2" fill="#1E90FF"></rect>
+              <text x="12" y="16" text-anchor="middle" font-size="9" font-weight="700" fill="#fff">CSV</text>
+            </svg>
+          </button>
+
+          <button mat-icon-button class="export-btn export-pdf" (click)="exportPDF()" title="Export PDF">
+            <svg viewBox="0 0 24 24" class="export-icon" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <rect x="2" y="3" width="20" height="18" rx="2" fill="#D32F2F"></rect>
+              <text x="12" y="16" text-anchor="middle" font-size="9" font-weight="700" fill="#fff">PDF</text>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="trips-header__right">
+        <!-- Reset Filters Button -->
+        <button mat-flat-button [ngStyle]="{'background-color': '#4CAF50', 'color': 'white'}" 
+                (click)="resetFilters()" style="margin-right: 8px;">
+                  {{ t('RESET') }}
+        </button>
+
+        <!-- Add Trip Button -->
+        <button *ngIf="auth.hasPermission('TRAVEL_ADD')" mat-flat-button class="trips-add-btn" (click)="add()" type="button">
+                {{ t('ADD') }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Current Sort Indicator (optional) -->
+  <div *ngIf="sortColumn" class="current-sort-indicator" style="margin-bottom: 10px; padding: 8px; background-color: #f5f5f5; border-radius: 4px;">
+    <span style="color: #666; font-size: 14px;">
+      Trié par: <strong>{{ getColumnLabel(sortColumn) }}</strong> 
+      ({{ sortDirection === 'asc' ? 'Ascendant' : 'Descendant' }})
+    </span>
+  </div>
+
+  <app-table
+  [PagedData]="pagedTripData"
+  [pageIndex]="filter.pageIndex"
+  [pageSize]="filter.pageSize"
+  [displayedColumns]="showCols"
+  [sortableColumns]="sortableColumns"
+  (rowClick)="onRowClick($event)"
+  (sortChange)="onSort($event)"
+  (onPageChange)="pageChange($event)">
+</app-table>
+</div>

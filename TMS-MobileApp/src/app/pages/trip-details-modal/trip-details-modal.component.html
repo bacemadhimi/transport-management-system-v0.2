@@ -1,0 +1,70 @@
+<ion-header>
+  <ion-toolbar>
+ 
+    <ion-buttons slot="end">
+      <ion-button (click)="close()">Fermer</ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="ion-padding">
+  <div class="trip-status-row">
+    <div class="status-badge" [ngClass]="trip.tripStatus.toLowerCase()">{{ trip.tripStatus }}</div>
+  </div>
+
+  <ion-list>
+    <ion-item lines="none">
+      <ion-label>
+        <h3>Référence</h3>
+        <p>{{ trip.tripReference }}</p>
+      </ion-label>
+    </ion-item>
+
+    <ion-item lines="none">
+      <ion-label>
+        <h3>Statut</h3>
+        <p>{{ trip.tripStatus }}</p>
+      </ion-label>
+    </ion-item>
+
+    <ion-item lines="none">
+      <ion-label>
+        <h3>Start Date</h3>
+        <p>{{ trip.estimatedStartDate | date:'medium' }}</p>
+      </ion-label>
+    </ion-item>
+
+    <ion-item lines="none">
+      <ion-label>
+        <h3>End Date</h3>
+        <p>{{ trip.estimatedEndDate ? (trip.estimatedEndDate | date:'medium') : 'N/A' }}</p>
+      </ion-label>
+    </ion-item>
+  </ion-list>
+
+  <div *ngIf="trip.tripStatus === 'Receipt'" class="proof-section">
+    <h4>Preuve de livraison</h4>
+
+    <div *ngIf="trip.deliveries && trip.deliveries.length > 0; else noDeliveries">
+      <ion-grid>
+        <ion-row>
+          <ion-col size="6" *ngFor="let d of trip.deliveries">
+            <div class="proof-card">
+              <div *ngIf="d.proofOfDelivery; else noProof">
+                <img [src]="getDataUrl(d.proofOfDelivery)" class="proof-img" alt="proof" />
+                <p class="delivery-label">Livraison #{{ d.sequence }}</p>
+              </div>
+              <ng-template #noProof>
+                <div class="no-proof">Aucune preuve pour livraison #{{ d.sequence }}</div>
+              </ng-template>
+            </div>
+          </ion-col>
+        </ion-row>
+      </ion-grid>
+    </div>
+
+    <ng-template #noDeliveries>
+      <p>Aucune livraison associée.</p>
+    </ng-template>
+  </div>
+</ion-content>

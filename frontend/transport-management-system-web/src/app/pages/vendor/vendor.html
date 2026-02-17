@@ -1,0 +1,30 @@
+<div class="vendor-page">
+  <div class="vendor-header">
+    <h1 class="vendor-title">La liste des vendeurs</h1>
+
+    <div class="vendor-header__actions">
+      <mat-form-field appearance="outline" class="vendor-search">
+        <mat-label>Chercher vendeur</mat-label>
+        <input
+          matInput
+          type="text"
+          [formControl]="searchControl"
+          placeholder="Nom, email, téléphone"
+        />
+      </mat-form-field>
+
+      <button *ngIf="auth.hasPermission('VENDOR_ADD')"  mat-flat-button class="vendor-add-btn" (click)="add()" type="button">
+        Ajouter
+      </button>
+    </div>
+  </div>
+
+  <app-table
+    [PagedData]="pagedvendorData"
+    [pageIndex]="filter.pageIndex"
+    [pageSize]="filter.pageSize"
+    [displayedColumns]="showCols"
+    (rowClick)="onRowClick($event)"
+    (onPageChange)="pageChange($event)">
+  </app-table>
+</div>

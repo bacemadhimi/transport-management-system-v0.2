@@ -1,0 +1,8 @@
+mat-progress-bar {
+  height: 22px;
+  border-radius: 10px;
+}
+
+mat-progress-bar .mat-progress-bar-fill {
+  transition: width 0.8s ease;
+}

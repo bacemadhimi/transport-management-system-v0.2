@@ -1,0 +1,67 @@
+ 
+<div class="p-8">
+
+  
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+    
+    
+    <mat-card class="stat-card users-card">
+      <div class="stat-icon-wrapper">
+        <i class="fas fa-users stat-icon"></i>
+      </div>
+      <div class="stat-content">
+        <h1 class="stat-title">Nombre total des utilisateurs</h1>
+        <h2 class="stat-value">{{userCount}}</h2>
+      </div>
+    </mat-card>
+
+    
+    <mat-card class="stat-card drivers-card">
+      <div class="stat-icon-wrapper">
+        <i class="fas fa-user-tie stat-icon"></i>
+      </div>
+      <div class="stat-content">
+        <h1 class="stat-title">Nombre total des chauffeurs</h1>
+        <h2 class="stat-value">{{driverCount}}</h2>
+      </div>
+    </mat-card>
+
+    
+    <mat-card class="stat-card trucks-card">
+      <div class="stat-icon-wrapper">
+        <i class="fas fa-truck stat-icon"></i>
+      </div>
+      <div class="stat-content">
+        <h1 class="stat-title">Nombre total des camions</h1>
+        <h2 class="stat-value">{{truckCount}}</h2>
+      </div>
+    </mat-card>
+
+  </div>
+
+  
+  <div class="mt-8">
+    <app-trips-map></app-trips-map>
+  </div>
+
+  
+  <div class="mt-8">
+    <mat-card class="p-4">
+      <div class="card-header-with-icon">
+        <i class="fas fa-calendar-day text-mission-blue text-xl"></i>
+        <h1 class="text-xl font-semibold">Trajets du jour</h1>
+      </div>
+      <div *ngIf="(todayTripData?.data?.length ?? 0) > 0; else noData">
+        <app-table [showPage]="false" [PagedData]="todayTripData" [displayedColumns]="todayTripCols">
+        </app-table>
+      </div>
+      <ng-template #noData>
+        <div class="text-center p-8 text-gray-500">
+          <i class="fas fa-info-circle mr-2"></i>
+          Aucun trajet pour aujourd'hui
+        </div>
+      </ng-template>
+    </mat-card>
+  </div>
+
+</div>

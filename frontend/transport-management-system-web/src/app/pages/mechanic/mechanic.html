@@ -1,0 +1,30 @@
+<div class="mechanic-page">
+  <div class="mechanic-header">
+    <h1 class="mechanic-title">La liste des mécaniciens</h1>
+
+    <div class="mechanic-header__actions">
+      <mat-form-field appearance="outline" class="mechanic-search">
+        <mat-label>Chercher mécanicien</mat-label>
+        <input
+          matInput
+          type="text"
+          [formControl]="searchControl"
+          placeholder="Nom, email, téléphone"
+        />
+      </mat-form-field>
+
+      <button *ngIf="auth.hasPermission('MECHANIC_ADD')"  mat-flat-button class="mechanic-add-btn" (click)="add()" type="button">
+        Ajouter
+      </button>
+    </div>
+  </div>
+
+  <app-table
+    [PagedData]="pagedMechanicData"
+    [pageIndex]="filter.pageIndex"
+    [pageSize]="filter.pageSize"
+    [displayedColumns]="showCols"
+    (rowClick)="onRowClick($event)"
+    (onPageChange)="pageChange($event)">
+  </app-table>
+</div>

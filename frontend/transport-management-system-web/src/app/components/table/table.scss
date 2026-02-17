@@ -1,0 +1,313 @@
+
+.responsive-table-card {
+  border-radius: 1.5rem;
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.12);
+  padding: 0;
+  background: #ffffff;
+  overflow: hidden;
+  position: relative;
+}
+
+.table-scroll {
+  width: 100%;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(94, 162, 255, 0.5) transparent;
+  border-radius: inherit;
+}
+
+.table-scroll::-webkit-scrollbar {
+  height: 8px;
+}
+
+.table-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.table-scroll::-webkit-scrollbar-thumb {
+  background: rgba(94, 162, 255, 0.5);
+  border-radius: 999px;
+}
+
+.responsive-table {
+  width: 100%;
+  min-width: 860px;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 0.95rem;
+  background-color: #f4f7ff;
+}
+
+.responsive-table .mat-header-row {
+  background: rgba(94, 162, 255, 0.12);
+}
+
+.responsive-table .mat-header-cell {
+  padding: 1rem 1.25rem;
+  text-transform: uppercase;
+  font-weight: 600;
+  color: #1f2937;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+  white-space: nowrap;
+}
+
+.responsive-table .mat-row {
+  transition: background-color 0.15s ease;
+}
+
+.responsive-table .mat-row:nth-child(even) {
+  background: rgba(255, 255, 255, 0.6);
+}
+
+.responsive-table .mat-row:hover {
+  background: rgba(94, 162, 255, 0.08);
+}
+
+.responsive-table .mat-cell {
+  padding: 0.9rem 1.25rem;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.05);
+  white-space: nowrap;
+}
+
+/* Action buttons (Modifier / Supprimer) */
+.Modifier {
+  background-color: #1d4ed8 !important;
+  color: #ffffff !important;
+  border-radius: 999px !important;
+  padding-inline: 1.5rem !important;
+  font-weight: 500;
+}
+
+.Supprimer {
+  background-color: #ef4444 !important;
+  color: #ffffff !important;
+  border-radius: 999px !important;
+  padding-inline: 1.5rem !important;
+  font-weight: 500;
+}
+
+.table-action-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  justify-content: flex-start;
+}
+
+.table-paginator-wrapper {
+  display: flex;
+  justify-content: right;
+  padding: 1rem 0 0.5rem;
+  
+}
+
+.demo-paginator {
+  border-radius: 999px;
+  background: #edf3ff;
+  box-shadow: 0 10px 25px rgba(220, 223, 228, 0.35);
+  color: #000000;
+
+
+}
+
+
+
+@media (max-width: 768px) {
+  .responsive-table {
+    min-width: 640px;
+  }
+
+  .table-scroll {
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+td.mat-column-Action {
+  white-space: normal !important;
+  width: 1%;
+}
+
+
+td.mat-column-Action .table-action-buttons {
+  display: flex !important;
+  flex-wrap: nowrap !important;
+  align-items: center;
+  gap: 10px;
+}
+
+
+td.mat-column-Action button {
+  min-width: auto !important;
+}
+.source-badge {
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  color: #fff;
+  display: inline-block;
+  text-align: center;
+}
+
+.badge-blue {
+  background-color: #3498db; // bleu
+}
+
+.badge-red {
+  background-color: #e74c3c; // rouge
+}
+/* =========================================== */
+/* STATUS BADGES - FIXED AND WORKING */
+/* =========================================== */
+
+/* GLOBAL STATUS BADGE STYLES - Will work everywhere */
+/* Version compacte pour le tableau */
+.status-badge {
+  padding: 0.15rem 0.5rem !important;
+  font-size: 0.7rem !important;
+  min-width: 40px !important;
+}
+
+
+.source-badge {
+  padding: 0.25rem 0.5rem;            /* réduit la taille aussi pour le badge Source */
+  font-size: 0.65rem;
+}
+
+
+/* Status-specific styles */
+.status-badge.status-pending {
+  background: rgba(245, 158, 11, 0.15) !important;
+  color: #92400e !important;
+  border: 1px solid rgba(245, 158, 11, 0.3) !important;
+}
+
+.status-badge.status-in-progress {
+  background: rgba(59, 130, 246, 0.15) !important;
+  color: #1e40af !important;
+  border: 1px solid rgba(59, 130, 246, 0.3) !important;
+}
+
+.status-badge.status-completed {
+  background: rgba(16, 185, 129, 0.15) !important;
+  color: #065f46 !important;
+  border: 1px solid rgba(16, 185, 129, 0.3) !important;
+}
+
+.status-badge.status-cancelled {
+  background: rgba(239, 68, 68, 0.15) !important;
+  color: #991b1b !important;
+  border: 1px solid rgba(239, 68, 68, 0.3) !important;
+}
+
+/* Bouton Approuvée */
+.Approuvee {
+  background-color: #22c55e !important; /* vert */
+  color: #ffffff !important;
+  border-radius: 999px !important;
+  padding-inline: 1.5rem !important;
+  font-weight: 500;
+}
+
+/* Hover */
+.Approuvee:hover {
+  background-color: #16a34a !important;
+}
+
+.mat-sort-header-arrow {
+  color: #3f51b5; 
+}
+
+.mat-header-cell[mat-sort-header] {
+  cursor: pointer;
+  
+  &:hover {
+    background-color: rgba(0, 0, 0, 0.04);
+  }
+}
+
+.mat-header-cell.mat-sort-header-sorted {
+  color: #3f51b5; 
+  font-weight: 600;
+}
+.table-action-buttons {
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+  align-items: center;
+  
+  button {
+    &.ACTION_EDIT {
+      background-color: #e3f2fd !important;
+      color: #1976d2 !important;
+      
+      &:hover {
+        background-color: #bbdefb !important;
+      }
+    }
+    
+    &.ACTION_DELETE {
+      background-color: #ffebee !important;
+      color: #ea0e0e !important;
+      
+      &:hover {
+        background-color: #ffcdd2 !important;
+      }
+    }
+    
+    &.ACTION_DISABLE {
+      background-color: #fff3e0 !important;
+      color: #f44336 !important;
+      
+      &:hover {
+        background-color: #ffe0b2 !important;
+      }
+    }
+    
+    &.ACTION_ENABLE {
+      background-color: #e8f5e9 !important;
+      color: #4caf50 !important;
+      
+      &:hover {
+        background-color: #c8e6c9 !important;
+      }
+    }
+    
+    &.ACTION_VIEW {
+      background-color: #e8eaf6 !important;
+      color: #5c6bc0 !important;
+      
+      &:hover {
+        background-color: #c5cae9 !important;
+      }
+    }
+    
+    mat-icon {
+      font-size: 20px;
+      height: 20px;
+      width: 20px;
+      // Optional: Adjust for outlined icons
+      &.material-symbols-outlined {
+        font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      }
+    }
+  }
+}
+.ACTION_EDIT {
+  color: #1976d2;
+}
+ 
+.ACTION_DISABLE {
+  color: #f44336;
+}
+ 
+.ACTION_ENABLE {
+  color: #4caf50;
+}
+ 
+.ACTION_DELETE {
+  color: #ea0e0e;
+}
+ 
+.table-action-buttons {
+  display: flex;
+  gap: 6px;
+}

@@ -1,0 +1,487 @@
+/* traject.css - STYLED LIKE TRIP */
+
+:host {
+  --brand-blue: #5ea2ff;
+  --brand-green: #10b981;
+  --brand-indigo: #6366f1;
+  --brand-purple: #8b5cf6;
+  --bg: #f4f6fb;
+  --card-bg: #ffffff;
+  --radius: 1.25rem;
+  --shadow: 0 18px 40px rgba(15, 23, 42, 0.12);
+
+  display: block;
+  background: var(--bg);
+  min-height: 100vh;
+  padding: 1.5rem 2rem;
+  font-family: 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.trajects-page {
+  max-width: 1200px;
+  margin: 0 auto;
+  background: var(--card-bg);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 1.75rem 2rem;
+}
+
+.trajects-header {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.trajects-title {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.trajects-header__actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+.trajects-header__left {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  flex: 1 1 auto;
+  gap: 0.75rem;
+}
+
+.trajects-search {
+  flex: 1 1 auto;
+  width: 300px;
+  
+  ::ng-deep .mdc-text-field {
+    border-radius: 999px;
+    background: #edf3ff;
+    box-shadow: inset 0 0 0 1px rgba(94, 162, 255, 0.25);
+  }
+  
+  ::ng-deep .mdc-notched-outline {
+    border-radius: 999px;
+    border-color: transparent;
+  }
+  
+  ::ng-deep .mdc-notched-outline__leading,
+  ::ng-deep .mdc-notched-outline__trailing,
+  ::ng-deep .mdc-notched-outline__notch {
+    border-color: transparent !important;
+    border-width: 0 !important;
+  }
+}
+
+/* Export buttons styling (match Trip) */
+.export-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.export-btn {
+  width: 48px;
+  height: 48px;
+  border-radius: 0.75rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8px 20px rgba(15,23,42,0.06);
+  border: 1px solid rgba(15,23,42,0.04);
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+  background: #fff;
+}
+
+.export-btn:hover { 
+  transform: translateY(-2px); 
+  box-shadow: 0 14px 30px rgba(15,23,42,0.12); 
+}
+
+.export-icon { 
+  width: 28px; 
+  height: 28px; 
+  display: block; 
+}
+
+.export-excel .export-icon rect { fill: #107C10; }
+.export-csv .export-icon rect { fill: #1E90FF; }
+.export-pdf .export-icon rect { fill: #D32F2F; }
+
+.trajects-header__right {
+  display: flex;
+  align-items: center;
+}
+
+.trajects-add-btn {
+  flex: 0 0 auto;
+  background: linear-gradient(135deg, var(--brand-indigo), var(--brand-purple)) !important;
+  color: #ffffff !important;
+  border-radius: 999px !important;
+  padding: 0.75rem 2rem !important;
+  font-weight: 500;
+  box-shadow: 0 10px 25px rgba(99, 102, 241, 0.35);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+  
+  &:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 14px 30px rgba(99, 102, 241, 0.4);
+    opacity: 0.97;
+  }
+  
+  &:focus-visible {
+    outline: 3px solid rgba(99, 102, 241, 0.6);
+    outline-offset: 3px;
+  }
+}
+
+/* Table styles */
+::ng-deep .mat-mdc-table {
+  border-radius: 0.75rem;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+::ng-deep .mat-mdc-header-row {
+  background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+  font-weight: 600;
+  color: #475569;
+}
+
+::ng-deep .mat-mdc-row {
+  transition: background-color 0.2s ease;
+  
+  &:hover {
+    background-color: rgba(99, 102, 241, 0.04);
+  }
+}
+
+/* Points badges in table */
+.points-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.375rem 0.75rem;
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(139, 92, 246, 0.1));
+  color: var(--brand-indigo);
+  border-radius: 999px;
+  font-weight: 500;
+  font-size: 0.875rem;
+  
+  mat-icon {
+    font-size: 1rem;
+  }
+}
+
+/* Responsive styles */
+@media (max-width: 768px) {
+  :host {
+    padding: 1rem;
+  }
+
+  .trajects-page {
+    padding: 1.25rem 1.25rem 1.5rem;
+  }
+
+  .trajects-header__actions {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1rem;
+  }
+  
+  .trajects-header__left {
+    width: 100%;
+    gap: 1rem;
+  }
+  
+  .trajects-search {
+    width: 100%;
+  }
+  
+  .export-actions {
+    align-self: flex-start;
+  }
+  
+  .trajects-header__right {
+    width: 100%;
+  }
+  
+  .trajects-add-btn {
+    width: 100%;
+    text-align: center;
+  }
+}
+
+@media (max-width: 640px) {
+  .trajects-title {
+    font-size: 1.25rem;
+  }
+  
+  .export-btn {
+    width: 40px;
+    height: 40px;
+    
+    .export-icon {
+      width: 24px;
+      height: 24px;
+    }
+  }
+}
+
+/* Dialog styles for traject-form */
+.dialog-overlay {
+  .mat-mdc-dialog-container {
+    padding: 0;
+  }
+  
+  .traject-form-card {
+    margin: 0;
+    border-radius: 0;
+  }
+}
+
+.wide-dialog {
+  .mat-mdc-dialog-container {
+    max-width: none !important;
+    width: 100%;
+  }
+  
+  .mat-mdc-dialog-surface {
+    max-height: 85vh;
+    overflow: auto;
+  }
+}
+
+.traject-form-card {
+  min-width: 800px;
+  
+  @media (max-width: 900px) {
+    min-width: auto;
+    width: 100%;
+  }
+}
+
+@media (min-width: 1200px) {
+  .wide-dialog {
+    width: 900px !important;
+    max-width: 90vw !important;
+  }
+}
+
+/* Status indicators */
+.status-active {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(5, 150, 105, 0.1));
+  color: var(--brand-green);
+  padding: 0.25rem 0.75rem;
+  border-radius: 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  display: inline-block;
+}
+
+.status-inactive {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(220, 38, 38, 0.1));
+  color: #ef4444;
+  padding: 0.25rem 0.75rem;
+  border-radius: 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  display: inline-block;
+}
+
+/* Loader overlay */
+.loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.8);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  border-radius: var(--radius);
+  
+  mat-spinner {
+    margin-bottom: 1rem;
+  }
+  
+  span {
+    color: #64748b;
+    font-size: 0.875rem;
+  }
+}
+
+/* Empty state */
+.empty-state {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: #64748b;
+  
+  mat-icon {
+    font-size: 3rem;
+    width: 3rem;
+    height: 3rem;
+    margin-bottom: 1rem;
+    color: #cbd5e1;
+  }
+  
+  h3 {
+    margin: 0 0 0.5rem 0;
+    font-size: 1.125rem;
+    font-weight: 500;
+  }
+  
+  p {
+    margin: 0 0 1.5rem 0;
+    max-width: 400px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+}
+
+/* Action buttons in table */
+.action-buttons {
+  display: flex;
+  gap: 0.5rem;
+  
+  button {
+    min-width: 40px;
+    height: 40px;
+    border-radius: 0.5rem;
+    
+    &.edit-btn {
+      background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(139, 92, 246, 0.1));
+      color: var(--brand-indigo);
+      
+      &:hover {
+        background: linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(139, 92, 246, 0.2));
+      }
+    }
+    
+    &.delete-btn {
+      background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(220, 38, 38, 0.1));
+      color: #ef4444;
+      
+      &:hover {
+        background: linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(220, 38, 38, 0.2));
+      }
+    }
+  }
+}
+
+/* Points preview in table */
+.points-preview {
+  max-width: 250px;
+  
+  .point-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.25rem;
+    font-size: 0.875rem;
+    
+    &:last-child {
+      margin-bottom: 0;
+    }
+    
+    .point-order {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--brand-indigo), var(--brand-purple));
+      color: white;
+      font-size: 0.75rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    
+    .point-location {
+      color: #475569;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+  }
+}
+
+/* Animation for new traject */
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.traject-row {
+  animation: slideIn 0.3s ease-out;
+}
+
+/* Custom scrollbar for traject list */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+  
+  &:hover {
+    background: #94a3b8;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .trajects-page {
+    border: 2px solid #1e293b;
+  }
+  
+  .trajects-add-btn {
+    border: 2px solid currentColor;
+  }
+  
+  .export-btn {
+    border: 2px solid currentColor;
+  }
+}
+
+/* Print styles */
+@media print {
+  :host {
+    background: white;
+    padding: 0;
+  }
+  
+  .trajects-page {
+    box-shadow: none;
+    border-radius: 0;
+    padding: 0;
+  }
+  
+  .trajects-header__actions,
+  .trajects-add-btn,
+  .export-actions {
+    display: none;
+  }
+}

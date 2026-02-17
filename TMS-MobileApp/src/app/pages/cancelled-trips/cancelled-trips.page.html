@@ -1,0 +1,124 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/home"></ion-back-button>
+    </ion-buttons>
+    <ion-title>Cancelled Trips</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true" class="cancelled-trips-content">
+
+  <div class="background-gradient"></div>
+
+  <div class="header-section">
+    <div class="page-title">
+      <ion-icon name="close-circle-outline" class="title-icon"></ion-icon>
+      <h2>Cancelled Trips</h2>
+      <p>View all cancelled trips and their reasons</p>
+    </div>
+  </div>
+
+  <div class="trips-section">
+    <div class="loading-container" *ngIf="!(cancelledTrips$ | async)">
+      <div class="loading-card">
+        <ion-spinner name="crescent" color="primary"></ion-spinner>
+        <p>Loading cancelled trips...</p>
+      </div>
+    </div>
+
+    <div class="trips-list" *ngIf="cancelledTrips$ | async as trips">
+      <div class="trip-card" *ngFor="let trip of trips; trackBy: trackByTripId">
+
+        <div class="trip-header">
+          <div class="trip-reference">
+            <h3>{{ trip.tripReference }}</h3>
+            <span class="trip-status status-cancelled">
+              {{ trip.tripStatus }}
+            </span>
+          </div>
+          <div class="cancelled-date">
+            <ion-icon name="calendar-outline"></ion-icon>
+            <span>{{ trip.updatedAt | date:'MMM dd, yyyy' }}</span>
+          </div>
+        </div>
+
+        <div class="trip-details">
+
+          <div class="trip-info-grid">
+            <div class="info-card">
+              <div class="info-icon calendar">
+                <ion-icon name="calendar-outline"></ion-icon>
+              </div>
+              <div class="info-content">
+                <span class="info-label">Start Date</span>
+                <span class="info-value">{{ trip.estimatedStartDate | date:'MMM dd, yyyy' }}</span>
+              </div>
+            </div>
+
+            <div class="info-card">
+              <div class="info-icon time">
+                <ion-icon name="time-outline"></ion-icon>
+              </div>
+              <div class="info-content">
+                <span class="info-label">Duration</span>
+                <span class="info-value">{{ trip.estimatedDuration }}h</span>
+              </div>
+            </div>
+
+            <div class="info-card">
+              <div class="info-icon distance">
+                <ion-icon name="navigate-outline"></ion-icon>
+              </div>
+              <div class="info-content">
+                <span class="info-label">Distance</span>
+                <span class="info-value">{{ trip.estimatedDistance }}km</span>
+              </div>
+            </div>
+
+            <div class="info-card" *ngIf="trip.truck">
+              <div class="info-icon truck">
+                <ion-icon name="car-outline"></ion-icon>
+              </div>
+              <div class="info-content">
+                <span class="info-label">Vehicle</span>
+                <span class="info-value">{{ trip.truck.immatriculation }}</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="driver-section" *ngIf="trip.driver">
+            <div class="driver-avatar">
+              <ion-icon name="person-circle-outline"></ion-icon>
+            </div>
+            <div class="driver-info">
+              <span class="driver-label">Driver</span>
+              <span class="driver-name">{{ trip.driver.name }}</span>
+            </div>
+          </div>
+
+          
+          <div class="cancellation-reason" *ngIf="trip.message">
+            <div class="reason-header">
+              <ion-icon name="information-circle-outline" class="reason-icon"></ion-icon>
+              <h4>Cancellation Reason</h4>
+            </div>
+            <div class="reason-content">
+              <p>{{ trip.message }}</p>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <div class="empty-state" *ngIf="trips.length === 0">
+        <div class="empty-icon">
+          <ion-icon name="checkmark-circle-outline"></ion-icon>
+        </div>
+        <h3>No cancelled trips</h3>
+        <p>You don't have any cancelled trips yet.</p>
+      </div>
+    </div>
+  </div>
+
+</ion-content>

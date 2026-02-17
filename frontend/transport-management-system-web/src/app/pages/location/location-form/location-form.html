@@ -1,0 +1,121 @@
+<mat-card class="form-card p-8">
+  <mat-card-title>
+    {{ data.locationId ? t('EDIT_LOCATION') : t('CREATE_LOCATION') }}
+  </mat-card-title>
+
+  <div class="loading-overlay" *ngIf="loading">
+    <mat-spinner diameter="50"></mat-spinner>
+    <span>Chargement...</span>
+  </div>
+
+  <form [formGroup]="locationForm" (ngSubmit)="onSubmit()">
+    
+    <mat-form-field class="w-full mt-4">
+      <mat-label>Zone</mat-label>
+      <mat-select 
+        formControlName="zoneId"
+        [disabled]="isSubmitting || loadingZones"
+        required
+      >
+        
+        <mat-option *ngIf="loadingZones" disabled>
+          <div class="flex items-center">
+            <mat-spinner diameter="20" class="mr-2"></mat-spinner>
+            <!-- <span>Chargement des zones...</span> -->
+             <span>{{ t('LOADING_ZONES') }}</span>
+          </div>
+        </mat-option>
+        
+        
+        <mat-option *ngIf="!loadingZones && zones.length === 0" disabled>
+          <div class="text-gray-500 italic">
+            {{ t('NO_ACTIVE_ZONES') }}
+          </div>
+        </mat-option>
+        
+        
+        <mat-option *ngFor="let zone of zones" [value]="zone.id">
+          {{ zone.name }}
+        </mat-option>
+      </mat-select>
+      <mat-error *ngIf="locationForm.get('zoneId')?.invalid && locationForm.get('zoneId')?.touched">
+        {{ getErrorMessage('zoneId') }}
+      </mat-error>
+      <!-- <mat-hint>Sélectionnez la zone à laquelle appartient ce lieu</mat-hint> -->
+       <mat-hint>{{ t('SELECT_ZONE_HINT') }}</mat-hint>
+    </mat-form-field>
+
+    
+    <mat-form-field class="w-full mt-4">
+      <!-- <mat-label>Nom du lieu</mat-label> -->
+       <mat-label>{{ t('LOCATION_NAME_LABEL') }}</mat-label>
+      <input 
+        matInput 
+        formControlName="name" 
+        placeholder="Ex: Entrepôt principal, Dépôt Nord, Site client XYZ"
+        [readonly]="isSubmitting"
+        maxlength="100"
+        [disabled]="loadingZones"
+      />
+      <mat-error *ngIf="locationForm.get('name')?.invalid && locationForm.get('name')?.touched">
+        {{ getErrorMessage('name') }}
+      </mat-error>
+      <!-- <mat-hint align="end">{{ locationForm.get('name')?.value?.length || 0 }}/100 caractères</mat-hint> -->
+       <mat-hint align="end">{{ locationForm.get('name')?.value?.length || 0 }}/100 {{ t('CHARACTERS') }}</mat-hint>
+    </mat-form-field>
+
+    
+    <div class="w-full mt-4" *ngIf="isEditMode">
+      <mat-slide-toggle 
+        formControlName="isActive"
+        color="primary"
+        [disabled]="isSubmitting"
+      >
+        {{ locationForm.get('isActive')?.value ? t('ACTION_ENABLE') : t('ACTION_DISABLE') }}
+      </mat-slide-toggle>
+      <p class="text-sm text-gray-500 mt-2">
+         {{ t('LOCATIONS_HELP_TEXT') }}
+      </p>
+    </div>
+
+    
+    <div class="validation-errors mt-4" *ngIf="locationForm.invalid && locationForm.touched">
+      <div class="error-summary bg-red-50 border border-red-200 rounded p-4">
+        <mat-icon class="error-summary-icon text-red-500">error</mat-icon>
+        <div class="error-content ml-2">
+         <h5 class="font-medium text-red-700">{{ t('FORM_ERRORS_TITLE') }}</h5>
+
+          <ul class="text-red-600 text-sm list-disc ml-4 mt-1">
+            <li *ngIf="locationForm.get('zoneId')?.hasError('required')">
+                 {{ t('ZONE_REQUIRED') }}
+            </li>
+            <li *ngIf="locationForm.get('name')?.hasError('required')">
+                {{ t('LOCATION_NAME_REQUIRED') }}
+            </li>
+            <li *ngIf="locationForm.get('name')?.hasError('maxlength')">
+                 {{ t('LOCATION_NAME_MAXLENGTH') }}
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    
+    <div class="flex justify-center mt-8 space-x-4">
+      <button 
+        mat-raised-button 
+        color="primary" 
+        type="submit" 
+        [disabled]="locationForm.invalid || isSubmitting || loadingZones"
+        class="submit-btn"
+      >
+        <mat-spinner *ngIf="isSubmitting" diameter="20" class="inline-block mr-2"></mat-spinner>
+         {{ data.locationId ? t('EDIT') : t('CREATE') }}
+      </button>
+
+      <button mat-button type="button" (click)="onCancel()" [disabled]="isSubmitting" class="cancel-btn">
+              {{ t('CANCEL') }}
+      </button>
+    </div>
+  </form>
+</mat-card>

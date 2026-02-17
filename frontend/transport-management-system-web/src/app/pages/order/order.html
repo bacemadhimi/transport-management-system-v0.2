@@ -1,0 +1,441 @@
+<div class="order-page" *ngIf="auth.hasPermission('ORDER_VIEW')">
+
+  <div class="order-header">
+    <!-- <h1 class="order-title">La liste des commandes</h1> -->
+    <h1>{{ t('ORDER_LIST_TITLE') }}</h1>
+
+    <div class="order-header__actions">
+
+      <div class="order-header__left">
+        <mat-form-field appearance="outline" class="order-search">
+          <!-- <mat-label>Chercher commande</mat-label> -->
+           <mat-label>{{ t('ORDER_SEARCH_PLACEHOLDER') }}</mat-label>
+          <input matInput type="text" [formControl]="searchControl"
+                 placeholder="Référence, client" />
+        </mat-form-field>
+
+        <!-- Filtre Statut -->
+        <mat-form-field appearance="outline" class="status-filter">
+          <!-- <mat-label>Statut</mat-label> -->
+           <mat-label>{{ t('ORDER_STATUS') }}</mat-label>
+          <mat-select [formControl]="statusControl">
+            <mat-option *ngFor="let option of statusOptions" [value]="option.value">
+              {{ option.label }}
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <!-- Filtre Source -->
+        <mat-form-field appearance="outline" class="status-filter">
+          <!-- <mat-label>Source</mat-label> -->
+          <mat-label>{{ t('SOURCE') }}</mat-label>
+          <mat-select [formControl]="sourceControl">
+          
+            <mat-option *ngFor="let option of sourceOptions" [value]="option.value">
+              {{ option.label }}
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
+
+    <!-- Date début livraison -->
+<mat-form-field appearance="outline" class="status-filter">
+  <!-- <mat-label>Date livraison (début)</mat-label> -->
+  <mat-label>{{ t('DELIVERY_DATE_START') }}</mat-label>
+  <input matInput [matDatepicker]="pickerStart"
+         [formControl]="deliveryDateStartControl">
+  <mat-datepicker-toggle matSuffix [for]="pickerStart"></mat-datepicker-toggle>
+  <mat-datepicker #pickerStart></mat-datepicker>
+</mat-form-field>
+
+<!-- Date fin livraison -->
+<mat-form-field appearance="outline" class="status-filter">
+  <!-- <mat-label>Date livraison (fin)</mat-label> -->
+  <mat-label>{{ t('DELIVERY_DATE_END') }}</mat-label>
+  <input matInput [matDatepicker]="pickerEnd"
+         [formControl]="deliveryDateEndControl">
+  <mat-datepicker-toggle matSuffix [for]="pickerEnd"></mat-datepicker-toggle>
+  <mat-datepicker #pickerEnd></mat-datepicker>
+</mat-form-field>
+
+
+ <!-- Filtre Zone -->
+<mat-form-field appearance="outline" class="status-filter">
+  <!-- <mat-label>Zone</mat-label> -->
+  <mat-label>{{ t('ZONE') }}</mat-label>
+  
+  <mat-select [formControl]="zoneControl">
+    <!-- <mat-option [value]="null">Toutes</mat-option> -->
+      <mat-option [value]="null">{{ t('ALL') }}</mat-option>
+    <mat-option *ngFor="let z of zones" [value]="z.id">
+      {{ z.name }}
+    </mat-option>
+  </mat-select>
+</mat-form-field>
+
+<!-- Filtre commandes en retard -->
+<mat-form-field appearance="outline" class="status-filter small-filter">
+  <!-- <mat-label>Commandes en retard</mat-label> -->
+  <mat-label>{{ t('LATE_ORDERS') }}</mat-label>
+  <mat-select [formControl]="lateControl">
+    <!-- <mat-option [value]="null">Toutes</mat-option> -->
+    <mat-option [value]="null">{{ t('ALL') }}</mat-option>
+    <!-- <mat-option [value]="true">Oui</mat-option> -->
+     <mat-option [value]="true">{{ t('YES') }}</mat-option>
+    <!-- <mat-option [value]="false">Non</mat-option> -->
+    <mat-option [value]="false">{{ t('NO') }}</mat-option>
+  </mat-select>
+</mat-form-field>
+
+
+
+<!-- CHIP INDICATEUR -->
+<mat-chip
+  *ngIf="lateControl.value === true"
+  color="warn"
+  selected
+  class="late-chip"
+  matTooltip="Commandes en retard" 
+  >
+  En retard
+</mat-chip>
+      </div>
+
+      <!-- ================= BOUTONS ================= -->
+      <div class="order-header__right">
+       <button mat-flat-button [ngStyle]="{'background-color': '#4CAF50', 'color': 'white'}" (click)="resetFilters()">
+         {{ t('RESET_FILTERS') }}
+       </button>
+        
+        <button *ngIf="auth.hasPermission('ORDER_ADD')"
+                mat-flat-button class="order-add-btn"
+                (click)="add()">
+                <mat-icon>add</mat-icon>
+                {{ t('ADD_ORDER') }}
+        </button>
+
+  <button
+      *ngIf="auth.hasPermission('ORDER_LOAD')"
+      mat-flat-button
+      color="primary"
+      [disabled]="!hasPendingSelected()"
+      (click)="markSelectedReadyToLoad()">
+      {{ t('LOAD_SELECTED_ORDERS') }}
+  </button>
+
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ================= TABLE ================= -->
+  <div *ngIf="pagedOrderData?.data?.length; else noData">
+
+    <mat-card class="responsive-table-card">
+      <div class="table-scroll">
+<table mat-table [dataSource]="dataSource" matSort>
+
+
+  <!-- ===== SELECT ALL ===== -->
+  <ng-container matColumnDef="select">
+  <th mat-header-cell *matHeaderCellDef>
+    <div class="select-all-header">
+      <mat-checkbox
+        (change)="toggleSelectAll($event)"
+        [checked]="isAllSelected()"
+        [indeterminate]="isIndeterminate()"
+        matTooltip="Sélectionner toutes les commandes en attente">
+      </mat-checkbox>
+
+      <!-- <span class="select-all-text">Sélectionner tout</span> -->
+       <span class="select-all-text">{{ t('SELECT_ALL') }}</span>
+    </div>
+  </th>
+
+  <td mat-cell *matCellDef="let element">
+    <mat-checkbox
+      (click)="$event.stopPropagation()"
+      [checked]="isSelected(element)"
+    [disabled]="!canInteract(element)"
+      (change)="toggleSelection(element)">
+    </mat-checkbox>
+  </td>
+</ng-container>
+
+
+  <!-- ===== REFERENCE ===== -->
+<ng-container matColumnDef="reference">
+  <th mat-header-cell *matHeaderCellDef >
+    <div style="display:flex; align-items:center; justify-content: space-between;">
+
+      <!-- Texte et tri -->
+      <span style="cursor:pointer;" (click)="toggleSort('reference')">
+            {{ t('REFERENCE') }}
+            <mat-icon style="margin-left:4px;">{{ getSortIcon('reference') }}</mat-icon>
+      </span>
+      <!-- Icône filtre -->
+      <mat-icon
+        style="cursor:pointer;"
+        (click)="toggleFilter('reference'); $event.stopPropagation()">
+        filter_alt
+      </mat-icon>
+    </div>
+
+    <!-- Champ filtre -->
+  <div *ngIf="activeFilter === 'reference'" #referenceFilter style="margin-top:4px;">
+      <mat-form-field appearance="outline" class="filter-input" floatLabel="auto">
+        <input matInput [(ngModel)]="columnFilters['reference']" (ngModelChange)="applyAllFilters()" />
+      </mat-form-field>
+    </div>
+
+  </th>
+  <td mat-cell *matCellDef="let row"> {{ row.reference }} </td>
+</ng-container>
+
+
+
+ <!-- ===== customerName ===== -->
+
+ <ng-container matColumnDef="client">
+  <th mat-header-cell *matHeaderCellDef >
+    <div style="display:flex; align-items:center; justify-content: space-between;">
+
+      <!-- Texte et tri -->
+      <span style="cursor:pointer;" (click)="toggleSort('customerName')">
+         {{ t('CUSTOMER') }}
+           <mat-icon style="margin-left:4px;">{{ getSortIcon('customerName') }}</mat-icon>
+      </span>
+      <!-- Icône filtre -->
+      <mat-icon
+        style="cursor:pointer;"
+        (click)="toggleFilter('customerName'); $event.stopPropagation()">
+        filter_alt
+      </mat-icon>
+    </div>
+
+    <!-- Champ filtre -->
+  <div *ngIf="activeFilter === 'customerName'" #customerNameFilter style="margin-top:4px;">
+      <mat-form-field appearance="outline" class="filter-input" floatLabel="auto">
+        <input matInput [(ngModel)]="columnFilters['customerName']" (ngModelChange)="applyAllFilters()" />
+      </mat-form-field>
+    </div>
+
+  </th>
+  <td mat-cell *matCellDef="let row"> {{ row.customerName }} </td>
+</ng-container>
+
+  <!-- ===== cité ===== -->
+
+ <ng-container matColumnDef="customerCity">
+  <th mat-header-cell *matHeaderCellDef >
+    <div style="display:flex; align-items:center; justify-content: space-between;">
+
+      <!-- Texte et tri -->
+      <span style="cursor:pointer;" (click)="toggleSort('customerCity')">
+            {{ t('CITY') }}
+           <mat-icon style="margin-left:4px;">{{ getSortIcon('customerCity') }}</mat-icon>
+      </span>
+      <!-- Icône filtre -->
+      <mat-icon
+        style="cursor:pointer;"
+        (click)="toggleFilter('customerCity'); $event.stopPropagation()">
+        filter_alt
+      </mat-icon>
+    </div>
+
+    <!-- Champ filtre -->
+  <div *ngIf="activeFilter === 'customerCity'" #customerCityFilter style="margin-top:4px;">
+      <mat-form-field appearance="outline" class="filter-input" floatLabel="auto">
+        <input matInput [(ngModel)]="columnFilters['customerCity']" (ngModelChange)="applyAllFilters()" />
+      </mat-form-field>
+    </div>
+
+  </th>
+  <td mat-cell *matCellDef="let row"> {{ row.customerCity }} </td>
+</ng-container>
+<!-- ===== ZONE ===== -->
+<ng-container matColumnDef="zone">
+  <th mat-header-cell *matHeaderCellDef >
+    <div style="cursor:pointer; display:flex; align-items:center;" (click)="toggleSort('zone')">
+      Zone
+      <mat-icon style="margin-left:4px;">{{ getSortIcon('zone') }}</mat-icon>
+    </div>
+  </th>
+  <td mat-cell *matCellDef="let row">
+    {{ row.zoneName }}
+  </td>
+</ng-container>
+
+
+<!-- ===== Poids ===== -->
+<ng-container matColumnDef="weight">
+  <th mat-header-cell *matHeaderCellDef >
+    <div style="cursor:pointer; display:flex; align-items:center;" (click)="toggleSort('weight')">
+         {{ t('WEIGHT') }}
+         <mat-icon style="margin-left:4px;">{{ getSortIcon('weight') }}</mat-icon>
+    </div>
+  </th>
+<td mat-cell *matCellDef="let row">
+  {{ row.weight }} {{ loadingUnit }}
+    <img
+    [src]="getLoadingUnitImage(loadingUnit)"
+    width="50"
+    height="50"
+    [alt]="loadingUnit">
+</td>
+
+
+</ng-container>
+
+
+<ng-container matColumnDef="deliveryAddress">
+  <th mat-header-cell *matHeaderCellDef>Adresse livraison</th>
+  <td mat-cell *matCellDef="let element">
+    {{ element.deliveryAddress }} 
+  </td>
+</ng-container>
+
+
+  <ng-container matColumnDef="status">
+    <th mat-header-cell *matHeaderCellDef>{{ t('STATUS') }}</th>
+    <td mat-cell *matCellDef="let element">
+      <span class="status-badge" [ngClass]="getStatusClass(element.status)">
+        {{ getStatusText(element.status) }}
+      </span>
+    </td>
+  </ng-container>
+
+
+  
+ <ng-container matColumnDef="source">
+  <th mat-header-cell *matHeaderCellDef>Source</th>
+  <td mat-cell *matCellDef="let element">
+    <span class="source-badge"
+          [ngClass]="{
+            'source-tms': element.sourceSystem === 'TMS',
+            'source-qad': element.sourceSystem === 'QAD',
+            'source-other': element.sourceSystem !== 'TMS' && element.sourceSystem !== 'QAD'
+          }">
+      {{ element.sourceSystem }}
+    </span>
+  </td>
+</ng-container>
+
+
+<ng-container matColumnDef="deliveryDate">
+  <th mat-header-cell *matHeaderCellDef>
+    <div style="cursor:pointer; display:flex; align-items:center;" (click)="toggleSort('deliveryDate')">
+          {{ t('DELIVERY_DATE') }}
+      <mat-icon style="margin-left:4px;">{{ getSortIcon('deliveryDate') }}</mat-icon>
+    </div>
+  </th>
+  
+<td mat-cell *matCellDef="let element">
+  <div>
+    {{ element.deliveryDate | date:'dd/MM/yyyy' }}
+  </div>
+
+  <!-- Badge en retard -->
+  <span *ngIf="isLate(element)" class="late-badge">
+    {{ t('LATE') }}
+  </span>
+
+  <!-- Message pour modifier la date en dessous -->
+  <div *ngIf="isLate(element)" style="color:red;">
+    {{ t('EDIT_DELIVERY_DATE') }}
+  </div>
+
+  <!-- Badge aujourd'hui -->
+  <span *ngIf="!isLate(element) && isToday(element)" class="today-badge">
+    {{ t('TODAY_BADGE') }}
+  </span>
+</td>
+
+</ng-container>
+
+
+
+<ng-container matColumnDef="action">
+  <th mat-header-cell *matHeaderCellDef>Action</th>
+  <td mat-cell *matCellDef="let element" class="action-cell">
+    <div class="action-buttons" style="display:flex; gap:8px; align-items:center;">
+      
+      <!-- Bouton Modifier -->
+      <button *ngIf="auth.hasPermission('ORDER_EDIT')" 
+              (click)="edit(element); $event.stopPropagation()"  
+              [disabled]="!allowEditOrder" 
+              mat-icon-button 
+              matTooltip="Modifier">
+   <mat-icon style="color: green;">edit_note</mat-icon>
+      </button>
+
+      <!-- Bouton Supprimer -->
+      <button *ngIf="auth.hasPermission('ORDER_DELETE')"  
+              (click)="delete(element); $event.stopPropagation()" 
+              mat-icon-button 
+              matTooltip="Supprimer">
+   <mat-icon style="color: red;">delete_forever</mat-icon>
+      </button>
+
+      <!-- Bouton Charger / Livraison -->
+      <button *ngIf="auth.hasPermission('ORDER_LOAD') && canMarkReadyToLoad(element)"
+              [disabled]="(!allowLoadLateOrders && isLate(element)) || 
+                           (!acceptOrdersWithoutAddress && !element.DeliveryAddress)"
+              (click)="markReadyToLoad(element); $event.stopPropagation()"
+              mat-icon-button
+              matTooltip="Marquer prêt à charger">
+      <mat-icon style="color: orange;">local_shipping</mat-icon>
+      </button>
+
+    </div>
+  </td>
+</ng-container>
+
+
+  <!-- ===== HEADER ===== -->
+<tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+
+  <!-- ===== FILTRE REFERENCE ===== -->
+  <tr *ngIf="activeFilter === 'reference'">
+    <td [attr.colspan]="displayedColumns.length">
+  <mat-form-field appearance="outline" class="filter-input" floatLabel="auto">
+  <input matInput placeholder="Rechercher référence"
+         [(ngModel)]="columnFilters['reference']"
+         (ngModelChange)="applyAllFilters()" />
+  </mat-form-field>
+    </td>
+  </tr>
+
+  <!-- ===== ROWS ===== -->
+<tr mat-row
+    *matRowDef="let row; columns: displayedColumns"
+    [ngClass]="{
+      'row-late': isLate(row),
+      'row-today': isToday(row)
+    }">
+</tr>
+
+</table>
+
+      </div>
+    </mat-card>
+
+    <!-- Paginator -->
+  <mat-paginator
+  (page)="pageChange($event)"
+  [length]="pagedOrderData.totalData"
+  [pageSize]="filter.pageSize"
+  [pageIndex]="filter.pageIndex"
+>
+</mat-paginator>
+  </div>
+
+  <ng-template #noData>
+    <div class="no-data">
+      <mat-icon>inbox</mat-icon>
+      <p>{{ t('NO_ORDERS_FOUND') }}</p>
+      <button *ngIf="auth.hasPermission('ORDER_ADD')" mat-button (click)="add()">
+              {{ t('ADD_FIRST_ORDER') }}
+      </button>
+    </div>
+  </ng-template>
+</div>

@@ -1,0 +1,82 @@
+<mat-card class="form-card p-8">
+  <mat-card-title>
+    {{ data.groupId ? 'Modifier Groupe' : 'Ajouter Groupe' }}
+  </mat-card-title>
+
+  <form [formGroup]="roleForm" (ngSubmit)="onSubmit()">
+
+    <!-- Nom du Groupe -->
+    <mat-form-field class="w-full">
+      <mat-label>Nom du groupe</mat-label>
+      <input matInput formControlName="name" placeholder="Ex: Administrateurs" />
+      <mat-error *ngIf="roleForm.get('name')?.hasError('required')">
+        Le nom du groupe est obligatoire
+      </mat-error>
+    </mat-form-field>
+
+    <!-- Héritage (uniquement en création) -->
+    <ng-container *ngIf="!data.groupId">
+
+      <mat-divider class="my-4"></mat-divider>
+
+      <mat-radio-group
+        formControlName="inherit"
+        class="inherit-radio">
+        <mat-radio-button [value]="false">
+          Créer un groupe vide
+        </mat-radio-button>
+
+        <mat-radio-button [value]="true">
+          Hériter d’un groupe existant
+        </mat-radio-button>
+      </mat-radio-group>
+
+      <!-- Sélection groupe parent -->
+      <div *ngIf="roleForm.value.inherit" @slideFade>
+
+        <mat-form-field class="w-full mt-3">
+          <mat-label>Groupe parent</mat-label>
+          <mat-select
+            formControlName="parentGroupId"
+            (selectionChange)="onParentChange($event.value)">
+       <mat-option *ngFor="let g of groups" [value]="g.id" [disabled]="g.name === 'SuperAdmin' || g.name === 'Admin'">
+  {{ g.name }}
+</mat-option>
+
+          </mat-select>
+        </mat-form-field>
+
+        <!-- Preview permissions -->
+        <mat-card class="permission-preview mt-3" *ngIf="parentPermissions.length">
+          <mat-card-subtitle>
+            Permissions héritées ({{ parentPermissions.length }})
+          </mat-card-subtitle>
+
+          <div class="permission-chip">
+            <span *ngFor="let p of parentPermissions">
+              {{ p }}
+            </span>
+          </div>
+        </mat-card>
+
+      </div>
+
+    </ng-container>
+
+    <!-- Actions -->
+    <div class="flex justify-center mt-6 gap-4">
+      <button
+        mat-raised-button
+        color="primary"
+        type="submit"
+        [disabled]="roleForm.invalid">
+        {{ data.groupId ? 'Modifier' : 'Ajouter' }}
+      </button>
+
+      <button mat-button type="button" (click)="onCancel()">
+        Annuler
+      </button>
+    </div>
+
+  </form>
+</mat-card>

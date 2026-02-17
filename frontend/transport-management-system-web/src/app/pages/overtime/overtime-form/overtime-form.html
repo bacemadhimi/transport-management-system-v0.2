@@ -1,0 +1,138 @@
+<mat-card *ngIf="!showingAlert" class="overtime-form-card">
+  <header class="overtime-form-card__header">
+    <div>
+       {{ data.overtimeId ? t('OVERTIME_EDIT_TITLE') : t('OVERTIME_ADD_TITLE') }}
+    </div>
+  </header>
+
+  <form [formGroup]="overtimeForm" (ngSubmit)="onSubmit()" class="overtime-form-grid">
+    
+    <!-- Line 1: Driver Selection & Status -->
+    <div class="form-row">
+      <div class="form-col">
+        <mat-label>{{ t('DRIVER') }}</mat-label>
+        <mat-form-field appearance="outline" class="overtime-field">
+          <mat-select formControlName="driverId" placeholder="Sélectionner un chauffeur">
+            <mat-option *ngFor="let driver of drivers" [value]="driver.id">
+              {{ driver.name }} ({{ driver.phone }})
+            </mat-option>
+          </mat-select>
+          <mat-error *ngIf="overtimeForm.get('driverId')?.hasError('required')">
+                     {{ t('DRIVER_REQUIRED') }}
+          </mat-error>
+        </mat-form-field>
+      </div>
+
+      <div class="form-col">
+        <mat-label>{{ t('STATUS') }}</mat-label>
+        <div class="toggle-container">
+          <mat-checkbox formControlName="isActive" class="overtime-toggle">
+               {{ t('OVERTIME_ACTIVE_LABEL') }}
+          </mat-checkbox>
+          <div class="toggle-hint">
+               {{ t('OVERTIME_ACTIVE_HINT') }}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Line 2: Hours Limits -->
+    <div class="form-row">
+      <div class="form-col">
+        <mat-label>{{ t('MAX_HOURS_PER_DAY_LABEL') }}</mat-label>
+        <mat-form-field appearance="outline" class="overtime-field">
+          <input matInput type="number" formControlName="maxDailyHours" min="0" max="24" step="0.5" />
+          <span matSuffix>{{ t('HOURS_SUFFIX') }}</span>
+          <mat-error *ngIf="overtimeForm.get('maxDailyHours')?.invalid">
+            {{ getErrorMessage('maxDailyHours') }}
+          </mat-error>
+        </mat-form-field>
+      </div>
+
+      <div class="form-col">
+        <mat-label>Heures maximales par semaine</mat-label>
+        <mat-form-field appearance="outline" class="overtime-field">
+          <input matInput type="number" formControlName="maxWeeklyHours" min="0" max="168" step="0.5" />
+          <span matSuffix>heures</span>
+          <mat-error *ngIf="overtimeForm.get('maxWeeklyHours')?.invalid">
+            {{ getErrorMessage('maxWeeklyHours') }}
+          </mat-error>
+        </mat-form-field>
+      </div>
+    </div>
+
+    <!-- Line 3: Overtime Rate (full width) -->
+    <div class="form-row">
+      <div class="form-col-full">
+        <mat-label>{{ t('MAX_HOURS_PER_WEEK_LABEL') }}</mat-label>
+        <mat-form-field appearance="outline" class="overtime-field full-width">
+          <input matInput type="number" formControlName="overtimeRatePerHour" min="0" max="1000" step="0.01" />
+          <span matSuffix>dinar / heure</span>
+          <mat-error *ngIf="overtimeForm.get('overtimeRatePerHour')?.invalid">
+            {{ getErrorMessage('overtimeRatePerHour') }}
+          </mat-error>
+        </mat-form-field>
+      </div>
+    </div>
+
+    <!-- Line 4: Weekend Overtime Settings -->
+    <div class="form-row">
+      <div class="form-col">
+        <mat-label>Heures supplémentaires weekend</mat-label>
+        <div class="toggle-container">
+          <mat-checkbox formControlName="allowWeekendOvertime">
+            Autoriser les heures supplémentaires le weekend
+          </mat-checkbox>
+        </div>
+      </div>
+
+      <div class="form-col">
+        <mat-label>Multiplicateur weekend</mat-label>
+        <mat-form-field appearance="outline" class="overtime-field">
+          <input matInput type="number" formControlName="weekendRateMultiplier" min="0" max="100" step="0.1" />
+          <span matSuffix>× taux normal</span>
+          <mat-hint>Ex: 1.5 = 50% supplémentaire</mat-hint>
+        </mat-form-field>
+      </div>
+    </div>
+
+    <!-- Line 5: Holiday Overtime Settings -->
+    <div class="form-row">
+      <div class="form-col">
+        <mat-label>Heures supplémentaires jours fériés</mat-label>
+        <div class="toggle-container">
+          <mat-checkbox formControlName="allowHolidayOvertime">
+            Autoriser les heures supplémentaires les jours fériés
+          </mat-checkbox>
+        </div>
+      </div>
+
+      <div class="form-col">
+        <mat-label>Multiplicateur jours fériés</mat-label>
+        <mat-form-field appearance="outline" class="overtime-field">
+          <input matInput type="number" formControlName="holidayRateMultiplier" min="0" max="100" step="0.1" />
+          <span matSuffix>× taux normal</span>
+          <mat-hint>Ex: 2.0 = 100% supplémentaire</mat-hint>
+        </mat-form-field>
+      </div>
+    </div>
+
+    <!-- Line 6: Notes (full width) -->
+    <div class="form-row">
+      <div class="form-col-full">
+        <mat-label>Notes (optionnel)</mat-label>
+        <mat-form-field appearance="outline" class="overtime-field full-width">
+          <textarea matInput formControlName="notes" placeholder="Remarques supplémentaires" rows="3"></textarea>
+        </mat-form-field>
+      </div>
+    </div>
+
+    <!-- Form Actions -->
+    <div class="form-footer">
+      <button mat-flat-button color="primary" type="submit" [disabled]="overtimeForm.invalid || isSubmitting">
+        {{ data.overtimeId ? 'Enregistrer' : 'Ajouter' }}
+      </button>
+      <button mat-button type="button" (click)="onCancel()">Annuler</button>
+    </div>
+  </form>
+</mat-card>

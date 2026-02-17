@@ -1,0 +1,155 @@
+<div class="availability-page">
+  <div class="availability-header">
+    <h1 class="availability-title">Disponibilité des camions</h1>
+
+    <div class="availability-header__actions">
+      <div class="availability-header__left">
+        <mat-form-field appearance="outline" class="availability-search">
+          <mat-label>Rechercher camion</mat-label>
+          <input
+            matInput
+            type="text"
+            [formControl]="searchControl"
+            placeholder="Immatriculation, modèle, type"
+          />
+        </mat-form-field>
+
+        <div class="week-navigation">
+          <button mat-icon-button (click)="previousWeek()" [disabled]="selectedWeekIndex === 0">
+            <mat-icon>chevron_left</mat-icon>
+          </button>
+          
+          <mat-form-field appearance="outline" class="week-selector">
+            <mat-select [value]="selectedWeekIndex" (selectionChange)="goToWeek($event.value)">
+              @for (week of weeks; track $index; let i = $index) {
+                <mat-option [value]="i">{{ week.label }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+          
+          <button mat-icon-button (click)="nextWeek()" [disabled]="selectedWeekIndex === weeks.length - 1">
+            <mat-icon>chevron_right</mat-icon>
+          </button>
+          
+          <button mat-button (click)="goToToday()" class="today-btn">
+            <mat-icon>today</mat-icon>
+            Aujourd'hui
+          </button>
+        </div>
+
+        <div class="export-actions" aria-label="Export actions">
+          <button mat-icon-button class="export-btn export-excel" (click)="exportExcel()" title="Export Excel">
+            <svg viewBox="0 0 24 24" class="export-icon" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <rect x="2" y="3" width="20" height="18" rx="2" fill="#107C10"></rect>
+              <text x="12" y="16" text-anchor="middle" font-size="10" font-weight="700" fill="#fff">XLS</text>
+            </svg>
+          </button>
+
+          <button mat-icon-button class="export-btn export-csv" (click)="exportCSV()" title="Export CSV">
+            <svg viewBox="0 0 24 24" class="export-icon" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <rect x="2" y="3" width="20" height="18" rx="2" fill="#1E90FF"></rect>
+              <text x="12" y="16" text-anchor="middle" font-size="9" font-weight="700" fill="#fff">CSV</text>
+            </svg>
+          </button>
+
+          <button mat-icon-button class="export-btn export-pdf" (click)="exportPDF()" title="Export PDF">
+            <svg viewBox="0 0 24 24" class="export-icon" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <rect x="2" y="3" width="20" height="18" rx="2" fill="#D32F2F"></rect>
+              <text x="12" y="16" text-anchor="middle" font-size="9" font-weight="700" fill="#fff">PDF</text>
+            </svg>
+          </button>
+        </div>
+      </div>
+      
+      <div class="availability-header__right">
+        <div class="availability-stats">
+          <div class="stat-badge available">
+            <span class="stat-icon">✅</span>
+            <span class="stat-text">Disponible</span>
+            <span class="stat-hint">(cliquez pour changer)</span>
+          </div>
+          <div class="stat-badge unavailable">
+            <span class="stat-icon">❌</span>
+            <span class="stat-text">Indisponible</span>
+            <span class="stat-hint">(cliquez pour changer)</span>
+          </div>
+          <div class="stat-badge weekend">
+            <span class="stat-icon">🌴</span>
+            <span class="stat-text">Weekend</span>
+            <span class="stat-hint">(non modifiable)</span>
+          </div>
+          <div class="stat-badge holiday">
+            <span class="stat-icon">🎉</span>
+            <span class="stat-text">Férié</span>
+            <span class="stat-hint">(non modifiable)</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="instructions">
+    <p><strong>Instructions :</strong> Cliquez sur ✅ pour changer en ❌ (indisponible).</p>
+    <p class="note">Note : Les weekends (🌴) et jours fériés (🎉) ne peuvent pas être modifiés.</p>
+  </div>
+
+  
+  <div class="table-container">
+    <div class="availability-table-wrapper">
+    
+      <div class="pagination-controls" *ngIf="hasPagedData">
+        <div class="pagination-info">
+          Affichage de {{ getStartIndex() + 1 }} à {{ getEndIndex() }} sur {{ pagedTruckData.totalData }} véhicules
+        </div>
+        <div class="pagination-buttons">
+          <button mat-icon-button (click)="previousPage()" [disabled]="filter.pageIndex === 0">
+            <mat-icon>chevron_left</mat-icon>
+          </button>
+          <span class="page-number">Page {{filter.pageIndex + 1}} sur {{getTotalPages()}}</span>
+          <button mat-icon-button (click)="nextPage()" [disabled]="isLastPage()">
+            <mat-icon>chevron_right</mat-icon>
+          </button>
+        </div>
+      </div>
+
+      <div class="table-scroll-wrapper">
+        <table class="availability-table">
+          <thead>
+            <tr>
+              <th class="sticky-col">Camion</th>
+             
+              <th *ngFor="let dateCol of dateColumns" class="date-header">
+                <div class="date-cell">
+                  <div class="date-label">{{dateCol.label}}</div>
+                  <div class="day-label">{{dateCol.dayOfWeek}}</div>
+                </div>
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+           <tr *ngFor="let truck of getCurrentPageData(); let i = index">
+              <td class="sticky-col truck-info">
+                <div class="truck-name">{{truck.brand}}</div>
+                <div class="truck-phone">{{truck.immatriculation}}</div>
+              </td>
+             
+              <td *ngFor="let dateCol of dateColumns; let i = index" 
+                  (click)="onCellClick(truck.id, i)"
+                  [ngClass]="getCellClasses(truck, dateCol)">
+                <div class="availability-cell">
+                  <span class="availability-emoji">{{getAvailabilityEmoji(truck, dateCol)}}</span>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      
+      <div class="empty-state" *ngIf="pagedTruckData?.data?.length === 0">
+        <mat-icon>person_off</mat-icon>
+        <p>Aucun chauffeur trouvé</p>
+      </div>
+    </div>
+  </div>
+</div>

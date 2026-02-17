@@ -1,0 +1,265 @@
+<mat-card class="user-form-card">
+  <div style="max-height: 70vh; overflow-y: auto; padding-right: 10px;">
+    <header class="user-form-card__header">
+      <div>
+        <!-- <h2>{{ data.userId ? 'Modifier utilisateur' : 'Ajouter utilisateur' }}</h2> -->
+          <h2>{{ t(data.userId ? 'USER_EDIT_TITLE' : 'USERS_ADD_TITLE') }}</h2>
+      </div>
+    </header>
+
+    <mat-tab-group animationDuration="0ms" class="user-form-tabs">
+      
+      <mat-tab label="Informations de base">
+        <div class="tab-content">
+          <form [formGroup]="userForm" class="user-form-grid">
+            <div class="form-row">
+              <div class="form-field-group">
+                <mat-label>{{ t('USER_FULL_NAME') }}</mat-label>
+                <mat-form-field appearance="outline" class="user-field">
+                  <input matInput formControlName="name" placeholder="Ex: John Doe" />
+                  <mat-error *ngIf="userForm.get('name')?.hasError('required')">{{ t('USER_NAME') }}</mat-error>
+                  <mat-error *ngIf="userForm.get('name')?.hasError('minlength')">  {{ t('USER_NAME_MINLENGTH') }}</mat-error>
+                </mat-form-field>
+             
+
+             
+                <mat-label>Email</mat-label>
+                <mat-form-field appearance="outline" class="user-field">
+                  <input matInput type="email" formControlName="email" placeholder="Ex: john.doe@example.com" />
+                  <mat-error *ngIf="userForm.get('email')?.hasError('required')">{{ t('USER_EMAIL') }}</mat-error>
+                  <mat-error *ngIf="userForm.get('email')?.hasError('email')">{{ t('EMAIL_INVALID') }}</mat-error>
+                </mat-form-field>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-field-group">
+                <mat-label>{{ t('PHONE') }}</mat-label>
+                <div class="mat-phone-field">
+                  <div class="mat-phone-wrapper">
+                    <input
+                      matInput
+                      formControlName="phone"
+                      #phoneInput
+                      placeholder="Ex: +216 55 123 456"
+                    />
+                  </div>
+                  <mat-error *ngIf="userForm.get('phone')?.invalid && userForm.get('phone')?.touched">
+                    {{ getErrorMessage('phone') }}
+                  </mat-error>
+                </div>
+              </div>
+            </div>
+
+            <div class="user-photo-input">
+              <mat-label style="display: block; margin-bottom: 8px; text-align: center;">
+                Photo de profil
+              </mat-label>
+
+              <div style="display: flex; justify-content: center; gap: 12px; margin-bottom: 16px;">
+                <button mat-stroked-button type="button" (click)="fileInput.click()">
+                  <mat-icon>cloud_upload</mat-icon>
+                  {{ hasPhoto ? 'Changer la photo' : 'Choisir une photo' }}
+                </button>
+                
+                <button 
+                  *ngIf="hasPhoto" 
+                  mat-stroked-button 
+                  type="button" 
+                  color="warn"
+                  (click)="onDeletePhoto()"
+                  matTooltip="Supprimer la photo"
+                >
+                  <mat-icon>delete</mat-icon>
+                  Supprimer
+                </button>
+              </div>
+
+              <input
+                #fileInput
+                type="file"
+                accept=".jpg,.jpeg,.png,.gif,.webp,image/jpeg,image/jpg,image/png,image/gif,image/webp"
+                (change)="onFileSelected($event)"
+                style="display: none"
+              />
+              
+              <div *ngIf="fileError" style="color: red; margin-top: 5px;">
+                {{ fileError }}
+              </div>
+
+              <div class="image-preview-container" *ngIf="hasPhoto; else noPhotoTemplate">
+                <div class="image-wrapper">
+                  <img
+                    [src]="imagePreview || ('data:image/png;base64,' + originalImageBase64)"
+                    alt="Photo de profil"
+                    class="user-image"
+                  />
+                </div>
+                <p *ngIf="isPhotoChanged" class="photo-changed-hint">
+                  ✓ Photo modifiée
+                </p>
+              </div>
+
+              <ng-template #noPhotoTemplate>
+                <div class="no-photo-placeholder">
+                  <mat-icon style="font-size: 48px; color: #ccc; margin-bottom: 8px;">
+                    person
+                  </mat-icon>
+                  <p style="color: #888; margin: 0;">Aucune photo</p>
+                </div>
+              </ng-template>
+            </div>
+          </form>
+        </div>
+      </mat-tab>
+
+      <!-- Rôle Tab -->
+      <mat-tab label="Association de groupe">
+        <div class="tab-content">
+          <div class="drag-drop-container">
+          
+            <div class="drag-drop-header">
+
+              <div class="search-container">
+                <mat-form-field appearance="outline" class="search-field">
+                  <mat-label>Rechercher un rôle</mat-label>
+                  <input 
+                    matInput 
+                    [(ngModel)]="searchTerm" 
+                    (input)="filterRoles()"
+                    placeholder="Nom du rôle..."
+                  />
+                  <mat-icon matSuffix>search</mat-icon>
+                </mat-form-field>
+              </div>
+            </div>
+
+            <div class="drag-drop-columns">
+              <!-- Available Roles Column -->
+              <div class="drag-drop-column">
+                <div class="column-header">
+                  <h4>Rôles disponibles</h4>
+                  <span class="badge badge-available">{{ availableRoles.length }}</span>
+                </div>
+                <div class="drag-drop-list" 
+                     cdkDropList
+                     id="availableList"
+                     #availableList="cdkDropList"
+                     [cdkDropListData]="availableRoles"
+                     [cdkDropListConnectedTo]="[memberList]"
+                     (cdkDropListDropped)="drop($event)">
+                  
+                  <div *ngIf="availableRoles.length === 0" class="empty-list">
+                    <mat-icon>check_circle</mat-icon>
+                    <p>Tous les rôles sont attribués</p>
+                  </div>
+                  
+                  <div *ngFor="let role of filteredAvailableRoles" 
+                       class="drag-item"
+                       cdkDrag
+                       [cdkDragData]="role">
+                    <div class="drag-item-content">
+                      <div class="drag-icon">
+                        <mat-icon>drag_indicator</mat-icon>
+                      </div>
+                      <div class="role-info">
+                        <strong>{{role.name}}</strong>
+                      </div>
+                     
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="drag-drop-divider">
+                <div class="divider-arrows">
+                  <mat-icon>arrow_forward</mat-icon>
+                  <mat-icon>arrow_back</mat-icon>
+                </div>
+                <p>Glisser-déposer</p>
+              </div>
+
+              <!-- Selected Role Column (max 1 item) -->
+              <div class="drag-drop-column">
+                <div class="column-header">
+                  <h4>Rôle attribué</h4>
+           <span class="badge badge-member">{{ memberRoles.length }}</span>
+
+                </div>
+                <div class="drag-drop-list" 
+                     cdkDropList
+                     id="memberList"
+                     #memberList="cdkDropList"
+                     [cdkDropListData]="memberRoles"
+                     [cdkDropListConnectedTo]="[availableList]"
+                     (cdkDropListDropped)="drop($event)">
+                  
+                  <div *ngIf="memberRoles.length === 0" class="empty-list">
+                    <mat-icon>person_add</mat-icon>
+                    <p>Aucun rôle attribué</p>
+                    <small>Glissez un rôle ici ou cliquez sur le bouton "+"</small>
+                  </div>
+                  
+                  <div *ngFor="let role of filteredMemberRoles" 
+                       class="drag-item selected"
+                       cdkDrag
+                       [cdkDragData]="role">
+                    <div class="drag-item-content">
+                      <div class="drag-icon">
+                        <mat-icon>drag_indicator</mat-icon>
+                      </div>
+                      <div class="role-info">
+                        <strong>{{role.name}}</strong>
+                      </div>
+                      <button mat-icon-button 
+                              color="warn" 
+                              class="remove-btn"
+                              (click)="removeFromMemberRoles(role)"
+                              matTooltip="Retirer le rôle">
+                        <mat-icon>close</mat-icon>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+ 
+              <div class="action-buttons">
+            <button mat-stroked-button 
+        *ngFor="let role of availableRoles"
+        (click)="addToMemberRoles(role)">
+  <mat-icon>add_circle_outline</mat-icon>
+      Ajouter {{ role.name }}
+</button>
+
+                <button mat-stroked-button 
+                        (click)="removeAllRoles()" 
+                        [disabled]="memberRoles.length === 0">
+                  <mat-icon>remove_circle_outline</mat-icon>
+                  Retirer
+                </button>
+              </div>
+              
+             
+       
+          </div>
+        </div>
+      </mat-tab>
+    </mat-tab-group>
+
+    <!-- Footer buttons -->
+    <div class="form-footer">
+      <button mat-button color="warn" type="button" (click)="onCancel()" [disabled]="isSubmitting">
+        <mat-icon>close</mat-icon>
+        Annuler
+      </button>
+      <button mat-flat-button color="primary" type="button" 
+              (click)="onSubmit()" 
+              [disabled]="userForm.invalid || isSubmitting">
+        <mat-spinner *ngIf="isSubmitting" diameter="20" class="inline-block mr-2"></mat-spinner>
+        <mat-icon>save</mat-icon>
+        {{ data.userId ? 'Enregistrer' : 'Ajouter' }}
+      </button>
+    </div>
+  </div>
+</mat-card>

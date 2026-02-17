@@ -1,0 +1,100 @@
+<mat-card class="responsive-table-card">
+  <div class="table-scroll">
+    <table mat-table [dataSource]="PagedData.data" matSort (matSortChange)="onSortChange($event)" class="responsive-table">
+
+      @for (item of displayedColumns; track $index) {
+        @if (item.key) {
+          <ng-container [matColumnDef]="item.key">
+           
+            <th mat-header-cell *matHeaderCellDef 
+                [mat-sort-header]="isColumnSortable(item.key) ? item.key : null"
+                [disabled]="!isColumnSortable(item.key)">
+              {{ item.label || item.key }}
+            </th>
+            <td mat-cell *matCellDef="let element" [attr.data-label]="item.label || item.key">
+              
+             @if (item.key == 'Action') {
+  <div class="table-action-buttons">
+    @for (btn of getActions(element, item.format(element)); track $index) {
+      <button mat-icon-button
+              class="{{getActionClass(btn)}}"
+              (click)="onButtonClick(btn, element, $event)"
+              [title]="btn">
+        <mat-icon>{{ getActionIcon(btn) }}</mat-icon>
+      </button>
+    }
+  </div>
+
+
+
+              <!-- Color -->
+              } @else if (item.key == 'color') {
+                <span style="display:inline-block; width:80%; height:1.2em; border:1px solid #000; border-radius:4px;"
+                      [style.background-color]="item.format ? item.format(element) : element[item.key]">
+                </span>
+
+              <!-- Check if format function exists for any column -->
+              } @else if (item.format) {
+                <span [innerHTML]="item.format(element)"></span>
+
+              <!-- Status with colored badge -->
+              } @else if (item.key == 'status') {
+                <span class="status-badge" [ngClass]="getStatusClass(element.status)">
+                  {{ getStatusText(element.status) }}
+                </span>
+
+              <!-- Source system with blue/red badge -->
+              } @else if (item.key == 'sourceSystem') {
+                <span class="source-badge" 
+                      [ngClass]="element.sourceSystem === 'TMS' ? 'badge-blue' : 'badge-red'">
+                  {{ element.sourceSystem || 'TMS' }}
+                </span>
+
+              <!-- Other columns -->
+              } @else {
+                <span>{{ element[item.key] }}</span>
+              }
+              
+            </td>
+          </ng-container>
+
+        } @else {
+          <ng-container [matColumnDef]="item">
+            <!-- FIXED: Pass column name or null for mat-sort-header -->
+            <th mat-header-cell *matHeaderCellDef 
+                [mat-sort-header]="isColumnSortable(item) ? item : null"
+                [disabled]="!isColumnSortable(item)">
+              {{ item }}
+            </th>
+            <td mat-cell *matCellDef="let element" [attr.data-label]="item">
+              
+              @if (item == 'Action') {
+                <button mat-flat-button color="primary" (click)="edit(element)">Modifier</button>
+                <button mat-flat-button class="bg-red-500!" (click)="delete(element)">Supprimer</button>
+              } @else {
+                <span>{{ element[item] }}</span>
+              }
+              
+            </td>
+          </ng-container>
+        }
+      }
+
+      <tr mat-header-row *matHeaderRowDef="cols"></tr>
+      <tr mat-row *matRowDef="let row; columns: cols"></tr>
+      
+    </table>
+  </div>
+</mat-card>
+
+<div class="table-paginator-wrapper">
+  <mat-paginator #paginator
+                 class="demo-paginator"
+                 (page)="pageChange($event)"
+                 [length]="PagedData.totalData"
+                 [pageSize]="pageSize"
+                 [pageIndex]="pageIndex"
+                 [pageSizeOptions]="[5, 10, 25, 50]"
+                 aria-label="Select page">
+  </mat-paginator>
+</div>

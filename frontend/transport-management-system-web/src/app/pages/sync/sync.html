@@ -1,0 +1,67 @@
+<div class="sync-page p-6 max-w-4xl mx-auto">
+
+  <div class="header flex items-center justify-between mb-6">
+    <h2 class="text-2xl font-bold">{{ t('SYNC_ERP') }}</h2>
+   <button mat-flat-button color="primary" (click)="startSync()" [disabled]="isSyncing">
+     {{ t('SYHNC') }}
+</button>
+
+  </div>
+
+  <div *ngIf="status" class="status-card p-4 rounded-lg shadow-md mb-6">
+    <div class="flex justify-between items-center mb-2">
+      <div class="text-lg font-semibold">
+        Status : <span class="text-blue-600">{{ status.status }}</span>
+      </div>
+      <div class="text-sm text-gray-600">
+        {{ status.processedRecords }} / {{ status.totalRecords }}
+      </div>
+    </div>
+
+    <div class="progress-wrapper relative">
+      <mat-progress-bar
+        mode="determinate"
+        [value]="progress">
+      </mat-progress-bar>
+
+      <!-- Percentage inside progress bar -->
+      <div class="progress-percent absolute top-0 left-0 w-full h-full flex items-center justify-center text-sm font-semibold">
+        {{ progress }}%
+      </div>
+    </div>
+  </div>
+
+  <h3 class="text-xl font-bold mb-3">{{ t('HISTO') }}</h3>
+
+  <table mat-table [dataSource]="history" class="mat-elevation-z2 w-full">
+
+    <ng-container matColumnDef="date">
+      <th mat-header-cell *matHeaderCellDef>Date</th>
+      <td mat-cell *matCellDef="let h">{{ h.syncDate | date:'short' }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="status">
+      <th mat-header-cell *matHeaderCellDef>Status</th>
+      <td mat-cell *matCellDef="let h">{{ h.status }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="total">
+      <th mat-header-cell *matHeaderCellDef>Total</th>
+      <td mat-cell *matCellDef="let h">{{ h.totalRecords }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="processed">
+      <th mat-header-cell *matHeaderCellDef>Traité</th>
+      <td mat-cell *matCellDef="let h">{{ h.processedRecords }}</td>
+    </ng-container>
+
+    <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+    <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+
+  </table>
+
+  <div *ngIf="history.length === 0" class="empty-message mt-3 text-gray-500">
+    Aucune  enregistrée.
+  </div>
+
+</div>

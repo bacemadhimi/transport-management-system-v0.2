@@ -1,0 +1,660 @@
+
+:host {
+  
+  --brand-blue: #5ea2ff;
+  --brand-green: #10b981;
+  --brand-orange: #f59e0b;
+  --brand-red: #ef4444;
+  --brand-purple: #8b5cf6;
+  --brand-indigo: #6366f1;
+  --bg: #f4f6fb;
+  --card-bg: #ffffff;
+  --radius: 1.25rem;
+  --shadow: 0 18px 40px rgba(15, 23, 42, 0.12);
+  --text-dark: #0f172a;
+  --text-muted: #6b7280;
+  --surface-soft: #eef2ff;
+
+  display: block;
+  background: var(--bg);
+  min-height: 100vh;
+  padding: 1.5rem 2rem;
+  font-family: 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.trips-page {
+  max-width: none;
+  width: 100%;
+  padding: 2rem;
+  margin: 0 auto;
+  background: var(--card-bg);
+  border-radius: var(--radius);
+  border: 1px solid #eef2f6;
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.06);
+}
+
+
+.trips-header {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+
+  &__actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+  }
+
+  &__left {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex: 1;
+    min-width: 300px;
+    flex-wrap: wrap;
+  }
+
+  &__right {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+}
+
+.trips-title {
+  margin: 0;
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--text-dark);
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+
+.trips-search,
+.status-filter,
+.truck-filter,
+.driver-filter,
+.date-filter {
+  flex: 1;
+  min-width: 180px;
+
+  ::ng-deep .mdc-text-field--outlined {
+    border-radius: 12px;
+    background: var(--surface-soft);
+    box-shadow: inset 0 0 0 1px rgba(94, 162, 255, 0.15);
+  }
+
+  ::ng-deep .mdc-notched-outline,
+  ::ng-deep .mdc-notched-outline__leading,
+  ::ng-deep .mdc-notched-outline__trailing,
+  ::ng-deep .mdc-notched-outline__notch {
+    border: none !important;
+    border-radius: 12px;
+  }
+}
+
+.trips-search {
+  min-width: 250px;
+  
+  ::ng-deep .mdc-text-field--outlined {
+    border-radius: 999px;
+    box-shadow: inset 0 0 0 1px rgba(94, 162, 255, 0.25);
+  }
+}
+
+
+.date-filter {
+  position: relative;
+  
+  ::ng-deep .mat-datepicker-toggle {
+    color: var(--brand-blue) !important;
+  }
+  
+  ::ng-deep .mat-datepicker-toggle button {
+    background: transparent !important;
+  }
+}
+
+
+::ng-deep .mat-calendar {
+  border-radius: 12px !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15) !important;
+  font-family: 'Segoe UI', system-ui, sans-serif !important;
+}
+
+::ng-deep .mat-datepicker-content {
+  border-radius: 12px !important;
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.2) !important;
+  overflow: hidden !important;
+}
+
+::ng-deep .mat-calendar-header {
+  background-color: var(--brand-blue) !important;
+  color: white !important;
+  padding: 16px !important;
+  border-radius: 12px 12px 0 0 !important;
+}
+
+::ng-deep .mat-calendar-period-button,
+::ng-deep .mat-calendar-previous-button,
+::ng-deep .mat-calendar-next-button {
+  color: white !important;
+  font-weight: 600 !important;
+}
+
+::ng-deep .mat-calendar-table-header {
+  background-color: #f8fafc !important;
+  color: var(--text-muted) !important;
+  font-weight: 600 !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+}
+
+::ng-deep .mat-calendar-body-cell {
+  border-radius: 8px !important;
+  margin: 2px !important;
+}
+
+::ng-deep .mat-calendar-body-selected {
+  background-color: var(--brand-blue) !important;
+  color: white !important;
+  font-weight: 600 !important;
+}
+
+::ng-deep .mat-calendar-body-today {
+  border: 2px solid var(--brand-blue) !important;
+  background-color: transparent !important;
+}
+
+::ng-deep .mat-calendar-body-cell:not(.mat-calendar-body-disabled):hover > .mat-calendar-body-cell-content {
+  background-color: rgba(94, 162, 255, 0.1) !important;
+  color: var(--brand-blue) !important;
+}
+
+::ng-deep .mat-calendar-body-cell-content {
+  border: none !important;
+  transition: all 0.2s ease !important;
+}
+
+/* Year/Month view */
+::ng-deep .mat-calendar-body-label,
+::ng-deep .mat-calendar-body-label[colspan="7"] {
+  color: var(--text-dark) !important;
+  font-weight: 600 !important;
+  font-size: 14px !important;
+}
+
+
+::ng-deep .mat-calendar-body-today:not(.mat-calendar-body-selected) {
+  color: var(--brand-blue) !important;
+}
+
+
+::ng-deep .mat-calendar-body-disabled > .mat-calendar-body-cell-content {
+  color: #cbd5e1 !important;
+}
+
+
+.trips-add-btn {
+  background: var(--brand-green) !important;
+  color: #fff !important;
+  border-radius: 999px !important;
+  padding: 0.75rem 1.5rem !important;
+  font-weight: 500;
+  box-shadow: 0 10px 25px rgba(16, 185, 129, 0.35);
+  transition: all 0.2s ease;
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.5rem !important;
+
+  &:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 14px 30px rgba(16, 185, 129, 0.4);
+    opacity: 0.95;
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+}
+
+.reset-filter-btn {
+  background: #4CAF50 !important;
+  color: white !important;
+  border-radius: 999px !important;
+  padding: 0.625rem 1.25rem !important;
+  font-weight: 500;
+  transition: all 0.2s ease;
+
+  &:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 8px 20px rgba(76, 175, 80, 0.3);
+  }
+}
+
+
+.export-actions {
+  display: flex;
+  gap: 0.5rem;
+  align-self: center;
+
+  .export-btn {
+    width: 44px;
+    height: 44px;
+    border-radius: 0.75rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
+    border: 1px solid rgba(15, 23, 42, 0.04);
+    transition: all 0.15s ease;
+    background: #fff;
+
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 25px rgba(15, 23, 42, 0.15);
+    }
+
+    &:active {
+      transform: translateY(0);
+    }
+  }
+
+  .export-icon {
+    width: 24px;
+    height: 24px;
+    display: block;
+  }
+
+  .export-excel ::ng-deep .export-icon rect { fill: #107C10; }
+  .export-csv ::ng-deep .export-icon rect { fill: #1E90FF; }
+  .export-pdf ::ng-deep .export-icon rect { fill: #D32F2F; }
+}
+
+
+:host ::ng-deep {
+  .trip-status-badge {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    padding: 0.375rem 0.875rem !important;
+    border-radius: 999px !important;
+    font-size: 0.75rem !important;
+    font-weight: 600 !important;
+    text-align: center !important;
+    min-width: 120px !important;
+    border: 1px solid transparent !important;
+  }
+
+ 
+  .status-planned { 
+    background: rgba(59, 130, 246, 0.15) !important; 
+    color: #1e40af !important; 
+    border-color: rgba(59, 130, 246, 0.3) !important; 
+  }
+  
+  .status-accepted { 
+    background: rgba(245, 158, 11, 0.15) !important; 
+    color: #92400e !important; 
+    border-color: rgba(245, 158, 11, 0.3) !important; 
+  }
+  
+  .status-loading-in-progress { 
+    background: rgba(249, 115, 22, 0.15) !important; 
+    color: #c2410c !important; 
+    border-color: rgba(249, 115, 22, 0.3) !important; 
+  }
+  
+  .status-delivery-in-progress { 
+    background: rgba(99, 102, 241, 0.15) !important; 
+    color: #3730a3 !important; 
+    border-color: rgba(99, 102, 241, 0.3) !important; 
+  }
+  
+  .status-receipt { 
+    background: rgba(16, 185, 129, 0.15) !important; 
+    color: #065f46 !important; 
+    border-color: rgba(16, 185, 129, 0.3) !important; 
+  }
+  
+  .status-cancelled { 
+    background: rgba(239, 68, 68, 0.15) !important; 
+    color: #991b1b !important; 
+    border-color: rgba(239, 68, 68, 0.3) !important; 
+  }
+
+  .status-icon {
+    font-size: 14px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+}
+
+
+.bold-label {
+  font-weight: bold !important;
+  color: #666;
+  font-size: 12px;
+}
+
+
+.dialog-overlay {
+  .mat-mdc-dialog-container {
+    padding: 0;
+  }
+  
+  .trip-form-card {
+    margin: 0;
+    border-radius: 0;
+  }
+}
+
+.wide-dialog {
+  .mat-mdc-dialog-container {
+    max-width: none !important;
+    width: 100%;
+  }
+  
+  .mat-mdc-dialog-surface {
+    max-height: 85vh;
+    overflow: auto;
+  }
+}
+
+.trip-form-card {
+  min-width: 800px;
+  
+  @media (max-width: 900px) {
+    min-width: auto;
+    width: 100%;
+  }
+}
+
+@media (min-width: 1200px) {
+  .wide-dialog {
+    width: 1000px !important;
+    max-width: 90vw !important;
+  }
+}
+
+
+@media (max-width: 1200px) {
+  .trips-header {
+    &__actions {
+      &__left {
+        .trips-search {
+          min-width: 200px;
+        }
+
+        .status-filter,
+        .truck-filter,
+        .driver-filter {
+          min-width: 160px;
+        }
+
+        .date-filter {
+          min-width: 150px;
+        }
+      }
+    }
+  }
+}
+
+@media (max-width: 992px) {
+  .trips-header {
+    &__actions {
+      &__left {
+        .trips-search {
+          min-width: 100%;
+          order: 1;
+        }
+
+        .status-filter,
+        .truck-filter {
+          flex: 1;
+          min-width: calc(50% - 6px);
+        }
+
+        .driver-filter,
+        .date-filter {
+          flex: 1;
+          min-width: calc(50% - 6px);
+        }
+
+        .export-actions {
+          order: 6;
+          margin-left: 0;
+          margin-top: 8px;
+          width: 100%;
+          justify-content: center;
+        }
+      }
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  :host {
+    padding: 1rem;
+  }
+
+  .trips-page {
+    padding: 1.5rem;
+  }
+
+  .trips-header {
+    &__actions {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 1rem;
+    }
+
+    &__left {
+      width: 100%;
+      flex-direction: column;
+      align-items: stretch;
+
+      .trips-search,
+      .status-filter,
+      .truck-filter,
+      .driver-filter,
+      .date-filter {
+        width: 100%;
+        min-width: 100%;
+      }
+    }
+
+    &__right {
+      width: 100%;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+  }
+
+  .trips-add-btn {
+    width: 100%;
+    justify-content: center;
+  }
+  
+
+  ::ng-deep .mat-datepicker-content {
+    max-width: 95vw !important;
+    margin: 0 auto !important;
+  }
+  
+  ::ng-deep .mat-calendar {
+    max-width: 100% !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .trips-page {
+    padding: 1rem;
+    border-radius: 1rem;
+  }
+
+  .trips-title {
+    font-size: 1.5rem;
+  }
+
+  .export-actions .export-btn {
+    width: 40px;
+    height: 40px;
+  }
+
+  :host ::ng-deep .trip-status-badge {
+    padding: 0.25rem 0.5rem !important;
+    font-size: 0.7rem !important;
+    min-width: 100px !important;
+  }
+  
+
+  ::ng-deep .mat-calendar {
+    font-size: 14px !important;
+  }
+  
+  ::ng-deep .mat-calendar-body-cell-content {
+    width: 32px !important;
+    height: 32px !important;
+    line-height: 32px !important;
+  }
+}
+
+
+@media print {
+  :host {
+    background: #fff;
+    padding: 0;
+  }
+
+  .trips-page {
+    box-shadow: none;
+    border-radius: 0;
+  }
+
+  .trips-header__actions,
+  .trips-add-btn,
+  .export-actions,
+  .reset-filter-btn,
+  .date-filter {
+    display: none !important;
+  }
+
+  .trip-status-badge {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+}
+
+
+.select-all-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+  color: #1976d2;
+
+  .select-all-text {
+    cursor: pointer;
+    user-select: none;
+  }
+}
+
+.action-buttons {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: nowrap;
+}
+
+
+.row-late {
+  background-color: #fdecea !important;
+}
+
+.row-today {
+  background-color: #fff8e1 !important;
+}
+
+
+.late-badge {
+  margin-left: 6px;
+  padding: 2px 6px;
+  font-size: 11px;
+  border-radius: 4px;
+  background-color: #d32f2f;
+  color: white;
+}
+
+.today-badge {
+  margin-left: 6px;
+  padding: 2px 6px;
+  font-size: 11px;
+  border-radius: 4px;
+  background-color: #f9a825;
+  color: white;
+}
+
+.late-chip {
+  max-width: 120px;
+  font-size: 12px;
+  padding: 0 8px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: inline-block;
+}
+
+
+.date-range-warning {
+  font-size: 12px;
+  color: #d32f2f;
+  margin-top: 4px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+
+::ng-deep .mat-datepicker-toggle button:focus {
+  outline: 2px solid var(--brand-blue) !important;
+  outline-offset: 2px !important;
+}
+
+
+::ng-deep .mat-calendar-period-button:hover {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+
+::ng-deep .mat-calendar-previous-button:hover,
+::ng-deep .mat-calendar-next-button:hover {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+}
+.header-content {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  
+  .sort-icon {
+    margin-left: 8px;
+    color: #3f51b5;
+    font-weight: bold;
+  }
+  
+  .sort-icon-placeholder {
+    margin-left: 8px;
+    color: #ccc;
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+  
+  &:hover .sort-icon-placeholder {
+    opacity: 1;
+  }
+}

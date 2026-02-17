@@ -1,0 +1,80 @@
+############################
+#   Visual Studio / .NET   #
+############################
+# Dossier des migrations SQL
+migrations/
+
+# Dossiers de build
+bin/
+obj/
+[Bb]uild/
+[Ll]og/
+[Ll]ogs/
+
+# Visual Studio cache
+.vs/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# Fichiers de cache MSBuild
+*.cache
+*.dtbcache.v2
+
+# Fichiers d’analyse / temp
+*.pdb
+*.mdb
+*.ilk
+*.ipch
+*.iobj
+*.idb
+
+# Backup & temp
+*.tmp
+*.bak
+*.log
+*.backup
+*.backup.json
+
+# Publish outputs
+publish/
+**/wwwroot/
+
+############################
+#       .NET Core          #
+############################
+.project
+project.lock.json
+project.fragment.lock.json
+
+############################
+#     Angular / Node       #
+############################
+
+# Node modules
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# Angular build output
+dist/
+.tmp/
+.angular/
+.angular/cache/
+
+# Environment files
+src/environments/*.ts
+!src/environments/environment.ts  # uncomment if you want to keep default file
+
+############################
+#       OS / System        #
+############################
+
+# Windows
+Thumbs.db
+Desktop.ini
+
+# Mac / Linux
+.DS_Store
+*.swp

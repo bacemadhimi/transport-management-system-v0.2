@@ -1,0 +1,41 @@
+<mat-card *ngIf="!showingAlert" class="dayoff-form-card">
+  <header class="dayoff-form-card__header">
+    <div>
+      <h2>{{ data.dayOffId ? 'Modifier Jour Férié' : 'Ajouter Jour Férié' }}</h2>
+    </div>
+  </header>
+
+  <form [formGroup]="dayOffForm" (ngSubmit)="onSubmit()" class="dayoff-form-grid">
+    <mat-label>Nom du jour férié</mat-label>
+    <mat-form-field appearance="outline" class="dayoff-field">
+      <input matInput formControlName="name" placeholder="Ex: Fête du Travail" />
+      <mat-error *ngIf="dayOffForm.get('name')?.hasError('required')">Le nom est obligatoire</mat-error>
+    </mat-form-field>
+
+    <mat-label>Pays</mat-label>
+    <mat-form-field appearance="outline" class="dayoff-field">
+      <input matInput formControlName="country" placeholder="Ex: France, Tunisie, etc." />
+      <mat-error *ngIf="dayOffForm.get('country')?.hasError('required')">Le pays est obligatoire</mat-error>
+    </mat-form-field>
+
+    <mat-label>Date</mat-label>
+    <mat-form-field appearance="outline" class="dayoff-field">
+      <input matInput [matDatepicker]="picker" formControlName="date">
+      <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
+      <mat-datepicker #picker></mat-datepicker>
+      <mat-error *ngIf="dayOffForm.get('date')?.hasError('required')">La date est obligatoire</mat-error>
+    </mat-form-field>
+
+    <mat-label>Description (optionnelle)</mat-label>
+    <mat-form-field appearance="outline" class="dayoff-field">
+      <textarea matInput formControlName="description" placeholder="Description du jour férié" rows="3"></textarea>
+    </mat-form-field>
+
+    <div class="form-footer">
+      <button mat-flat-button color="primary" type="submit" [disabled]="dayOffForm.invalid || isSubmitting">
+        {{ data.dayOffId ? 'Enregistrer' : 'Ajouter' }}
+      </button>
+      <button mat-button type="button" (click)="onCancel()">Annuler</button>
+    </div>
+  </form>
+</mat-card>

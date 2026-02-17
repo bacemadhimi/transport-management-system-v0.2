@@ -1,0 +1,73 @@
+<ion-header>
+  <ion-toolbar class="notifications-toolbar">
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/home"></ion-back-button>
+    </ion-buttons>
+    <ion-title>Notifications</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="notifications-content">
+  <div class="notifications-feed" *ngIf="allNotifications.length > 0; else empty">
+    
+    <div class="section" *ngIf="cancelledTrips.length > 0">
+      <h2 class="section-title cancelled">{{ getSectionTitle('cancelled') }}</h2>
+      
+      <div class="notification-item cancelled" *ngFor="let trip of cancelledTrips">
+        <div class="notification-header">
+          <h3 class="trip-reference">{{ trip.tripReference }}</h3>
+          <span class="status-badge cancelled-badge">{{ getStatusLabel(trip.tripStatus) }}</span>
+        </div>
+
+        <div class="notification-body">
+          <div class="info-line">
+            <ion-icon name="alert-circle-outline"></ion-icon>
+            <span class="info-text">{{ trip.message || 'Cancelled' }}</span>
+          </div>
+
+          <div class="info-line">
+            <ion-icon name="calendar-outline"></ion-icon>
+            <span class="info-text">{{ trip.estimatedStartDate | date:'MM/dd/yy, HH:mm' }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    
+    <div class="section" *ngIf="newTrips.length > 0">
+      <h2 class="section-title new">{{ getSectionTitle('new') }}</h2>
+      
+      <div class="notification-item new" *ngFor="let trip of newTrips">
+        <div class="notification-header">
+          <h3 class="trip-reference">{{ trip.tripReference }}</h3>
+          <span class="status-badge planned-badge">{{ getStatusLabel(trip.tripStatus) }}</span>
+        </div>
+
+        <div class="notification-body">
+          <div class="info-line">
+            <ion-icon name="car-outline"></ion-icon>
+            <span class="info-text">{{ trip.truck?.immatriculation || 'No vehicle' }}</span>
+          </div>
+
+          <div class="info-line">
+            <ion-icon name="calendar-outline"></ion-icon>
+            <span class="info-text">{{ trip.estimatedStartDate | date:'MM/dd/yy, HH:mm' }}</span>
+          </div>
+
+          <div class="info-line">
+            <ion-icon name="speedometer-outline"></ion-icon>
+            <span class="info-text">{{ trip.estimatedDistance }}km</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <ng-template #empty>
+    <div class="empty-state">
+      <ion-icon name="notifications-off-outline"></ion-icon>
+      <h2>No Notifications</h2>
+      <p>You're all caught up!</p>
+    </div>
+  </ng-template>
+</ion-content>

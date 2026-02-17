@@ -1,0 +1,392 @@
+/* Menu Group Headers */
+.menu-group-header {
+  padding: 16px 16px 8px 16px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #374151;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 1px solid #e5e7eb;
+  margin: 8px 0;
+  width: 100%;
+}
+
+/* Menu items */
+.menu {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  width: 100%;
+  text-decoration: none;
+  color: inherit;
+  transition: background-color 0.2s;
+}
+
+.menu:hover {
+  background-color: #f3f4f6;
+}
+/* menu Launguage */
+.flag-icon {
+  color: green;
+  cursor: pointer;
+}
+
+.flag-icon:hover {
+  color: green;
+}
+
+/* Parent menu item */
+.parent-menu {
+  cursor: pointer;
+}
+
+/* Submenu styling */
+.submenu {
+  margin-left: 40px;
+  border-left: 2px solid #e5e7eb;
+}
+
+.sub-menu {
+  padding-left: 24px;
+}
+
+/* Arrow rotation */
+.arrow {
+  transition: transform 0.3s;
+}
+
+.arrow.open {
+  transform: rotate(180deg);
+}
+
+/* Spacer for arrow alignment */
+.spacer {
+  flex: 1;
+}
+
+/* Active link styling */
+.active {
+  background-color: #dbeafe;
+  color: #1d4ed8;
+  font-weight: 500;
+}
+/* Sidebar Container */
+.sidebar-nav {
+  padding: 8px 0;
+}
+
+/* Sidebar Items */
+.sidebar-item {
+  height: 48px;
+  margin: 2px 12px;
+  border-radius: 10px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.sidebar-item:hover {
+  background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%) !important;
+  transform: translateX(6px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.sidebar-item .sidebar-icon {
+  color: #64748b;
+  font-size: 22px;
+  height: 22px;
+  width: 22px;
+  margin-right: 16px;
+  transition: all 0.3s ease;
+}
+
+.sidebar-item .sidebar-text {
+  font-size: 15px;
+  font-weight: 500;
+  color: #334155;
+  text-decoration: none;
+  transition: all 0.3s ease;
+}
+
+/* Active Menu Item */
+.active-menu-item {
+  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%) !important;
+  box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
+  border-left: 5px solid #1e40af;
+  transform: translateX(0);
+}
+
+.active-menu-item .sidebar-icon {
+  color: white !important;
+  transform: scale(1.1);
+}
+
+.active-menu-item .sidebar-text {
+  color: white !important;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+}
+
+.active-menu-item:hover {
+  background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%) !important;
+  box-shadow: 0 8px 25px rgba(59, 130, 246, 0.5);
+}
+
+/* Expansion Panels */
+.sidebar-expansion-panel {
+  background: transparent !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+  margin: 4px 12px !important;
+}
+
+.sidebar-expansion-panel .mat-expansion-panel-header {
+  height: 48px !important;
+  padding: 0 16px !important;
+  border-radius: 10px !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.sidebar-expansion-panel .expansion-header:hover {
+  background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%) !important;
+  transform: translateX(6px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.sidebar-expansion-panel .mat-expansion-panel-header.mat-expanded {
+  background: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%) !important;
+  border-left: 5px solid #0ea5e9;
+  box-shadow: 0 4px 12px rgba(14, 165, 233, 0.2);
+}
+
+.sidebar-expansion-panel .mat-expansion-panel-header.mat-expanded .expansion-arrow {
+  transform: rotate(90deg);
+  color: #0ea5e9;
+}
+
+.sidebar-expansion-panel .expansion-arrow {
+  transition: transform 0.4s ease;
+  color: #64748b;
+  font-size: 22px;
+  height: 22px;
+  width: 22px;
+}
+
+/* Submenu Items */
+.submenu-list {
+  padding: 6px 0 !important;
+  margin-left: 28px !important;
+}
+
+.submenu-item {
+  height: 42px !important;
+  margin: 3px 0 !important;
+  border-radius: 8px !important;
+  padding-left: 40px !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.submenu-item:hover {
+  background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%) !important;
+  transform: translateX(6px);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.06);
+}
+
+.submenu-item .submenu-icon {
+  color: #94a3b8;
+  font-size: 20px;
+  height: 20px;
+  width: 20px;
+  margin-right: 14px;
+  transition: all 0.3s ease;
+}
+
+.submenu-item .submenu-text {
+  font-size: 14px;
+  color: #475569;
+  text-decoration: none;
+  transition: all 0.3s ease;
+}
+
+/* Active Submenu Item */
+.active-submenu-item {
+  background: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%) !important;
+  border-left: 4px solid #0ea5e9;
+  box-shadow: 0 4px 12px rgba(14, 165, 233, 0.25);
+  transform: translateX(6px);
+}
+
+.active-submenu-item .submenu-icon {
+  color: #0ea5e9 !important;
+  transform: scale(1.1);
+}
+
+.active-submenu-item .submenu-text {
+  color: #0369a1 !important;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+}
+
+.active-submenu-item:hover {
+  background: linear-gradient(135deg, #bae6fd 0%, #7dd3fc 100%) !important;
+  box-shadow: 0 6px 16px rgba(14, 165, 233, 0.3);
+}
+
+/* Divider */
+.menu-divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent 0%, #e2e8f0 20%, #e2e8f0 80%, transparent 100%);
+  margin: 16px 20px;
+}
+
+/* Section Headers */
+.menu-section-header {
+  padding: 20px 20px 10px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-top: 8px;
+  border-bottom: 2px solid #f1f5f9;
+}
+
+/* Toolbar improvements */
+.bg-blue-600\! {
+  background: linear-gradient(135deg, #1d4ed8 0%, #3b82f6 100%) !important;
+}
+
+/* Language dropdown */
+.language-dropdown {
+  transform-origin: top right;
+}
+
+/* Scrollbar styling for sidebar */
+mat-drawer::-webkit-scrollbar {
+  width: 8px;
+}
+
+mat-drawer::-webkit-scrollbar-track {
+  background: linear-gradient(to bottom, #f8fafc, #f1f5f9);
+  border-radius: 4px;
+}
+
+mat-drawer::-webkit-scrollbar-thumb {
+  background: linear-gradient(to bottom, #cbd5e1, #94a3b8);
+  border-radius: 4px;
+  border: 2px solid #f1f5f9;
+}
+
+mat-drawer::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(to bottom, #94a3b8, #64748b);
+}
+
+/* Notification badge animation */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Smooth transitions */
+.mat-list-item, .mat-expansion-panel-header, button {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+/* Hover effects for header buttons */
+button:hover {
+  transform: translateY(-1px);
+}
+
+/* Settings dropdown enhancements */
+.shadow-2xl {
+  box-shadow: 0 20px 50px -12px rgba(0, 0, 0, 0.25);
+}
+
+.border-gray-100 {
+  border-color: #f3f4f6;
+}
+
+/* Language selector flags */
+img[alt*="English"], img[alt*="French"] {
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+  transition: filter 0.3s ease;
+}
+
+button:hover img[alt*="English"], 
+button:hover img[alt*="French"] {
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.2));
+}
+
+.submenu-list {
+  padding: 6px 0 !important;
+  margin-left: 0px !important; /* Reduced to 0px */
+}
+
+.submenu-item {
+  height: 42px !important;
+  margin: 3px 8px !important; /* Added horizontal margin instead of padding */
+  border-radius: 8px !important;
+  padding-left: 12px !important; /* Further reduced from 20px to 12px */
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.submenu-item:hover {
+  background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%) !important;
+  transform: translateX(4px); /* Reduced from 6px */
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.06);
+}
+
+.submenu-item .submenu-icon {
+  color: #94a3b8;
+  font-size: 20px;
+  height: 20px;
+  width: 20px;
+  margin-right: 10px; /* Reduced from 12px to 10px */
+  transition: all 0.3s ease;
+}
+
+.submenu-item .submenu-text {
+  font-size: 14px;
+  color: #475569;
+  text-decoration: none;
+  transition: all 0.3s ease;
+}
+
+/* Active Submenu Item */
+.active-submenu-item {
+  background: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%) !important;
+  border-left: 4px solid #0ea5e9;
+  box-shadow: 0 4px 12px rgba(14, 165, 233, 0.25);
+  transform: translateX(4px); /* Reduced from 6px */
+}
+
+.active-submenu-item .submenu-icon {
+  color: #0ea5e9 !important;
+  transform: scale(1.1);
+}
+
+.active-submenu-item .submenu-text {
+  color: #0369a1 !important;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+}
+
+.active-submenu-item:hover {
+  background: linear-gradient(135deg, #bae6fd 0%, #7dd3fc 100%) !important;
+  box-shadow: 0 6px 16px rgba(14, 165, 233, 0.3);
+}
+
+/* For even more left alignment, you can also adjust the expansion panel */
+.sidebar-expansion-panel {
+  background: transparent !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+  margin: 4px 8px !important; /* Reduced from 12px to 8px */
+}

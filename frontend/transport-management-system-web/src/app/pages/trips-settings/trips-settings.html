@@ -1,0 +1,90 @@
+<h2>{{ t('TRAVEL_SETTINGS') }}</h2>
+
+<mat-card>
+  <mat-form-field appearance="fill">
+    <mat-label>{{ t('TRIP_CHANGE') }}</mat-label>
+    <mat-select [(ngModel)]="settings.allowEditTrips">
+      <mat-option [value]="true">{{ t('YES') }}</mat-option>
+      <mat-option [value]="false">{{ t('NO') }}</mat-option>
+    </mat-select>
+  </mat-form-field>
+
+  <mat-form-field appearance="fill">
+    <mat-label>{{ t('TRIP_DELETE') }}</mat-label>
+    <mat-select [(ngModel)]="settings.allowDeleteTrips">
+      <mat-option [value]="true">{{ t('YES') }}</mat-option>
+      <mat-option [value]="false">{{ t('NO') }}</mat-option>
+    </mat-select>
+  </mat-form-field>
+
+  <mat-form-field appearance="fill">
+    <mat-label>{{ t('LINK_DRIVER_TRUCK') }}</mat-label>
+    <mat-select [(ngModel)]="settings.linkDriverToTruck">
+      <mat-option [value]="true">{{ t('YES') }}</mat-option>
+      <mat-option [value]="false">{{ t('NO') }}</mat-option>
+    </mat-select>
+    <mat-hint>{{ t('DRIVER_TRUCK_AUTO_LINK_HINT') }}</mat-hint>
+  </mat-form-field>
+
+  <mat-form-field appearance="fill">
+    <mat-label>{{ t('TRIP_EDIT_DELAY_LABEL') }}</mat-label>
+    <input matInput type="number" [(ngModel)]="settings.editTimeLimit">
+    <mat-hint>{{ t('TRIP_EDIT_DELAY_HINT') }}</mat-hint>
+  </mat-form-field>
+
+  <mat-form-field appearance="fill">
+    <mat-label>{{ t('MAX_TRIPS_PER_DAY_LABEL') }}</mat-label>
+    <input matInput type="number" [(ngModel)]="settings.maxTripsPerDay">
+  </mat-form-field>
+
+  <mat-form-field appearance="fill">
+    <mat-label>{{ t('TRIP_DISPLAY_ORDER_LABEL') }}</mat-label>
+    <mat-select [(ngModel)]="settings.tripOrder">
+      <mat-option value="chronological"> {{ t('TRIP_ORDER_CHRONOLOGICAL') }}</mat-option>
+      <mat-option value="alphabetical"> {{ t('TRIP_ORDER_ALPHABETICAL') }}</mat-option>
+      <mat-option value="custom">{{ t('TRIP_ORDER_CUSTOM') }}</mat-option>
+    </mat-select>
+  </mat-form-field>
+
+  <mat-form-field appearance="fill">
+    <mat-label>{{ t('TRIP_DELETE_CONFIRM_LABEL') }}</mat-label>
+    <mat-select [(ngModel)]="settings.requireDeleteConfirmation">
+      <mat-option [value]="true">{{ t('YES') }}</mat-option>
+      <mat-option [value]="false">{{ t('NO') }}</mat-option>
+    </mat-select>
+  </mat-form-field>
+
+  <mat-divider></mat-divider>
+
+  <div class="section-header">
+    <h3>Notifications</h3>
+  </div>
+
+  <mat-form-field appearance="fill">
+    <mat-label>{{ t('TRIP_NOTIFY_CHANGE_LABEL') }}</mat-label>
+    <mat-select [(ngModel)]="settings.notifyOnTripEdit">
+      <mat-option [value]="true">{{ t('YES') }}</mat-option>
+      <mat-option [value]="false">{{ t('NO') }}</mat-option>
+    </mat-select>
+  </mat-form-field>
+
+  <mat-form-field appearance="fill">
+    <mat-label>{{ t('TRIP_NOTIFY_DELETE_LABEL') }}</mat-label>
+    <mat-select [(ngModel)]="settings.notifyOnTripDelete">
+      <mat-option [value]="true">{{ t('YES') }}</mat-option>
+      <mat-option [value]="false">{{ t('NO') }}</mat-option>
+    </mat-select>
+  </mat-form-field>
+
+  <div class="button-container">
+    <button mat-raised-button color="primary" (click)="saveSettings()">
+      <mat-icon>save</mat-icon>
+         {{ t('SAVE') }}
+    </button>
+    
+    <button mat-raised-button color="warn" (click)="resetToDefaults()">
+      <mat-icon>restore</mat-icon>
+      {{ t('RESET') }}
+    </button>
+  </div>
+</mat-card>

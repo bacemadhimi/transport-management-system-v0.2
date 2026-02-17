@@ -1,0 +1,201 @@
+<!-- traject-form.html -->
+<mat-card class="traject-form-card">
+  <header class="traject-form-card__header">
+    <div>
+      <h2>{{ data.trajectId ? 'Modifier traject' : 'Ajouter traject' }}</h2>
+    </div>
+    <button type="button" mat-icon-button (click)="onCancel()">
+      <mat-icon>close</mat-icon>
+    </button>
+  </header>
+
+  <div class="loading-overlay" *ngIf="loading">
+    <mat-spinner diameter="50"></mat-spinner>
+    <span>Chargement...</span>
+  </div>
+
+  <form [formGroup]="trajectForm" (ngSubmit)="onSubmit()">
+    <!-- Nom du traject -->
+    <mat-form-field appearance="outline" class="traject-field full-width">
+     
+      <input
+        matInput
+        formControlName="name"
+        placeholder="Ex: Traject Paris-Lyon"
+        maxlength="100"
+      />
+      <mat-error *ngIf="trajectForm.get('name')?.hasError('required')">
+        Le nom est obligatoire
+      </mat-error>
+      <mat-error *ngIf="trajectForm.get('name')?.hasError('maxlength')">
+        Maximum 100 caractères
+      </mat-error>
+    </mat-form-field>
+
+    <!-- Section des points -->
+    <div class="points-section" formArrayName="points">
+      <div class="section-header">
+        <h3>Points de passage</h3>
+        <div class="section-header-actions">
+          <div class="estimations">
+            <span class="estimation-item">
+              <mat-icon class="estimation-icon">directions_car</mat-icon>
+              <span>{{ calculateEstimations().distance }} km</span>
+            </span>
+            <span class="estimation-item">
+              <mat-icon class="estimation-icon">schedule</mat-icon>
+              <span>{{ calculateEstimations().duration }} h</span>
+            </span>
+          </div>
+          <button type="button" mat-stroked-button (click)="addPoint()">
+            <mat-icon>add_location</mat-icon>
+            Ajouter un point
+          </button>
+        </div>
+      </div>
+
+      <!-- Liste des points -->
+      <div class="points-list" *ngIf="points.length > 0">
+        <div *ngFor="let pointGroup of pointControls; let i = index"
+             [formGroupName]="i"
+             class="point-card">
+          
+          <div class="point-card-header">
+            <div class="point-order-display">
+              <div class="order-circle">{{ pointGroup.get('order')?.value }}</div>
+              <div class="point-title">Point {{ i + 1 }}</div>
+            </div>
+            
+            <div class="point-actions">
+              <button mat-icon-button type="button"
+                      (click)="movePointUp(i)"
+                      [disabled]="i === 0"
+                      matTooltip="Déplacer vers le haut">
+                <mat-icon>arrow_upward</mat-icon>
+              </button>
+              <button mat-icon-button type="button"
+                      (click)="movePointDown(i)"
+                      [disabled]="i === points.length - 1"
+                      matTooltip="Déplacer vers le bas">
+                <mat-icon>arrow_downward</mat-icon>
+              </button>
+              <button mat-icon-button type="button"
+                      (click)="removePoint(i)"
+                      *ngIf="points.length > 1"
+                      matTooltip="Supprimer ce point">
+                <mat-icon>delete</mat-icon>
+              </button>
+            </div>
+          </div>
+
+          <div class="point-form-fields">
+            <!-- Ordre (masqué car géré automatiquement) -->
+            <input type="hidden" formControlName="order" />
+            
+            <!-- Localisation -->
+            <mat-form-field appearance="outline" class="point-field full-width">
+             
+              <textarea
+                matInput
+                formControlName="location"
+                placeholder="Ex: 123 Rue de la Paix, 75001 Paris"
+                rows="2"
+              ></textarea>
+              <mat-hint>Adresse complète du point de passage</mat-hint>
+              <mat-error *ngIf="pointGroup.get('location')?.hasError('required')">
+                La localisation est obligatoire
+              </mat-error>
+              <mat-error *ngIf="pointGroup.get('location')?.hasError('maxlength')">
+                Maximum 200 caractères
+              </mat-error>
+            </mat-form-field>
+          </div>
+        </div>
+      </div>
+
+      <!-- État vide -->
+      <div *ngIf="points.length === 0" class="empty-points">
+        <mat-icon class="empty-icon">location_off</mat-icon>
+        <h4>Aucun point défini</h4>
+        <p>Commencez par ajouter les points de passage de votre traject</p>
+        <button mat-raised-button color="primary" type="button" (click)="addPoint()">
+          <mat-icon>add_location</mat-icon>
+          Ajouter le premier point
+        </button>
+      </div>
+    </div>
+
+    <!-- Récapitulatif visuel -->
+    <div class="traject-summary" *ngIf="points.length > 0">
+      <div class="summary-header">
+        <h4>Récapitulatif du traject</h4>
+        <div class="points-count-badge">
+          <mat-icon>pin_drop</mat-icon>
+          <span>{{ points.length }} points</span>
+        </div>
+      </div>
+
+      <div class="timeline-flow">
+        <div *ngFor="let pointGroup of pointControls; let i = index" 
+             class="timeline-step">
+          <div class="step-marker">
+            <span class="step-number">{{ i + 1 }}</span>
+          </div>
+          <div class="step-content">
+            <div class="step-header">
+              <div class="step-title">Point {{ i + 1 }}</div>
+              <div class="step-badge">Étape</div>
+            </div>
+            <div class="step-details">
+              <mat-icon class="detail-icon">location_on</mat-icon>
+              <span class="detail-text">{{ pointGroup.get('location')?.value }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Statistiques -->
+      <div class="traject-stats">
+        <div class="stat-card total-points">
+          <mat-icon>pin_drop</mat-icon>
+          <div class="stat-content">
+            <div class="stat-value">{{ points.length }}</div>
+            <div class="stat-label">Points</div>
+          </div>
+        </div>
+        
+        <div class="stat-card total-distance">
+          <mat-icon>directions_car</mat-icon>
+          <div class="stat-content">
+            <div class="stat-value">{{ calculateEstimations().distance }} km</div>
+            <div class="stat-label">Distance estimée</div>
+          </div>
+        </div>
+        
+        <div class="stat-card total-duration">
+          <mat-icon>schedule</mat-icon>
+          <div class="stat-content">
+            <div class="stat-value">{{ calculateEstimations().duration }} h</div>
+            <div class="stat-label">Durée estimée</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="form-footer">
+      <button
+        mat-flat-button
+        color="primary"
+        type="submit"
+        [disabled]="trajectForm.invalid || points.length === 0 || loading"
+      >
+        <span *ngIf="loading">Envoi en cours...</span>
+        <span *ngIf="!loading">{{ data.trajectId ? 'Enregistrer' : 'Créer le traject' }}</span>
+      </button>
+      <button mat-button type="button" (click)="onCancel()" [disabled]="loading">
+        Annuler
+      </button>
+    </div>
+  </form>
+</mat-card>
