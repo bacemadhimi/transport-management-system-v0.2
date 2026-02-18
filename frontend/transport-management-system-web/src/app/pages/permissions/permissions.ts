@@ -60,6 +60,21 @@ modules: ModulePermission[] = [
       ]
     },
 
+    // Gestion des employés
+    {
+      name: 'Gestion des employés',
+      key: 'EMPLOYEE',
+      actions: [
+        { label: 'Consulter', key: 'VIEW' },
+        { label: 'Ajouter', key: 'ADD' },
+        { label: 'Modifier', key: 'EDIT' },
+        { label: 'Activer', key: 'ENABLE' },
+        { label: 'Désactiver', key: 'DISABLE' },
+        { label: 'Imprimer', key: 'PRINT' },
+        { label: 'Approuvé', key: 'APPROVED' } 
+      ]
+    },
+
     // Gestion des convoyeurs
     {
       name: 'Gestion des convoyeurs',

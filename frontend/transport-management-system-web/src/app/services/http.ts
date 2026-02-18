@@ -1301,6 +1301,42 @@ getClientName(customerId: number): Observable<string> {
  getAllCustomers() {
     return this.http.get<ICustomer[]>(environment.apiUrl + '/api/customer/list');
   }
+
+  // ===== EMPLOYEE =====
+  getEmployeesList(filter: any) {
+    const params = new HttpParams({ fromObject: filter });
+    return this.http.get<PagedData<any>>(environment.apiUrl + '/api/Employee/PaginationAndSearch?' + params.toString());
+  }
+
+  getEmployee(id: number) {
+    return this.http.get<any>(environment.apiUrl + '/api/Employee/' + id);
+  }
+
+  addEmployee(employeeData: any) {
+    return this.http.post(environment.apiUrl + '/api/Employee', employeeData);
+  }
+
+  updateEmployee(id: number, employeeData: any) {
+    return this.http.put(environment.apiUrl + '/api/Employee/' + id, employeeData);
+  }
+
+  deleteEmployee(id: number) {
+    return this.http.delete(environment.apiUrl + '/api/Employee/' + id);
+  }
+
+  enableEmployee(id: number) {
+    return this.http.put(environment.apiUrl + `/api/Employee/${id}`, { isEnable: true });
+  }
+
+  downloadEmployeeAttachment(id: number) {
+    return this.http.get(environment.apiUrl + `/api/Employee/${id}/download-attachment`, {
+      responseType: 'blob'
+    });
+  }
+
+  getTruckTypes() {
+    return this.http.get<any[]>(environment.apiUrl + '/api/TruckType');
+  }
 }
 
 

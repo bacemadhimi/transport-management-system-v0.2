@@ -77,6 +77,7 @@ namespace TransportManagementSystem.Data
                     {
         "ACCUEIL",
         "CHAUFFEUR",
+        "EMPLOYEE",
         "CONVOYEUR",
         "TRUCK",
         "ORDER",
@@ -103,6 +104,7 @@ namespace TransportManagementSystem.Data
     {
         { "ACCUEIL", new[] { "VIEW" } },
         { "CHAUFFEUR", new[] { "VIEW","ADD","EDIT", "ENABLE","DISABLE", "PRINT", "APPROVED" } },
+        { "EMPLOYEE", new[] { "VIEW","ADD","EDIT", "ENABLE","DISABLE", "PRINT", "APPROVED" } },
         { "CONVOYEUR", new[] { "VIEW","ADD","EDIT", "ENABLE", "DISABLE", "PRINT", "APPROVED" } },
         { "TRUCK", new[] { "VIEW","ADD","EDIT", "ENABLE","DISABLE", "PRINT", "APPROVED" } },
         { "ORDER", new[] { "VIEW","ADD","EDIT","DELETE","ENABLE","DISABLE", "PRINT", "LOAD" } },

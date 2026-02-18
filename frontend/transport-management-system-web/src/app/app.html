@@ -207,6 +207,16 @@
           <a matListItemTitle class="sidebar-text">{{ t('DRIVERS') }}</a>
         </mat-list-item>
 
+        <!-- Employees -->
+        <mat-list-item 
+          *ngIf="authService.hasRole('SuperAdmin') || authService.hasEntityAccess('EMPLOYEE')"
+          routerLink="/employees"
+          routerLinkActive="active-menu-item"
+          class="sidebar-item">
+          <mat-icon matListItemIcon class="sidebar-icon">work</mat-icon>
+          <a matListItemTitle class="sidebar-text">{{ t('Employee Management') || 'Employees' }}</a>
+        </mat-list-item>
+
         <!-- Convoyeurs -->
         <mat-list-item 
           *ngIf="authService.hasRole('SuperAdmin') || authService.hasEntityAccess('CONVOYEUR')"
