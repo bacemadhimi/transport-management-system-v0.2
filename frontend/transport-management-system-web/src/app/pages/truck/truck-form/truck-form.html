@@ -1,16 +1,15 @@
 <mat-card class="truck-form-card">
   <header class="truck-form-card__header">
     <div>
-      <!-- <h2>{{ data.truckId ? 'Modifier camion' : 'Ajouter camion' }}</h2> -->
-       <h2>{{ t(data.truckId ? 'TRUCK_EDIT_TITLE' : 'TRUCK_ADD_TITLE') }}</h2>
+      <h2>{{ t(data.truckId ? 'TRUCK_EDIT_TITLE' : 'TRUCK_ADD_TITLE') }}</h2>
     </div>
   </header>
 
   <form [formGroup]="truckForm" (ngSubmit)="onSubmit()" class="truck-form-grid">
-    <!-- Add Zone Field -->
+    <!-- First row: Zone and Type Véhicule -->
     <div class="form-row">
       <div class="form-field-group">
-        <mat-label>Zone</mat-label>
+        <mat-label>{{ t('ZONE_LABEL') || 'Zone' }}</mat-label>
         <mat-form-field appearance="outline" class="truck-field">
           <mat-select formControlName="zoneId" [disabled]="isSubmitting || loadingZones" required>
             <!-- Loading state -->
@@ -39,12 +38,41 @@
         </mat-form-field>
       </div>
 
+      <!-- New Type Véhicule field -->
+      <div class="form-field-group">
+        <mat-label>{{ t('TYPE_VEHICULE_LABEL') || 'Type de véhicule' }}</mat-label>
+        <mat-form-field appearance="outline" class="truck-field">
+          <mat-select formControlName="typeTruckId" [disabled]="isSubmitting || loadingTypeTrucks" required>
+            <!-- Loading state -->
+            <mat-option *ngIf="loadingTypeTrucks" disabled>
+              <div class="flex items-center">
+                <mat-spinner diameter="20" class="mr-2"></mat-spinner>
+                <span>Chargement des types...</span>
+              </div>
+            </mat-option>
+            
+            <!-- No types available -->
+            <mat-option *ngIf="!loadingTypeTrucks && typeTrucks.length === 0" disabled>
+              <div class="text-gray-500 italic">
+                Aucun type de véhicule disponible
+              </div>
+            </mat-option>
+            
+            <!-- Type options with capacity and unit display -->
+            <mat-option *ngFor="let type of typeTrucks" [value]="type.id">
+              {{ type.type }} ({{ type.capacity }} {{ type.unit }})
+            </mat-option>
+          </mat-select>
+          <mat-error *ngIf="truckForm.get('typeTruckId')?.invalid && truckForm.get('typeTruckId')?.touched">
+            {{ getErrorMessage('typeTruckId') }}
+          </mat-error>
+        </mat-form-field>
+      </div>
     </div>
 
     <div class="form-row">
       <div class="form-field-group">
-        <!-- <mat-label>Immatriculation</mat-label> -->
-         <mat-label>{{ t('IMMATRICULATION') }}</mat-label>
+        <mat-label>{{ t('IMMATRICULATION') }}</mat-label>
         <mat-form-field appearance="outline" class="truck-field">
           <input
             matInput
@@ -54,39 +82,24 @@
             maxlength="12" />
           <mat-error *ngIf="truckForm.get('immatriculation')?.hasError('required')">
            {{ t('IMMATRICULATION_REQUIRED') }}
-
           </mat-error>
         </mat-form-field>
       </div>
 
       <div class="form-field-group">
-        <!-- <mat-label>Marque</mat-label> -->
-         <mat-label>{{ t('BRAND_LABEL') }}</mat-label>
+        <mat-label>{{ t('BRAND_LABEL') }}</mat-label>
         <mat-form-field appearance="outline" class="truck-field">
           <input matInput formControlName="brand" placeholder="Ex: Mercedes" />
-        <mat-error *ngIf="truckForm.get('brand')?.hasError('required')">
-                   {{ t('BRAND_REQUIRED') }}
-        </mat-error>
-
+          <mat-error *ngIf="truckForm.get('brand')?.hasError('required')">
+            {{ t('BRAND_REQUIRED') }}
+          </mat-error>
         </mat-form-field>
       </div>
     </div>
 
     <div class="form-row">
       <div class="form-field-group">
-        <!-- <mat-label>Unité de capacité</mat-label> -->
-
-  <mat-label>{{ t('CAPACITY_LABEL') }}</mat-label>
-<mat-form-field appearance="outline" class="truck-field">
-  <input matInput type="number" formControlName="capacity" [placeholder]="getCapacityPlaceholder()" />
-  <span matSuffix>{{ getSelectedCapacityUnitLabel() }}</span>
-</mat-form-field>
-
-      </div>
-
-      <div class="form-field-group">
-         <!-- <mat-label>Date de visite technique</mat-label> -->
-         <mat-label>{{ t('TECHNICAL_VISIT_DATE_LABEL') }}</mat-label>
+        <mat-label>{{ t('TECHNICAL_VISIT_DATE_LABEL') }}</mat-label>
         <mat-form-field appearance="outline" class="truck-field">
           <input
             matInput
@@ -97,11 +110,9 @@
           <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
           <mat-datepicker #picker></mat-datepicker>
           <mat-error *ngIf="truckForm.get('technicalVisitDate')?.hasError('required')">
-             {{ t('TECHNICAL_VISIT_DATE_REQUIRED') }}
-
+            {{ t('TECHNICAL_VISIT_DATE_REQUIRED') }}
           </mat-error>
         </mat-form-field>
-
       </div>
     </div>
 
@@ -115,14 +126,24 @@
           </mat-error>
         </mat-form-field>
       </div>
+      
+      <!-- Status field if needed -->
+      <div class="form-field-group" *ngIf="data.truckId">
+        <mat-label>Statut</mat-label>
+        <mat-form-field appearance="outline" class="truck-field">
+          <mat-select formControlName="status">
+            <mat-option *ngFor="let status of statuses" [value]="status">
+              {{ status }}
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
+      </div>
     </div>
 
-  
-
-    <!-- Rest of the photo section remains the same -->
+    <!-- Photo section -->
     <div class="truck-photo-input">
       <mat-label style="display: block; margin-bottom: 8px; text-align: center;">
-                {{ t('TRUCK_PHOTO_LABEL') }}
+        {{ t('TRUCK_PHOTO_LABEL') }}
       </mat-label>
 
       <div style="display: flex; justify-content: center; gap: 12px; margin-bottom: 16px;">
@@ -137,10 +158,10 @@
           type="button" 
           color="warn"
           (click)="onDeletePhoto()"
-          matTooltip="t('PHOTO_DELETE_BTN_TOOLTIP')"
+          matTooltip="{{ t('PHOTO_DELETE_BTN_TOOLTIP') }}"
         >
           <mat-icon>delete</mat-icon>
-             {{t('PHOTO_DELETE_BTN')}}
+          {{ t('PHOTO_DELETE_BTN') }}
         </button>
       </div>
 
@@ -182,14 +203,13 @@
         mat-flat-button
         color="primary"
         type="submit"
-        [disabled]="truckForm.invalid || isSubmitting || loadingZones"
+        [disabled]="truckForm.invalid || isSubmitting || loadingZones || loadingTypeTrucks"
       >
-         {{ t(data.truckId ? 'SAVE_BTN' : 'ADD_BTN') }}
+        {{ t(data.truckId ? 'SAVE_BTN' : 'ADD_BTN') }}
       </button>
 
-
       <button mat-button type="button" (click)="onCancel()" [disabled]="isSubmitting">
-         {{ t('CANCEL') }}
+        {{ t('CANCEL') }}
       </button>
     </div>
   </form>

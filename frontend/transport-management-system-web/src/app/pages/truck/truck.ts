@@ -349,7 +349,7 @@ getTruckCapacityLabel(row: ITruck): string {
   const unitValue = this.loadingUnit || 'tonnes';
   const unitLabel = this.capacityUnits.find(u => u.value === unitValue)?.label || unitValue;
 
-  return `${row.capacity} ${unitLabel}`;
+  return `${row.typeTruck?.capacity} ${unitLabel}`;
 }
 
 getLoadingUnitImage(unit: string): string {
@@ -451,7 +451,6 @@ delete(truck: ITruck) {
         r.id,
         r.immatriculation,
         r.brand,
-        r.capacity,
         r.technicalVisitDate ? new Date(r.technicalVisitDate).toLocaleDateString('fr-FR') : '',
         r.status,
         r.color
@@ -499,7 +498,7 @@ delete(truck: ITruck) {
         r.id,
         r.immatriculation,
         r.brand,
-        r.capacity,
+
         r.technicalVisitDate ? new Date(r.technicalVisitDate).toLocaleDateString('fr-FR') : '',
         r.status,
         r.color

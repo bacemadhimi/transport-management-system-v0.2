@@ -46,6 +46,7 @@ namespace TransportManagementSystem.Data
         public DbSet<Zone> Zones { get; set; }
         public DbSet<City> Citys { get; set; }
         public DbSet<TripSetting> TripSettings { get; set; }
+        public DbSet<TypeTruck> TypeTrucks { get; set; }
         public DbSet<Employee> Employees { get; set; }
         public DbSet<TruckType> TruckTypes { get; set; }
 
@@ -207,6 +208,15 @@ namespace TransportManagementSystem.Data
                 .HasForeignKey(d => d.ZoneId)
                 .IsRequired()
                 .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<Truck>(entity =>
+            {
+                entity.HasOne(t => t.TypeTruck)
+                    .WithMany(tv => tv.Trucks) 
+                    .HasForeignKey(t => t.TypeTruckId)  
+                    .OnDelete(DeleteBehavior.Cascade); 
+            });
+
 
         }
 

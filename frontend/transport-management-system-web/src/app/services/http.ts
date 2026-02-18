@@ -24,6 +24,7 @@ import { ICreateZoneDto, IUpdateZoneDto, IZone } from '../types/zone';
 import { DailyForecast, WeatherData } from '../types/weather';
 import { ApiResponses, ICreateCityDto, ICity, IUpdateCityDto } from '../types/city';
 import { AvailabilityRequestDto, DriverAvailabilityDto, DriverOvertimeCheckDto, DriverOvertimeResultDto } from '../types/driver-overtime';
+import { ITypeTruck } from '../types/type-truck';
 
 @Injectable({
   providedIn: 'root'
@@ -553,8 +554,19 @@ markOrdersReadyToLoad(orderIds: number[]) {
 
 
 
-getAvailableTrucks() {
-  return this.http.get<ITruck[]>(environment.apiUrl + '/api/Trucks/available');
+getAvailableTrucks(date: string, zoneId?: number | null, excludeTripId?: number) {
+  let url = `${environment.apiUrl}/api/Trucks/available?date=${date}`;
+  
+  if (zoneId) {
+    url += `&zoneId=${zoneId}`;
+  }
+  
+  if (excludeTripId) {
+    url += `&excludeTripId=${excludeTripId}`;
+  }
+  
+  console.log('📡 Appel API:', url);
+  return this.http.get(url);
 }
 
 
@@ -1337,6 +1349,38 @@ getClientName(customerId: number): Observable<string> {
   getTruckTypes() {
     return this.http.get<any[]>(environment.apiUrl + '/api/TruckType');
   }
+  getTypeTrucksList(filter: any) {
+  return this.http.get<PagedData<ITypeTruck>>(`${environment.apiUrl}/api/TypeTruck`, { params: filter });
+}
+
+getTypeTruck(id: number) {
+  return this.http.get<ITypeTruck>(`${environment.apiUrl}/api/TypeTruck/${id}`);
+}
+
+addTypeTruck(typeTruck: ITypeTruck) {
+  return this.http.post<ITypeTruck>(`${environment.apiUrl}/api/TypeTruck`, typeTruck);
+}
+
+updateTypeTruck(id: number, typeTruck: ITypeTruck) {
+  return this.http.put<ITypeTruck>(`${environment.apiUrl}/api/TypeTruck/${id}`, typeTruck);
+}
+
+deleteTypeTruck(id: number) {
+  return this.http.delete(`${environment.apiUrl}/api/TypeTruck/${id}`);
+}
+
+getTrucksByDate(date: Date, locationId?: number): Observable<ITruck[]> {
+  const params = new HttpParams()
+    .set('date', date.toISOString())
+    .set('locationId', locationId?.toString() || '');
+    
+  return this.http.get<ITruck[]>(`${environment.apiUrl}/api/trucks/available`, { params }).pipe(
+    catchError(error => {
+      console.error('Error in getTrucksByDate:', error);
+      return of([]);
+    })
+  );
+}
 }
 
 
