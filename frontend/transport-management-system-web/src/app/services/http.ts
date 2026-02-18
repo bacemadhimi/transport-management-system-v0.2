@@ -1368,7 +1368,9 @@ updateTypeTruck(id: number, typeTruck: ITypeTruck) {
 deleteTypeTruck(id: number) {
   return this.http.delete(`${environment.apiUrl}/api/TypeTruck/${id}`);
 }
-
+ getTypeTrucks() {
+    return this.http.get<ICustomer[]>(environment.apiUrl + '/api/TypeTruck/list');
+  }
 getTrucksByDate(date: Date, locationId?: number): Observable<ITruck[]> {
   const params = new HttpParams()
     .set('date', date.toISOString())

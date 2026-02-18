@@ -112,4 +112,10 @@ public class TypeTruckController : ControllerBase
 
         return Ok(new { message = "Le type de Truck a été supprimé avec succès" });
     }
+    [HttpGet("list")]
+    public async Task<ActionResult<IEnumerable<TypeTruck>>> GetTypeTrucksList()
+    {
+        var TypeTrucks = await typeTruckRepository.GetAll();
+        return Ok(TypeTrucks);
+    }
 }
