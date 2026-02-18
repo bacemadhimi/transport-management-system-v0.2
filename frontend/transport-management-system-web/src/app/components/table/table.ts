@@ -60,6 +60,15 @@ onButtonClick(btn: string, rowData: any, event: MouseEvent) {
   this.rowClick.emit({ btn, rowData });
 }
 
+onCellClick(column: string, rowData: any, event: MouseEvent) {
+ 
+  const target = event.target as HTMLElement;
+  if (target.closest('.attachment-cell')) {
+    event.stopPropagation();
+    this.rowClick.emit({ column, rowData });
+  }
+}
+
   getStatusText(status: any): string {
   const s = String(status).toLowerCase();
   if (s === 'pending') return 'En attente';

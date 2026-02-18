@@ -7,6 +7,7 @@ import { AuthGuard } from './services/auth.guard';
 import { User } from './pages/user/user';
 import { Truck } from './pages/truck/truck';
 import { Driver } from './pages/driver/driver';
+import { Employee } from './pages/employee/employee';
 import { Trip } from './pages/trip/trip';
 import { HistoricTrip } from './pages/historic-trip/historic-trip';
 
@@ -56,6 +57,12 @@ export const routes: Routes = [
   {
     path: 'drivers',
     component: Driver,
+    canActivate: [AuthGuard]
+  },
+
+  {
+    path: 'employees',
+    component: Employee,
     canActivate: [AuthGuard]
   },
 

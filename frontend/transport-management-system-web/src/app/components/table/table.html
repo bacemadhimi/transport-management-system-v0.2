@@ -35,7 +35,7 @@
 
               <!-- Check if format function exists for any column -->
               } @else if (item.format) {
-                <span [innerHTML]="item.format(element)"></span>
+                <span [innerHTML]="item.format(element)" (click)="onCellClick(item.key, element, $event)"></span>
 
               <!-- Status with colored badge -->
               } @else if (item.key == 'status') {
