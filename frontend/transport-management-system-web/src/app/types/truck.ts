@@ -17,6 +17,7 @@ export interface ITruck {
   zoneId?: number;
   typeTruckId: number;
   typeTruck?: ITypeTruck;
+  marqueTruckId: number; 
 }
 
 export interface IZone {

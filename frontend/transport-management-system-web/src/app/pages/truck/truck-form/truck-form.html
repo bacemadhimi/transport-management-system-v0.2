@@ -38,7 +38,7 @@
         </mat-form-field>
       </div>
 
-      <!-- New Type Véhicule field -->
+      <!-- Type Véhicule field -->
       <div class="form-field-group">
         <mat-label>{{ t('TYPE_VEHICULE_LABEL') || 'Type de véhicule' }}</mat-label>
         <mat-form-field appearance="outline" class="truck-field">
@@ -70,6 +70,7 @@
       </div>
     </div>
 
+    <!-- Second row: Immatriculation and Marque -->
     <div class="form-row">
       <div class="form-field-group">
         <mat-label>{{ t('IMMATRICULATION') }}</mat-label>
@@ -86,17 +87,39 @@
         </mat-form-field>
       </div>
 
+      <!-- Marque dropdown -->
       <div class="form-field-group">
-        <mat-label>{{ t('BRAND_LABEL') }}</mat-label>
+        <mat-label>{{ t('MARQUE_VEHICULE') || 'Marque' }}</mat-label>
         <mat-form-field appearance="outline" class="truck-field">
-          <input matInput formControlName="brand" placeholder="Ex: Mercedes" />
-          <mat-error *ngIf="truckForm.get('brand')?.hasError('required')">
-            {{ t('BRAND_REQUIRED') }}
+          <mat-select formControlName="marqueTruckId" [disabled]="isSubmitting || loadingMarques" required>
+            <!-- Loading state -->
+            <mat-option *ngIf="loadingMarques" disabled>
+              <div class="flex items-center">
+                <mat-spinner diameter="20" class="mr-2"></mat-spinner>
+                <span>Chargement des marques...</span>
+              </div>
+            </mat-option>
+            
+            <!-- No marques available -->
+            <mat-option *ngIf="!loadingMarques && marques.length === 0" disabled>
+              <div class="text-gray-500 italic">
+                Aucune marque disponible
+              </div>
+            </mat-option>
+            
+            <!-- Marque options -->
+            <mat-option *ngFor="let marque of marques" [value]="marque.id">
+              {{ marque.name }}
+            </mat-option>
+          </mat-select>
+          <mat-error *ngIf="truckForm.get('marqueTruckId')?.invalid && truckForm.get('marqueTruckId')?.touched">
+            {{ getErrorMessage('marqueTruckId') }}
           </mat-error>
         </mat-form-field>
       </div>
     </div>
 
+    <!-- Third row: Date Visite and Color (now on the same line) -->
     <div class="form-row">
       <div class="form-field-group">
         <mat-label>{{ t('TECHNICAL_VISIT_DATE_LABEL') }}</mat-label>
@@ -114,9 +137,8 @@
           </mat-error>
         </mat-form-field>
       </div>
-    </div>
 
-    <div class="form-row">
+      <!-- Color field -->
       <div class="form-field-group">
         <mat-label>Couleur</mat-label>
         <mat-form-field appearance="outline" class="truck-field truck-field--color">
@@ -126,9 +148,11 @@
           </mat-error>
         </mat-form-field>
       </div>
-      
-      <!-- Status field if needed -->
-      <div class="form-field-group" *ngIf="data.truckId">
+    </div>
+
+    <!-- Status field (only for edit) -->
+    <div class="form-row" *ngIf="data.truckId">
+      <div class="form-field-group">
         <mat-label>Statut</mat-label>
         <mat-form-field appearance="outline" class="truck-field">
           <mat-select formControlName="status">
@@ -138,6 +162,8 @@
           </mat-select>
         </mat-form-field>
       </div>
+      <!-- Empty div for spacing when status is alone -->
+      <div class="form-field-group"></div>
     </div>
 
     <!-- Photo section -->
@@ -203,7 +229,7 @@
         mat-flat-button
         color="primary"
         type="submit"
-        [disabled]="truckForm.invalid || isSubmitting || loadingZones || loadingTypeTrucks"
+        [disabled]="truckForm.invalid || isSubmitting || loadingZones || loadingTypeTrucks || loadingMarques"
       >
         {{ t(data.truckId ? 'SAVE_BTN' : 'ADD_BTN') }}
       </button>

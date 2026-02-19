@@ -9,7 +9,7 @@ import { MatDialogModule, MAT_DIALOG_DATA, MatDialogRef } from '@angular/materia
 import { Http } from '../../../services/http';
 import { ITruck } from '../../../types/truck';
 import { IZone } from '../../../types/zone';
-
+import { IMarque } from '../../../types/marque'; // Import IMarque
 import { MatSelectModule } from '@angular/material/select';
 import { MatNativeDateModule } from '@angular/material/core';
 import { MatDatepickerModule } from '@angular/material/datepicker';
@@ -62,9 +62,11 @@ export class TruckForm implements OnInit, OnDestroy {
   
 
   loadingZones = false;
-  loadingTypeTrucks = false; // Add this
+  loadingTypeTrucks = false;
+  loadingMarques = false; // Add this
   zones: IZone[] = [];
-  typeTrucks: ITypeTruck[] = []; // Add this
+  typeTrucks: ITypeTruck[] = [];
+  marques: IMarque[] = []; // Add this
   isSubmitting = false;
   selectedCapacityUnitLabel: string = '';
   private subscriptions: Subscription[] = [];
@@ -73,42 +75,21 @@ export class TruckForm implements OnInit, OnDestroy {
 
   truckForm = this.fb.group({
     immatriculation: this.fb.control<string>('', [Validators.required, Validators.minLength(2)]),
-    brand: this.fb.control<string>('', Validators.required),
-    capacityUnit: this.fb.control<string | null>(null, Validators.required),
-    capacity: this.fb.control<number>(0, [Validators.required, Validators.min(1)]),
+    // Replace 'brand' with 'marqueTruckId'
+    marqueTruckId: this.fb.control<number | null>(null, Validators.required),
     technicalVisitDate: this.fb.control<Date | null>(null, Validators.required),
     status: this.fb.control<string>('Disponible'),
     color: this.fb.control<string>('#ffffff', Validators.required),
     zoneId: this.fb.control<number | null>(null, [Validators.required]),
-    typeTruckId: this.fb.control<number | null>(null, [Validators.required]), // Add this
+    typeTruckId: this.fb.control<number | null>(null, [Validators.required]),
   });
 
   statuses = ['Disponible', 'En mission', 'Maintenance', 'Hors service'];
 
   ngOnInit() {
     this.loadActiveZones();
-    this.loadTypeTrucks(); // Add this
-    this.loadCapacityUnits(); 
-
-    this.orderSettingsService.getSettings().subscribe(settings => {
-      const units: string[] = Array.isArray(settings.loadingUnit)
-        ? settings.loadingUnit
-        : typeof settings.loadingUnit === 'string'
-          ? [settings.loadingUnit]
-          : [];
-
-      this.capacityUnits = units.length
-        ? units.map(u => ({ value: u, label: this.getCapacityUnitLabel(u) }))
-        : [
-            { value: 'tonnes', label: 'Tonnes' },
-            { value: 'colis', label: 'colis' }
-          ];
-      console.log(this.capacityUnits)
-
-      if (!this.truckForm.get('capacityUnit')?.value && this.capacityUnits.length > 0) {
-        this.truckForm.get('capacityUnit')?.setValue(this.capacityUnits[0].value);
-      }
-    });
+    this.loadTypeTrucks();
+    this.loadMarques(); 
 
     if (this.data.truckId) {
       this.loadTruck(this.data.truckId);
@@ -119,11 +100,38 @@ export class TruckForm implements OnInit, OnDestroy {
     this.subscriptions.forEach(sub => sub.unsubscribe());
   }
 
-  getSelectedCapacityUnitLabel(): string {
-    const selectedValue = this.truckForm.get('capacityUnit')?.value;
-    if (!selectedValue) return '';
-    const unit = this.capacityUnits.find(u => u.value === selectedValue);
-    return unit ? unit.label : selectedValue;
+  // Add this method to load marques
+  private loadMarques(): void {
+    this.loadingMarques = true;
+    
+    const marquesSub = this.httpService.getMarqueTrucks().subscribe({
+      next: (response) => {
+        let marquesData: IMarque[];
+        
+        if (response && typeof response === 'object' && 'data' in response) {
+          marquesData = (response as any).data;
+        } else if (Array.isArray(response)) {
+          marquesData = response;
+        } else {
+          marquesData = [];
+        }
+        
+        this.marques = marquesData;
+        this.loadingMarques = false;
+      },
+      error: (error) => {
+        console.error('Error loading marques:', error);
+        this.loadingMarques = false;
+        Swal.fire({
+          icon: 'error',
+          title: 'Erreur',
+          text: 'Impossible de charger les marques de véhicules',
+          confirmButtonText: 'OK'
+        });
+      }
+    });
+    
+    this.subscriptions.push(marquesSub);
   }
 
   private loadActiveZones(): void {
@@ -161,7 +169,6 @@ export class TruckForm implements OnInit, OnDestroy {
     this.subscriptions.push(zonesSub);
   }
 
-  // Add this method to load type trucks
   private loadTypeTrucks(): void {
     this.loadingTypeTrucks = true;
     
@@ -195,44 +202,49 @@ export class TruckForm implements OnInit, OnDestroy {
     this.subscriptions.push(typeTrucksSub);
   }
 
-  private loadTruck(id: number) {
-    const truckSub = this.httpService.getTruck(id).subscribe({
-      next: (truck: ITruck) => {
-        const dateValue = truck.technicalVisitDate
-          ? new Date(truck.technicalVisitDate)
-          : null;
+private loadTruck(id: number) {
+  const truckSub = this.httpService.getTruck(id).subscribe({
+    next: (response: any) => {
+      // Check if response has a data property (your API wrapper)
+      const truckData = response.data || response;
+      
+      console.log('Truck data received:', truckData);
+      
+      const dateValue = truckData.technicalVisitDate
+        ? new Date(truckData.technicalVisitDate)
+        : null;
 
-        this.truckForm.patchValue({
-          immatriculation: truck.immatriculation,
-          brand: truck.brand,
-          technicalVisitDate: dateValue,   
-          status: truck.status,
-          color: truck.color || '#ffffff',
-          zoneId: truck.zoneId || null,
-          typeTruckId: truck.typeTruckId || null, 
-        });
-        
-        if (truck.imageBase64) {
-          this.imageBase64 = truck.imageBase64;
-          this.originalImageBase64 = truck.imageBase64;
-          this.imagePreview = `data:image/png;base64,${truck.imageBase64}`;
-          this.hasExistingImage = true;
-        }
-        
-      },
-      error: (error) => {
-        console.error('Error loading truck:', error);
-        Swal.fire({
-          icon: 'error',
-          title: 'Erreur',
-          text: 'Impossible de charger les informations du camion',
-          confirmButtonText: 'OK'
-        }).then(() => this.dialogRef.close());
+      this.truckForm.patchValue({
+        immatriculation: truckData.immatriculation,
+        marqueTruckId: truckData.marqueTruckId || null,
+        technicalVisitDate: dateValue,   
+        status: truckData.status,
+        color: truckData.color || '#ffffff',
+        zoneId: truckData.zoneId || null,
+        typeTruckId: truckData.typeTruckId || null, 
+      });
+      
+      if (truckData.imageBase64) {
+        this.imageBase64 = truckData.imageBase64;
+        this.originalImageBase64 = truckData.imageBase64;
+        this.imagePreview = `data:image/png;base64,${truckData.imageBase64}`;
+        this.hasExistingImage = true;
       }
-    });
-    
-    this.subscriptions.push(truckSub);
-  }
+      
+    },
+    error: (error) => {
+      console.error('Error loading truck:', error);
+      Swal.fire({
+        icon: 'error',
+        title: 'Erreur',
+        text: 'Impossible de charger les informations du camion',
+        confirmButtonText: 'OK'
+      }).then(() => this.dialogRef.close());
+    }
+  });
+  
+  this.subscriptions.push(truckSub);
+}
 
   getErrorMessage(controlName: string): string {
     const control = this.truckForm.get(controlName);
@@ -256,30 +268,15 @@ export class TruckForm implements OnInit, OnDestroy {
   private getFieldLabel(controlName: string): string {
     const labels: { [key: string]: string } = {
       immatriculation: 'L\'immatriculation',
-      brand: 'La marque',
-      capacityUnit: 'L\'unité de capacité',
-      capacity: 'La capacité',
+      // Replace 'brand' with 'marqueTruckId'
+      marqueTruckId: 'La marque',
       technicalVisitDate: 'La date de visite technique',
       status: 'Le statut',
       color: 'La couleur',
       zoneId: 'La zone',
-      typeTruckId: 'Le type de Truck' // Add this
+      typeTruckId: 'Le type de véhicule'
     };
     return labels[controlName] || controlName;
-  }
-
-  getCapacityPlaceholder(): string {
-    const unit = this.truckForm.get('capacityUnit')?.value;
-    switch(unit) {
-      case 'palettes':
-        return 'Ex: 20';
-      case 'cartons':
-        return 'Ex: 1000';
-      case 'tonnes':
-        return 'Ex: 12';
-      default:
-        return 'Ex: 12';
-    }
   }
 
   formatImmatriculation() {
@@ -296,7 +293,7 @@ export class TruckForm implements OnInit, OnDestroy {
   }
 
   onSubmit() {
-    if (!this.truckForm.valid || this.isSubmitting || this.loadingZones || this.loadingTypeTrucks) return;
+    if (!this.truckForm.valid || this.isSubmitting || this.loadingZones || this.loadingTypeTrucks || this.loadingMarques) return;
 
     this.isSubmitting = true;
 
@@ -308,16 +305,17 @@ export class TruckForm implements OnInit, OnDestroy {
           .padStart(2, '0')}-${selectedDate.getDate().toString().padStart(2, '0')}`
       : null;
 
-    const value: ITruck = {
+    const value: any = {
       id: this.data.truckId || 0,
       immatriculation: this.truckForm.value.immatriculation!,
-      brand: this.truckForm.value.brand!,
+      // Replace 'brand' with 'marqueTruckId'
+      marqueTruckId: this.truckForm.value.marqueTruckId!,
       technicalVisitDate: technicalVisitDate, 
       status: this.truckForm.value.status!,
       color: this.truckForm.value.color!,
       imageBase64: this.imageBase64,
       zoneId: this.truckForm.value.zoneId!,
-      typeTruckId: this.truckForm.value.typeTruckId!, // Add this
+      typeTruckId: this.truckForm.value.typeTruckId!,
     };
 
     if (this.data.truckId) {
@@ -437,39 +435,5 @@ export class TruckForm implements OnInit, OnDestroy {
       text: errorMessage,
       confirmButtonText: 'OK'
     });
-  }
-
-  private loadCapacityUnits(): void {
-    this.orderSettingsService.getSettings().subscribe({
-      next: (config: any) => {
-        const units: string[] = Array.isArray(config.loadingUnit)
-          ? config.loadingUnit
-          : typeof config.loadingUnit === 'string'
-            ? [config.loadingUnit]
-            : [];
-
-        this.capacityUnits = units.length
-          ? units.map(u => ({ value: u, label: this.getCapacityUnitLabel(u) }))
-          : [{ value: 'tonnes', label: 'Tonnes' }];
-
-        const currentValue = this.truckForm.get('capacityUnit')?.value;
-        if (!currentValue && this.capacityUnits.length > 0) {
-          this.truckForm.get('capacityUnit')?.setValue(this.capacityUnits[0].value);
-        }
-      },
-      error: (err) => {
-        console.error('Erreur récupération unités de capacité', err);
-        this.capacityUnits = [{ value: 'tonnes', label: 'Tonnes' }];
-      }
-    });
-  }
-
-  private getCapacityUnitLabel(unit: string): string {
-    switch(unit) {
-      case 'palettes': return 'Palettes';
-      case 'cartons': return 'Cartons';
-      case 'tonnes': return 'Tonnes';
-      default: return unit;
-    }
   }
 }
