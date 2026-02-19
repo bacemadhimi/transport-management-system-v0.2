@@ -433,5 +433,8 @@
   "GESTION_VEHICULES": "Vehicle Management",
   "MARQUE_VEHICULE": "Vehicle Brand",
   "TYPE_VEHICULES": "Vehicle Types",
-  "TYPE_VEHICULE_LABEL": "Vehicle Type"
+  "TYPE_VEHICULE_LABEL": "Vehicle Type",
+  "IMMATRICULATION": "Registration Number",
+  "BRAND_LABEL": "Brand",
+  "Action": "Action"
 }
