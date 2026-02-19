@@ -127,8 +127,8 @@
   "TRUCK_ADD_TITLE": "Add Truck",
   "IMMATRICULATION_LABEL": "Registration",
   "IMMATRICULATION_REQUIRED": "Registration is required",
-  "BRAND_LABEL": "Brand",
-  "BRAND_REQUIRED": "Brand is required",
+  "MarqueTruckId_LABEL": "MarqueTruckId",
+  "MarqueTruckId_REQUIRED": "MarqueTruckId is required",
   "CAPACITY_UNIT": "Capacity Unit",
   "CAPACITY_UNIT_REQUIRED": "Capacity unit is required",
   "CAPACITY_LABEL": "Capacity",
@@ -428,5 +428,9 @@
   "ORDERS_PENDING": "pending order(s)",
   "DESELECT_ALL": "Deselect all",
   "NO_PENDING_ORDERS_FOR_CUSTOMER": "No pending orders for this customer",
-  "OVERTIME_APPROVAL_REQUIRED": "Approval required for overtime"
+  "OVERTIME_APPROVAL_REQUIRED": "Approval required for overtime",
+  "MARQUES_VEHICULES": "Vehicle Brands",
+  "GESTION_VEHICULES": "Vehicle Management",
+  "MARQUE_VEHICULE": "Vehicle Brand",
+  "TYPE_VEHICULES": "Vehicle Types"
 }

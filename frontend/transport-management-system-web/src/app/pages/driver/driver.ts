@@ -122,10 +122,13 @@ export class Driver implements OnInit {
 
 edit(driver: IDriver) {
   const ref = this.dialog.open(DriverForm, { 
-    panelClass: 'm-auto', 
+    panelClass: 'm-auto',
+    width: '90vw', // 90% of viewport width
+    maxWidth: '1200px', // Maximum width
+    minWidth: '400px', // Minimum width
+    height: 'auto',
+    maxHeight: '90vh', // Maximum height
     data: { driverId: driver.id },
-    width: '600px',  
-    maxWidth: '90vw', 
     disableClose: false 
   });
   ref.afterClosed().subscribe(() => this.getLatestData());
@@ -133,10 +136,14 @@ edit(driver: IDriver) {
 
 openDialog() {
   const ref = this.dialog.open(DriverForm, { 
-    panelClass: 'm-auto', 
+    panelClass: 'm-auto',
+    width: '90vw', // 90% of viewport width
+    maxWidth: '1200px', // Maximum width
+    minWidth: '400px', // Minimum width
+    height: 'auto',
+    maxHeight: '90vh', // Maximum height
     data: {},
-    width: '600px',
-    maxWidth: '90vw'
+    
   });
   ref.afterClosed().subscribe(() => this.getLatestData());
 }

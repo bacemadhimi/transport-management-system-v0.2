@@ -244,6 +244,14 @@
             <mat-icon matListItemIcon class="sidebar-icon">category</mat-icon>
             <a matListItemTitle class="sidebar-text">{{ t('TYPE_VEHICULES') }}</a>
           </mat-list-item>
+          <mat-list-item 
+            *ngIf="authService.hasRole('SuperAdmin') || authService.hasEntityAccess('MARQUE_VEHICULE')"
+            routerLink="/marques"
+            routerLinkActive="active-menu-item"
+            class="sidebar-item">
+            <mat-icon matListItemIcon class="sidebar-icon">branding_watermark</mat-icon>
+            <a matListItemTitle class="sidebar-text">{{ t('MARQUES_VEHICULES') }}</a>
+          </mat-list-item>
         <!-- Orders -->
         <mat-list-item 
           *ngIf="authService.hasRole('SuperAdmin') || authService.hasEntityAccess('ORDER')"

@@ -25,6 +25,7 @@ import { DailyForecast, WeatherData } from '../types/weather';
 import { ApiResponses, ICreateCityDto, ICity, IUpdateCityDto } from '../types/city';
 import { AvailabilityRequestDto, DriverAvailabilityDto, DriverOvertimeCheckDto, DriverOvertimeResultDto } from '../types/driver-overtime';
 import { ITypeTruck } from '../types/type-truck';
+import { IMarque, IMarqueDto } from '../types/marque';
 
 @Injectable({
   providedIn: 'root'
@@ -1383,6 +1384,29 @@ getTrucksByDate(date: Date, locationId?: number): Observable<ITruck[]> {
     })
   );
 }
+// Marque endpoints
+getMarques(filter?: any): Observable<PagedData<ICity>> {
+  const params = new HttpParams({ fromObject: filter || {} });
+  return this.http.get<PagedData<ICity>>(`${environment.apiUrl}/api/MarqueTruck`, { params });
+}
+getMarque(id: number) {
+  return this.http.get<IMarque>(`${environment.apiUrl}/api/MarqueTruck/${id}`);
+}
+
+addMarque(marque: IMarqueDto) {
+  return this.http.post<IMarque>(`${environment.apiUrl}/api/MarqueTruck`, marque);
+}
+
+updateMarque(id: number, marque: IMarqueDto) {
+  return this.http.put<IMarque>(`${environment.apiUrl}/api/MarqueTruck/${id}`, marque);
+}
+
+deleteMarque(id: number) {
+  return this.http.delete(`${environment.apiUrl}/api/MarqueTruck/${id}`);
+}
+getMarqueTrucks() {
+    return this.http.get<IMarque[]>(environment.apiUrl + '/api/MarqueTruck/list');
+  }
 }
 
 

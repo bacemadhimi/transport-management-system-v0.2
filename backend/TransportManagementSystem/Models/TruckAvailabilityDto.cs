@@ -7,7 +7,7 @@ public class TruckAvailabilityDto
     public bool IsAvailable { get; set; }
     public bool IsDayOff { get; set; }
     public string Reason { get; set; }
-    public string Brand { get; set; }
+    public int MarqueTruckId { get; set; }
     public Dictionary<string, AvailabilityDayDto> Availability { get; set; }
 }
 

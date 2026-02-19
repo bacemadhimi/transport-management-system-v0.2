@@ -41,7 +41,6 @@ public class TrucksController : ControllerBase
             }
 
             query = query.Where(x =>
-                x.Brand.Contains(search) ||
                 x.Immatriculation.Contains(search) ||
                 x.Status.Contains(search) ||
                 (searchDate.HasValue && x.TechnicalVisitDate.Date == searchDate.Value)
@@ -63,7 +62,7 @@ public class TrucksController : ControllerBase
         {
             Id = t.Id,
             Immatriculation = t.Immatriculation,
-            Brand = t.Brand,
+            MarqueTruckId = t.MarqueTruckId,
             Color = t.Color,
             Status = t.Status,
             TechnicalVisitDate = t.TechnicalVisitDate,
@@ -102,7 +101,7 @@ public class TrucksController : ControllerBase
         {
             Id = truck.Id,
             Immatriculation = truck.Immatriculation,
-            Brand = truck.Brand,
+            MarqueTruckId = truck.MarqueTruckId,
             Color = truck.Color,
             Status = truck.Status,
             TechnicalVisitDate = truck.TechnicalVisitDate,
@@ -136,7 +135,7 @@ public class TrucksController : ControllerBase
         {
             Immatriculation = model.Immatriculation,
             TechnicalVisitDate = model.TechnicalVisitDate,
-            Brand = model.Brand,
+            MarqueTruckId = model.MarqueTruckId,
             Status = model.Status ?? "Disponible",
             Color = model.Color,
             ImageBase64 = model.ImageBase64,
@@ -158,7 +157,7 @@ public class TrucksController : ControllerBase
         {
             Id = createdTruck.Id,
             Immatriculation = createdTruck.Immatriculation,
-            Brand = createdTruck.Brand,
+            MarqueTruckId = createdTruck.MarqueTruckId,
             Color = createdTruck.Color,
             Status = createdTruck.Status,
             TechnicalVisitDate = createdTruck.TechnicalVisitDate,
@@ -199,7 +198,7 @@ public class TrucksController : ControllerBase
 
         truck.Immatriculation = model.Immatriculation;
         truck.TechnicalVisitDate = model.TechnicalVisitDate;
-        truck.Brand = model.Brand;
+        truck.MarqueTruckId = model.MarqueTruckId;
         truck.Status = model.Status;
         truck.Color = model.Color;
         truck.ImageBase64 = model.ImageBase64;
@@ -219,7 +218,7 @@ public class TrucksController : ControllerBase
         {
             Id = updatedTruck.Id,
             Immatriculation = updatedTruck.Immatriculation,
-            Brand = updatedTruck.Brand,
+            MarqueTruckId = updatedTruck.MarqueTruckId,
             Color = updatedTruck.Color,
             Status = updatedTruck.Status,
             TechnicalVisitDate = updatedTruck.TechnicalVisitDate,
@@ -272,7 +271,7 @@ public class TrucksController : ControllerBase
         {
             Id = t.Id,
             Immatriculation = t.Immatriculation,
-            Brand = t.Brand,
+            MarqueTruckId = t.MarqueTruckId,
             Color = t.Color,
             Status = t.Status,
             TechnicalVisitDate = t.TechnicalVisitDate,
@@ -346,7 +345,7 @@ public class TrucksController : ControllerBase
                     {
                         t.Id,
                         t.Immatriculation,
-                        t.Brand,
+                        t.MarqueTruckId,
                         TypeTruck = t.TypeTruck != null ? new
                         {
                             t.TypeTruck.Id,
@@ -370,7 +369,7 @@ public class TrucksController : ControllerBase
                 {
                     t.Id,
                     t.Immatriculation,
-                    t.Brand,
+                    t.MarqueTruckId,
                     reason = isWeekend ? "Weekend" :
                              isDayOff ? "Jour férié" :
                              assignedTruckIds.Contains(t.Id) ? "Assigné à un autre voyage" :

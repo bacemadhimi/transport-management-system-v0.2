@@ -16,7 +16,11 @@ public class Truck
     public DateTime TechnicalVisitDate { get; set; }
 
     [Required]
-    public string Brand { get; set; } 
+    public int MarqueTruckId { get; set; }
+
+    [ForeignKey("MarqueTruckId")]
+    public MarqueTruck? MarqueTruck { get; set; }
+
 
     [Required]
     public string Status { get; set; }
