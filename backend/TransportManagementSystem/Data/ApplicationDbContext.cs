@@ -48,7 +48,6 @@ namespace TransportManagementSystem.Data
         public DbSet<TripSetting> TripSettings { get; set; }
         public DbSet<TypeTruck> TypeTrucks { get; set; }
         public DbSet<Employee> Employees { get; set; }
-        public DbSet<TruckType> TruckTypes { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

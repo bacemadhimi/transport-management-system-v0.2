@@ -33,7 +33,7 @@ public class Employee
     public int? TruckTypeId { get; set; }
 
     [ForeignKey("TruckTypeId")]
-    public TruckType? TruckType { get; set; }
+    public TypeTruck? TruckType { get; set; }
 
     [Column(TypeName = "nvarchar(max)")]
     public string? DrivingLicenseAttachment { get; set; } // Base64 encoded file

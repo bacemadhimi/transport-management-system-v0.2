@@ -59,7 +59,6 @@ builder.Services.AddScoped<IRepository<Location>, Repository<Location>>();
 builder.Services.AddScoped<IRepository<City>, Repository<City>>();
 builder.Services.AddScoped<IRepository<TypeTruck>, Repository<TypeTruck>>();
 builder.Services.AddScoped<IRepository<Employee>, Repository<Employee>>();
-builder.Services.AddScoped<IRepository<TruckType>, Repository<TruckType>>();
 
 
 builder.Services.AddScoped<UserHelper>();
