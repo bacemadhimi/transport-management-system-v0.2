@@ -51,4 +51,6 @@ public class Employee
 
     [ForeignKey("CategoryId")]
     public Category Category { get; set; } = null!;
+
+    public bool IsInternal { get; set; } = true;
 }
