@@ -2,7 +2,6 @@ using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace TransportManagementSystem.Entity;
-
 public class Employee
 {
     [Key]
@@ -27,26 +26,29 @@ public class Employee
     public string Email { get; set; } = string.Empty;
 
     [StringLength(50)]
-    public string? DrivingLicense { get; set; }
-
-   
+    public string? DrivingLicense { get; set; } 
     public int? TypeTruckId { get; set; }
 
     [ForeignKey("TypeTruckId")]
     public TypeTruck? TypeTruck { get; set; }
 
     [Column(TypeName = "nvarchar(max)")]
-    public string? DrivingLicenseAttachment { get; set; } // Base64 encoded file
+    public string? DrivingLicenseAttachment { get; set; }
 
     [StringLength(50)]
-    public string? AttachmentFileName { get; set; } // Original file name
+    public string? AttachmentFileName { get; set; } 
 
     [StringLength(10)]
-    public string? AttachmentFileType { get; set; } // File extension: jpg, jpeg, png, pdf, etc.
+    public string? AttachmentFileType { get; set; } 
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     public DateTime? UpdatedAt { get; set; }
 
     public bool IsEnable { get; set; } = true;
+
+    public int CategoryId { get; set; }
+
+    [ForeignKey("CategoryId")]
+    public Category Category { get; set; } = null!;
 }
