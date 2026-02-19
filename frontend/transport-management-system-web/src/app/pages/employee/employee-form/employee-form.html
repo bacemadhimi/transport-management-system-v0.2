@@ -48,15 +48,15 @@
         <!-- Truck Type -->
     <mat-label>{{ t('Type de camion') || 'Truck Type' }}</mat-label>
     <mat-form-field appearance="outline" class="employee-field">
-      <mat-select formControlName="truckTypeId" [disabled]="isSubmitting || loadingTruckTypes" placeholder="Entrer le type de camion que vous conduisez">
-        <!-- <mat-option *ngIf="loadingTruckTypes" disabled>
+      <mat-select formControlName="typeTruckId" [disabled]="isSubmitting || loadingTypeTrucks" placeholder="Entrer le type de camion que vous conduisez">
+        <!-- <mat-option *ngIf="loadingTypeTrucks" disabled>
           <div class="flex items-center">
             <mat-spinner diameter="20" class="mr-2"></mat-spinner>
             <span>{{ t('Chargement...') || 'Loading...' }}</span>
           </div>
         </mat-option> -->
         
-        <mat-option *ngIf="!loadingTruckTypes && truckTypes.length === 0" disabled>
+        <mat-option *ngIf="!loadingTypeTrucks && typeTrucks.length === 0" disabled>
           <div class="text-gray-500 italic">
             {{ t('Aucun type disponible') || 'No types available' }}
           </div>
@@ -66,9 +66,9 @@
           <span class="text-gray-500">{{ t('-- Aucun --') || '-- None --' }}</span>
         </mat-option>
         
-        <mat-option *ngFor="let truckType of truckTypes" [value]="truckType.id">
-          {{ truckType.type }} ({{ truckType.capacity }} {{ truckType.unit }})
-        </mat-option>
+    <mat-option *ngFor="let typeTruck of typeTrucks" [value]="+typeTruck.id">
+  {{ typeTruck.type }} ({{ typeTruck.capacity }} {{ typeTruck.unit }})
+</mat-option>
       </mat-select>
     </mat-form-field>
 

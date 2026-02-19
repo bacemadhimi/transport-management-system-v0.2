@@ -13,7 +13,7 @@ public class CreateEmployeeRequest
 
     public string? DrivingLicense { get; set; }
 
-    public int? TruckTypeId { get; set; }
+    public int? TypeTruckId { get; set; }
 
 
     public IFormFile? DrivingLicenseFile { get; set; }

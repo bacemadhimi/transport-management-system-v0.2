@@ -7,8 +7,8 @@ export interface IEmployee {
   phoneNumber: string;
   email: string;
   drivingLicense: string;
-  truckTypeId?: number;
-  truckType?: ITypeTruck;
+  typeTruckId?: number;
+  typeTruck?: ITypeTruck;
   drivingLicenseAttachment?: string; 
   attachmentFileName?: string;
   attachmentFileType?: string;

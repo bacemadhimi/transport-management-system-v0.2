@@ -32,7 +32,7 @@ public class EmployeeController : ControllerBase
 
       
         var query = dbContext.Employees
-            .Include(x => x.TruckType)
+            .Include(x => x.TypeTruck)
             .Where(x => x.IsEnable == true);
 
        
@@ -71,7 +71,7 @@ public class EmployeeController : ControllerBase
     public async Task<ActionResult<IEnumerable<Employee>>> GetEmployees()
     {
         var employees = await dbContext.Employees
-            .Include(e => e.TruckType)
+            .Include(e => e.TypeTruck)
             .Where(e => e.IsEnable == true)
             .OrderBy(e => e.Name)
             .ToListAsync();
@@ -85,7 +85,7 @@ public class EmployeeController : ControllerBase
     public async Task<ActionResult<Employee>> GetEmployeeById(int id)
     {
         var employee = await dbContext.Employees
-            .Include(e => e.TruckType)
+            .Include(e => e.TypeTruck)
             .FirstOrDefaultAsync(e => e.Id == id);
 
         if (employee == null)
@@ -140,7 +140,7 @@ public class EmployeeController : ControllerBase
             PhoneNumber = request.PhoneNumber,
             Email = request.Email,
             DrivingLicense = request.DrivingLicense,
-            TruckTypeId = request.TruckTypeId,
+            TypeTruckId = request.TypeTruckId,
             CreatedAt = DateTime.UtcNow
         };
 
@@ -251,7 +251,7 @@ public class EmployeeController : ControllerBase
         existingEmployee.PhoneNumber = request.PhoneNumber;
         existingEmployee.Email = request.Email;
         existingEmployee.DrivingLicense = request.DrivingLicense;
-        existingEmployee.TruckTypeId = request.TruckTypeId;
+        existingEmployee.TypeTruckId = request.TypeTruckId;
         existingEmployee.IsEnable = request.IsEnable;
         existingEmployee.UpdatedAt = DateTime.UtcNow;
 

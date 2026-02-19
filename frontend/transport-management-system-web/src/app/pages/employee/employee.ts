@@ -65,11 +65,11 @@ export class Employee implements OnInit {
     { key: 'phoneNumber', label: this.t('Telephone') },
     { key: 'drivingLicense', label: this.t('Numéro Permis') || 'License Number' },
     {
-      key: 'truckType',
+      key: 'typeTruck',
       label: this.t('Type de camion') || 'Truck Type',
       format: (row: IEmployee) => {
-        if (row.truckType) {
-          return `${row.truckType.type} (${row.truckType.capacity} ${row.truckType.unit})`;
+        if (row.typeTruck) {
+          return `${row.typeTruck.type} (${row.typeTruck.capacity} ${row.typeTruck.unit})`;
         }
         return '-';
       }
@@ -244,7 +244,7 @@ export class Employee implements OnInit {
         'Email': emp.email,
         'Phone': emp.phoneNumber,
         'License': emp.drivingLicense,
-        'Truck Type': emp.truckType ? `${emp.truckType.type} (${emp.truckType.capacity} ${emp.truckType.unit})` : '-',
+        'Truck Type': emp.typeTruck ? `${emp.typeTruck.type} (${emp.typeTruck.capacity} ${emp.typeTruck.unit})` : '-',
         'Status': emp.isEnable ? 'Active' : 'Inactive'
       }))
     );
@@ -267,7 +267,7 @@ export class Employee implements OnInit {
         emp.email,
         emp.phoneNumber,
         emp.drivingLicense,
-        emp.truckType ? `${emp.truckType.type} (${emp.truckType.capacity} ${emp.truckType.unit})` : '-',
+        emp.typeTruck ? `${emp.typeTruck.type} (${emp.typeTruck.capacity} ${emp.typeTruck.unit})` : '-',
         emp.isEnable ? 'Active' : 'Inactive'
       ])
     ];
@@ -294,7 +294,7 @@ export class Employee implements OnInit {
         emp.email,
         emp.phoneNumber,
         emp.drivingLicense,
-        emp.truckType ? `${emp.truckType.type} (${emp.truckType.capacity} ${emp.truckType.unit})` : '-'
+        emp.typeTruck ? `${emp.typeTruck.type} (${emp.typeTruck.capacity} ${emp.typeTruck.unit})` : '-'
       ]);
     });
 

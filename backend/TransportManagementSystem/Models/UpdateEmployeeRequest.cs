@@ -15,7 +15,7 @@ public class UpdateEmployeeRequest
 
     public string? DrivingLicense { get; set; }
 
-    public int? TruckTypeId { get; set; }
+    public int? TypeTruckId { get; set; }
 
     public bool IsEnable { get; set; } = true;
 

@@ -55,8 +55,8 @@ export class EmployeeForm implements OnInit, OnDestroy {
   originalFileName: string | null = null;
   hasExistingFile = false;
   private subscriptions: Subscription[] = [];
-  truckTypes: ITypeTruck[] = [];
-  loadingTruckTypes = false;
+  typeTrucks: ITypeTruck[] = [];
+  loadingTypeTrucks = false;
 
   employeeForm = this.fb.group({
     idNumber: this.fb.control<string>('', [Validators.required]),
@@ -64,29 +64,47 @@ export class EmployeeForm implements OnInit, OnDestroy {
     email: this.fb.control<string>('', [Validators.required, Validators.email]),
     phoneNumber: this.fb.control<string>('', [Validators.required]),
     drivingLicense: this.fb.control<string>(''),
-    truckTypeId: this.fb.control<number | null>(null)
+    typeTruckId: this.fb.control<number | null>(null)
   });
 
   ngOnInit() {
-    this.loadTruckTypes();
+    this.loadTypeTrucks();
     if (this.data.employeeId) {
       this.loadEmployee(this.data.employeeId);
     }
   }
 
-  loadTruckTypes() {
-    this.loadingTruckTypes = true;
-    const sub = this.httpService.getTruckTypes().subscribe({
-      next: (truckTypes: ITypeTruck[]) => {
-        this.truckTypes = truckTypes;
-        this.loadingTruckTypes = false;
+ private loadTypeTrucks(): void {
+    this.loadingTypeTrucks = true;
+    
+    const typeTrucksSub = this.httpService.getTypeTrucksList({ pageIndex: 0, pageSize: 100 }).subscribe({
+      next: (response) => {
+        let typeTrucksData: ITypeTruck[];
+        
+        if (response && typeof response === 'object' && 'data' in response) {
+          typeTrucksData = (response as any).data;
+        } else if (Array.isArray(response)) {
+          typeTrucksData = response;
+        } else {
+          typeTrucksData = [];
+        }
+        
+        this.typeTrucks = typeTrucksData;
+        this.loadingTypeTrucks = false;
       },
       error: (error) => {
-        console.error('Error loading truck types:', error);
-        this.loadingTruckTypes = false;
+        console.error('Error loading type trucks:', error);
+        this.loadingTypeTrucks = false;
+        Swal.fire({
+          icon: 'error',
+          title: 'Erreur',
+          text: 'Impossible de charger les types de véhicules',
+          confirmButtonText: 'OK'
+        });
       }
     });
-    this.subscriptions.push(sub);
+    
+    this.subscriptions.push(typeTrucksSub);
   }
 
   ngOnDestroy() {
@@ -102,7 +120,7 @@ export class EmployeeForm implements OnInit, OnDestroy {
           email: employee.email,
           phoneNumber: employee.phoneNumber,
           drivingLicense: employee.drivingLicense || '',
-          truckTypeId: employee.truckTypeId || null
+          typeTruckId: employee.typeTruckId || null
         });
 
         if (employee.attachmentFileName) {
@@ -195,9 +213,9 @@ export class EmployeeForm implements OnInit, OnDestroy {
     formData.append('phoneNumber', this.employeeForm.get('phoneNumber')?.value || '');
     formData.append('drivingLicense', this.employeeForm.get('drivingLicense')?.value || '');
     
-    const truckTypeId = this.employeeForm.get('truckTypeId')?.value;
-    if (truckTypeId) {
-      formData.append('truckTypeId', truckTypeId.toString());
+    const typeTruckId = this.employeeForm.get('typeTruckId')?.value;
+    if (typeTruckId) {
+      formData.append('typeTruckId', typeTruckId.toString());
     }
 
     if (this.selectedFile) {
@@ -234,9 +252,9 @@ export class EmployeeForm implements OnInit, OnDestroy {
     formData.append('drivingLicense', this.employeeForm.get('drivingLicense')?.value || '');
     formData.append('isEnable', 'true');
     
-    const truckTypeId = this.employeeForm.get('truckTypeId')?.value;
-    if (truckTypeId) {
-      formData.append('truckTypeId', truckTypeId.toString());
+    const typeTruckId = this.employeeForm.get('typeTruckId')?.value;
+    if (typeTruckId) {
+      formData.append('typeTruckId', typeTruckId.toString());
     }
 
     if (this.selectedFile) {
