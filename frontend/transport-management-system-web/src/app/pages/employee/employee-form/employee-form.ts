@@ -11,7 +11,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatSelectModule } from '@angular/material/select';
 import { Http } from '../../../services/http';
 import { IEmployee } from '../../../types/employee';
-import { ITruckType } from '../../../types/truck-type';
+import { ITypeTruck } from '../../../types/type-truck';
 import Swal from 'sweetalert2';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { Translation } from '../../../services/Translation';
@@ -55,7 +55,7 @@ export class EmployeeForm implements OnInit, OnDestroy {
   originalFileName: string | null = null;
   hasExistingFile = false;
   private subscriptions: Subscription[] = [];
-  truckTypes: ITruckType[] = [];
+  truckTypes: ITypeTruck[] = [];
   loadingTruckTypes = false;
 
   employeeForm = this.fb.group({
@@ -77,7 +77,7 @@ export class EmployeeForm implements OnInit, OnDestroy {
   loadTruckTypes() {
     this.loadingTruckTypes = true;
     const sub = this.httpService.getTruckTypes().subscribe({
-      next: (truckTypes: ITruckType[]) => {
+      next: (truckTypes: ITypeTruck[]) => {
         this.truckTypes = truckTypes;
         this.loadingTruckTypes = false;
       },
