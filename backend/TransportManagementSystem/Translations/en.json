@@ -432,5 +432,6 @@
   "MARQUES_VEHICULES": "Vehicle Brands",
   "GESTION_VEHICULES": "Vehicle Management",
   "MARQUE_VEHICULE": "Vehicle Brand",
-  "TYPE_VEHICULES": "Vehicle Types"
+  "TYPE_VEHICULES": "Vehicle Types",
+  "TYPE_VEHICULE_LABEL": "Vehicle Type"
 }

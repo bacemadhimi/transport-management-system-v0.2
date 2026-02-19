@@ -11,5 +11,5 @@ public class TruckDto
     public string? ImageBase64 { get; set; }
     public int? ZoneId { get; set; }
     public int TypeTruckId { get; set; }
-    public TypeTruckDto TypeTruck { get; set; }
+    public TypeTruckDto? TypeTruck { get; set; }
 }

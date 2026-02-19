@@ -434,6 +434,7 @@
   "MARQUES_VEHICULES": "Marques de véhicules",
   "GESTION_VEHICULES": "Gestion des véhicules",
   "MARQUE_VEHICULE": "Marque de véhicule",
-  "TYPE_VEHICULES": "Types de véhicules"
+  "TYPE_VEHICULES": "Types de véhicules",
+  "TYPE_VEHICULE_LABEL": "Type de véhicule"
 }
 

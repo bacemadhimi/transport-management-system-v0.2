@@ -381,7 +381,12 @@ getLoadingUnitImage(unit: string): string {
 
   edit(truck: ITruck) {
     const ref = this.dialog.open(TruckForm, {
-      panelClass: 'm-auto',
+        panelClass: 'm-auto',
+        width: '90vw', // 90% of viewport width
+        maxWidth: '1200px', // Maximum width
+        minWidth: '400px', // Minimum width
+        height: 'auto',
+        maxHeight: '90vh', // Maximum height
       data: { truckId: truck.id }
     });
 
@@ -409,7 +414,12 @@ delete(truck: ITruck) {
 
   openDialog(): void {
     const ref = this.dialog.open(TruckForm, {
-      panelClass: 'm-auto',
+       panelClass: 'm-auto',
+        width: '90vw', // 90% of viewport width
+        maxWidth: '1200px', // Maximum width
+        minWidth: '400px', // Minimum width
+        height: 'auto',
+        maxHeight: '90vh', // Maximum height
       data: {}
     });
 
