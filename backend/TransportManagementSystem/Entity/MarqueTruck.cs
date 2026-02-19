@@ -12,7 +12,7 @@ namespace TransportManagementSystem.Entity
         [Required]
         public string Name { get; set; }
 
-        // Navigation property (one brand → many trucks)
+        // Navigation property (one MarqueTruckId → many trucks)
         public ICollection<Truck>? Trucks { get; set; }
     }
 }

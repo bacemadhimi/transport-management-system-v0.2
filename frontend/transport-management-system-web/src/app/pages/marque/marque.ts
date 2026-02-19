@@ -1,11 +1,11 @@
 import { Component, inject, OnInit } from '@angular/core';
 import { Http } from '../../services/http';
 import { Table } from '../../components/table/table';
-import { ITypeTruck } from '../../types/type-truck';
+import { IMarque } from '../../types/marque';
 import { MatButtonModule } from '@angular/material/button';
 import { FormControl, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { MatDialog } from '@angular/material/dialog';
-import { TypeTruckForm } from './type-truck-form/type-truck-form';
+import { MarqueForm } from './marque-form/marque-form';
 import { MatSelectModule } from '@angular/material/select';
 import { MatCardModule } from '@angular/material/card';
 import { MatInputModule } from '@angular/material/input';
@@ -17,7 +17,7 @@ import { CommonModule } from '@angular/common';
 import Swal from 'sweetalert2';
 
 @Component({
-  selector: 'app-type-truck',
+  selector: 'app-marque',
   standalone: true,
   imports: [
     Table,
@@ -30,43 +30,40 @@ import Swal from 'sweetalert2';
     MatInputModule,
     MatFormFieldModule
   ],
-  templateUrl: './type-truck.html',
-  styleUrls: ['./type-truck.scss']
+  templateUrl: './marque.html',
+  styleUrls: ['./marque.scss']
 })
-export class TypeTruck implements OnInit {
+export class Marque implements OnInit {
   constructor(public auth: Auth) {}  
 
   getActions(row: any, actions: string[]) {
     const permittedActions: string[] = [];
-
     for (const a of actions) {
-      if (a === 'Modifier' && this.auth.hasPermission('TYPE_VEHICULE_EDIT')) {
+      if (a === 'Modifier' && this.auth.hasPermission('MARQUE_EDIT')) {
         permittedActions.push(a);
       }
-      if (a === 'Supprimer' && this.auth.hasPermission('TYPE_VEHICULE_DISABLE')) {
+      if (a === 'Supprimer' && this.auth.hasPermission('MARQUE_DISABLE')) {
         permittedActions.push(a);
       }
     }
-
     return permittedActions;
   }
 
   httpService = inject(Http);
-  pagedTypeTruckData!: PagedData<ITypeTruck>;
+  pagedMarqueData!: PagedData<IMarque>;
   totalData!: number;
 
   filter: any = {
     pageIndex: 0,
-    pageSize: 10
+    pageSize: 10,
+    search: ''
   };
 
   searchControl = new FormControl('');
   readonly dialog = inject(MatDialog);
 
   showCols = [
-    { key: 'type', label: 'Type' },
-    { key: 'capacity', label: 'Capacité' },
-    { key: 'unit', label: 'Unité' },
+    { key: 'name', label: 'Nom de la Marque' },
     {
       key: 'Action',
       format: () => ["Modifier", "Supprimer"]
@@ -85,9 +82,10 @@ export class TypeTruck implements OnInit {
   }
 
   getLatestData() {
-    this.httpService.getTypeTrucksList(this.filter).subscribe(result => {
-      this.pagedTypeTruckData = result;
+   this.httpService.getMarques(this.filter).subscribe(result => {
+      this.pagedMarqueData = result;
       this.totalData = result.totalData;
+          console.log('dd'+ this.pagedMarqueData )
     });
   }
 
@@ -95,11 +93,11 @@ export class TypeTruck implements OnInit {
     this.openDialog();
   }
 
-  edit(typeTruck: ITypeTruck) {
-    const ref = this.dialog.open(TypeTruckForm, {
+  edit(marque: IMarque) {
+    const ref = this.dialog.open(MarqueForm, {
       panelClass: 'm-auto',
       width: '500px',
-      data: { typeTruckId: typeTruck.id }
+      data: { marqueId: marque.id }
     });
 
     ref.afterClosed().subscribe((result) => {
@@ -109,36 +107,34 @@ export class TypeTruck implements OnInit {
     });
   }
 
-  delete(typeTruck: ITypeTruck) {
+  delete(marque: IMarque) {
     Swal.fire({
       title: 'Êtes-vous sûr?',
-      text: `Voulez-vous vraiment supprimer le type "${typeTruck.type}"?`,
+      text: `Voulez-vous vraiment supprimer la marque "${marque.name}"?`,
       icon: 'warning',
       showCancelButton: true,
       confirmButtonColor: '#d33',
       cancelButtonColor: '#3085d6',
-      confirmButtonText: 'Oui, supprimer',
+      confirmButtonText: 'Oui, supprimer!',
       cancelButtonText: 'Annuler'
     }).then((result) => {
       if (result.isConfirmed) {
-        this.httpService.deleteTypeTruck(typeTruck.id).subscribe({
+        this.httpService.deleteMarque(marque.id).subscribe({
           next: () => {
-            Swal.fire({
-              icon: 'success',
-              title: 'Supprimé!',
-              text: 'Le type de véhicule a été supprimé avec succès',
-              confirmButtonText: 'OK'
-            });
+            Swal.fire(
+              'Supprimée!',
+              'La marque a été supprimée avec succès.',
+              'success'
+            );
             this.getLatestData();
           },
           error: (error) => {
-            Swal.fire({
-              icon: 'error',
-              title: 'Erreur',
-              text: 'Une erreur est survenue lors de la suppression',
-              confirmButtonText: 'OK'
-            });
-            console.error('Error:', error);
+            console.error('Error deleting marque:', error);
+            Swal.fire(
+              'Erreur!',
+              error.error?.message || 'Une erreur est survenue lors de la suppression.',
+              'error'
+            );
           }
         });
       }
@@ -146,7 +142,7 @@ export class TypeTruck implements OnInit {
   }
 
   openDialog(): void {
-    const ref = this.dialog.open(TypeTruckForm, {
+    const ref = this.dialog.open(MarqueForm, {
       panelClass: 'm-auto',
       width: '500px',
       data: {}
