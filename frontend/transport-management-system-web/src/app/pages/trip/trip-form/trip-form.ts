@@ -1716,9 +1716,9 @@ export class TripForm implements OnInit {
       }
     }
     
-    if (!this.validateCapacity()) {
-      return;
-    }
+    //if (!this.validateCapacity()) {
+    //  return;
+    //}
     
     if (this.saveAsPredefined && !this.trajectName.trim()) {
       Swal.fire({
