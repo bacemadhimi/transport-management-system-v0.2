@@ -236,7 +236,14 @@
           <mat-icon matListItemIcon class="sidebar-icon">local_shipping</mat-icon>
           <a matListItemTitle class="sidebar-text">{{ t('TRUCKS') }}</a>
         </mat-list-item>
-
+          <mat-list-item 
+            *ngIf="authService.hasRole('SuperAdmin') || authService.hasEntityAccess('TYPE_VEHICULE')"
+            routerLink="/type-trucks"
+            routerLinkActive="active-menu-item"
+            class="sidebar-item">
+            <mat-icon matListItemIcon class="sidebar-icon">category</mat-icon>
+            <a matListItemTitle class="sidebar-text">{{ t('TYPE_VEHICULES') }}</a>
+          </mat-list-item>
         <!-- Orders -->
         <mat-list-item 
           *ngIf="authService.hasRole('SuperAdmin') || authService.hasEntityAccess('ORDER')"

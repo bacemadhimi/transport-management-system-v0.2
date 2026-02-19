@@ -1058,7 +1058,7 @@ export class StatisticsComponent implements OnInit, AfterViewInit, OnDestroy {
             ${truck.immatriculation}
           </div>
           <div style="color: #6c757d; font-size: 14px; margin-bottom: 8px;">
-            ${truck.brand} • ${truck.capacity}t
+            ${truck.brand} • ${truck.typeTruck?.capacity}t
           </div>
           <div style="display: inline-block; padding: 4px 12px; background: ${color}20; border-radius: 20px; color: ${color}; font-weight: 600; font-size: 12px;">
             ${status.label}
@@ -1506,7 +1506,7 @@ private createDriverPopup(
     const status = STATUS_CONFIG[truck.status]?.label || truck.status;
     const zone = TUNISIA_ZONES.find(z => z.id === truck.zoneId);
     const zoneName = zone?.name || 'Non assigné';
-    return `${truck.immatriculation} - ${truck.brand} (${truck.capacity}t) - ${status} - ${zoneName}`;
+    return `${truck.immatriculation} - ${truck.brand} (${truck.typeTruck?.capacity}t) - ${status} - ${zoneName}`;
   }
 
   getDriverDisplay(driver: IDriver): string {

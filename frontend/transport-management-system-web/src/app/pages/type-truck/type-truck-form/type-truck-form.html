@@ -1,0 +1,55 @@
+<mat-card class="form-card p-8">
+  <mat-card-title>
+    {{ data.typeTruckId ? 'Modifier type de véhicule' : 'Ajouter type de véhicule' }}
+  </mat-card-title>
+
+  <form [formGroup]="typeTruckForm" (ngSubmit)="onSubmit()">
+
+    <!-- Type (Nom du type) -->
+    <mat-form-field class="w-full">
+      <mat-label>Type de véhicule</mat-label>
+      <input matInput formControlName="type" placeholder="Ex: Camion, Tracteur, Remorque, etc." />
+      <mat-error *ngIf="typeTruckForm.get('type')?.hasError('required')">
+        Le type est obligatoire
+      </mat-error>
+    </mat-form-field>
+
+    <!-- Capacité -->
+    <mat-form-field class="w-full">
+      <mat-label>Capacité</mat-label>
+      <input matInput type="number" formControlName="capacity" placeholder="Ex: 20" />
+      <mat-error *ngIf="typeTruckForm.get('capacity')?.hasError('required')">
+        La capacité est obligatoire
+      </mat-error>
+      <mat-error *ngIf="typeTruckForm.get('capacity')?.hasError('min')">
+        La capacité doit être supérieure à 0
+      </mat-error>
+    </mat-form-field>
+
+    <!-- Unité (Text input instead of select) -->
+    <mat-form-field class="w-full">
+      <mat-label>Unité</mat-label>
+      <input matInput formControlName="unit" placeholder="Ex: TONNE, KG, LITRE, M3, UNITE" />
+      <mat-hint>Exemples: TONNE, KG, LITRE, M3, UNITE</mat-hint>
+      <mat-error *ngIf="typeTruckForm.get('unit')?.hasError('required')">
+        L'unité est obligatoire
+      </mat-error>
+    </mat-form-field>
+
+    <div class="flex justify-center mt-4 gap-2">
+      <button
+        mat-raised-button
+        color="primary"
+        type="submit"
+        [disabled]="typeTruckForm.invalid || isSubmitting"
+      >
+        {{ data.typeTruckId ? 'Modifier' : 'Ajouter' }}
+      </button>
+
+      <button mat-button type="button" (click)="onCancel()">
+        Annuler
+      </button>
+    </div>
+
+  </form>
+</mat-card>

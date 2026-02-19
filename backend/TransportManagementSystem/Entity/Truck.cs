@@ -13,11 +13,6 @@ public class Truck
     public string Immatriculation { get; set; }
 
     [Required]
-    public string CapacityUnit { get; set; } = "tonnes";
-    [Required]
-    public int Capacity { get; set; }
-
-    [Required]
     public DateTime TechnicalVisitDate { get; set; }
 
     [Required]
@@ -34,4 +29,6 @@ public class Truck
     public virtual ICollection<TruckAvailability>? Availabilities { get; set; }
     public int? ZoneId { get; set; }
     public Zone? Zone { get; set; }
+    public int TypeTruckId { get; set; }
+    public TypeTruck? TypeTruck { get; set; }
 }

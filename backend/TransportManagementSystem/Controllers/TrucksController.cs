@@ -14,49 +14,75 @@ public class TrucksController : ControllerBase
 {
     private readonly IRepository<Truck> truckRepository;
     private readonly ApplicationDbContext context;
+
     public TrucksController(IRepository<Truck> truckRepository, ApplicationDbContext context)
     {
         this.truckRepository = truckRepository;
         this.context = context;
     }
 
-
     [HttpGet]
     public async Task<IActionResult> GetTrucks([FromQuery] SearchOptions searchOption)
     {
-        var pagedData = new PagedData<Truck>();
+        var query = context.Trucks
+            .Include(t => t.TypeTruck)  
+            .Include(t => t.Zone)        
+            .AsQueryable();
 
-        if (string.IsNullOrEmpty(searchOption.Search))
+        if (!string.IsNullOrWhiteSpace(searchOption.Search))
         {
-            pagedData.Data = await truckRepository.GetAll();
-        }
-        else
-        {
+            var search = searchOption.Search;
             DateTime? searchDate = null;
 
-            if (DateTime.TryParseExact(searchOption.Search, "dd/MM/yyyy", null, System.Globalization.DateTimeStyles.None, out var parsedDate))
+            if (DateTime.TryParseExact(search, "dd/MM/yyyy", null,
+                System.Globalization.DateTimeStyles.None, out var parsedDate))
             {
                 searchDate = parsedDate.Date;
             }
 
-            pagedData.Data = await truckRepository.GetAll(x =>
-                x.Brand.Contains(searchOption.Search) ||
-                x.Immatriculation.Contains(searchOption.Search) ||
-                x.Status.Contains(searchOption.Search) ||
-                x.Capacity.ToString().Contains(searchOption.Search) ||
+            query = query.Where(x =>
+                x.Brand.Contains(search) ||
+                x.Immatriculation.Contains(search) ||
+                x.Status.Contains(search) ||
                 (searchDate.HasValue && x.TechnicalVisitDate.Date == searchDate.Value)
             );
         }
 
-        pagedData.TotalData = pagedData.Data.Count;
+        var totalCount = await query.CountAsync();
 
         if (searchOption.PageIndex.HasValue && searchOption.PageSize.HasValue)
         {
-            pagedData.Data = pagedData.Data
+            query = query
                 .Skip(searchOption.PageIndex.Value * searchOption.PageSize.Value)
-                .Take(searchOption.PageSize.Value)
-                .ToList();
+                .Take(searchOption.PageSize.Value);
         }
+
+        var trucks = await query.ToListAsync();
+
+        var truckDtos = trucks.Select(t => new TruckDto
+        {
+            Id = t.Id,
+            Immatriculation = t.Immatriculation,
+            Brand = t.Brand,
+            Color = t.Color,
+            Status = t.Status,
+            TechnicalVisitDate = t.TechnicalVisitDate,
+            TypeTruckId = t.TypeTruckId,
+            ZoneId = t.ZoneId,
+            ImageBase64 = t.ImageBase64,
+            TypeTruck = t.TypeTruck != null ? new TypeTruckDto
+            {
+                Id = t.TypeTruck.Id,
+                Type = t.TypeTruck.Type,
+                Capacity = t.TypeTruck.Capacity,
+            } : null
+        }).ToList();
+
+        var pagedData = new PagedData<TruckDto>
+        {
+            Data = truckDtos,
+            TotalData = totalCount
+        };
 
         return Ok(pagedData);
     }
@@ -64,98 +90,205 @@ public class TrucksController : ControllerBase
     [HttpGet("{id}")]
     public async Task<IActionResult> GetTruckById(int id)
     {
-        var truck = await truckRepository.FindByIdAsync(id);
+        var truck = await context.Trucks
+            .Include(t => t.TypeTruck)
+            .Include(t => t.Zone)
+            .FirstOrDefaultAsync(t => t.Id == id);
+
         if (truck == null)
+            return NotFound(new ApiResponse(false, $"Camion {id} non trouvé"));
+
+        var truckDto = new TruckDto
         {
-            return NotFound();
-        }
-        return Ok(truck);
+            Id = truck.Id,
+            Immatriculation = truck.Immatriculation,
+            Brand = truck.Brand,
+            Color = truck.Color,
+            Status = truck.Status,
+            TechnicalVisitDate = truck.TechnicalVisitDate,
+            TypeTruckId = truck.TypeTruckId,
+            ZoneId = truck.ZoneId,
+            ImageBase64 = truck.ImageBase64,
+            TypeTruck = truck.TypeTruck != null ? new TypeTruckDto
+            {
+                Id = truck.TypeTruck.Id,
+                Type = truck.TypeTruck.Type,
+                Capacity = truck.TypeTruck.Capacity,
+            } : null
+        };
+
+        return Ok(new ApiResponse(true, "Camion récupéré avec succès", truckDto));
     }
 
     [HttpPost]
     public async Task<IActionResult> AddTruck([FromBody] TruckDto model)
     {
         if (!ModelState.IsValid)
-            return BadRequest(ModelState);
+            return BadRequest(new ApiResponse(false, "Données invalides", ModelState));
 
-        var existingTruck = (await truckRepository.GetAll(x => x.Immatriculation == model.Immatriculation))
-                            .FirstOrDefault();
+        var existingTruck = await context.Trucks
+            .FirstOrDefaultAsync(x => x.Immatriculation == model.Immatriculation);
 
         if (existingTruck != null)
-            return BadRequest("Un camion avec cette immatriculation existe déjà");
+            return BadRequest(new ApiResponse(false, "Un camion avec cette immatriculation existe déjà"));
 
         var truck = new Truck
         {
             Immatriculation = model.Immatriculation,
-            Capacity = model.Capacity,
             TechnicalVisitDate = model.TechnicalVisitDate,
             Brand = model.Brand,
-            Status = model.Status,
+            Status = model.Status ?? "Disponible",
             Color = model.Color,
             ImageBase64 = model.ImageBase64,
-            CapacityUnit = model.CapacityUnit,
-            ZoneId= model.ZoneId
+            TypeTruckId = model.TypeTruckId,
+            ZoneId = model.ZoneId,
+            IsEnable = true
         };
 
         await truckRepository.AddAsync(truck);
         await truckRepository.SaveChangesAsync();
 
-        return CreatedAtAction(nameof(GetTruckById), new { id = truck.Id }, truck);
-    }
+        // Load the created truck with relationships
+        var createdTruck = await context.Trucks
+            .Include(t => t.TypeTruck)
+            .Include(t => t.Zone)
+            .FirstOrDefaultAsync(t => t.Id == truck.Id);
 
+        var truckDto = new TruckDto
+        {
+            Id = createdTruck.Id,
+            Immatriculation = createdTruck.Immatriculation,
+            Brand = createdTruck.Brand,
+            Color = createdTruck.Color,
+            Status = createdTruck.Status,
+            TechnicalVisitDate = createdTruck.TechnicalVisitDate,
+            TypeTruckId = createdTruck.TypeTruckId,
+            ZoneId = createdTruck.ZoneId,
+            ImageBase64 = createdTruck.ImageBase64,
+            TypeTruck = createdTruck.TypeTruck != null ? new TypeTruckDto
+            {
+                Id = createdTruck.TypeTruck.Id,
+                Type = createdTruck.TypeTruck.Type,
+                Capacity = createdTruck.TypeTruck.Capacity,
+                Unit = createdTruck.TypeTruck.Unit
+            } : null
+        };
+
+        return CreatedAtAction(nameof(GetTruckById), new { id = truck.Id },
+            new ApiResponse(true, "Camion créé avec succès", truckDto));
+    }
 
     [HttpPut("{id}")]
     public async Task<IActionResult> UpdateTruck(int id, [FromBody] TruckDto model)
     {
         if (!ModelState.IsValid)
-            return BadRequest(ModelState);
+            return BadRequest(new ApiResponse(false, "Données invalides", ModelState));
 
-        var truck = await truckRepository.FindByIdAsync(id);
+        var truck = await context.Trucks
+            .Include(t => t.TypeTruck)
+            .FirstOrDefaultAsync(t => t.Id == id);
+
         if (truck == null)
-            return NotFound();
+            return NotFound(new ApiResponse(false, $"Camion {id} non trouvé"));
 
-        var existingTruck = (await truckRepository.GetAll(x =>
-                    x.Immatriculation == model.Immatriculation && x.Id != id))
-                    .FirstOrDefault();
+        var existingTruck = await context.Trucks
+            .FirstOrDefaultAsync(x => x.Immatriculation == model.Immatriculation && x.Id != id);
 
         if (existingTruck != null)
-            return BadRequest("Un camion avec cette immatriculation existe déjà");
+            return BadRequest(new ApiResponse(false, "Un camion avec cette immatriculation existe déjà"));
 
         truck.Immatriculation = model.Immatriculation;
-        truck.Capacity = model.Capacity;
         truck.TechnicalVisitDate = model.TechnicalVisitDate;
         truck.Brand = model.Brand;
         truck.Status = model.Status;
         truck.Color = model.Color;
         truck.ImageBase64 = model.ImageBase64;
-        truck.CapacityUnit = model.CapacityUnit;
-        truck.ZoneId= model.ZoneId;
+        truck.TypeTruckId = model.TypeTruckId;
+        truck.ZoneId = model.ZoneId;
 
         truckRepository.Update(truck);
         await truckRepository.SaveChangesAsync();
 
-        return Ok(truck);
-    }
+        // Load updated truck with relationships
+        var updatedTruck = await context.Trucks
+            .Include(t => t.TypeTruck)
+            .Include(t => t.Zone)
+            .FirstOrDefaultAsync(t => t.Id == id);
 
+        var truckDto = new TruckDto
+        {
+            Id = updatedTruck.Id,
+            Immatriculation = updatedTruck.Immatriculation,
+            Brand = updatedTruck.Brand,
+            Color = updatedTruck.Color,
+            Status = updatedTruck.Status,
+            TechnicalVisitDate = updatedTruck.TechnicalVisitDate,
+            TypeTruckId = updatedTruck.TypeTruckId,
+            ZoneId = updatedTruck.ZoneId,
+            ImageBase64 = updatedTruck.ImageBase64,
+            TypeTruck = updatedTruck.TypeTruck != null ? new TypeTruckDto
+            {
+                Id = updatedTruck.TypeTruck.Id,
+                Type = updatedTruck.TypeTruck.Type,
+                Capacity = updatedTruck.TypeTruck.Capacity,
+                Unit = updatedTruck.TypeTruck.Unit
+            } : null
+        };
+
+        return Ok(new ApiResponse(true, "Camion mis à jour avec succès", truckDto));
+    }
 
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteTruck(int id)
     {
-        var truck = await truckRepository.FindByIdAsync(id);
+        var truck = await context.Trucks.FindAsync(id);
         if (truck == null)
-            return NotFound();
+            return NotFound(new ApiResponse(false, $"Camion {id} non trouvé"));
+
+        // Check if truck is used in any trips
+        var hasTrips = await context.Trips.AnyAsync(t => t.TruckId == id);
+        if (hasTrips)
+        {
+            return BadRequest(new ApiResponse(false,
+                "Impossible de supprimer ce camion car il est associé à des voyages"));
+        }
 
         await truckRepository.DeleteAsync(id);
         await truckRepository.SaveChangesAsync();
 
-        return Ok(new { message = "Le camion a été supprimé avec succès" });
+        return Ok(new ApiResponse(true, "Le camion a été supprimé avec succès"));
     }
 
     [HttpGet("list")]
-    public async Task<ActionResult<IEnumerable<Truck>>> GetTrucksList()
+    public async Task<ActionResult<IEnumerable<TruckDto>>> GetTrucksList()
     {
-        var trucks = await truckRepository.GetAll();
-        return Ok(trucks);
+        var trucks = await context.Trucks
+            .Include(t => t.TypeTruck)
+            .Include(t => t.Zone)
+            .Where(t => t.IsEnable)
+            .ToListAsync();
+
+        var truckDtos = trucks.Select(t => new TruckDto
+        {
+            Id = t.Id,
+            Immatriculation = t.Immatriculation,
+            Brand = t.Brand,
+            Color = t.Color,
+            Status = t.Status,
+            TechnicalVisitDate = t.TechnicalVisitDate,
+            TypeTruckId = t.TypeTruckId,
+            ZoneId = t.ZoneId,
+            ImageBase64 = t.ImageBase64,
+            TypeTruck = t.TypeTruck != null ? new TypeTruckDto
+            {
+                Id = t.TypeTruck.Id,
+                Type = t.TypeTruck.Type,
+                Capacity = t.TypeTruck.Capacity,
+                Unit = t.TypeTruck.Unit
+            } : null
+        }).ToList();
+
+        return Ok(truckDtos);
     }
 
     [HttpGet("available")]
@@ -170,19 +303,16 @@ public class TrucksController : ControllerBase
         {
             var targetDay = targetDate.Date;
 
-      
             var isWeekend = targetDay.DayOfWeek == DayOfWeek.Saturday ||
                             targetDay.DayOfWeek == DayOfWeek.Sunday;
-
 
             var isDayOff = await context.DayOffs
                 .AnyAsync(d => d.Date.Date == targetDay);
 
-
             var allTrucks = await context.Trucks
+                .Include(t => t.TypeTruck)
                 .Where(t => t.IsEnable)
                 .ToListAsync();
-
 
             var assignedTruckIds = await context.Trips
                 .Where(t => t.TripStatus != TripStatus.Cancelled &&
@@ -197,22 +327,19 @@ public class TrucksController : ControllerBase
                 .Distinct()
                 .ToListAsync();
 
-
             var unavailableTruckIds = await context.TruckAvailabilities
                 .Where(ta => ta.Date == targetDay && !ta.IsAvailable)
                 .Select(ta => ta.TruckId)
                 .Distinct()
                 .ToListAsync();
 
- 
             var allUnavailableIds = assignedTruckIds
                 .Concat(unavailableTruckIds)
                 .Distinct()
                 .ToList();
 
- 
             var availableTrucks = (isWeekend || isDayOff)
-                ? new List<object>() 
+                ? new List<object>()
                 : allTrucks
                     .Where(t => !allUnavailableIds.Contains(t.Id))
                     .Select(t => new
@@ -220,15 +347,20 @@ public class TrucksController : ControllerBase
                         t.Id,
                         t.Immatriculation,
                         t.Brand,
-                        t.Capacity,
-                        t.CapacityUnit,
+                        TypeTruck = t.TypeTruck != null ? new
+                        {
+                            t.TypeTruck.Id,
+                            t.TypeTruck.Type,
+                            t.TypeTruck.Capacity,
+                            t.TypeTruck.Unit
+                        } : null,
+                        t.TypeTruckId,
                         t.Status,
                         t.Color,
                         t.TechnicalVisitDate,
                         t.ZoneId
                     })
                     .ToList<object>();
-
 
             var unavailableTrucks = allTrucks
                 .Where(t => isWeekend ||
@@ -239,12 +371,11 @@ public class TrucksController : ControllerBase
                     t.Id,
                     t.Immatriculation,
                     t.Brand,
-                    reason =
-                        isWeekend ? "Weekend" :
-                        isDayOff ? "Jour férié" :
-                        assignedTruckIds.Contains(t.Id) ? "Assigné à un autre voyage" :
-                        unavailableTruckIds.Contains(t.Id) ? "Indisponible / maintenance" :
-                        "Non disponible",
+                    reason = isWeekend ? "Weekend" :
+                             isDayOff ? "Jour férié" :
+                             assignedTruckIds.Contains(t.Id) ? "Assigné à un autre voyage" :
+                             unavailableTruckIds.Contains(t.Id) ? "Indisponible / maintenance" :
+                             "Non disponible",
                     status = assignedTruckIds.Contains(t.Id) ? "En mission" : t.Status
                 })
                 .ToList();
@@ -265,5 +396,4 @@ public class TrucksController : ControllerBase
             return StatusCode(500, new ApiResponse(false, $"Error: {ex.Message}"));
         }
     }
-
 }

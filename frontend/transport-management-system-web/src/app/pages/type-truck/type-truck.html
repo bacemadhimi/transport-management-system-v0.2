@@ -1,0 +1,30 @@
+<div class="type-truck-page">
+  <div class="type-truck-header">
+    <h1 class="type-truck-title">Liste des types de véhicules</h1>
+
+    <div class="type-truck-header__actions">
+      <mat-form-field appearance="outline" class="type-truck-search">
+        <mat-label>Chercher type</mat-label>
+        <input
+          matInput
+          type="text"
+          [formControl]="searchControl"
+          placeholder="Type de véhicule"
+        />
+      </mat-form-field>
+
+      <button *ngIf="auth.hasPermission('TYPE_VEHICULE_ADD')" mat-flat-button class="type-truck-add-btn" (click)="add()" type="button">
+        Ajouter
+      </button>
+    </div>
+  </div>
+
+  <app-table
+    [PagedData]="pagedTypeTruckData"
+    [pageIndex]="filter.pageIndex"
+    [pageSize]="filter.pageSize"
+    [displayedColumns]="showCols"
+    (rowClick)="onRowClick($event)"
+    (onPageChange)="pageChange($event)">
+  </app-table>
+</div>

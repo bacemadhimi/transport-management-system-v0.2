@@ -1,9 +1,9 @@
+import { ITypeTruck } from "./type-truck";
+
 export interface ITruck {
   id: number;
   immatriculation: string;
   brand: string;
-  capacity: number; // Capacité totale en kg
-  capacityUnit?: string; // "kg" ou "tonnes"
   currentLoad?: number; // Charge actuelle
   loadType?: 'palettes' | 'cartons' | 'poid'; // Type de chargement
   technicalVisitDate: string | null;
@@ -15,6 +15,8 @@ export interface ITruck {
   tooltip?: string;
   availabilityMessage?: string;
   zoneId?: number;
+  typeTruckId: number;
+  typeTruck?: ITypeTruck;
 }
 
 export interface IZone {

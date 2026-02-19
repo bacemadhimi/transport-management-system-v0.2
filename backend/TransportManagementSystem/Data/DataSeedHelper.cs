@@ -492,9 +492,22 @@ namespace TransportManagementSystem.Data
 
                 // Capacités palettes réalistes
                 var paletteCapacities = new[] { 10, 12, 14, 18, 20, 22, 26, 30, 33 };
+                if (!dbContext.TypeTrucks.Any())
+                {
+                    var types = new List<TypeTruck>
+                    {
+                        new TypeTruck { Type = "Poids lourd", Capacity = 33, Unit = "Palette" },
+                        new TypeTruck { Type = "Utilitaire", Capacity = 12, Unit = "Palette" },
+                        new TypeTruck { Type = "Camion moyen", Capacity = 20, Unit = "Palette" }
+                    };
 
+                    dbContext.TypeTrucks.AddRange(types);
+                    dbContext.SaveChanges();
+
+                    Console.WriteLine("✔ TypeTrucks seedés !");
+                }
                 var trucks = new List<Truck>();
-
+                var typeVehicules = dbContext.TypeTrucks.ToList();
                 for (int i = 1; i <= 25; i++)
                 {
                     var serie = (i % 2 == 0) ? "RS" : "TN";
@@ -502,19 +515,17 @@ namespace TransportManagementSystem.Data
                     int codeGouv = 100 + rnd.Next(0, 80);  
                     int numero = 1000 + i;
                     var zone = zones[rnd.Next(zones.Count)];
+                    var selectedType = typeVehicules[rnd.Next(typeVehicules.Count)];
                     trucks.Add(new Truck
                     {
                         Immatriculation = $"{codeGouv} {serie} {numero}",
                         Brand = brands[rnd.Next(brands.Length)],
                         Color = colors[rnd.Next(colors.Length)],
-
-                        CapacityUnit = "palettes",
-                        Capacity = paletteCapacities[rnd.Next(paletteCapacities.Length)],
-
                         TechnicalVisitDate = now.AddMonths(rnd.Next(-6, 12)),
                         Status = statuses[rnd.Next(statuses.Length)],
                         IsEnable = true,
-                        ZoneId = zone.Id
+                        ZoneId = zone.Id,
+                        TypeTruckId = selectedType.Id
                     });
                 }
 

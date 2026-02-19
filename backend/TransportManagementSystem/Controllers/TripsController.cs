@@ -205,7 +205,8 @@ public class TripsController : ControllerBase
     public async Task<IActionResult> GetTripById(int id)
     {
         var trip = await tripRepository.Query()
-            .Include(t => t.Truck)
+            .Include(t => t.Truck).
+                  ThenInclude(t => t.TypeTruck)
             .Include(t => t.Driver)
             .Include(t => t.Deliveries)
                 .ThenInclude(d => d.Customer)
@@ -238,11 +239,17 @@ public class TripsController : ControllerBase
                 Id = trip.Truck.Id,
                 Immatriculation = trip.Truck.Immatriculation,
                 Brand = trip.Truck.Brand,
-                Capacity = trip.Truck.Capacity,
                 Color = trip.Truck.Color,
                 Status = trip.Truck.Status,
                 TechnicalVisitDate = trip.Truck.TechnicalVisitDate,
-                CapacityUnit = trip.Truck.CapacityUnit
+                TypeTruckId = trip.Truck.TypeTruckId,
+                TypeTruck = trip.Truck.TypeTruck != null ? new TypeTruckDto
+                {
+                    Id = trip.Truck.TypeTruck.Id,
+                    Type = trip.Truck.TypeTruck.Type,
+                    Capacity = trip.Truck.TypeTruck.Capacity,
+                    Unit = trip.Truck.TypeTruck.Unit
+                } : null,
             } : null,
             Driver = trip.Driver != null ? new DriverDto
             {
@@ -407,7 +414,8 @@ public class TripsController : ControllerBase
             return BadRequest(new ApiResponse(false, "Données invalides", ModelState));
 
         var trip = await context.Trips
-            .Include(t => t.Truck)
+            .Include(t => t.Truck).
+                  ThenInclude(t => t.TypeTruck)
             .Include(t => t.Driver)
             .Include(t => t.Deliveries)
             .FirstOrDefaultAsync(t => t.Id == id);
@@ -544,7 +552,8 @@ public class TripsController : ControllerBase
         await context.SaveChangesAsync();
 
         var updatedTrip = await context.Trips
-            .Include(t => t.Truck)
+            .Include(t => t.Truck).
+                  ThenInclude(t => t.TypeTruck)
             .Include(t => t.Driver)
             .Include(t => t.Deliveries)
             .FirstOrDefaultAsync(t => t.Id == trip.Id);
@@ -556,7 +565,8 @@ public class TripsController : ControllerBase
     public async Task<IActionResult> UpdateTripStatus(int id, [FromBody] UpdateTripStatusDto model)
     {
         var trip = await tripRepository.Query()
-            .Include(t => t.Truck)
+            .Include(t => t.Truck).
+                  ThenInclude(t => t.TypeTruck)
             .Include(t => t.Driver)
             .Include(t => t.Deliveries)
                 .ThenInclude(d => d.Order)
@@ -613,7 +623,8 @@ public class TripsController : ControllerBase
     public async Task<IActionResult> CancelTrip(int id, [FromBody] CancelTripDto model)
     {
         var trip = await tripRepository.Query()
-            .Include(t => t.Truck)
+            .Include(t => t.Truck).
+                  ThenInclude(t => t.TypeTruck)
             .Include(t => t.Driver)
             .Include(t => t.Deliveries)
                 .ThenInclude(d => d.Order)
@@ -711,7 +722,8 @@ public class TripsController : ControllerBase
     public async Task<IActionResult> DeleteTrip(int id)
     {
         var trip = await tripRepository.Query()
-            .Include(t => t.Truck)
+           .Include(t => t.Truck).
+                  ThenInclude(t => t.TypeTruck)
             .Include(t => t.Driver)
             .Include(t => t.Deliveries)
             .FirstOrDefaultAsync(t => t.Id == id);
@@ -826,7 +838,8 @@ public class TripsController : ControllerBase
     private async Task<TripDetailsDto> GetTripByIdInternal(int id)
     {
         var trip = await tripRepository.Query()
-            .Include(t => t.Truck)
+            .Include(t => t.Truck).
+                  ThenInclude(t => t.TypeTruck)
             .Include(t => t.Driver)
             .Include(t => t.Deliveries)
                 .ThenInclude(d => d.Customer)
@@ -860,11 +873,17 @@ public class TripsController : ControllerBase
                 Id = trip.Truck.Id,
                 Immatriculation = trip.Truck.Immatriculation,
                 Brand = trip.Truck.Brand,
-                Capacity = trip.Truck.Capacity,
                 Color = trip.Truck.Color,
                 Status = trip.Truck.Status,
                 TechnicalVisitDate = trip.Truck.TechnicalVisitDate,
-                CapacityUnit = trip.Truck.CapacityUnit
+                TypeTruckId = trip.Truck.TypeTruckId,
+                TypeTruck = trip.Truck.TypeTruck != null ? new TypeTruckDto
+                {
+                    Id = trip.Truck.TypeTruck.Id,
+                    Type = trip.Truck.TypeTruck.Type,
+                    Capacity = trip.Truck.TypeTruck.Capacity,
+                    Unit = trip.Truck.TypeTruck.Unit
+                } : null,
             } : null,
             Driver = trip.Driver != null ? new DriverDto
             {
@@ -1283,7 +1302,8 @@ public class TripsController : ControllerBase
 
         var trip = await context.Trips
             .Include(t => t.Driver)
-            .Include(t => t.Truck)
+            .Include(t => t.Truck).
+                  ThenInclude(t => t.TypeTruck)
             .Include(t => t.Deliveries)
                 .ThenInclude(d => d.Customer)
             .Include(t => t.Deliveries)

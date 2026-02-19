@@ -37,6 +37,7 @@ import { OrderSettingsComponent } from './pages/order-settings/order-settings';
 import { TripCreatePageComponent } from './pages/trip-create-page.component/trip-create-page.component';
 import { TripEditPageComponent } from './pages/trip-edit-page.component/trip-edit-page.component';
 import { TripsSettingsComponent } from './pages/trips-settings/trips-settings';
+import { TypeTruck } from './pages/type-truck/type-truck';
 
 
 export const routes: Routes = [
@@ -215,6 +216,11 @@ export const routes: Routes = [
    {
   path: 'trips-settings',
   component: TripsSettingsComponent,
+  canActivate: [AuthGuard]
+},
+{
+  path: 'type-trucks',
+  component: TypeTruck,
   canActivate: [AuthGuard]
 }
 ];
