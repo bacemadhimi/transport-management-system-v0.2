@@ -1,0 +1,83 @@
+.form-card {
+  max-width: 800px; // Increased from 500px
+  width: 100%;
+  margin: 0 auto;
+  
+  .mat-mdc-card-title {
+    font-size: 1.75rem; // Slightly larger title
+    margin-bottom: 1rem;
+    color: #333;
+  }
+
+  .mat-mdc-card-subtitle {
+    margin-bottom: 1.5rem;
+    color: #666;
+    font-size: 1.1rem;
+  }
+
+  .mat-mdc-card-content {
+    padding: 1.5rem; // More padding
+  }
+
+  .w-full {
+    width: 100%;
+    margin-bottom: 1.5rem; // More space between fields
+    
+    // Make input fields larger
+    .mat-mdc-form-field {
+      font-size: 1.1rem;
+    }
+    
+    input {
+      padding: 0.75rem; // Larger input padding
+    }
+  }
+
+  .mat-mdc-card-actions {
+    padding: 1.5rem;
+    border-top: 1px solid #e0e0e0;
+    
+    .flex {
+      display: flex;
+      gap: 1.5rem; // Larger gap between buttons
+      width: 100%;
+      justify-content: flex-end;
+      
+      button {
+        padding: 0.5rem 2rem; // Larger buttons
+        font-size: 1.1rem;
+      }
+    }
+  }
+
+  mat-spinner {
+    display: inline-block;
+    margin-right: 0.75rem;
+  }
+
+  .gap-1 {
+    gap: 0.5rem;
+  }
+
+  .items-center {
+    align-items: center;
+  }
+}
+
+// Responsive adjustments
+@media (max-width: 768px) {
+  .form-card {
+    max-width: 95%;
+    
+    .mat-mdc-card-actions {
+      .flex {
+        flex-direction: column-reverse;
+        gap: 1rem;
+        
+        button {
+          width: 100%;
+        }
+      }
+    }
+  }
+}

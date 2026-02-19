@@ -238,7 +238,7 @@ public class TripsController : ControllerBase
             {
                 Id = trip.Truck.Id,
                 Immatriculation = trip.Truck.Immatriculation,
-                Brand = trip.Truck.Brand,
+                MarqueTruckId = trip.Truck.MarqueTruckId,
                 Color = trip.Truck.Color,
                 Status = trip.Truck.Status,
                 TechnicalVisitDate = trip.Truck.TechnicalVisitDate,
@@ -872,7 +872,7 @@ public class TripsController : ControllerBase
             {
                 Id = trip.Truck.Id,
                 Immatriculation = trip.Truck.Immatriculation,
-                Brand = trip.Truck.Brand,
+                MarqueTruckId = trip.Truck.MarqueTruckId,
                 Color = trip.Truck.Color,
                 Status = trip.Truck.Status,
                 TechnicalVisitDate = trip.Truck.TechnicalVisitDate,
@@ -1451,7 +1451,7 @@ public class TripsController : ControllerBase
                 // Truck
                 TruckId = t.Truck.Id,
                 TruckImmatriculation = t.Truck.Immatriculation,
-                TruckBrand = t.Truck.Brand,
+                MarqueTruckId = t.Truck.MarqueTruckId,
                 TruckZoneId = t.Truck.ZoneId,
 
                 // Deliveries

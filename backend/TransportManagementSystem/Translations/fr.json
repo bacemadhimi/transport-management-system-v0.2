@@ -11,7 +11,7 @@
   "DASHBOARD": "Tableau de bord",
   "DRIVERS": "Gestion des chauffeurs",
   "CONVOYEURS": "Gestion des convoyeurs",
-  "TRUCKS": "Gestion des Trucks",
+  "TRUCKS": "Gestion des camions",
   "ORDERS": "Commandes",
   "TRAVEL": "Gestion des voyages",
   "HISTORIC_TRIPS": "Historique des voyages",
@@ -128,8 +128,8 @@
   "TRUCK_ADD_TITLE": "Ajouter camion",
   "IMMATRICULATION_LABEL": "Immatriculation",
   "IMMATRICULATION_REQUIRED": "L'immatriculation est obligatoire",
-  "BRAND_LABEL": "Marque",
-  "BRAND_REQUIRED": "La marque est obligatoire",
+  "MarqueTruckId_LABEL": "Marque",
+  "MarqueTruckId_REQUIRED": "La marque est obligatoire",
   "CAPACITY_UNIT": "Unité de capacité",
   "CAPACITY_UNIT_REQUIRED": "L'unité de capacité est obligatoire",
   "CAPACITY_LABEL": "Capacité",
@@ -430,6 +430,16 @@
   "ORDERS_PENDING": "commande(s) en attente",
   "DESELECT_ALL": "Tout désélectionner",
   "NO_PENDING_ORDERS_FOR_CUSTOMER": "Aucune commande en attente pour ce client",
-  "OVERTIME_APPROVAL_REQUIRED": "Approbation requise pour heures supplémentaires"
+  "OVERTIME_APPROVAL_REQUIRED": "Approbation requise pour heures supplémentaires",
+  "MARQUES_VEHICULES": "Marques de camions",
+  "GESTION_VEHICULES": "Gestion des camions",
+  "MARQUE_VEHICULE": "Marque de camion",
+  "TYPE_VEHICULES": "Types de camions",
+  "TYPE_VEHICULE_LABEL": "Type de camion",
+  "IMMATRICULATION": "Immatriculation",
+  "BRAND_LABEL": "Marque",
+  "Status": "Statut",
+  "Action": "Action"
+
 }
 

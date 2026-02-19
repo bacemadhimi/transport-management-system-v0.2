@@ -52,7 +52,7 @@ public class TruckAvailabilityController : ControllerBase
                 {
                     TruckId = truck.Id,
                     Immatriculation = truck.Immatriculation,
-                    Brand = truck.Brand,
+                    MarqueTruckId = truck.MarqueTruckId,
                     Availability = new Dictionary<string, AvailabilityDayDto>()
                 };
 

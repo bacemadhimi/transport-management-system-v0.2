@@ -413,7 +413,6 @@ processAvailabilityData(data: any[]) {
       Object.keys(truckData.availability).forEach(dateKey => {
         const availData = truckData.availability[dateKey] || {};
         availability[dateKey] = {
-          // Fix: Ensure boolean values with !! operator
           isAvailable: !!availData.isAvailable,
           isDayOff: !!availData.isDayOff,
           reason: availData.reason || ''
@@ -423,7 +422,6 @@ processAvailabilityData(data: any[]) {
 
     this.dateColumns.forEach(dateCol => {
       const dateKey = this.formatDateForStorage(dateCol.date);
-      // Fix: Ensure isDayOff is always boolean with !! operator
       const isDayOff = !!(dateCol.isWeekend || dateCol.isDayOffForAll);
 
       if (!availability[dateKey]) {
@@ -435,7 +433,6 @@ processAvailabilityData(data: any[]) {
       } else if (isDayOff) {
         const current = availability[dateKey];
         availability[dateKey] = {
-          // Fix: Ensure boolean values with !! operator
           isAvailable: !!current.isAvailable,
           isDayOff: true,
           reason: current.reason || (dateCol.isWeekend ? 'Weekend' : 'Jour férié')
@@ -446,7 +443,10 @@ processAvailabilityData(data: any[]) {
     return {
       id: truckData.truckId || truckData.id || 0,
       immatriculation: truckData.immatriculation || 'N/A',
-      brand: truckData.brand || 'N/A',
+      // Fix: Use marqueTruckId instead of brand
+      marqueTruckId: truckData.marqueTruckId || 0,
+      // Add a computed property for display if needed
+      brand: truckData.marqueName || truckData.brand || 'N/A',
       capacity: truckData.capacity || 0,
       capacityUnit: truckData['capacityUnit'] || 'kg',
       technicalVisitDate: truckData.technicalVisitDate || null,

@@ -478,7 +478,7 @@ namespace TransportManagementSystem.Data
                 var now = DateTime.UtcNow;
                 var rnd = new Random();
                 var zones = dbContext.Zones.ToList();
-                var brands = new[] { "Volvo", "Scania", "MAN", "Mercedes", "DAF", "Iveco", "Renault" };
+                var MarqueTruckIds = new[] { "Volvo", "Scania", "MAN", "Mercedes", "DAF", "Iveco", "Renault" };
                 var colors = new[]
                                   {
                                     "#F5F5DC", // Beige
@@ -488,7 +488,7 @@ namespace TransportManagementSystem.Data
                                     "#000000"  // Noir
                                 };
 
-                var statuses = new[] { "Disponible", "En mission", "Maintenance" , "Hors service" };
+                var statuses = new[] { "Disponible", "En mission", "Maintenance", "Hors service" };
 
                 // Capacités palettes réalistes
                 var paletteCapacities = new[] { 10, 12, 14, 18, 20, 22, 26, 30, 33 };
@@ -506,35 +506,68 @@ namespace TransportManagementSystem.Data
 
                     Console.WriteLine("✔ TypeTrucks seedés !");
                 }
-                var trucks = new List<Truck>();
-                var typeVehicules = dbContext.TypeTrucks.ToList();
-                for (int i = 1; i <= 25; i++)
+                if (!dbContext.MarqueTrucks.Any())
                 {
-                    var serie = (i % 2 == 0) ? "RS" : "TN";
+                    var brandsToSeed = new List<MarqueTruck>
+    {
+        new MarqueTruck { Name = "Volvo" },
+        new MarqueTruck { Name = "Scania" },
+        new MarqueTruck { Name = "MAN" },
+        new MarqueTruck { Name = "Mercedes" },
+        new MarqueTruck { Name = "DAF" },
+        new MarqueTruck { Name = "Iveco" },
+        new MarqueTruck { Name = "Renault" }
+    };
 
-                    int codeGouv = 100 + rnd.Next(0, 80);  
-                    int numero = 1000 + i;
-                    var zone = zones[rnd.Next(zones.Count)];
-                    var selectedType = typeVehicules[rnd.Next(typeVehicules.Count)];
-                    trucks.Add(new Truck
-                    {
-                        Immatriculation = $"{codeGouv} {serie} {numero}",
-                        Brand = brands[rnd.Next(brands.Length)],
-                        Color = colors[rnd.Next(colors.Length)],
-                        TechnicalVisitDate = now.AddMonths(rnd.Next(-6, 12)),
-                        Status = statuses[rnd.Next(statuses.Length)],
-                        IsEnable = true,
-                        ZoneId = zone.Id,
-                        TypeTruckId = selectedType.Id
-                    });
+                    dbContext.MarqueTrucks.AddRange(brandsToSeed);
+                    dbContext.SaveChanges();
+
+                    Console.WriteLine("✔ MarqueTrucks seeded successfully!");
                 }
 
-                dbContext.Trucks.AddRange(trucks);
-                dbContext.SaveChanges();
+                // ✅ Seed Trucks
+                if (!dbContext.Trucks.Any())
+                {
+                    var trucks = new List<Truck>();
+                    var typeVehicules = dbContext.TypeTrucks.ToList();
+                    var brands = dbContext.MarqueTrucks.ToList();
 
-                Console.WriteLine($"{trucks.Count} camions seedés (capacité palette) !");
+					if (!typeVehicules.Any() || !brands.Any() || !zones.Any())
+                    {
+                        Console.WriteLine("⚠ Cannot seed trucks. Missing TypeTruck, MarqueTruck or Zone data.");
+                        return;
+                    }
+
+                    for (int i = 1; i <= 25; i++)
+                    {
+                        var serie = (i % 2 == 0) ? "RS" : "TN";
+
+                        int codeGouv = 100 + rnd.Next(0, 80);
+                        int numero = 1000 + i;
+
+                        var zone = zones[rnd.Next(zones.Count)];
+                        var selectedType = typeVehicules[rnd.Next(typeVehicules.Count)];
+                        var selectedBrand = brands[rnd.Next(brands.Count)];
+
+                        trucks.Add(new Truck
+                        {
+                            Immatriculation = $"{codeGouv} {serie} {numero}",
+                            MarqueTruckId = selectedBrand.Id,
+                            Color = colors[rnd.Next(colors.Length)],
+                            TechnicalVisitDate = now.AddMonths(rnd.Next(-6, 12)),
+                            Status = statuses[rnd.Next(statuses.Length)],
+                            IsEnable = true,
+                            ZoneId = zone.Id,
+                            TypeTruckId = selectedType.Id
+                        });
+                    }
+
+                    dbContext.Trucks.AddRange(trucks);
+                    dbContext.SaveChanges();
+
+                    Console.WriteLine($"✔ {trucks.Count} Trucks seeded successfully!");
+                }
             }
-
         }
 
 
