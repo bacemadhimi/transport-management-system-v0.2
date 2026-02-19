@@ -25,6 +25,7 @@ import { DailyForecast, WeatherData } from '../types/weather';
 import { ApiResponses, ICreateCityDto, ICity, IUpdateCityDto } from '../types/city';
 import { AvailabilityRequestDto, DriverAvailabilityDto, DriverOvertimeCheckDto, DriverOvertimeResultDto } from '../types/driver-overtime';
 import { ITypeTruck } from '../types/type-truck';
+import { ICategorys } from '../types/categorys';
 import { IMarque, IMarqueDto } from '../types/marque';
 
 @Injectable({
@@ -228,20 +229,44 @@ private formatDateForApi(date: string | Date): string {
     return this.http.get<PagedData<IFuelVendor>>(environment.apiUrl + '/api/FuelVendor/Search?' + params.toString());
   }
 
+
+
+ getCategoriesList(filter: any) {
+    const params = new HttpParams({ fromObject: filter });
+    return this.http.get<PagedData<ICategorys>>(environment.apiUrl + '/api/Category/PaginationAndSearch?' + params.toString());
+  }
+
   getFuelVendor(id: number) {
     return this.http.get<IFuelVendor>(environment.apiUrl + '/api/FuelVendor/' + id);
   }
 
+  getCategory(id: number) {
+    return this.http.get<ICategorys>(environment.apiUrl + '/api/Category/' + id);
+  }
   addFuelVendor(vendor: any) {
     return this.http.post<IFuelVendor>(environment.apiUrl + '/api/FuelVendor', vendor);
+  }
+
+  //ADD CATEGORY
+   addCategory(category: any) {
+    return this.http.post<ICategorys>(environment.apiUrl + '/api/Category', category);
   }
 
   updateFuelVendor(id: number, vendor: any) {
     return this.http.put<IFuelVendor>(environment.apiUrl + '/api/FuelVendor/' + id, vendor);
   }
+  
+  //UPDATE CATEGORY
+  updateCategory(id: number, category: any) {
+    return this.http.put<ICategorys>(environment.apiUrl + '/api/Category/' + id, category);
+  }
 
   deleteFuelVendor(id: number) {
     return this.http.delete(environment.apiUrl + '/api/FuelVendor/' + id);
+  }
+
+   deleteCategory(id: number) {
+    return this.http.delete(environment.apiUrl + '/api/Category/' + id);
   }
 
   getFuelVendors() {
