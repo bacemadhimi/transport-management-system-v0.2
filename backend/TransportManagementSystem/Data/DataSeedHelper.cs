@@ -250,7 +250,33 @@ namespace TransportManagementSystem.Data
 
                 Console.WriteLine("Zones de Tunisie seedées avec succès !");
             }
+            // Seed Governorates (Tunisia)
+            if (!dbContext.GeneralSettings.Any(p => p.ParameterType == "GOVERNORATE"))
+            {
+                var now = DateTime.UtcNow;
 
+                var tunisianGovernorates = new List<string>
+    {
+        "Tunis", "Ariana", "Ben Arous", "Manouba", "Bizerte", "Nabeul", "Zaghouan",
+        "Sousse", "Monastir", "Mahdia", "Sfax", "Kairouan", "Kasserine", "Sidi Bouzid",
+        "Gabès", "Médenine", "Tataouine", "Gafsa", "Tozeur", "Kébili", "Béja",
+        "Jendouba", "Le Kef", "Siliana"
+    };
+
+                int codeIndex = 1; // You can create codes like GOV1, GOV2, ...
+
+                var governorates = tunisianGovernorates.Select(name => new GeneralSettings
+                {
+                    ParameterType = "GOVERNORATE",
+                    ParameterCode = $"GOV{codeIndex++}",
+                    Description = name
+                }).ToList();
+
+                dbContext.GeneralSettings.AddRange(governorates);
+                dbContext.SaveChanges();
+
+                Console.WriteLine($"✔ {governorates.Count} Governorates seedés !");
+            }
             if (!dbContext.Citys.Any())
             {
                 var now = DateTime.UtcNow;

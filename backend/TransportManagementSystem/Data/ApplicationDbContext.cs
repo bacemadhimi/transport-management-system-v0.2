@@ -49,6 +49,7 @@ namespace TransportManagementSystem.Data
         public DbSet<TypeTruck> TypeTrucks { get; set; }
         public DbSet<Employee> Employees { get; set; }
         public DbSet<Category> Categories { get; set; }
+        public DbSet<GeneralSettings> GeneralSettings { get; set; }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -216,7 +217,9 @@ namespace TransportManagementSystem.Data
                     .OnDelete(DeleteBehavior.Cascade); 
             });
 
-
+            modelBuilder.Entity<GeneralSettings>()
+                   .HasIndex(p => new { p.ParameterType, p.ParameterCode })
+                   .IsUnique();
         }
 
         public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
