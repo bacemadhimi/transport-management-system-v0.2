@@ -439,5 +439,6 @@
   "Action": "Action",
   "Employee_Management": "Employee Management",
   "FUEL_MANAGEMENT": "Fuel Management",
-  "MAINTENANCE_MANAGEMENT": "Maintenance Management"
+  "MAINTENANCE_MANAGEMENT": "Maintenance Management",
+  "EMPLOYEE_LIST": "Employee List"
 }
