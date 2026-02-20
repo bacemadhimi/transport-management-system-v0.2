@@ -439,7 +439,10 @@
   "IMMATRICULATION": "Immatriculation",
   "BRAND_LABEL": "Marque",
   "Status": "Statut",
-  "Action": "Action"
+  "Action": "Action",
+  "Employee_Management": "Gestion des employés",
+  "FUEL_MANAGEMENT": "Fuel Management",
+  "MAINTENANCE_MANAGEMENT": "Maintenance Management"
 
 }
 
