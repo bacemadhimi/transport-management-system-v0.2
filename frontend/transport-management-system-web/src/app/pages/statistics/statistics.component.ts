@@ -1236,8 +1236,9 @@ private createDriverPopup(
   
   // ✅ Find truck by ID to get immatriculation
   const assignedTruck = driver.idCamion ? this.trucks.find(t => t.id === driver.idCamion) : null;
+  const marqueName = assignedTruck ? this.getMarqueName(assignedTruck.marqueTruckId) : '';
   const truckDisplay = assignedTruck 
-    ? `${assignedTruck.immatriculation} - ${assignedTruck.brand}` 
+    ? `${assignedTruck.immatriculation} - ${marqueName}` 
     : 'Non assigné';
   
   const popup = document.createElement('div');
