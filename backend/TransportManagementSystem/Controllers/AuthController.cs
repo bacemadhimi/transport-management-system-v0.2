@@ -106,7 +106,7 @@ namespace TransportManagementSystem.Controllers
 
             var token = new JwtSecurityToken(
                 claims: claims,
-                expires: DateTime.UtcNow.AddHours(1),
+                expires: DateTime.UtcNow.AddMinutes(1),
                 signingCredentials: credentials
             );
 
