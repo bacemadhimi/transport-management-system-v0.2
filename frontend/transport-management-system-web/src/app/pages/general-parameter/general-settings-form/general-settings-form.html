@@ -46,9 +46,6 @@
         <mat-error *ngIf="parameterForm.get('parameterCode')?.hasError('maxlength')">
           Maximum 50 caractères
         </mat-error>
-        <mat-error *ngIf="parameterForm.get('parameterCode')?.hasError('pattern')">
-          Uniquement majuscules, chiffres et underscores
-        </mat-error>
       </mat-form-field>
 
       <!-- Description -->
@@ -63,9 +60,6 @@
         ></textarea>
         <mat-icon matSuffix>description</mat-icon>
         <mat-hint>Description détaillée du paramètre</mat-hint>
-        <mat-error *ngIf="parameterForm.get('description')?.hasError('required')">
-          La description est obligatoire
-        </mat-error>
         <mat-error *ngIf="parameterForm.get('description')?.hasError('maxlength')">
           Maximum 200 caractères
         </mat-error>
