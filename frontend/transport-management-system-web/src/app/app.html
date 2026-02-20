@@ -206,14 +206,7 @@
         </mat-list-item>
 
         <!-- Drivers -->
-        <mat-list-item 
-          *ngIf="authService.hasRole('SuperAdmin') || authService.hasEntityAccess('CHAUFFEUR')"
-          routerLink="/drivers"
-          routerLinkActive="active-menu-item"
-          class="sidebar-item">
-          <mat-icon matListItemIcon class="sidebar-icon">badge</mat-icon>
-          <a matListItemTitle class="sidebar-text">{{ t('DRIVERS') }}</a>
-        </mat-list-item>
+
 
         <!-- Employees -->
         <mat-list-item 
@@ -224,27 +217,7 @@
           <mat-icon matListItemIcon class="sidebar-icon">work</mat-icon>
           <a matListItemTitle class="sidebar-text">{{ t('Employee Management') || 'Employees' }}</a>
         </mat-list-item>
-         
-           <!-- Categories -->
-        <mat-list-item 
-          *ngIf="authService.hasRole('SuperAdmin') || authService.hasEntityAccess('EMPLOYEE')"
-          routerLink="/categories"
-          routerLinkActive="active-menu-item"
-          class="sidebar-item">
-          <mat-icon matListItemIcon class="sidebar-icon">work</mat-icon>
-          <a matListItemTitle class="sidebar-text">Catégorie</a>
-        </mat-list-item>
-
-        <!-- Convoyeurs -->
-        <mat-list-item 
-          *ngIf="authService.hasRole('SuperAdmin') || authService.hasEntityAccess('CONVOYEUR')"
-          routerLink="/convoyeurs"
-          routerLinkActive="active-menu-item"
-          class="sidebar-item">
-          <mat-icon matListItemIcon class="sidebar-icon">groups</mat-icon>
-          <a matListItemTitle class="sidebar-text">{{ t('CONVOYEURS') }}</a>
-        </mat-list-item>
-
+        
         <!-- Trucks -->
         <mat-list-item 
           *ngIf="authService.hasRole('SuperAdmin') || authService.hasEntityAccess('TRUCK')"
@@ -321,20 +294,6 @@
               class="submenu-item">
               <mat-icon matListItemIcon class="submenu-icon">location_on</mat-icon>
               <a matListItemTitle class="submenu-text">{{ t('LOCATIONS') }}</a>
-            </mat-list-item>
-            <mat-list-item 
-              routerLink="/zones"
-              routerLinkActive="active-submenu-item"
-              class="submenu-item">
-              <mat-icon matListItemIcon class="submenu-icon">map</mat-icon>
-              <a matListItemTitle class="submenu-text">{{ t('ZONE') }}</a>
-            </mat-list-item>
-            <mat-list-item 
-              routerLink="/city"
-              routerLinkActive="active-submenu-item"
-              class="submenu-item">
-              <mat-icon matListItemIcon class="submenu-icon">location_city</mat-icon>
-              <a matListItemTitle class="submenu-text">{{ t('CITY') }}</a>
             </mat-list-item>
             <mat-list-item 
               routerLink="/statics"
