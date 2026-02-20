@@ -14,7 +14,7 @@ export enum ParameterType {
   GOVERNORATE = 'GOVERNORATE',
   REGION = 'REGION',
   ZONE = 'ZONE',
-  EmployeeCategorie = 'EmployeeCategorie'
+  EMPLOYEE_CATEGORY = 'EMPLOYEE_CATEGORY'
 }
 
 export interface IGeneralSettings {

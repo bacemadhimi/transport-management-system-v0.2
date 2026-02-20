@@ -268,8 +268,8 @@ namespace TransportManagementSystem.Data
                 var governorates = tunisianGovernorates.Select(name => new GeneralSettings
                 {
                     ParameterType = "GOVERNORATE",
-                    ParameterCode = $"GOV{codeIndex++}",
-                    Description = name
+                    ParameterCode = name,
+                    Description = $"GOV{codeIndex++}"
                 }).ToList();
 
                 dbContext.GeneralSettings.AddRange(governorates);
@@ -550,7 +550,25 @@ namespace TransportManagementSystem.Data
 
                     Console.WriteLine("✔ MarqueTrucks seeded successfully!");
                 }
+                if (!dbContext.GeneralSettings.Any(p =>
+                    p.ParameterType == "EMPLOYEE_CATEGORY" &&
+                    p.ParameterCode == "DRIVER"))
+                                {
+                                    var employeeCategories = new List<GeneralSettings>
+                    {
+                        new GeneralSettings
+                        {
+                            ParameterType = "EMPLOYEE_CATEGORY",
+                            ParameterCode = "DRIVER",
+                            Description = "Driver"
+                        }
+                    };
 
+                    dbContext.GeneralSettings.AddRange(employeeCategories);
+                    dbContext.SaveChanges();
+
+                    Console.WriteLine("✔ Employee Category DRIVER seeded !");
+                }
                 // ✅ Seed Trucks
                 if (!dbContext.Trucks.Any())
                 {

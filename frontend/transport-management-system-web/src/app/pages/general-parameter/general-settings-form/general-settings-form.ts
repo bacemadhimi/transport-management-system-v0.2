@@ -48,11 +48,9 @@ export class GeneralSettingsForm implements OnInit {
     parameterType: this.fb.control<ParameterType | null>(null, [Validators.required]),
     parameterCode: this.fb.control<string>('', [
       Validators.required, 
-      Validators.maxLength(50),
-      Validators.pattern(/^[A-Z0-9_]+$/) // Uppercase, numbers, underscore only
+      Validators.maxLength(50)
     ]),
     description: this.fb.control<string>('', [
-      Validators.required, 
       Validators.maxLength(200)
     ])
   });
@@ -190,12 +188,6 @@ export class GeneralSettingsForm implements OnInit {
     if (controlName === 'parameterCode') {
       if (control?.hasError('required')) return 'Le code est obligatoire';
       if (control?.hasError('maxlength')) return 'Le code ne doit pas dépasser 50 caractères';
-      if (control?.hasError('pattern')) return 'Le code doit contenir uniquement des majuscules, chiffres et underscores';
-    }
-    
-    if (controlName === 'description') {
-      if (control?.hasError('required')) return 'La description est obligatoire';
-      if (control?.hasError('maxlength')) return 'La description ne doit pas dépasser 200 caractères';
     }
     
     return '';
@@ -205,7 +197,7 @@ export class GeneralSettingsForm implements OnInit {
       'GOVERNORATE': 'Gouvernorat',
       'REGION': 'Région',
       'ZONE': 'Zone',
-      'EmployeeCategorie': 'Catégorie d\'employé'
+      'EMPLOYEE_CATEGORY': 'Catégorie d\'employé'
     };
     return typeMap[type] || type;
   }

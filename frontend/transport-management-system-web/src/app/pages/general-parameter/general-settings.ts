@@ -219,7 +219,7 @@ formatParameterType(type: string): string {
     'GOVERNORATE': 'Gouvernorat',
     'REGION': 'Région',
     'ZONE': 'Zone',
-    'EmployeeCategorie': 'Catégorie d\'employé'
+    'EMPLOYEE_CATEGORY': 'Catégorie d\'employé'
   };
   return typeMap[type] || type;
 }
