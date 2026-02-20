@@ -85,6 +85,7 @@ export const routes: Routes = [
   {
   path: 'user',
   component: User,
+  canActivate: [AuthGuard]
 },
   {
     path: "trucks",
@@ -216,11 +217,13 @@ export const routes: Routes = [
 ,
   {
     path: 'trips/create',
-    component: TripCreatePageComponent
+    component: TripCreatePageComponent,
+     canActivate: [AuthGuard] 
   },
   {
     path: 'trips/edit/:id',
-    component: TripEditPageComponent
+    component: TripEditPageComponent,
+     canActivate: [AuthGuard] 
   },
    {
   path: 'trips-settings',
@@ -243,4 +246,8 @@ export const routes: Routes = [
     component: GeneralSettings,
     canActivate: [AuthGuard],
   },
+  {
+    path: '**',
+    redirectTo: 'login'
+  }
 ];
