@@ -441,8 +441,9 @@
   "Status": "Statut",
   "Action": "Action",
   "Employee_Management": "Gestion des employés",
-  "FUEL_MANAGEMENT": "Fuel Management",
-  "MAINTENANCE_MANAGEMENT": "Maintenance Management"
+  "FUEL_MANAGEMENT": "Gestion du carburant",
+  "MAINTENANCE_MANAGEMENT": "Gestion de la maintenance",
+  "EMPLOYEE_LIST": "Liste des employés"
 
 }
 
