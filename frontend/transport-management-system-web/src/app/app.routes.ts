@@ -40,6 +40,7 @@ import { TripsSettingsComponent } from './pages/trips-settings/trips-settings';
 import { TypeTruck } from './pages/type-truck/type-truck';
 import { Categories } from './pages/categories/categories';
 import { Marque } from './pages/marque/marque';
+import { GeneralSettings } from './pages/general-parameter/general-settings';
 
 
 export const routes: Routes = [
@@ -236,5 +237,10 @@ export const routes: Routes = [
   component: Marque,
   canActivate: [AuthGuard],
    
-}
+},
+{
+    path: 'general-settings',
+    component: GeneralSettings,
+    canActivate: [AuthGuard],
+  },
 ];

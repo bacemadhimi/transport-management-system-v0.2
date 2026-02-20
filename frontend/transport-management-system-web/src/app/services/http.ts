@@ -27,6 +27,7 @@ import { AvailabilityRequestDto, DriverAvailabilityDto, DriverOvertimeCheckDto, 
 import { ITypeTruck } from '../types/type-truck';
 import { ICategorys } from '../types/categorys';
 import { IMarque, IMarqueDto } from '../types/marque';
+import { IGeneralSettings, IGeneralSettingsDto, SearchOptions } from '../types/parameter';
 
 @Injectable({
   providedIn: 'root'
@@ -1432,6 +1433,46 @@ deleteMarque(id: number) {
 getMarqueTrucks() {
     return this.http.get<IMarque[]>(environment.apiUrl + '/api/MarqueTruck/list');
   }
+getGeneralSettings(searchOptions: SearchOptions) {
+  let params = new HttpParams();
+  
+  // Add parameters only if they have values
+  if (searchOptions.pageIndex !== undefined && searchOptions.pageIndex !== null) {
+    params = params.set('pageIndex', searchOptions.pageIndex.toString());
+  }
+  if (searchOptions.pageSize !== undefined && searchOptions.pageSize !== null) {
+    params = params.set('pageSize', searchOptions.pageSize.toString());
+  }
+  if (searchOptions.search && searchOptions.search.trim() !== '') {
+    params = params.set('search', searchOptions.search.trim());
+  }
+  if (searchOptions.parameterType && searchOptions.parameterType !== '') {
+    params = params.set('parameterType', searchOptions.parameterType);
+  }
+  
+  console.log('Request params:', params.toString()); 
+  
+  return this.http.get<PagedData<IGeneralSettings>>(
+    `${environment.apiUrl}/api/GeneralSettings/PaginationAndSearch`,
+    { params }
+  );
+}
+
+getGeneralSetting(id: number) {
+  return this.http.get<IGeneralSettings>(`${environment.apiUrl}/api/GeneralSettings/${id}`);
+}
+
+addGeneralSettings(parameter: IGeneralSettingsDto) {
+  return this.http.post<IGeneralSettings>(`${environment.apiUrl}/api/GeneralSettings`, parameter);
+}
+
+updateGeneralSettings(id: number, parameter: IGeneralSettingsDto) {
+  return this.http.put<IGeneralSettings>(`${environment.apiUrl}/api/GeneralSettings/${id}`, parameter);
+}
+
+deleteGeneralSettings(id: number) {
+  return this.http.delete(`${environment.apiUrl}/api/GeneralSettings/${id}`);
+}
 }
 
 
