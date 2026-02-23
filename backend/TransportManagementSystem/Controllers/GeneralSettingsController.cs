@@ -88,6 +88,7 @@ public class GeneralSettingsController : ControllerBase
         existing.ParameterType = model.ParameterType;
         existing.ParameterCode = model.ParameterCode;
         existing.Description = model.Description;
+        existing.Value = model.Value;
 
         await _context.SaveChangesAsync();
         return Ok(existing);
@@ -122,7 +123,8 @@ public class GeneralSettingsController : ControllerBase
             query = query.Where(g =>
                 g.ParameterType.Contains(searchOption.Search) ||
                 g.ParameterCode.Contains(searchOption.Search) ||
-                g.Description.Contains(searchOption.Search));
+                g.Description.Contains(searchOption.Search)  ||
+                g.Value.Contains(searchOption.Search)) ;
         }
 
      
@@ -143,7 +145,8 @@ public class GeneralSettingsController : ControllerBase
                 Id = g.Id,
                 ParameterType = g.ParameterType,
                 ParameterCode = g.ParameterCode,
-                Description = g.Description
+                Description = g.Description,
+                Value = g.Value
             })
             .ToListAsync();
 
@@ -152,5 +155,25 @@ public class GeneralSettingsController : ControllerBase
             TotalData = totalData,
             Data = data
         });
+    }
+    [HttpGet("by-type/{type}")]
+    public async Task<IActionResult> GetSettingsByType(string type)
+    {
+        if (string.IsNullOrWhiteSpace(type))
+            return BadRequest("Parameter type is required.");
+
+        var settings = await _context.GeneralSettings
+            .Where(g => g.ParameterType == type)
+            .Select(g => new GeneralSettingsDto
+            {
+                Id = g.Id,
+                ParameterType = g.ParameterType,
+                ParameterCode = g.ParameterCode,
+                Description = g.Description,
+                Value = g.Value  // Make sure to include Value!
+            })
+            .ToListAsync();
+
+        return Ok(settings);
     }
 }

@@ -95,11 +95,3 @@ export function getOrderStatusClass(status: OrderStatus): string {
 
   
 }
-export interface IOrderSettings {
-  allowEditOrder: boolean;
-  allowEditDeliveryDate: boolean;
-  allowLoadLateOrders: boolean; 
-  acceptOrdersWithoutAddress: boolean;
-  planningHorizon: number;
-    loadingUnit: string; 
-}

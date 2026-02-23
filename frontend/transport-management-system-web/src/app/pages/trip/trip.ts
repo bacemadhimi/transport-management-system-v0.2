@@ -1,7 +1,7 @@
 import { Component, inject, OnInit, OnDestroy, Input } from '@angular/core';
 import { Http } from '../../services/http';
 import { Table } from '../../components/table/table';
-import { ITrip, ITripSettings, TripStatus, TripStatusOptions } from '../../types/trip';
+import { ITrip, TripStatus, TripStatusOptions } from '../../types/trip';
 import { MatButtonModule } from '@angular/material/button';
 import { FormControl, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { MatDialog } from '@angular/material/dialog';
@@ -29,9 +29,10 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { ITruck } from '../../types/truck';
 import { IDriver } from '../../types/driver';
-import { TripSettingsService } from '../../services/trips-settings.service';
+import { SettingsService } from '../../services/settings.service'; 
 import { Translation } from '../../services/Translation';
- 
+
+
 @Component({
   selector: 'app-trip',
   standalone: true,
@@ -58,7 +59,7 @@ export class Trip implements OnInit, OnDestroy {
     public auth: Auth,  
     private notificationService: NotificationService,
     private snackBar: MatSnackBar,
-    private tripSettingsService: TripSettingsService
+    private settingsService: SettingsService 
   ) {}  
  
   //Get translation Language 
@@ -84,7 +85,6 @@ getActions(row: any, actions: string[]) {
   httpService = inject(Http);
   pagedTripData!: PagedData<ITrip>;
   totalData!: number;
-  tripSettings: ITripSettings | null = null;
   allowEditTrip: boolean = false;
   allowDeleteTrip: boolean = false;
  
@@ -1097,18 +1097,18 @@ private redirectToTripFormWithDraft(draft: any): void {
   this.router.navigate(['/trips/create']);
 }
 private loadTripSettings(): void {
-  this.tripSettingsService.getSettings().subscribe({
+  this.settingsService.getTripSettings().subscribe({
     next: (settings) => {
-      this.tripSettings = settings;
       this.allowEditTrip = settings.allowEditTrips;
       this.allowDeleteTrip = settings.allowDeleteTrips;
     },
     error: (err) => {
       console.error('Erreur récupération des settings :', err);
+      this.allowEditTrip = true;
+      this.allowDeleteTrip = true;
     }
   });
 }
- 
 isEditDisabled(): boolean {
   return !this.allowEditTrip;
 }
@@ -1117,4 +1117,3 @@ isDeleteDisabled(): boolean {
   return !this.allowDeleteTrip;
 }
 }
- 

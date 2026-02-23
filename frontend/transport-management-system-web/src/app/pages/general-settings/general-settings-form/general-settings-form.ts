@@ -9,7 +9,7 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatDialogModule, MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { Http } from '../../../services/http';
-import { IGeneralSettings, IGeneralSettingsDto, ParameterType } from '../../../types/parameter';
+import { IGeneralSettings, IGeneralSettingsDto, ParameterType } from '../../../types/general-settings';
 import { MatIconModule } from '@angular/material/icon';
 import Swal from 'sweetalert2';
 
@@ -50,6 +50,9 @@ export class GeneralSettingsForm implements OnInit {
       Validators.required, 
       Validators.maxLength(50)
     ]),
+    value: this.fb.control<string>('', [
+    Validators.maxLength(100)
+    ]),
     description: this.fb.control<string>('', [
       Validators.maxLength(200)
     ])
@@ -68,6 +71,7 @@ export class GeneralSettingsForm implements OnInit {
         this.parameterForm.patchValue({
           parameterType: parameter.parameterType,
           parameterCode: parameter.parameterCode,
+          value: parameter.value,
           description: parameter.description
         });
       },
@@ -95,7 +99,8 @@ export class GeneralSettingsForm implements OnInit {
     const parameterDto: IGeneralSettingsDto = {
       parameterType: this.parameterForm.value.parameterType!,
       parameterCode: this.parameterForm.value.parameterCode!.trim().toUpperCase(),
-      description: this.parameterForm.value.description!.trim()
+      description: this.parameterForm.value.description!.trim(),
+      value: this.parameterForm.value.value?.trim() || '',
     };
 
     // Add id for update if needed
@@ -192,13 +197,16 @@ export class GeneralSettingsForm implements OnInit {
     
     return '';
   }
-   formatParameterType(type: string): string {
-    const typeMap: { [key: string]: string } = {
-      'GOVERNORATE': 'Gouvernorat',
-      'REGION': 'Région',
-      'ZONE': 'Zone',
-      'EMPLOYEE_CATEGORY': 'Catégorie d\'employé'
-    };
-    return typeMap[type] || type;
-  }
+
+formatParameterType(type: string): string {
+  const typeMap: { [key: string]: string } = {
+    'GOVERNORATE': 'Gouvernorat',
+    'REGION': 'Région',
+    'ZONE': 'Zone',
+    'EMPLOYEE_CATEGORY': 'Catégorie d\'employé',
+    'ORDER': 'Commande',
+    'TRIP': 'Voyage'
+  };
+  return typeMap[type] || type;
+}
 }

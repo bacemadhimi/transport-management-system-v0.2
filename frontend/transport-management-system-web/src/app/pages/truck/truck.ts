@@ -21,7 +21,6 @@ import { saveAs } from 'file-saver';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { Translation } from '../../services/Translation';
-import { OrderSettingsService } from '../../services/order-settings.service';
 import { IMarque } from '../../types/marque';
 
 @Component({
@@ -65,7 +64,6 @@ export class Truck implements OnInit {
     
   httpService = inject(Http);
   authService = inject(Auth);
-  orderSettingsService = inject(OrderSettingsService); 
   pagedTruckData!: PagedData<ITruck>;
   totalData!: number;
   filter: any = {
@@ -192,7 +190,6 @@ export class Truck implements OnInit {
   }
 
   ngOnInit() {
-    this.loadCapacityUnits(); 
     this.loadMarques();
     this.getLatestData();
 
@@ -253,44 +250,6 @@ export class Truck implements OnInit {
         return '/b.png';
       default:
         return '/palette.jpg';
-    }
-  }
-
-  private loadCapacityUnits(): void {
-    this.orderSettingsService.getSettings().subscribe({
-      next: (settings: any) => {
-        const units: string[] = Array.isArray(settings.loadingUnit)
-          ? settings.loadingUnit
-          : typeof settings.loadingUnit === 'string'
-            ? [settings.loadingUnit]
-            : [];
-
-        this.capacityUnits = units.length
-          ? units.map(u => ({ value: u, label: this.getCapacityUnitLabel(u) }))
-          : [{ value: 'tonnes', label: 'Tonnes' }];
-
-        if (units.length > 0) {
-          this.loadingUnit = units[0]; 
-        }
-      },
-      error: (err) => {
-        console.error('Erreur récupération loadingUnit', err);
-        this.loadingUnit = 'tonne';
-        this.capacityUnits = [{ value: 'tonnes', label: 'Tonnes' }];
-      }
-    });
-
-    if (this.orderSettingsService.settingsChanges) {
-      this.orderSettingsService.settingsChanges.subscribe(settings => {
-        if (settings && settings.loadingUnit) {
-          const units: string[] = Array.isArray(settings.loadingUnit)
-            ? settings.loadingUnit
-            : [settings.loadingUnit];
-
-          this.capacityUnits = units.map(u => ({ value: u, label: this.getCapacityUnitLabel(u) }));
-          this.loadingUnit = units[0];
-        }
-      });
     }
   }
 

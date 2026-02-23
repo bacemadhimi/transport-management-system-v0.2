@@ -1,7 +1,7 @@
 import { Component, inject, OnInit } from '@angular/core';
 import { Http } from '../../services/http';
 import { Table } from '../../components/table/table';
-import { IGeneralSettings, ParameterType, SearchOptions } from '../../types/parameter';
+import { IGeneralSettings, ParameterType, SearchOptions } from '../../types/general-settings';
 import { MatButtonModule } from '@angular/material/button';
 import { FormControl, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { MatDialog } from '@angular/material/dialog';
@@ -77,6 +77,7 @@ export class GeneralSettings implements OnInit {
   },
     { key: 'parameterCode', label: 'Code' },
     { key: 'description', label: 'Description' },
+    { key: 'value', label: 'Valeur' },
     {
       key: 'Action',
       format: () => ["Modifier", "Supprimer"]
@@ -219,7 +220,9 @@ formatParameterType(type: string): string {
     'GOVERNORATE': 'Gouvernorat',
     'REGION': 'Région',
     'ZONE': 'Zone',
-    'EMPLOYEE_CATEGORY': 'Catégorie d\'employé'
+    'EMPLOYEE_CATEGORY': 'Catégorie d\'employé',
+    'ORDER': 'Commande',
+    'TRIP': 'Voyage'
   };
   return typeMap[type] || type;
 }

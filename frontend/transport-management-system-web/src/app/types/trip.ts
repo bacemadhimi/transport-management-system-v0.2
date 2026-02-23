@@ -130,14 +130,3 @@ export interface CreateDeliveryDto {
   plannedTime?: string | null;
   notes?: string | null; 
 }
-export interface ITripSettings {
-  allowEditTrips: boolean;
-  allowDeleteTrips: boolean;
-  editTimeLimit: number;
-  maxTripsPerDay: number;
-  tripOrder: 'chronological' | 'alphabetical' | 'custom';
-  requireDeleteConfirmation: boolean;
-  notifyOnTripEdit: boolean;
-  notifyOnTripDelete: boolean;
-  linkDriverToTruck: boolean;
-}

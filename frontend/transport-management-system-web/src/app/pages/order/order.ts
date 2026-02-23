@@ -9,7 +9,7 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatCardModule } from '@angular/material/card';
 import { MatInputModule } from '@angular/material/input';
 import { MatFormFieldModule } from '@angular/material/form-field';
-import { debounceTime, Subject, takeUntil } from 'rxjs';
+import { debounceTime, Subject, Subscription, takeUntil } from 'rxjs';
 import { PagedData } from '../../types/paged-data';
 import { IOrder, OrderStatus, UpdateOrderDto, getOrderStatusText } from '../../types/order';
 import * as XLSX from 'xlsx';
@@ -20,7 +20,7 @@ import { CommonModule } from '@angular/common';
 import { OrderFormComponent } from './order-form/order-form';
 import { MatIconModule } from '@angular/material/icon';
 import { Auth } from '../../services/auth'; 
-import { OrderSettingsService } from '../../services/order-settings.service'; 
+import { SettingsService } from '../../services/settings.service'; 
 import { MatPaginatorModule } from '@angular/material/paginator';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatSnackBarModule } from '@angular/material/snack-bar';
@@ -202,9 +202,9 @@ allowLoadLateOrders: boolean = false;
 acceptOrdersWithoutAddress: boolean = false;
 loadingUnit: string = 'palette';
 
+private settingsSubscription: Subscription | null = null;
 
-
-    constructor(public auth: Auth, private snackBar: MatSnackBar, private orderSettingsService: OrderSettingsService) {}  
+    constructor(public auth: Auth, private snackBar: MatSnackBar, private settingsService: SettingsService) {}  
 
      showSuccess() {
     this.snackBar.open('Succès', 'OK', { duration: 2000,  verticalPosition: 'top' });
@@ -294,24 +294,9 @@ get currentPagePendingCount(): number {
 
   ngOnInit() {
  
-
+    this.loadSettingsOnce();
+    this.subscribeToSettings();
     this.initializeData();
-
-  // Charger la valeur initiale
-  this.orderSettingsService.getSettings().subscribe(settings => {
-    this.allowEditOrder = settings.allowEditOrder;
-    this.allowLoadLateOrders = settings.allowLoadLateOrders;
-     this.acceptOrdersWithoutAddress = settings.acceptOrdersWithoutAddress;
-     this.loadingUnit = settings.loadingUnit;
-  });
-
-  this.orderSettingsService.settingsChanges.subscribe(settings => {
-        this.allowEditOrder = settings.allowEditOrder;
-    this.allowLoadLateOrders = settings.allowLoadLateOrders;
-     this.acceptOrdersWithoutAddress = settings.acceptOrdersWithoutAddress;
-     this.loadingUnit = settings.loadingUnit; 
-  });
- 
   
       this.loadZones(); 
     this.searchControl.valueChanges
@@ -392,10 +377,43 @@ this.deliveryDateEndControl.valueChanges
     this.getLatestData();
   });
   }
+private loadSettingsOnce(): void {
+    this.settingsService.getOrderSettings().subscribe({
+      next: (settings) => {
+        this.loadingUnit = settings.loadingUnit;
+        this.allowEditOrder = settings.allowEditOrder;
+        this.allowLoadLateOrders = settings.allowLoadLateOrders;
+        this.acceptOrdersWithoutAddress = settings.acceptOrdersWithoutAddress;
+        
+        console.log('Loading unit from settings:', this.loadingUnit);
+      },
+      error: (err) => {
+        console.error('Error loading settings:', err);
+        // Use defaults
+        this.loadingUnit = 'palette';
+      }
+    });
+  }
 
+  // Subscribe to reactive changes (auto-updates when settings change)
+  private subscribeToSettings(): void {
+    this.settingsSubscription = this.settingsService.orderSettings$.subscribe(settings => {
+      if (settings) {
+        this.loadingUnit = settings.loadingUnit;
+        this.allowEditOrder = settings.allowEditOrder;
+        this.allowLoadLateOrders = settings.allowLoadLateOrders;
+        this.acceptOrdersWithoutAddress = settings.acceptOrdersWithoutAddress;
+        
+        console.log('Loading unit updated:', this.loadingUnit);
+      }
+    });
+  }
   ngOnDestroy() {
     this.destroy$.next();
     this.destroy$.complete();
+     if (this.settingsSubscription) {
+      this.settingsSubscription.unsubscribe();
+    }
   }
 
   initializeData() {
