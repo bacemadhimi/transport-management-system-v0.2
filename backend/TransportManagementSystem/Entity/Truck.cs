@@ -16,6 +16,12 @@ public class Truck
     public DateTime TechnicalVisitDate { get; set; }
 
     [Required]
+    public DateTime DateOfFirstRegistration { get; set; }
+
+    [Required]
+    public int EmptyWeight { get; set; }
+
+    [Required]
     public int MarqueTruckId { get; set; }
 
     [ForeignKey("MarqueTruckId")]
@@ -28,7 +34,8 @@ public class Truck
     [Required]
     public string Color { get; set; }
 
-    public string? ImageBase64 { get; set; }
+    
+    public string? ImagesJson { get; set; }
     public bool IsEnable { get; set; } = true;
     public virtual ICollection<TruckAvailability>? Availabilities { get; set; }
     public int? ZoneId { get; set; }

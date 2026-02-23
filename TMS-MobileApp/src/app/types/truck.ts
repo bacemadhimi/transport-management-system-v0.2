@@ -7,6 +7,8 @@ export interface ITruck {
   currentLoad?: number; 
   loadType?: 'palettes' | 'cartons' | 'mixed'; 
   technicalVisitDate: string | null;
+  dateOfFirstRegistration: string | null;
+  emptyWeight: number;
   status: string;
   color: string;
   imageBase64: string | null;

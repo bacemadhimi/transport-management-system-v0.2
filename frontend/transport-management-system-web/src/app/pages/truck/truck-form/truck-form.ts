@@ -53,20 +53,20 @@ export class TruckForm implements OnInit, OnDestroy {
   @ViewChild('fileInput') fileInput!: ElementRef;
   
 
-  imageBase64: string | null = null;
-  imagePreview: string | null = null;
+  images: string[] = []; 
+  imagePreviews: string[] = []; 
   fileError: string | null = null;
-  originalImageBase64: string | null = null; 
-  hasExistingImage = false;
-  selectedFile: File | null = null;
+  originalImages: string[] = []; 
+  selectedFiles: File[] = [];
+  maxImages = 10; 
   
 
   loadingZones = false;
   loadingTypeTrucks = false;
-  loadingMarques = false; // Add this
+  loadingMarques = false; 
   zones: IZone[] = [];
   typeTrucks: ITypeTruck[] = [];
-  marques: IMarque[] = []; // Add this
+  marques: IMarque[] = []; 
   isSubmitting = false;
   selectedCapacityUnitLabel: string = '';
   private subscriptions: Subscription[] = [];
@@ -75,9 +75,11 @@ export class TruckForm implements OnInit, OnDestroy {
 
   truckForm = this.fb.group({
     immatriculation: this.fb.control<string>('', [Validators.required, Validators.minLength(2)]),
-    // Replace 'brand' with 'marqueTruckId'
+   
     marqueTruckId: this.fb.control<number | null>(null, Validators.required),
     technicalVisitDate: this.fb.control<Date | null>(null, Validators.required),
+    dateOfFirstRegistration: this.fb.control<Date | null>(null, Validators.required),
+    emptyWeight: this.fb.control<number | null>(null, [Validators.required, Validators.min(1)]),
     status: this.fb.control<string>('Disponible'),
     color: this.fb.control<string>('#ffffff', Validators.required),
     zoneId: this.fb.control<number | null>(null, [Validators.required]),
@@ -100,7 +102,7 @@ export class TruckForm implements OnInit, OnDestroy {
     this.subscriptions.forEach(sub => sub.unsubscribe());
   }
 
-  // Add this method to load marques
+ 
   private loadMarques(): void {
     this.loadingMarques = true;
     
@@ -205,7 +207,7 @@ export class TruckForm implements OnInit, OnDestroy {
 private loadTruck(id: number) {
   const truckSub = this.httpService.getTruck(id).subscribe({
     next: (response: any) => {
-      // Check if response has a data property (your API wrapper)
+      
       const truckData = response.data || response;
       
       console.log('Truck data received:', truckData);
@@ -214,21 +216,29 @@ private loadTruck(id: number) {
         ? new Date(truckData.technicalVisitDate)
         : null;
 
+      const firstRegDate = truckData.dateOfFirstRegistration
+        ? new Date(truckData.dateOfFirstRegistration)
+        : null;
+
       this.truckForm.patchValue({
         immatriculation: truckData.immatriculation,
         marqueTruckId: truckData.marqueTruckId || null,
-        technicalVisitDate: dateValue,   
+        technicalVisitDate: dateValue,
+        dateOfFirstRegistration: firstRegDate,
+        emptyWeight: truckData.emptyWeight || null,
         status: truckData.status,
         color: truckData.color || '#ffffff',
         zoneId: truckData.zoneId || null,
         typeTruckId: truckData.typeTruckId || null, 
       });
       
-      if (truckData.imageBase64) {
-        this.imageBase64 = truckData.imageBase64;
-        this.originalImageBase64 = truckData.imageBase64;
-        this.imagePreview = `data:image/png;base64,${truckData.imageBase64}`;
-        this.hasExistingImage = true;
+     
+      if (truckData.images && Array.isArray(truckData.images) && truckData.images.length > 0) {
+        this.images = [...truckData.images];
+        this.originalImages = [...truckData.images];
+        this.imagePreviews = truckData.images.map((base64: string) => 
+          `data:image/png;base64,${base64}`
+        );
       }
       
     },
@@ -268,9 +278,11 @@ private loadTruck(id: number) {
   private getFieldLabel(controlName: string): string {
     const labels: { [key: string]: string } = {
       immatriculation: 'L\'immatriculation',
-      // Replace 'brand' with 'marqueTruckId'
+     
       marqueTruckId: 'La marque',
       technicalVisitDate: 'La date de visite technique',
+      dateOfFirstRegistration: 'La date de première immatriculation',
+      emptyWeight: 'Le poids à vide',
       status: 'Le statut',
       color: 'La couleur',
       zoneId: 'La zone',
@@ -305,15 +317,23 @@ private loadTruck(id: number) {
           .padStart(2, '0')}-${selectedDate.getDate().toString().padStart(2, '0')}`
       : null;
 
+    const selectedFirstRegDate: Date | null = this.truckForm.value.dateOfFirstRegistration ?? null;
+
+    const dateOfFirstRegistration = selectedFirstRegDate
+      ? `${selectedFirstRegDate.getFullYear()}-${(selectedFirstRegDate.getMonth() + 1)
+          .toString()
+          .padStart(2, '0')}-${selectedFirstRegDate.getDate().toString().padStart(2, '0')}`
+      : null;
+
     const value: any = {
       id: this.data.truckId || 0,
       immatriculation: this.truckForm.value.immatriculation!,
-      // Replace 'brand' with 'marqueTruckId'
+     
       marqueTruckId: this.truckForm.value.marqueTruckId!,
-      technicalVisitDate: technicalVisitDate, 
-      status: this.truckForm.value.status!,
+      technicalVisitDate: technicalVisitDate,
+      dateOfFirstRegistration: dateOfFirstRegistration,       emptyWeight: this.truckForm.value.emptyWeight!,      status: this.truckForm.value.status!,
       color: this.truckForm.value.color!,
-      imageBase64: this.imageBase64,
+      images: this.images.length > 0 ? this.images : null,
       zoneId: this.truckForm.value.zoneId!,
       typeTruckId: this.truckForm.value.typeTruckId!,
     };
@@ -370,36 +390,51 @@ private loadTruck(id: number) {
   }
 
   onFileSelected(event: Event) {
-    const file = (event.target as HTMLInputElement).files?.[0];
-    if (!file) return;
+    const files = (event.target as HTMLInputElement).files;
+    if (!files || files.length === 0) return;
     
-    const maxSize = 2 * 1024 * 1024; 
-    if (file.size > maxSize) {
-      this.fileError = 'Image trop volumineuse (max 2MB).';
-      this.imagePreview = null;
-      this.imageBase64 = null;
+    
+    if (this.images.length + files.length > this.maxImages) {
+      this.fileError = `Vous ne pouvez ajouter que ${this.maxImages} images maximum. Actuellement: ${this.images.length}`;
       return;
     }
     
-    this.fileError = null;
-    const reader = new FileReader();
-    reader.onload = () => {
-      this.imagePreview = reader.result as string;
-      this.imageBase64 = this.imagePreview.split(',')[1]; 
-    };
-    reader.readAsDataURL(file);
+    const maxSize = 2 * 1024 * 1024; // 2MB per image
+    
+    Array.from(files).forEach(file => {
+      if (file.size > maxSize) {
+        this.fileError = `Image "${file.name}" trop volumineuse (max 2MB).`;
+        return;
+      }
+      
+      const reader = new FileReader();
+      reader.onload = () => {
+        const dataUrl = reader.result as string;
+        const base64 = dataUrl.split(',')[1];
+        
+        this.images.push(base64);
+        this.imagePreviews.push(dataUrl);
+        this.fileError = null;
+      };
+      reader.readAsDataURL(file);
+    });
+    
+    
+    this.resetFileInput();
   }
 
-  onDeletePhoto() {
+  onDeletePhoto(index: number) {
     if (confirm(this.t('PHOTO_DELETE_CONFIRM'))) {
-      this.imagePreview = null;
-      this.imageBase64 = null;
-      this.selectedFile = null;
-      this.resetFileInput();
+      this.images.splice(index, 1);
+      this.imagePreviews.splice(index, 1);
+    }
+  }
 
-      if (this.hasExistingImage && this.originalImageBase64) {
-        this.imageBase64 = '';
-      }
+  onDeleteAllPhotos() {
+    if (confirm('Êtes-vous sûr de vouloir supprimer toutes les photos ?')) {
+      this.images = [];
+      this.imagePreviews = [];
+      this.resetFileInput();
     }
   }
 
@@ -409,12 +444,17 @@ private loadTruck(id: number) {
     }
   }
 
-  get hasPhoto(): boolean {
-    return !!this.imagePreview || this.hasExistingImage;
+  get hasPhotos(): boolean {
+    return this.images.length > 0;
   }
 
-  get isPhotoChanged(): boolean {
-    return this.imageBase64 !== this.originalImageBase64;
+  get canAddMorePhotos(): boolean {
+    return this.images.length < this.maxImages;
+  }
+
+  get arePhotosChanged(): boolean {
+    if (this.images.length !== this.originalImages.length) return true;
+    return !this.images.every((img, idx) => img === this.originalImages[idx]);
   }
 
   private translation = inject(Translation);

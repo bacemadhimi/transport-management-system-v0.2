@@ -341,7 +341,7 @@ export class StatisticsComponent implements OnInit, AfterViewInit, OnDestroy {
         ...truck,
         zoneName: zone?.name || 'Non assigné',
         zoneCoordinates: zone ? { lat: zone.latitude, lng: zone.longitude } : undefined,
-        imageBase64: truck.imageBase64 || null
+        imageBase64: (truck.images && truck.images.length > 0) ? truck.images[0] : null
       };
     });
   }
@@ -946,7 +946,8 @@ export class StatisticsComponent implements OnInit, AfterViewInit, OnDestroy {
       const status = STATUS_CONFIG[truck.status] || STATUS_CONFIG['available'];
       const truckColor = truck.color || this.getStatusColor(truck.status);
       
-      const formattedImage = this.formatBase64Image(truck.imageBase64);
+      const firstImage = (truck.images && truck.images.length > 0) ? truck.images[0] : null;
+      const formattedImage = this.formatBase64Image(firstImage);
       const hasValidImage = !!formattedImage;
       
       let iconHtml = '';

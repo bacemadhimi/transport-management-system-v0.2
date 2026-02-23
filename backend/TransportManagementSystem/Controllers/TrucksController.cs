@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using TransportManagementSystem.Data;
 using TransportManagementSystem.Entity;
 using TransportManagementSystem.Models;
+using System.Text.Json;
 
 namespace TransportManagementSystem.Controllers;
 
@@ -66,9 +67,11 @@ public class TrucksController : ControllerBase
             Color = t.Color,
             Status = t.Status,
             TechnicalVisitDate = t.TechnicalVisitDate,
+            DateOfFirstRegistration = t.DateOfFirstRegistration,
+            EmptyWeight = t.EmptyWeight,
             TypeTruckId = t.TypeTruckId,
             ZoneId = t.ZoneId,
-            ImageBase64 = t.ImageBase64,
+            Images = DeserializeImages(t.ImagesJson),
             TypeTruck = t.TypeTruck != null ? new TypeTruckDto
             {
                 Id = t.TypeTruck.Id,
@@ -105,9 +108,11 @@ public class TrucksController : ControllerBase
             Color = truck.Color,
             Status = truck.Status,
             TechnicalVisitDate = truck.TechnicalVisitDate,
+            DateOfFirstRegistration = truck.DateOfFirstRegistration,
+            EmptyWeight = truck.EmptyWeight,
             TypeTruckId = truck.TypeTruckId,
             ZoneId = truck.ZoneId,
-            ImageBase64 = truck.ImageBase64,
+            Images = DeserializeImages(truck.ImagesJson),
             TypeTruck = truck.TypeTruck != null ? new TypeTruckDto
             {
                 Id = truck.TypeTruck.Id,
@@ -135,10 +140,12 @@ public class TrucksController : ControllerBase
         {
             Immatriculation = model.Immatriculation,
             TechnicalVisitDate = model.TechnicalVisitDate,
+            DateOfFirstRegistration = model.DateOfFirstRegistration,
+            EmptyWeight = model.EmptyWeight,
             MarqueTruckId = model.MarqueTruckId,
             Status = model.Status ?? "Disponible",
             Color = model.Color,
-            ImageBase64 = model.ImageBase64,
+            ImagesJson = SerializeImages(model.Images),
             TypeTruckId = model.TypeTruckId,
             ZoneId = model.ZoneId,
             IsEnable = true
@@ -161,9 +168,11 @@ public class TrucksController : ControllerBase
             Color = createdTruck.Color,
             Status = createdTruck.Status,
             TechnicalVisitDate = createdTruck.TechnicalVisitDate,
+            DateOfFirstRegistration = createdTruck.DateOfFirstRegistration,
+            EmptyWeight = createdTruck.EmptyWeight,
             TypeTruckId = createdTruck.TypeTruckId,
             ZoneId = createdTruck.ZoneId,
-            ImageBase64 = createdTruck.ImageBase64,
+            Images = DeserializeImages(createdTruck.ImagesJson),
             TypeTruck = createdTruck.TypeTruck != null ? new TypeTruckDto
             {
                 Id = createdTruck.TypeTruck.Id,
@@ -198,10 +207,12 @@ public class TrucksController : ControllerBase
 
         truck.Immatriculation = model.Immatriculation;
         truck.TechnicalVisitDate = model.TechnicalVisitDate;
+        truck.DateOfFirstRegistration = model.DateOfFirstRegistration;
+        truck.EmptyWeight = model.EmptyWeight;
         truck.MarqueTruckId = model.MarqueTruckId;
         truck.Status = model.Status;
         truck.Color = model.Color;
-        truck.ImageBase64 = model.ImageBase64;
+        truck.ImagesJson = SerializeImages(model.Images);
         truck.TypeTruckId = model.TypeTruckId;
         truck.ZoneId = model.ZoneId;
 
@@ -222,9 +233,11 @@ public class TrucksController : ControllerBase
             Color = updatedTruck.Color,
             Status = updatedTruck.Status,
             TechnicalVisitDate = updatedTruck.TechnicalVisitDate,
+            DateOfFirstRegistration = updatedTruck.DateOfFirstRegistration,
+            EmptyWeight = updatedTruck.EmptyWeight,
             TypeTruckId = updatedTruck.TypeTruckId,
             ZoneId = updatedTruck.ZoneId,
-            ImageBase64 = updatedTruck.ImageBase64,
+            Images = DeserializeImages(updatedTruck.ImagesJson),
             TypeTruck = updatedTruck.TypeTruck != null ? new TypeTruckDto
             {
                 Id = updatedTruck.TypeTruck.Id,
@@ -275,9 +288,11 @@ public class TrucksController : ControllerBase
             Color = t.Color,
             Status = t.Status,
             TechnicalVisitDate = t.TechnicalVisitDate,
+            DateOfFirstRegistration = t.DateOfFirstRegistration,
+            EmptyWeight = t.EmptyWeight,
             TypeTruckId = t.TypeTruckId,
             ZoneId = t.ZoneId,
-            ImageBase64 = t.ImageBase64,
+            Images = DeserializeImages(t.ImagesJson),
             TypeTruck = t.TypeTruck != null ? new TypeTruckDto
             {
                 Id = t.TypeTruck.Id,
@@ -357,6 +372,8 @@ public class TrucksController : ControllerBase
                         t.Status,
                         t.Color,
                         t.TechnicalVisitDate,
+                        t.DateOfFirstRegistration,
+                        t.EmptyWeight,
                         t.ZoneId
                     })
                     .ToList<object>();
@@ -393,6 +410,30 @@ public class TrucksController : ControllerBase
         catch (Exception ex)
         {
             return StatusCode(500, new ApiResponse(false, $"Error: {ex.Message}"));
+        }
+    }
+
+    // Helper methods for image serialization
+    private static string? SerializeImages(List<string>? images)
+    {
+        if (images == null || images.Count == 0)
+            return null;
+
+        return JsonSerializer.Serialize(images);
+    }
+
+    private static List<string>? DeserializeImages(string? imagesJson)
+    {
+        if (string.IsNullOrWhiteSpace(imagesJson))
+            return new List<string>();
+
+        try
+        {
+            return JsonSerializer.Deserialize<List<string>>(imagesJson) ?? new List<string>();
+        }
+        catch
+        {
+            return new List<string>();
         }
     }
 }

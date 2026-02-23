@@ -7,9 +7,11 @@ export interface ITruck {
   currentLoad?: number; // Charge actuelle
   loadType?: 'palettes' | 'cartons' | 'poid'; // Type de chargement
   technicalVisitDate: string | null;
+  dateOfFirstRegistration: string | null;
+  emptyWeight: number;
   status: string;
   color: string;
-  imageBase64: string | null;
+  images?: string[] | null;
   isEnable?: boolean;
   disabled?: boolean;
   tooltip?: string;

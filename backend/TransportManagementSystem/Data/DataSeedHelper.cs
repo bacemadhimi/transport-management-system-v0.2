@@ -599,6 +599,8 @@ namespace TransportManagementSystem.Data
                             MarqueTruckId = selectedBrand.Id,
                             Color = colors[rnd.Next(colors.Length)],
                             TechnicalVisitDate = now.AddMonths(rnd.Next(-6, 12)),
+                            DateOfFirstRegistration = now.AddYears(-rnd.Next(1, 8)),
+                            EmptyWeight = rnd.Next(3000, 12000),
                             Status = statuses[rnd.Next(statuses.Length)],
                             IsEnable = true,
                             ZoneId = zone.Id,

@@ -6,13 +6,13 @@
   </header>
 
   <form [formGroup]="truckForm" (ngSubmit)="onSubmit()" class="truck-form-grid">
-    <!-- First row: Zone and Type Véhicule -->
+  
     <div class="form-row">
       <div class="form-field-group">
         <mat-label>{{ t('ZONE_LABEL') || 'Zone' }}</mat-label>
         <mat-form-field appearance="outline" class="truck-field">
           <mat-select formControlName="zoneId" [disabled]="isSubmitting || loadingZones" required>
-            <!-- Loading state -->
+           
             <mat-option *ngIf="loadingZones" disabled>
               <div class="flex items-center">
                 <mat-spinner diameter="20" class="mr-2"></mat-spinner>
@@ -20,14 +20,14 @@
               </div>
             </mat-option>
             
-            <!-- No zones available -->
+          
             <mat-option *ngIf="!loadingZones && zones.length === 0" disabled>
               <div class="text-gray-500 italic">
                 Aucune zone active disponible
               </div>
             </mat-option>
             
-            <!-- Zone options -->
+        
             <mat-option *ngFor="let zone of zones" [value]="zone.id">
               {{ zone.name }}
             </mat-option>
@@ -38,12 +38,12 @@
         </mat-form-field>
       </div>
 
-      <!-- Type Véhicule field -->
+      
       <div class="form-field-group">
         <mat-label>{{ t('TYPE_VEHICULE_LABEL') || 'Type de véhicule' }}</mat-label>
         <mat-form-field appearance="outline" class="truck-field">
           <mat-select formControlName="typeTruckId" [disabled]="isSubmitting || loadingTypeTrucks" required>
-            <!-- Loading state -->
+           
             <mat-option *ngIf="loadingTypeTrucks" disabled>
               <div class="flex items-center">
                 <mat-spinner diameter="20" class="mr-2"></mat-spinner>
@@ -51,14 +51,14 @@
               </div>
             </mat-option>
             
-            <!-- No types available -->
+        
             <mat-option *ngIf="!loadingTypeTrucks && typeTrucks.length === 0" disabled>
               <div class="text-gray-500 italic">
                 Aucun type de véhicule disponible
               </div>
             </mat-option>
             
-            <!-- Type options with capacity and unit display -->
+         
             <mat-option *ngFor="let type of typeTrucks" [value]="type.id">
               {{ type.type }} ({{ type.capacity }} {{ type.unit }})
             </mat-option>
@@ -70,7 +70,7 @@
       </div>
     </div>
 
-    <!-- Second row: Immatriculation and Marque -->
+    
     <div class="form-row">
       <div class="form-field-group">
         <mat-label>{{ t('IMMATRICULATION') }}</mat-label>
@@ -87,12 +87,12 @@
         </mat-form-field>
       </div>
 
-      <!-- Marque dropdown -->
+     
       <div class="form-field-group">
         <mat-label>{{ t('MARQUE_VEHICULE') || 'Marque' }}</mat-label>
         <mat-form-field appearance="outline" class="truck-field">
           <mat-select formControlName="marqueTruckId" [disabled]="isSubmitting || loadingMarques" required>
-            <!-- Loading state -->
+          
             <mat-option *ngIf="loadingMarques" disabled>
               <div class="flex items-center">
                 <mat-spinner diameter="20" class="mr-2"></mat-spinner>
@@ -100,14 +100,14 @@
               </div>
             </mat-option>
             
-            <!-- No marques available -->
+          
             <mat-option *ngIf="!loadingMarques && marques.length === 0" disabled>
               <div class="text-gray-500 italic">
                 Aucune marque disponible
               </div>
             </mat-option>
             
-            <!-- Marque options -->
+          
             <mat-option *ngFor="let marque of marques" [value]="marque.id">
               {{ marque.name }}
             </mat-option>
@@ -118,8 +118,7 @@
         </mat-form-field>
       </div>
     </div>
-
-    <!-- Third row: Date Visite and Color (now on the same line) -->
+  
     <div class="form-row">
       <div class="form-field-group">
         <mat-label>{{ t('TECHNICAL_VISIT_DATE_LABEL') }}</mat-label>
@@ -138,7 +137,46 @@
         </mat-form-field>
       </div>
 
-      <!-- Color field -->
+      
+      <div class="form-field-group">
+        <mat-label>{{ t('DATE_FIRST_REGISTRATION_LABEL') || 'Date de première immatriculation' }}</mat-label>
+        <mat-form-field appearance="outline" class="truck-field">
+          <input
+            matInput
+            [matDatepicker]="pickerFirstReg"
+            formControlName="dateOfFirstRegistration"
+            placeholder="Sélectionner une date"
+          />
+          <mat-datepicker-toggle matSuffix [for]="pickerFirstReg"></mat-datepicker-toggle>
+          <mat-datepicker #pickerFirstReg></mat-datepicker>
+          <mat-error *ngIf="truckForm.get('dateOfFirstRegistration')?.hasError('required')">
+            {{ t('DATE_FIRST_REGISTRATION_REQUIRED') || 'Date de première immatriculation requise' }}
+          </mat-error>
+        </mat-form-field>
+      </div>
+    </div>
+
+  
+    <div class="form-row">
+      <div class="form-field-group">
+        <mat-label>{{ t('EMPTY_WEIGHT_LABEL') || 'Poids à vide (kg)' }}</mat-label>
+        <mat-form-field appearance="outline" class="truck-field">
+          <input
+            matInput
+            type="number"
+            formControlName="emptyWeight"
+            placeholder="Ex: 7500"
+            min="1"
+          />
+          <mat-error *ngIf="truckForm.get('emptyWeight')?.hasError('required')">
+            {{ t('EMPTY_WEIGHT_REQUIRED') || 'Le poids à vide est requis' }}
+          </mat-error>
+          <mat-error *ngIf="truckForm.get('emptyWeight')?.hasError('min')">
+            Le poids doit être supérieur à 0
+          </mat-error>
+        </mat-form-field>
+      </div>
+
       <div class="form-field-group">
         <mat-label>Couleur</mat-label>
         <mat-form-field appearance="outline" class="truck-field truck-field--color">
@@ -150,7 +188,7 @@
       </div>
     </div>
 
-    <!-- Status field (only for edit) -->
+    
     <div class="form-row" *ngIf="data.truckId">
       <div class="form-field-group">
         <mat-label>Statut</mat-label>
@@ -162,32 +200,38 @@
           </mat-select>
         </mat-form-field>
       </div>
-      <!-- Empty div for spacing when status is alone -->
+     
       <div class="form-field-group"></div>
     </div>
 
-    <!-- Photo section -->
+   
     <div class="truck-photo-input">
       <mat-label style="display: block; margin-bottom: 8px; text-align: center;">
-        {{ t('TRUCK_PHOTO_LABEL') }}
+        {{ t('TRUCK_PHOTO_LABEL') }} ({{ images.length }}/{{ maxImages }})
       </mat-label>
 
       <div style="display: flex; justify-content: center; gap: 12px; margin-bottom: 16px;">
-        <button mat-stroked-button type="button" (click)="fileInput.click()">
-          <mat-icon>cloud_upload</mat-icon>
-          {{ hasPhoto ? 'Changer la photo' : 'Choisir une photo' }}
+        <button 
+          mat-stroked-button 
+          type="button" 
+          (click)="fileInput.click()"
+          [disabled]="!canAddMorePhotos"
+          [matTooltip]="canAddMorePhotos ? 'Ajouter des photos' : 'Limite maximale atteinte'"
+        >
+          <mat-icon>add_photo_alternate</mat-icon>
+          Ajouter des photos
         </button>
         
         <button 
-          *ngIf="hasPhoto" 
+          *ngIf="hasPhotos" 
           mat-stroked-button 
           type="button" 
           color="warn"
-          (click)="onDeletePhoto()"
-          matTooltip="{{ t('PHOTO_DELETE_BTN_TOOLTIP') }}"
+          (click)="onDeleteAllPhotos()"
+          matTooltip="Supprimer toutes les photos"
         >
-          <mat-icon>delete</mat-icon>
-          {{ t('PHOTO_DELETE_BTN') }}
+          <mat-icon>delete_sweep</mat-icon>
+          Tout supprimer
         </button>
       </div>
 
@@ -195,31 +239,42 @@
         #fileInput
         type="file"
         accept="image/*"
+        multiple
         (change)="onFileSelected($event)"
         style="display: none"
       />
-      <div *ngIf="fileError" style="color: red; margin-top: 5px;">
+      
+      <div *ngIf="fileError" style="color: red; margin-top: 5px; text-align: center;">
         {{ fileError }}
       </div>
-      <div class="image-preview-container" *ngIf="hasPhoto; else noPhotoTemplate">
-        <div class="image-wrapper">
-          <img
-            [src]="imagePreview || ('data:image/png;base64,' + originalImageBase64)"
-            alt="Photo du camion"
-            class="truck-image"
-          />
+
+     
+      <div class="images-grid" *ngIf="hasPhotos; else noPhotoTemplate">
+        <div class="image-item" *ngFor="let preview of imagePreviews; let i = index">
+          <div class="image-wrapper">
+            <img [src]="preview" alt="Photo {{ i + 1 }}" class="truck-image" />
+            <button
+              type="button"
+              class="delete-image-btn"
+              (click)="onDeletePhoto(i)"
+              matTooltip="Supprimer cette photo"
+            >
+              <mat-icon>close</mat-icon>
+            </button>
+          </div>
+          <div class="image-number">{{ i + 1 }}</div>
         </div>
-        <p *ngIf="isPhotoChanged" class="photo-changed-hint">
-          ✓ Photo modifiée
-        </p>
       </div>
       
       <ng-template #noPhotoTemplate>
         <div class="no-photo-placeholder">
           <mat-icon style="font-size: 48px; color: #ccc; margin-bottom: 8px;">
-            photo_camera
+            photo_library
           </mat-icon>
           <p style="color: #888; margin: 0;">Aucune photo</p>
+          <p style="color: #aaa; margin: 4px 0 0 0; font-size: 12px;">
+            Vous pouvez ajouter jusqu'à {{ maxImages }} photos
+          </p>
         </div>
       </ng-template>
     </div>

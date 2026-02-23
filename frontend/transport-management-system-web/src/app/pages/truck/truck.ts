@@ -95,7 +95,7 @@ export class Truck implements OnInit {
         key: 'capacity',
         label: this.t('CAPACITY_LABEL'),
         format: (row: ITruck) => {
-          // Get capacity from typeTruck only
+         
           const capacity = row.typeTruck?.capacity || 'N/A';
           const unit = row.typeTruck?.unit || this.loadingUnit || 'tonnes';
           const unitLabel = this.getCapacityUnitLabel(unit);
@@ -178,9 +178,9 @@ export class Truck implements OnInit {
         format: (row: ITruck) => row.color
       },
       {
-        key: 'imageBase64',
+        key: 'images',
         label: this.t('PHOTO_TRUCK'),
-        format: (row: ITruck) => this.getImage(row.imageBase64),
+        format: (row: ITruck) => this.getImagesGallery(row.images),
         html: true
       },
       {
@@ -380,7 +380,7 @@ export class Truck implements OnInit {
     };
 
     const csvContent = [
-      ['ID', 'Immatriculation', 'Marque', 'Capacité', 'Unité', 'Date Visite', 'Status', 'Couleur'],
+      ['ID', 'Immatriculation', 'Marque', 'Capacité', 'Unité', 'Date Visite', 'Status', 'Couleur', 'Nombre Photos'],
       ...rows.map(r => [
         r.id,
         r.immatriculation,
@@ -389,7 +389,8 @@ export class Truck implements OnInit {
         r.typeTruck?.unit || this.loadingUnit || '',
         r.technicalVisitDate ? new Date(r.technicalVisitDate).toLocaleDateString('fr-FR') : '',
         r.status,
-        r.color
+        r.color,
+        r.images?.length || 0
       ])
     ]
       .map(row => row.map(escape).join(','))
@@ -413,7 +414,8 @@ export class Truck implements OnInit {
       Unité: r.typeTruck?.unit || this.loadingUnit || '',
       'Date Visite': r.technicalVisitDate ? new Date(r.technicalVisitDate).toLocaleDateString('fr-FR') : '',
       Status: r.status,
-      Couleur: r.color
+      Couleur: r.color,
+      'Nombre Photos': r.images?.length || 0
     }));
 
     const worksheet = XLSX.utils.json_to_sheet(excelData);
@@ -445,11 +447,12 @@ export class Truck implements OnInit {
       r.typeTruck ? `${r.typeTruck.capacity || ''} ${r.typeTruck.unit || ''}` : '',
       r.technicalVisitDate ? new Date(r.technicalVisitDate).toLocaleDateString('fr-FR') : '',
       r.status,
-      r.color
+      r.color,
+      r.images?.length || 0
     ]);
 
     autoTable(doc, {
-      head: [['ID', 'Immatriculation', 'Marque', 'Capacité', 'Date Visite', 'Status', 'Couleur']],
+      head: [['ID', 'Immatriculation', 'Marque', 'Capacité', 'Date Visite', 'Status', 'Couleur', 'Photos']],
       body: tableData,
       startY: 20,
       styles: { fontSize: 8, cellPadding: 2 },
@@ -460,6 +463,49 @@ export class Truck implements OnInit {
     doc.text(`Liste des Camions - ${new Date().toLocaleDateString('fr-FR')}`, 14, 10);
     
     doc.save('camions.pdf');
+  }
+
+  getImagesGallery(images?: string[] | null): SafeHtml {
+    if (!images || images.length === 0) {
+      return this.sanitizer.bypassSecurityTrustHtml(`
+        <span style="color:#999">—</span>
+      `);
+    }
+
+    
+    const displayImages = images.slice(0, 3);
+    const remainingCount = images.length - 3;
+
+    const imagesHtml = displayImages.map(base64 => `
+      <img 
+        src="data:image/jpeg;base64,${base64}" 
+        style="width:50px;height:40px;object-fit:cover;border-radius:4px;margin-right:4px;border:1px solid #ddd"
+        onerror="this.style.display='none'"
+      />
+    `).join('');
+
+    const counterHtml = remainingCount > 0 ? `
+      <span style="
+        display:inline-flex;
+        align-items:center;
+        justify-content:center;
+        width:50px;
+        height:40px;
+        background:#f3f4f6;
+        border-radius:4px;
+        font-size:11px;
+        font-weight:600;
+        color:#6b7280;
+        border:1px solid #ddd;
+      ">+${remainingCount}</span>
+    ` : '';
+
+    return this.sanitizer.bypassSecurityTrustHtml(`
+      <div style="display:flex;align-items:center;gap:2px;">
+        ${imagesHtml}
+        ${counterHtml}
+      </div>
+    `);
   }
 
   getImage(base64?: string | null): SafeHtml {

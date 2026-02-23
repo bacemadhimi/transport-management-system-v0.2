@@ -242,6 +242,8 @@ public class TripsController : ControllerBase
                 Color = trip.Truck.Color,
                 Status = trip.Truck.Status,
                 TechnicalVisitDate = trip.Truck.TechnicalVisitDate,
+                DateOfFirstRegistration = trip.Truck.DateOfFirstRegistration,
+                EmptyWeight = trip.Truck.EmptyWeight,
                 TypeTruckId = trip.Truck.TypeTruckId,
                 TypeTruck = trip.Truck.TypeTruck != null ? new TypeTruckDto
                 {
@@ -876,6 +878,8 @@ public class TripsController : ControllerBase
                 Color = trip.Truck.Color,
                 Status = trip.Truck.Status,
                 TechnicalVisitDate = trip.Truck.TechnicalVisitDate,
+                DateOfFirstRegistration = trip.Truck.DateOfFirstRegistration,
+                EmptyWeight = trip.Truck.EmptyWeight,
                 TypeTruckId = trip.Truck.TypeTruckId,
                 TypeTruck = trip.Truck.TypeTruck != null ? new TypeTruckDto
                 {

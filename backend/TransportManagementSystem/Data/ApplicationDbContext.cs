@@ -64,7 +64,7 @@ namespace TransportManagementSystem.Data
                 .HasConversion<string>();
 
             modelBuilder.Entity<Truck>()
-                .Property(t => t.ImageBase64)
+                .Property(t => t.ImagesJson)
                 .HasColumnType("nvarchar(max)");
 
             modelBuilder.Entity<Trip>()
