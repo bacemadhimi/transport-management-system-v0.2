@@ -47,10 +47,8 @@ public class Employee
 
     public bool IsEnable { get; set; } = true;
 
-    public int CategoryId { get; set; }
-
-    [ForeignKey("CategoryId")]
-    public Category Category { get; set; } = null!;
+    [StringLength(50)]
+    public string? EmployeeCategory { get; set; }
 
     public bool IsInternal { get; set; } = true;
 }

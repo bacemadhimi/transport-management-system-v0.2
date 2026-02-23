@@ -433,8 +433,8 @@
   "OVERTIME_APPROVAL_REQUIRED": "Approbation requise pour heures supplémentaires",
   "MARQUES_VEHICULES": "Marques de camions",
   "GESTION_VEHICULES": "Gestion des camions",
-  "MARQUE_VEHICULE": "Marque de camion",
-  "TYPE_VEHICULES": "Types de camions",
+  "MARQUE_VEHICULE": "Marque du camion",
+  "TYPE_VEHICULES": "Types des camions",
   "TYPE_VEHICULE_LABEL": "Type de camion",
   "IMMATRICULATION": "Immatriculation",
   "BRAND_LABEL": "Marque",
@@ -443,7 +443,9 @@
   "Employee_Management": "Gestion des employés",
   "FUEL_MANAGEMENT": "Gestion du carburant",
   "MAINTENANCE_MANAGEMENT": "Gestion de la maintenance",
-  "EMPLOYEE_LIST": "Liste des employés"
+  "EMPLOYEE_LIST": "Liste des employés",
+  "DATE_FIRST_REGISTRATION_LABEL": "Date de première immatriculation",
+  "EMPTY_WEIGHT_LABEL": "Poids à vide"
 
 }
 

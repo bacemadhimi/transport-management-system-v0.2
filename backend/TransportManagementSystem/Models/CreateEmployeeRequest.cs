@@ -15,6 +15,6 @@ public class CreateEmployeeRequest
 
     public int? TypeTruckId { get; set; }
 
-
+    public string? EmployeeCategory { get; set; }
     public IFormFile? DrivingLicenseFile { get; set; }
 }

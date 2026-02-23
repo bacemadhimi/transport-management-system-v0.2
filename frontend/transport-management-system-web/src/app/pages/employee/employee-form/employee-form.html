@@ -45,16 +45,42 @@
       </mat-error>
     </mat-form-field>
 
-        <!-- Truck Type -->
-    <mat-label>{{ t('Type de camion') || 'Truck Type' }}</mat-label>
+    <!-- Employee Category - NEW FIELD -->
+    <mat-label>{{ t('Catégorie d\'employé') || 'Employee Category' }}</mat-label>
     <mat-form-field appearance="outline" class="employee-field">
-      <mat-select formControlName="typeTruckId" [disabled]="isSubmitting || loadingTypeTrucks" placeholder="Entrer le type de camion que vous conduisez">
-        <!-- <mat-option *ngIf="loadingTypeTrucks" disabled>
+      <mat-select formControlName="employeeCategory" [disabled]="isSubmitting || loadingCategories" placeholder="Sélectionner une catégorie">
+        
+        <mat-option *ngIf="loadingCategories" disabled>
           <div class="flex items-center">
             <mat-spinner diameter="20" class="mr-2"></mat-spinner>
             <span>{{ t('Chargement...') || 'Loading...' }}</span>
           </div>
-        </mat-option> -->
+        </mat-option>
+        
+        <mat-option *ngIf="!loadingCategories && employeeCategories.length === 0" disabled>
+          <div class="text-gray-500 italic">
+            {{ t('Aucune catégorie disponible') || 'No categories available' }}
+          </div>
+        </mat-option>
+        
+        <mat-option [value]="null">
+          <span class="text-gray-500">{{ t('-- Aucune --') || '-- None --' }}</span>
+        </mat-option>
+        
+        <mat-option *ngFor="let category of employeeCategories" [value]="category.parameterCode">
+          {{ category.description || category.parameterCode }}
+        </mat-option>
+      </mat-select>
+      
+      <mat-hint *ngIf="employeeCategories.length === 0 && !loadingCategories">
+        {{ t('Aucune catégorie définie dans les paramètres') || 'No categories defined in settings' }}
+      </mat-hint>
+    </mat-form-field>
+
+    <!-- Truck Type -->
+    <mat-label>{{ t('Type de camion') || 'Truck Type' }}</mat-label>
+    <mat-form-field appearance="outline" class="employee-field">
+      <mat-select formControlName="typeTruckId" [disabled]="isSubmitting || loadingTypeTrucks" placeholder="Entrer le type de camion que vous conduisez">
         
         <mat-option *ngIf="!loadingTypeTrucks && typeTrucks.length === 0" disabled>
           <div class="text-gray-500 italic">
@@ -66,9 +92,9 @@
           <span class="text-gray-500">{{ t('-- Aucun --') || '-- None --' }}</span>
         </mat-option>
         
-    <mat-option *ngFor="let typeTruck of typeTrucks" [value]="+typeTruck.id">
-  {{ typeTruck.type }} ({{ typeTruck.capacity }} {{ typeTruck.unit }})
-</mat-option>
+        <mat-option *ngFor="let typeTruck of typeTrucks" [value]="+typeTruck.id">
+          {{ typeTruck.type }} ({{ typeTruck.capacity }} {{ typeTruck.unit }})
+        </mat-option>
       </mat-select>
     </mat-form-field>
 
@@ -78,9 +104,7 @@
       <input matInput formControlName="drivingLicense" placeholder="Ex: D-1234567" />
     </mat-form-field>
 
-
-
-   
+    <!-- File Upload Section -->
     <div class="file-upload-section employee-field--wide">
       <label class="file-upload-label">{{ t('Joindre Permis Pièce jointe') || 'Driving License Attachment' }}</label>
       <p class="file-upload-info">Type Supporté: JPG, JPEG, PNG, PDF, DOC, DOCX (Max 5 MB)</p>

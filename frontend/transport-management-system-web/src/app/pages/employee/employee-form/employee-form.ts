@@ -10,12 +10,14 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSelectModule } from '@angular/material/select';
 import { Http } from '../../../services/http';
+import { SettingsService } from '../../../services/settings.service'; // ADD THIS
 import { IEmployee } from '../../../types/employee';
 import { ITypeTruck } from '../../../types/type-truck';
 import Swal from 'sweetalert2';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { Translation } from '../../../services/Translation';
 import { Subscription } from 'rxjs';
+import { IGeneralSettings, ParameterType } from '../../../types/general-settings'; // ADD THIS
 
 @Component({
   selector: 'app-employee-form',
@@ -40,6 +42,7 @@ import { Subscription } from 'rxjs';
 export class EmployeeForm implements OnInit, OnDestroy {
   fb = inject(FormBuilder);
   httpService = inject(Http);
+  settingsService = inject(SettingsService); // ADD THIS
   dialogRef = inject(MatDialogRef<EmployeeForm>);
   data = inject<{ employeeId?: number }>(MAT_DIALOG_DATA, { optional: true }) ?? {};
   translation = inject(Translation);
@@ -57,6 +60,10 @@ export class EmployeeForm implements OnInit, OnDestroy {
   private subscriptions: Subscription[] = [];
   typeTrucks: ITypeTruck[] = [];
   loadingTypeTrucks = false;
+  
+  // ADD THESE PROPERTIES
+  employeeCategories: IGeneralSettings[] = [];
+  loadingCategories = false;
 
   employeeForm = this.fb.group({
     idNumber: this.fb.control<string>('', [Validators.required]),
@@ -64,17 +71,38 @@ export class EmployeeForm implements OnInit, OnDestroy {
     email: this.fb.control<string>('', [Validators.required, Validators.email]),
     phoneNumber: this.fb.control<string>('', [Validators.required]),
     drivingLicense: this.fb.control<string>(''),
-    typeTruckId: this.fb.control<number | null>(null)
+    typeTruckId: this.fb.control<number | null>(null),
+    employeeCategory: this.fb.control<string>('') // ADD THIS
   });
 
   ngOnInit() {
     this.loadTypeTrucks();
+    this.loadEmployeeCategories(); // ADD THIS
     if (this.data.employeeId) {
       this.loadEmployee(this.data.employeeId);
     }
   }
 
- private loadTypeTrucks(): void {
+  // ADD THIS METHOD
+  private loadEmployeeCategories(): void {
+    this.loadingCategories = true;
+    
+    const categoriesSub = this.settingsService.getEmployeeCategories().subscribe({
+      next: (categories) => {
+        this.employeeCategories = categories;
+        this.loadingCategories = false;
+        console.log('✅ Employee categories loaded:', categories);
+      },
+      error: (error) => {
+        console.error('Error loading employee categories:', error);
+        this.loadingCategories = false;
+      }
+    });
+    
+    this.subscriptions.push(categoriesSub);
+  }
+
+  private loadTypeTrucks(): void {
     this.loadingTypeTrucks = true;
     
     const typeTrucksSub = this.httpService.getTypeTrucksList({ pageIndex: 0, pageSize: 100 }).subscribe({
@@ -120,7 +148,8 @@ export class EmployeeForm implements OnInit, OnDestroy {
           email: employee.email,
           phoneNumber: employee.phoneNumber,
           drivingLicense: employee.drivingLicense || '',
-          typeTruckId: employee.typeTruckId || null
+          typeTruckId: employee.typeTruckId || null,
+          employeeCategory: employee.employeeCategory || '' 
         });
 
         if (employee.attachmentFileName) {
@@ -213,6 +242,12 @@ export class EmployeeForm implements OnInit, OnDestroy {
     formData.append('phoneNumber', this.employeeForm.get('phoneNumber')?.value || '');
     formData.append('drivingLicense', this.employeeForm.get('drivingLicense')?.value || '');
     
+    // ADD THIS
+    const employeeCategory = this.employeeForm.get('employeeCategory')?.value;
+    if (employeeCategory) {
+      formData.append('employeeCategory', employeeCategory);
+    }
+    
     const typeTruckId = this.employeeForm.get('typeTruckId')?.value;
     if (typeTruckId) {
       formData.append('typeTruckId', typeTruckId.toString());
@@ -251,6 +286,12 @@ export class EmployeeForm implements OnInit, OnDestroy {
     formData.append('phoneNumber', this.employeeForm.get('phoneNumber')?.value || '');
     formData.append('drivingLicense', this.employeeForm.get('drivingLicense')?.value || '');
     formData.append('isEnable', 'true');
+    
+    // ADD THIS
+    const employeeCategory = this.employeeForm.get('employeeCategory')?.value;
+    if (employeeCategory) {
+      formData.append('employeeCategory', employeeCategory);
+    }
     
     const typeTruckId = this.employeeForm.get('typeTruckId')?.value;
     if (typeTruckId) {

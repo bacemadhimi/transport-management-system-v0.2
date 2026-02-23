@@ -39,12 +39,13 @@ public class EmployeeController : ControllerBase
         if (!string.IsNullOrEmpty(searchOption.Search))
         {
             query = query.Where(x =>
-                (x.Name != null && x.Name.Contains(searchOption.Search)) ||
-                (x.IdNumber != null && x.IdNumber.Contains(searchOption.Search)) ||
-                (x.Email != null && x.Email.Contains(searchOption.Search)) ||
-                (x.PhoneNumber != null && x.PhoneNumber.Contains(searchOption.Search)) ||
-                (x.DrivingLicense != null && x.DrivingLicense.Contains(searchOption.Search))
-            );
+            (x.Name != null && x.Name.Contains(searchOption.Search)) ||
+            (x.IdNumber != null && x.IdNumber.Contains(searchOption.Search)) ||
+            (x.Email != null && x.Email.Contains(searchOption.Search)) ||
+            (x.PhoneNumber != null && x.PhoneNumber.Contains(searchOption.Search)) ||
+            (x.DrivingLicense != null && x.DrivingLicense.Contains(searchOption.Search)) ||
+            (x.EmployeeCategory != null && x.EmployeeCategory.Contains(searchOption.Search)) 
+        );
         }
 
         
@@ -141,7 +142,8 @@ public class EmployeeController : ControllerBase
             Email = request.Email,
             DrivingLicense = request.DrivingLicense,
             TypeTruckId = request.TypeTruckId,
-            CreatedAt = DateTime.UtcNow
+            CreatedAt = DateTime.UtcNow,
+            EmployeeCategory = request.EmployeeCategory,
         };
 
      
@@ -254,8 +256,9 @@ public class EmployeeController : ControllerBase
         existingEmployee.TypeTruckId = request.TypeTruckId;
         existingEmployee.IsEnable = request.IsEnable;
         existingEmployee.UpdatedAt = DateTime.UtcNow;
+        existingEmployee.EmployeeCategory = request.EmployeeCategory;
 
-        
+
         if (request.DrivingLicenseFile != null)
         {
             var fileValidation = ValidateFile(request.DrivingLicenseFile);
