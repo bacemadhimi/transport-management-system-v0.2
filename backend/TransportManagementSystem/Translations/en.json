@@ -440,5 +440,7 @@
   "Employee_Management": "Employee Management",
   "FUEL_MANAGEMENT": "Fuel Management",
   "MAINTENANCE_MANAGEMENT": "Maintenance Management",
-  "EMPLOYEE_LIST": "Employee List"
+  "EMPLOYEE_LIST": "Employee List",
+  "DATE_FIRST_REGISTRATION_LABEL": "Date of first registration",
+  "EMPTY_WEIGHT_LABEL": "Empty weight"
 }

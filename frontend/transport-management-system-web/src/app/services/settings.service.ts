@@ -2,7 +2,7 @@
 
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, map, BehaviorSubject, tap } from 'rxjs'; // ADD BehaviorSubject
+import { Observable, map, BehaviorSubject, tap, catchError, of } from 'rxjs'; // ADD BehaviorSubject
 import { 
   IGeneralSettings, 
   IGeneralSettingsDto, 
@@ -146,22 +146,6 @@ getOrderSettings(): Observable<IOrderSettings> {
     );
   }
 
-  // ========== EMPLOYEE CATEGORY Methods ==========
-
-  getEmployeeCategories(): Observable<IGeneralSettings[]> {
-    const options: SearchOptions = {
-      pageIndex: 0,
-      pageSize: 100,
-      parameterType: ParameterType.EMPLOYEE_CATEGORY
-    };
-    
-    return this.getSettings(options).pipe(
-      map(response => response.data || [])
-    );
-  }
-
-  // ========== Helper Methods ==========
-
   private getBooleanValue(map: Map<string, string>, key: string, defaultValue: boolean): boolean {
     const value = map.get(key);
     return value ? value.toLowerCase() === 'true' : defaultValue;
@@ -188,4 +172,16 @@ getOrderSettings(): Observable<IOrderSettings> {
   refreshSettings(): void {
     this.loadAllSettings();
   }
+
+getEmployeeCategories(): Observable<IGeneralSettings[]> {
+  console.log('🔍 Fetching employee categories from:', `${this.apiUrl}/type/EMPLOYEE_CATEGORY`);
+  
+  return this.http.get<IGeneralSettings[]>(`${this.apiUrl}/type/EMPLOYEE_CATEGORY`).pipe(
+    tap(categories => console.log('📦 Employee categories response:', categories)),
+    catchError(error => {
+      console.error('❌ Error fetching employee categories:', error);
+      return of([]); 
+    })
+  );
+}
 }
