@@ -684,11 +684,7 @@ export class TripForm implements OnInit {
         return {
           id: apiTruck.Id || apiTruck.id,
           immatriculation: apiTruck.Immatriculation || apiTruck.immatriculation || 'N/A',
-          marqueTruckId: apiTruck.marqueTruckId || 
-                       apiTruck.marqueId || 
-                       apiTruck.marque?.id || 
-                       apiTruck.MarqueId || 
-                       null,
+          marqueTruckId: apiTruck.marqueTruckId || null,
           model: apiTruck.Model || apiTruck.model || '',
           capacity: apiTruck.typeTruck?.capacity || 0,
           capacityUnit: this.loadingUnit || 'tonnes',
@@ -719,7 +715,7 @@ export class TripForm implements OnInit {
         return {
           id: truck.Id || truck.id,
           immatriculation: truck.Immatriculation || truck.immatriculation || 'N/A',
-          brand: truck.Brand || truck.brand || 'N/A',
+          marqueTruckId: truck.marqueTruckId || null,
           model: truck.Model || truck.model || '',
           capacity: truck.typeTruck?.capacity || 0,
           capacityUnit: this.loadingUnit,
@@ -1964,7 +1960,7 @@ getSelectedTruckInfo(): string {
     
     // Always allow continuation, just show warning with Yes/No options
     if (percentage >= 100) {
-      const truckName = truck ? `${truck.immatriculation} - ${truck.brand}` : 'Camion sélectionné';
+      const truckName = truck ? `${truck.immatriculation} - ${this.getMarqueName(truck.marqueTruckId)}` : 'Camion sélectionné';
       const excess = totalWeightNumber - capacityNumber;
       const excessPercentage = percentage - 100;
       
@@ -2010,7 +2006,7 @@ getSelectedTruckInfo(): string {
         title: 'Capacité presque pleine',
         html: `
           <div style="text-align: left; padding: 10px;">
-            <p><strong>${truck ? `${truck.immatriculation} - ${truck.brand}` : 'Camion sélectionné'}</strong></p>
+            <p><strong>${truck ? `${truck.immatriculation} - ${this.getMarqueName(truck.marqueTruckId)}` : 'Camion sélectionné'}</strong></p>
             <div style="background-color: #fef3c7; padding: 15px; border-radius: 5px; margin: 10px 0;">
               <p><strong>Capacité:</strong> ${capacityNumber} ${unitLabelPlural}</p>
               <p><strong>Poids total:</strong> ${totalWeightNumber.toFixed(2)} ${unitLabelPlural}</p>
@@ -2072,7 +2068,7 @@ getSelectedTruckInfo(): string {
         title: 'DÉPASSEMENT DE CAPACITÉ',
         html: `
           <div style="text-align: left; padding: 10px;">
-            <p><strong>${truck.immatriculation} - ${truck.brand}</strong></p>
+            <p><strong>${truck.immatriculation} - ${this.getMarqueName(truck.marqueTruckId)}</strong></p>
             <div style="background-color: #fee; padding: 15px; border-radius: 5px; margin: 10px 0;">
               <p><strong>Capacité maximum:</strong> ${capacity} ${unitLabelPlural}</p>
               <p><strong>Poids actuel:</strong> ${currentWeight.toFixed(2)} ${unitLabelPlural}</p>
@@ -2107,7 +2103,7 @@ getSelectedTruckInfo(): string {
         title: 'Capacité presque pleine',
         html: `
           <div style="text-align: left; padding: 10px;">
-            <p><strong>${truck.immatriculation} - ${truck.brand}</strong></p>
+            <p><strong>${truck.immatriculation} - ${this.getMarqueName(truck.marqueTruckId)}</strong></p>
             <div style="background-color: #fef3c7; padding: 15px; border-radius: 5px; margin: 10px 0;">
               <p><strong>Capacité:</strong> ${capacity} ${unitLabelPlural}</p>
               <p><strong>Utilisation actuelle:</strong> ${currentWeight.toFixed(2)} ${unitLabelPlural} (${(currentWeight/capacity*100).toFixed(1)}%)</p>
@@ -6196,12 +6192,12 @@ getSelectedTruckInfo(): string {
     
     const availableTruck = this.availableTrucks.find(t => t.id === truckId);
     if (availableTruck) {
-      return `${availableTruck.immatriculation} - ${availableTruck.brand}`;
+      return `${availableTruck.immatriculation} - ${this.getMarqueName(availableTruck.marqueTruckId)}`;
     }
     
     const unavailableTruck = this.unavailableTrucks.find(t => t.id === truckId);
     if (unavailableTruck) {
-      return `${unavailableTruck.immatriculation} - ${unavailableTruck.brand}`;
+      return `${unavailableTruck.immatriculation} - ${this.getMarqueName(unavailableTruck.marqueTruckId)}`;
     }
     
     return '';
