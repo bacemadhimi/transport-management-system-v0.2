@@ -357,7 +357,7 @@
                       <div class="truck-option">
                         <div class="truck-main-info">
                           <span class="truck-identification">
-                            {{ truck.immatriculation }} - {{ truck.brand }} 
+                            {{ truck.immatriculation }} - {{ getMarqueName(truck.marqueTruckId) }} 
                           </span>
                           <span class="available-badge">
                             <mat-icon class="availability-icon">check_circle</mat-icon>
@@ -400,7 +400,7 @@
                                   [style.opacity]="0.6"
                                   [matTooltip]="'Couleur: ' + truck.color">
                             </span>
-                            {{ truck.immatriculation }} - {{ truck.brand }}
+                            {{ truck.immatriculation }} - {{ getMarqueName(truck.marqueTruckId)}}
                           </span>
                           <span class="unavailable-badge">
                             <mat-icon class="unavailable-icon">cancel</mat-icon>

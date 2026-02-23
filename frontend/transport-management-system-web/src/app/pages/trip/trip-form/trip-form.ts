@@ -294,6 +294,7 @@ export class TripForm implements OnInit {
 
   ngOnInit(): void {
     this.initForm();
+    this.loadMarques();
     this.availabilityCheckTimeout = null;
     
     // Handle empty customers case gracefully
@@ -683,7 +684,11 @@ export class TripForm implements OnInit {
         return {
           id: apiTruck.Id || apiTruck.id,
           immatriculation: apiTruck.Immatriculation || apiTruck.immatriculation || 'N/A',
-          brand: apiTruck.Brand || apiTruck.brand || 'N/A',
+          marqueTruckId: apiTruck.marqueTruckId || 
+                       apiTruck.marqueId || 
+                       apiTruck.marque?.id || 
+                       apiTruck.MarqueId || 
+                       null,
           model: apiTruck.Model || apiTruck.model || '',
           capacity: apiTruck.typeTruck?.capacity || 0,
           capacityUnit: this.loadingUnit || 'tonnes',
@@ -1281,14 +1286,16 @@ export class TripForm implements OnInit {
     return order ? order.weight : 0;
   }
 
-  getSelectedTruckInfo(): string {
-    const truckId = this.tripForm.get('truckId')?.value;
-    if (!truckId) return 'Non sélectionné';
-    
-    const truck = this.trucks.find(t => t.id === truckId);
-    return truck ? `${truck.immatriculation} - ${truck.brand}` : 'Camion inconnu';
-  }
-
+getSelectedTruckInfo(): string {
+  const truckId = this.tripForm.get('truckId')?.value;
+  if (!truckId) return 'Non sélectionné';
+  
+  const truck = this.trucks.find(t => t.id === truckId);
+  if (!truck) return 'Camion inconnu';
+  
+  const marqueName = this.getMarqueName(truck.marqueTruckId);
+  return `${truck.immatriculation} - ${marqueName}`;
+}
   quickAddOrder(order: IOrder): void {
     const customer = this.customers.find(c => c.id === order.customerId);
     
@@ -6891,4 +6898,44 @@ private listenToSettingsChanges(): void {
     const truck = this.trucks.find(t => t.id === truckId);
     return truck ? truck.immatriculation : '';
   }
+
+  marqueMap: Map<number, string> = new Map();
+private loadMarques(): void {
+  this.http.getMarqueTrucks().subscribe({
+    next: (response) => {
+      // Handle different response formats
+      let marquesData: any[] = [];
+      
+      if (response && typeof response === 'object') {
+        // Check if response has a data property (ApiResponse wrapper)
+        if ('data' in response && Array.isArray((response as any).data)) {
+          marquesData = (response as any).data;
+        } 
+        // Check if response is directly an array
+        else if (Array.isArray(response)) {
+          marquesData = response;
+        }
+      }
+      
+      this.marqueMap.clear();
+      marquesData.forEach(marque => {
+        if (marque && marque.id && marque.name) {
+          this.marqueMap.set(marque.id, marque.name);
+        }
+      });
+      
+      console.log('✅ Marques loaded:', this.marqueMap.size, 'marques');
+    },
+    error: (error) => {
+      console.error('Error loading marques:', error);
+    }
+  });
+}
+
+// Add this method to get marque name
+getMarqueName(marqueId?: number): string {
+  console.log(marqueId)
+  if (!marqueId) return 'N/A';
+  return this.marqueMap.get(marqueId) || 'N/A';
+}
 }
