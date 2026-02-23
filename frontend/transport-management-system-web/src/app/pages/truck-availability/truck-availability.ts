@@ -450,6 +450,8 @@ processAvailabilityData(data: any[]) {
       capacity: truckData.capacity || 0,
       capacityUnit: truckData['capacityUnit'] || 'kg',
       technicalVisitDate: truckData.technicalVisitDate || null,
+      dateOfFirstRegistration: truckData.dateOfFirstRegistration || null,
+      emptyWeight: truckData.emptyWeight || 0,
       color: truckData.color || '#000000',
       imageBase64: truckData.imageBase64 || null,
       status: truckData.status || 'Disponible',
