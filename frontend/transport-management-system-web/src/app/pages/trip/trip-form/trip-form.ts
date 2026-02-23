@@ -2,7 +2,7 @@ import { Component, EventEmitter, HostListener, Inject, Input, OnInit, Output, O
 import { AbstractControl, FormArray, FormBuilder, FormControl, FormGroup, FormsModule, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialog, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
-import { CreateDeliveryDto, CreateTripDto, DeliveryStatusOptions, ITripSettings, TripStatus, UpdateTripDto } from '../../../types/trip';
+import { CreateDeliveryDto, CreateTripDto, DeliveryStatusOptions, TripStatus, UpdateTripDto } from '../../../types/trip';
 import { ITruck } from '../../../types/truck';
 import { IDriver } from '../../../types/driver';
 import { ICustomer } from '../../../types/customer';
@@ -37,8 +37,8 @@ import { TruncatePipe } from '../../../../truncate.pipe';
 import { IZone } from '../../../types/zone';
 import { CdkVirtualScrollViewport, ScrollingModule } from '@angular/cdk/scrolling';
 import { Translation } from '../../../services/Translation';
-import { OrderSettingsService } from '../../../services/order-settings.service';
-import { TripSettingsService } from '../../../services/trips-settings.service';
+import { SettingsService } from '../../../services/settings.service'; 
+import { ITripSettings } from '../../../types/general-settings';
 
 interface DialogData {
   tripId?: number;
@@ -284,8 +284,7 @@ export class TripForm implements OnInit {
     private snackBar: MatSnackBar,
     private datePipe: DatePipe,
     private dialog: MatDialog,
-    private orderSettingsService: OrderSettingsService, 
-    private tripSettingsService: TripSettingsService,
+    private settingsService: SettingsService, 
     @Optional() private dialogRef?: MatDialogRef<TripForm>, 
     @Optional() @Inject(MAT_DIALOG_DATA) public data?: DialogData
   ) {
@@ -415,31 +414,15 @@ export class TripForm implements OnInit {
   private loadConfiguration(): void {
     this.loadTripSettings();
     this.listenToSettingsChanges();
-    
-    // Load order settings with empty state handling
-    this.orderSettingsService.getSettings().subscribe({
-      next: (settings) => {
-        this.loadingUnit = settings?.loadingUnit || 'palette';
-        this.allowEditOrder = settings?.allowEditOrder || false;
-        this.allowLoadLateOrders = settings?.allowLoadLateOrders || false;
-        this.acceptOrdersWithoutAddress = settings?.acceptOrdersWithoutAddress || false;
-      },
-      error: (error) => {
-        console.error('Error loading settings:', error);
-        // Set defaults
-        this.loadingUnit = 'palette';
-        this.allowEditOrder = false;
-        this.allowLoadLateOrders = false;
-        this.acceptOrdersWithoutAddress = false;
-      }
-    });
 
-    this.orderSettingsService.settingsChanges.subscribe(settings => {
+ this.settingsService.orderSettings$.subscribe(settings => {
+    if (settings) {
       this.loadingUnit = settings?.loadingUnit || 'palette';
       this.allowEditOrder = settings?.allowEditOrder || false;
       this.allowLoadLateOrders = settings?.allowLoadLateOrders || false;
       this.acceptOrdersWithoutAddress = settings?.acceptOrdersWithoutAddress || false;
-    });
+    }
+  });
     
     // Load all data with empty state handling
     this.loadAllCustomers().then(() => {
@@ -6838,28 +6821,29 @@ export class TripForm implements OnInit {
         return '/palette.jpg';
     }
   }
+private loadTripSettings(): void {
+  this.settingsService.getTripSettings().subscribe({
+    next: (settings) => {
+      this.tripSettings = settings;
+      this.updateTruckFieldBasedOnSettings();
+    },
+    error: (error) => {
+      console.error('Erreur chargement paramètres:', error);
+    }
+  });
+}
 
-  private loadTripSettings(): void {
-    this.tripSettingsService.getSettings().subscribe({
-      next: (settings) => {
-        this.tripSettings = settings;
-        this.updateTruckFieldBasedOnSettings();
-      },
-      error: (error) => {
-        console.error('Erreur chargement paramètres:', error);
-      }
-    });
-  }
-
-  private listenToSettingsChanges(): void {
-    this.settingsSubscription = this.tripSettingsService.settingsChanges$.subscribe({
-      next: (updatedSettings) => {
+private listenToSettingsChanges(): void {
+  this.settingsSubscription = this.settingsService.tripSettings$.subscribe({
+    next: (updatedSettings) => {
+      if (updatedSettings) {
         console.log('🔄 Paramètres mis à jour:', updatedSettings);
         this.tripSettings = updatedSettings;
         this.updateTruckFieldBasedOnSettings();
       }
-    });
-  }
+    }
+  });
+}
 
   private updateTruckFieldBasedOnSettings(): void {
     const truckControl = this.tripForm.get('truckId');

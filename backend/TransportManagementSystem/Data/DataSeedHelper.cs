@@ -25,7 +25,126 @@ namespace TransportManagementSystem.Data
             {
                 // Appliquer les migrations
                 dbContext.Database.Migrate();
+                // Check if ORDER or TRIP settings already exist
+                if (!dbContext.GeneralSettings.Any(p => p.ParameterType == "ORDER" || p.ParameterType == "TRIP"))
+                {
+                    var settings = new List<GeneralSettings>
+    {
+        // ===== ORDER SETTINGS =====
+        new GeneralSettings
+        {
+            ParameterType = "ORDER",
+            ParameterCode = "ALLOW_EDIT_ORDER",
+            Value = "true",
+            Description = "Allow editing orders"
+        },
+        new GeneralSettings
+        {
+            ParameterType = "ORDER",
+            ParameterCode = "ALLOW_DELIVERY_DATE_EDIT",
+            Value = "true",
+            Description = "Allow editing delivery date"
+        },
+        new GeneralSettings
+        {
+            ParameterType = "ORDER",
+            ParameterCode = "ALLOW_LOAD_LATE_ORDERS",
+            Value = "true",
+            Description = "Allow loading late orders"
+        },
+        new GeneralSettings
+        {
+            ParameterType = "ORDER",
+            ParameterCode = "ACCEPT_ORDERS_WITHOUT_ADDRESS",
+            Value = "true",
+            Description = "Accept orders without address"
+        },
+        new GeneralSettings
+        {
+            ParameterType = "ORDER",
+            ParameterCode = "LOADING_UNIT",
+            Value = "palette",
+            Description = "Default loading unit"
+        },
+        new GeneralSettings
+        {
+            ParameterType = "ORDER",
+            ParameterCode = "PLANNING_HORIZON",
+            Value = "30",
+            Description = "Planning horizon in days"
+        },
 
+        // ===== TRIP SETTINGS =====
+        new GeneralSettings
+        {
+            ParameterType = "TRIP",
+            ParameterCode = "ALLOW_EDIT_TRIPS",
+            Value = "true",
+            Description = "Allow editing trips"
+        },
+        new GeneralSettings
+        {
+            ParameterType = "TRIP",
+            ParameterCode = "ALLOW_DELETE_TRIPS",
+            Value = "true",
+            Description = "Allow deleting trips"
+        },
+        new GeneralSettings
+        {
+            ParameterType = "TRIP",
+            ParameterCode = "EDIT_TIME_LIMIT",
+            Value = "60",
+            Description = "Edit limit in minutes"
+        },
+        new GeneralSettings
+        {
+            ParameterType = "TRIP",
+            ParameterCode = "MAX_TRIPS_PER_DAY",
+            Value = "10",
+            Description = "Maximum trips per day"
+        },
+        new GeneralSettings
+        {
+            ParameterType = "TRIP",
+            ParameterCode = "TRIP_ORDER",
+            Value = "chronological",
+            Description = "Trip ordering method"
+        },
+        new GeneralSettings
+        {
+            ParameterType = "TRIP",
+            ParameterCode = "REQUIRE_DELETE_CONFIRMATION",
+            Value = "true",
+            Description = "Require delete confirmation"
+        },
+        new GeneralSettings
+        {
+            ParameterType = "TRIP",
+            ParameterCode = "NOTIFY_ON_TRIP_EDIT",
+            Value = "false",
+            Description = "Notify when trip edited"
+        },
+        new GeneralSettings
+        {
+            ParameterType = "TRIP",
+            ParameterCode = "NOTIFY_ON_TRIP_DELETE",
+            Value = "false",
+            Description = "Notify when trip deleted"
+        },
+        new GeneralSettings
+        {
+            ParameterType = "TRIP",
+            ParameterCode = "LINK_DRIVER_TO_TRUCK",
+            Value = "true",
+            Description = "Driver must match truck"
+        }
+    };
+
+                    dbContext.GeneralSettings.AddRange(settings);
+                    dbContext.SaveChanges();
+
+                    Console.WriteLine("✔ ORDER & TRIP settings seeded successfully!");
+                }
                 // Seed UserGroups (SuperAdmin, Admin)
                 if (!dbContext.UserGroups.Any())
                 {
@@ -263,19 +382,20 @@ namespace TransportManagementSystem.Data
         "Jendouba", "Le Kef", "Siliana"
     };
 
-                int codeIndex = 1; // You can create codes like GOV1, GOV2, ...
+                int codeIndex = 1; // GOV1, GOV2, ...
 
                 var governorates = tunisianGovernorates.Select(name => new GeneralSettings
                 {
                     ParameterType = "GOVERNORATE",
                     ParameterCode = name,
-                    Description = $"GOV{codeIndex++}"
+                    Description = $"Governorate {name}",
+                    Value = $"GOV{codeIndex++}"   // <-- optional Value field
                 }).ToList();
 
                 dbContext.GeneralSettings.AddRange(governorates);
                 dbContext.SaveChanges();
 
-                Console.WriteLine($"✔ {governorates.Count} Governorates seedés !");
+                Console.WriteLine($"✔ {governorates.Count} Governorates seeded!");
             }
             if (!dbContext.Citys.Any())
             {
@@ -560,7 +680,8 @@ namespace TransportManagementSystem.Data
                         {
                             ParameterType = "EMPLOYEE_CATEGORY",
                             ParameterCode = "DRIVER",
-                            Description = "Driver"
+                            Description = "Driver",
+                            Value = "DRIVER"
                         }
                     };
 

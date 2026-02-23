@@ -19,7 +19,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import Swal from 'sweetalert2';
 import { Translation } from '../../../services/Translation';
 import { Subscription } from 'rxjs';
-import { OrderSettingsService } from '../../../services/order-settings.service';
+import { SettingsService } from '../../../services/settings.service'; 
 import { ITypeTruck } from '../../../types/type-truck';
 
 @Component({
@@ -47,7 +47,7 @@ import { ITypeTruck } from '../../../types/type-truck';
 export class TruckForm implements OnInit, OnDestroy {
   fb = inject(FormBuilder);
   httpService = inject(Http);
-  orderSettingsService = inject(OrderSettingsService);
+  SettingsService = inject(SettingsService);
   dialogRef = inject(MatDialogRef<TruckForm>);
   data = inject<{ truckId?: number }>(MAT_DIALOG_DATA, { optional: true }) ?? {};
   @ViewChild('fileInput') fileInput!: ElementRef;

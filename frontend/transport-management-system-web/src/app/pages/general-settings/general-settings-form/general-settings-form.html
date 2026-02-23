@@ -47,7 +47,21 @@
           Maximum 50 caractères
         </mat-error>
       </mat-form-field>
-
+      <mat-form-field appearance="outline">
+        <mat-label>Valeur</mat-label>
+        <input 
+          matInput 
+          formControlName="value" 
+          placeholder="Ex: true, 30, palette"
+          [readonly]="isSubmitting"
+          autocomplete="off"
+        />
+        <mat-icon matSuffix>settings</mat-icon>
+        <mat-hint>Valeur du paramètre (optionnel)</mat-hint>
+        <mat-error *ngIf="parameterForm.get('value')?.hasError('maxlength')">
+          Maximum 100 caractères
+        </mat-error>
+      </mat-form-field>
       <!-- Description -->
       <mat-form-field appearance="outline">
      
