@@ -77,6 +77,7 @@ public class TrucksController : ControllerBase
                 Id = t.TypeTruck.Id,
                 Type = t.TypeTruck.Type,
                 Capacity = t.TypeTruck.Capacity,
+                Unit = t.TypeTruck.Unit,
             } : null
         }).ToList();
 
