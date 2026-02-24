@@ -49,8 +49,5 @@ public class Employee
 
     public int CategoryId { get; set; }
 
-    [ForeignKey("CategoryId")]
-    public Category Category { get; set; } = null!;
-
     public bool IsInternal { get; set; } = true;
 }

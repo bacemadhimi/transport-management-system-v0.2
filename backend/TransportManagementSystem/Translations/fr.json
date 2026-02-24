@@ -443,7 +443,10 @@
   "Employee_Management": "Gestion des employés",
   "FUEL_MANAGEMENT": "Gestion du carburant",
   "MAINTENANCE_MANAGEMENT": "Gestion de la maintenance",
-  "EMPLOYEE_LIST": "Liste des employés"
+  "EMPLOYEE_LIST": "Liste des employés",
+  "SEARCH_EMPLOYEE": "Chercher employé",
+  "SEARCH_EMPLOYEE_PLACEHOLDER": "Nom, email, téléphone...",
+  "ADD_EMPLOYEE": "Ajouter un employé"
 
 }
 

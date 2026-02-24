@@ -440,5 +440,9 @@
   "Employee_Management": "Employee Management",
   "FUEL_MANAGEMENT": "Fuel Management",
   "MAINTENANCE_MANAGEMENT": "Maintenance Management",
-  "EMPLOYEE_LIST": "Employee List"
+  "EMPLOYEE_LIST": "Employee List",
+  "SEARCH_EMPLOYEE": "Search Employee",
+  "SEARCH_EMPLOYEE_PLACEHOLDER": "Name, email, phone...",
+  "ADD_EMPLOYEE": "Add Employee"
+  
 }
