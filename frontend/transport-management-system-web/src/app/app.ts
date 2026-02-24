@@ -1,5 +1,5 @@
 import { Translation } from './services/Translation';
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, signal, OnInit, OnDestroy } from '@angular/core';
 import { RouterLink, RouterOutlet } from '@angular/router';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatIconModule } from '@angular/material/icon';
@@ -11,6 +11,7 @@ import { CommonModule } from '@angular/common';
 import { HttpClient, HttpClientModule } from '@angular/common/http';
 import { Auth } from './services/auth';
 import { Http } from './services/http';
+import { Theme, ThemeService } from './services/theme.service';
 
 @Component({
   selector: 'app-root',
@@ -31,9 +32,11 @@ import { Http } from './services/http';
   templateUrl: './app.html',
   styleUrls: ['./app.scss']
 })
-export class App {
+export class App implements OnInit, OnDestroy {
   protected readonly title = signal('transport-management-system-web');
-
+  showThemePicker = false;
+  themes!: Theme[];
+  currentTheme!: Theme;
   authService = inject(Auth);
   httpService = inject(Http);
   private http = inject(HttpClient);
@@ -49,11 +52,18 @@ export class App {
   cancelledTripsCount = 0;
   refreshNotificationInterval: any;
 
+  constructor(
+    private themeService: ThemeService
+  ) {
+    this.themes = this.themeService.getThemes();
+    this.currentTheme = this.themeService.getCurrentTheme();
+  }
+
   ngOnInit() {
     this.httpService.getTranslations(this.currentLanguage).subscribe({
-  next: data => this.translation.setTranslations(data),
-  error: err => console.error('Error loading translations', err) });
-
+      next: data => this.translation.setTranslations(data),
+      error: err => console.error('Error loading translations', err)
+    });
 
     if (this.authService.isLoggedIn) this.authService.loadLoggedInUser();
     this.loadCancelledTrips();
@@ -104,4 +114,14 @@ export class App {
   }
 
   t(key: string): string { return this.translation.t(key); }
+
+  changeTheme(theme: Theme) {
+    this.themeService.setTheme(theme);
+    this.currentTheme = theme;
+    this.showThemePicker = false;
+  }
+
+  resetToDefaultTheme() {
+    this.changeTheme(this.themes[0]);
+  }
 }

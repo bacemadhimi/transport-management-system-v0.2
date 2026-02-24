@@ -54,7 +54,7 @@
             (click)="showPermissions = false"
             class="flex items-center gap-3 px-6 py-4 text-base text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors border-b border-gray-100"
           >
-            <mat-icon class="text-2xl text-blue-500">schedule</mat-icon>
+            <mat-icon class="text-2xl icon-overtime">schedule</mat-icon>
             <span class="font-medium">{{ t('OVERTIME') }}</span>
           </a>
  
@@ -65,7 +65,7 @@
             (click)="showPermissions = false"
             class="flex items-center gap-3 px-6 py-4 text-base text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors border-b border-gray-100"
           >
-            <mat-icon class="text-2xl text-green-500">event_available</mat-icon>
+            <mat-icon class="text-2xl icon-availability">event_available</mat-icon>
             <span class="font-medium">{{ t('DRIVERS') }}</span>
           </a>
  
@@ -76,7 +76,7 @@
             (click)="showPermissions = false"
             class="flex items-center gap-3 px-6 py-4 text-base text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors border-b border-gray-100"
           >
-            <mat-icon class="text-2xl text-orange-500">local_shipping</mat-icon>
+            <mat-icon class="text-2xl icon-truck">local_shipping</mat-icon>
             <span class="font-medium">{{ t('TRUCKS') }}</span>
           </a>
  
@@ -87,7 +87,7 @@
             (click)="showPermissions = false"
             class="flex items-center gap-3 px-6 py-4 text-base text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors border-b border-gray-100"
           >
-            <mat-icon class="text-2xl text-purple-500">event_busy</mat-icon>
+            <mat-icon class="text-2xl icon-dayoff">event_busy</mat-icon>
             <span class="font-medium">{{ t('DAYOFF') }}</span>
           </a>
  
@@ -98,7 +98,7 @@
             (click)="showPermissions = false"
             class="flex items-center gap-3 px-6 py-4 text-base text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors border-b border-gray-100"
           >
-            <mat-icon class="text-2xl text-cyan-500">sync</mat-icon>
+            <mat-icon class="text-2xl icon-sync">sync</mat-icon>
             <span class="font-medium">{{ t('SYNC') }}</span>
           </a>
           <a
@@ -107,7 +107,7 @@
             (click)="showPermissions = false"
             class="flex items-center gap-3 px-6 py-4 text-base text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors"
           >
-            <mat-icon class="text-2xl text-indigo-500">settings_applications</mat-icon>
+            <mat-icon class="text-2xl icon-settings">settings_applications</mat-icon>
             <span class="font-medium">{{ t('GENERAL_SETTINGS') }}</span>
           </a>
         </div>
@@ -115,7 +115,7 @@
      
       <!-- Notification Icon -->
       <div class="relative">
-        <button mat-icon-button (click)="openNotification()" class="hover:bg-blue-700 rounded-full transition-colors">
+        <button mat-icon-button (click)="openNotification()" class="rounded-full transition-colors hover-button">
           <mat-icon class="text-white">notifications</mat-icon>
         </button>
       
@@ -128,7 +128,7 @@
 
       <!-- Language Selector with Flags -->
       <div class="relative group">
-        <button mat-icon-button class="hover:bg-blue-700 rounded-full transition-colors">
+        <button mat-icon-button class="rounded-full transition-colors hover-button">
           <div class="w-6 h-6 rounded-full overflow-hidden shadow-sm border border-white">
             <img [src]="currentLanguage === 'en' ? 'en.png' : 'fr.png'" 
                  [alt]="currentLanguage === 'en' ? 'English' : 'French'"
@@ -141,7 +141,7 @@
           <!-- English -->
           <button (click)="changeLanguage('en')" 
                   class="w-full px-4 py-3 flex items-center gap-3 hover:bg-blue-50 transition-colors border-b border-gray-100 first:rounded-t-lg"
-                  [class.bg-blue-50]="currentLanguage === 'en'">
+                  [class.active-language]="currentLanguage === 'en'">
             <div class="w-6 h-6 rounded overflow-hidden shadow-sm">
               <img src="en.png" alt="English" class="w-full h-full object-cover">
             </div>
@@ -152,7 +152,7 @@
           <!-- French -->
           <button (click)="changeLanguage('fr')" 
                   class="w-full px-4 py-3 flex items-center gap-3 hover:bg-blue-50 transition-colors rounded-b-lg"
-                  [class.bg-blue-50]="currentLanguage === 'fr'">
+                  [class.active-language]="currentLanguage === 'fr'">
             <div class="w-6 h-6 rounded overflow-hidden shadow-sm">
               <img src="fr.png" alt="French" class="w-full h-full object-cover">
             </div>
@@ -162,8 +162,67 @@
         </div>
       </div>
 
+      <!-- Theme Color Picker -->
+      <div class="relative" (mouseleave)="showThemePicker = false">
+        <button 
+          mat-icon-button 
+          class="rounded-full transition-colors hover-button theme-picker-btn"
+          (click)="showThemePicker = !showThemePicker"
+          [style.background]="currentTheme?.primary">
+          <mat-icon class="text-white">palette</mat-icon>
+        </button>
+
+        <!-- Theme Picker Dropdown -->
+        <div 
+          *ngIf="showThemePicker"
+          class="absolute right-0 top-10 w-64 bg-white rounded-lg shadow-2xl border border-gray-100 z-50 overflow-hidden">
+          
+          <div class="px-4 py-3 font-semibold text-gray-800 border-b bg-gradient-to-r from-gray-50 to-gray-100">
+            <div class="flex items-center gap-2">
+              <mat-icon class="text-gray-600">color_lens</mat-icon>
+              <span>{{ t('CHOOSE_THEME') || 'Choose Theme' }}</span>
+            </div>
+          </div>
+
+          <div class="p-3">
+            <!-- Theme Grid -->
+            <div class="grid grid-cols-2 gap-2">
+              <button
+                *ngFor="let theme of themes"
+                (click)="changeTheme(theme)"
+                class="flex flex-col items-center p-2 rounded-lg hover:bg-gray-50 transition-colors relative"
+                [class.theme-active]="currentTheme?.name === theme.name">
+                
+                <!-- Color Preview -->
+                <div class="w-full h-10 rounded-lg mb-2 flex overflow-hidden shadow-sm">
+                  <div class="flex-1" [style.background]="theme.primary"></div>
+                  <div class="flex-1" [style.background]="theme.primaryDark"></div>
+                </div>
+                
+                <!-- Theme Name -->
+                <span class="text-xs font-medium text-gray-700">{{ theme.name }}</span>
+                
+                <!-- Check Icon for Active Theme -->
+                <mat-icon *ngIf="currentTheme?.name === theme.name" 
+                          class="text-green-500 absolute top-1 right-1 text-sm">
+                  check_circle
+                </mat-icon>
+              </button>
+            </div>
+
+            <!-- Reset to Default -->
+            <button 
+              (click)="resetToDefaultTheme()"
+              class="w-full mt-3 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition-colors flex items-center justify-center gap-2">
+              <mat-icon class="text-sm">restart_alt</mat-icon>
+              {{ t('RESET_DEFAULT') || 'Reset to Default' }}
+            </button>
+          </div>
+        </div>
+      </div>
+
       <!-- Logout -->
-      <button (click)="logout()" mat-icon-button class="text-white hover:bg-blue-700 rounded-full transition-colors">
+      <button (click)="logout()" mat-icon-button class="text-white rounded-full transition-colors hover-button">
         <mat-icon>logout</mat-icon>
       </button>
   
@@ -186,9 +245,6 @@
           <a matListItemTitle class="sidebar-text">{{ t('DASHBOARD') }}</a>
         </mat-list-item>
 
-        <!-- Drivers -->
-
-
         <!-- Employees -->
         <mat-list-item 
           *ngIf="authService.hasRole('SuperAdmin') || authService.hasEntityAccess('EMPLOYEE')"
@@ -208,22 +264,23 @@
           <mat-icon matListItemIcon class="sidebar-icon">local_shipping</mat-icon>
           <a matListItemTitle class="sidebar-text">{{ t('TRUCKS') }}</a>
         </mat-list-item>
-          <mat-list-item 
-            *ngIf="authService.hasRole('SuperAdmin') || authService.hasEntityAccess('TYPE_VEHICULE')"
-            routerLink="/type-trucks"
-            routerLinkActive="active-menu-item"
-            class="sidebar-item">
-            <mat-icon matListItemIcon class="sidebar-icon">category</mat-icon>
-            <a matListItemTitle class="sidebar-text">{{ t('TYPE_VEHICULES') }}</a>
-          </mat-list-item>
-          <mat-list-item 
-            *ngIf="authService.hasRole('SuperAdmin') || authService.hasEntityAccess('MARQUE_VEHICULE')"
-            routerLink="/marques"
-            routerLinkActive="active-menu-item"
-            class="sidebar-item">
-            <mat-icon matListItemIcon class="sidebar-icon">branding_watermark</mat-icon>
-            <a matListItemTitle class="sidebar-text">{{ t('MARQUES_VEHICULES') }}</a>
-          </mat-list-item>
+        <mat-list-item 
+          *ngIf="authService.hasRole('SuperAdmin') || authService.hasEntityAccess('TYPE_VEHICULE')"
+          routerLink="/type-trucks"
+          routerLinkActive="active-menu-item"
+          class="sidebar-item">
+          <mat-icon matListItemIcon class="sidebar-icon">category</mat-icon>
+          <a matListItemTitle class="sidebar-text">{{ t('TYPE_VEHICULES') }}</a>
+        </mat-list-item>
+        <mat-list-item 
+          *ngIf="authService.hasRole('SuperAdmin') || authService.hasEntityAccess('MARQUE_VEHICULE')"
+          routerLink="/marques"
+          routerLinkActive="active-menu-item"
+          class="sidebar-item">
+          <mat-icon matListItemIcon class="sidebar-icon">branding_watermark</mat-icon>
+          <a matListItemTitle class="sidebar-text">{{ t('MARQUES_VEHICULES') }}</a>
+        </mat-list-item>
+        
         <!-- Orders -->
         <mat-list-item 
           *ngIf="authService.hasRole('SuperAdmin') || authService.hasEntityAccess('ORDER')"

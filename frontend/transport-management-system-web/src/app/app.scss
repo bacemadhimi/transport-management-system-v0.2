@@ -1,3 +1,28 @@
+/* Theme CSS Variables */
+:root {
+  --primary-color: #3b82f6;
+  --primary-gradient: linear-gradient(135deg, #1d4ed8 0%, #3b82f6 100%);
+  --primary-dark: #1d4ed8;
+  --sidebar-active: #3b82f6;
+  --sidebar-active-dark: #1d4ed8;
+  
+  /* Icon Colors */
+  --icon-overtime: #3b82f6;
+  --icon-availability: #10b981;
+  --icon-truck: #f97316;
+  --icon-dayoff: #a855f7;
+  --icon-sync: #06b6d4;
+  --icon-settings: #6366f1;
+}
+
+/* Smooth transitions for theme changes */
+* {
+  transition: background-color 0.3s ease, 
+              border-color 0.3s ease, 
+              box-shadow 0.3s ease,
+              color 0.3s ease;
+}
+
 /* Menu Group Headers */
 .menu-group-header {
   padding: 16px 16px 8px 16px;
@@ -26,7 +51,8 @@
 .menu:hover {
   background-color: #f3f4f6;
 }
-/* menu Launguage */
+
+/* menu Language */
 .flag-icon {
   color: green;
   cursor: pointer;
@@ -68,9 +94,10 @@
 /* Active link styling */
 .active {
   background-color: #dbeafe;
-  color: #1d4ed8;
+  color: var(--primary-dark);
   font-weight: 500;
 }
+
 /* Sidebar Container */
 .sidebar-nav {
   padding: 8px 0;
@@ -107,11 +134,11 @@
   transition: all 0.3s ease;
 }
 
-/* Active Menu Item */
+/* Active Menu Item - Using Theme Variables */
 .active-menu-item {
-  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%) !important;
-  box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
-  border-left: 5px solid #1e40af;
+  background: linear-gradient(135deg, var(--sidebar-active) 0%, var(--sidebar-active-dark) 100%) !important;
+  box-shadow: 0 6px 20px rgba(var(--primary-color-rgb, 59, 130, 246), 0.4);
+  border-left: 5px solid var(--primary-dark);
   transform: translateX(0);
 }
 
@@ -127,8 +154,8 @@
 }
 
 .active-menu-item:hover {
-  background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%) !important;
-  box-shadow: 0 8px 25px rgba(59, 130, 246, 0.5);
+  background: linear-gradient(135deg, var(--sidebar-active) 0%, var(--sidebar-active-dark) 100%) !important;
+  box-shadow: 0 8px 25px rgba(var(--primary-color-rgb, 59, 130, 246), 0.5);
 }
 
 /* Expansion Panels */
@@ -136,7 +163,7 @@
   background: transparent !important;
   box-shadow: none !important;
   border-radius: 0 !important;
-  margin: 4px 12px !important;
+  margin: 4px 8px !important;
 }
 
 .sidebar-expansion-panel .mat-expansion-panel-header {
@@ -154,13 +181,13 @@
 
 .sidebar-expansion-panel .mat-expansion-panel-header.mat-expanded {
   background: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%) !important;
-  border-left: 5px solid #0ea5e9;
-  box-shadow: 0 4px 12px rgba(14, 165, 233, 0.2);
+  border-left: 5px solid var(--primary-color);
+  box-shadow: 0 4px 12px rgba(var(--primary-color-rgb, 14, 165, 233), 0.2);
 }
 
 .sidebar-expansion-panel .mat-expansion-panel-header.mat-expanded .expansion-arrow {
   transform: rotate(90deg);
-  color: #0ea5e9;
+  color: var(--primary-color);
 }
 
 .sidebar-expansion-panel .expansion-arrow {
@@ -174,20 +201,20 @@
 /* Submenu Items */
 .submenu-list {
   padding: 6px 0 !important;
-  margin-left: 28px !important;
+  margin-left: 0px !important;
 }
 
 .submenu-item {
   height: 42px !important;
-  margin: 3px 0 !important;
+  margin: 3px 8px !important;
   border-radius: 8px !important;
-  padding-left: 40px !important;
+  padding-left: 12px !important;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .submenu-item:hover {
   background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%) !important;
-  transform: translateX(6px);
+  transform: translateX(4px);
   box-shadow: 0 3px 8px rgba(0, 0, 0, 0.06);
 }
 
@@ -196,7 +223,7 @@
   font-size: 20px;
   height: 20px;
   width: 20px;
-  margin-right: 14px;
+  margin-right: 10px;
   transition: all 0.3s ease;
 }
 
@@ -210,25 +237,25 @@
 /* Active Submenu Item */
 .active-submenu-item {
   background: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%) !important;
-  border-left: 4px solid #0ea5e9;
-  box-shadow: 0 4px 12px rgba(14, 165, 233, 0.25);
-  transform: translateX(6px);
+  border-left: 4px solid var(--primary-color);
+  box-shadow: 0 4px 12px rgba(var(--primary-color-rgb, 14, 165, 233), 0.25);
+  transform: translateX(4px);
 }
 
 .active-submenu-item .submenu-icon {
-  color: #0ea5e9 !important;
+  color: var(--primary-color) !important;
   transform: scale(1.1);
 }
 
 .active-submenu-item .submenu-text {
-  color: #0369a1 !important;
+  color: var(--primary-dark) !important;
   font-weight: 600;
   letter-spacing: 0.2px;
 }
 
 .active-submenu-item:hover {
   background: linear-gradient(135deg, #bae6fd 0%, #7dd3fc 100%) !important;
-  box-shadow: 0 6px 16px rgba(14, 165, 233, 0.3);
+  box-shadow: 0 6px 16px rgba(var(--primary-color-rgb, 14, 165, 233), 0.3);
 }
 
 /* Divider */
@@ -250,9 +277,9 @@
   border-bottom: 2px solid #f1f5f9;
 }
 
-/* Toolbar improvements */
+/* Toolbar improvements - Using Theme Variables */
 .bg-blue-600\! {
-  background: linear-gradient(135deg, #1d4ed8 0%, #3b82f6 100%) !important;
+  background: var(--primary-gradient) !important;
 }
 
 /* Language dropdown */
@@ -299,9 +326,19 @@ mat-drawer::-webkit-scrollbar-thumb:hover {
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
 }
 
-/* Hover effects for header buttons */
-button:hover {
+/* Custom hover button class using theme variables */
+.hover-button:hover {
+  background-color: var(--primary-dark) !important;
   transform: translateY(-1px);
+}
+
+/* Theme picker button */
+.theme-picker-btn {
+  background-color: var(--primary-color);
+}
+
+.theme-picker-btn:hover {
+  background-color: var(--primary-dark) !important;
 }
 
 /* Settings dropdown enhancements */
@@ -324,69 +361,47 @@ button:hover img[alt*="French"] {
   filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.2));
 }
 
-.submenu-list {
-  padding: 6px 0 !important;
-  margin-left: 0px !important; /* Reduced to 0px */
+/* Active language state */
+.active-language {
+  background-color: rgba(var(--primary-color-rgb, 59, 130, 246), 0.1) !important;
 }
 
-.submenu-item {
-  height: 42px !important;
-  margin: 3px 8px !important; /* Added horizontal margin instead of padding */
-  border-radius: 8px !important;
-  padding-left: 12px !important; /* Further reduced from 20px to 12px */
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+/* Theme active state */
+.theme-active {
+  background-color: rgba(var(--primary-color-rgb, 59, 130, 246), 0.1) !important;
 }
 
-.submenu-item:hover {
-  background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%) !important;
-  transform: translateX(4px); /* Reduced from 6px */
-  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.06);
+/* Icon colors for dropdown menu */
+.icon-overtime {
+  color: var(--icon-overtime) !important;
 }
 
-.submenu-item .submenu-icon {
-  color: #94a3b8;
-  font-size: 20px;
-  height: 20px;
-  width: 20px;
-  margin-right: 10px; /* Reduced from 12px to 10px */
-  transition: all 0.3s ease;
+.icon-availability {
+  color: var(--icon-availability) !important;
 }
 
-.submenu-item .submenu-text {
-  font-size: 14px;
-  color: #475569;
-  text-decoration: none;
-  transition: all 0.3s ease;
+.icon-truck {
+  color: var(--icon-truck) !important;
 }
 
-/* Active Submenu Item */
-.active-submenu-item {
-  background: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%) !important;
-  border-left: 4px solid #0ea5e9;
-  box-shadow: 0 4px 12px rgba(14, 165, 233, 0.25);
-  transform: translateX(4px); /* Reduced from 6px */
+.icon-dayoff {
+  color: var(--icon-dayoff) !important;
 }
 
-.active-submenu-item .submenu-icon {
-  color: #0ea5e9 !important;
-  transform: scale(1.1);
+.icon-sync {
+  color: var(--icon-sync) !important;
 }
 
-.active-submenu-item .submenu-text {
-  color: #0369a1 !important;
-  font-weight: 600;
-  letter-spacing: 0.2px;
+.icon-settings {
+  color: var(--icon-settings) !important;
 }
 
-.active-submenu-item:hover {
-  background: linear-gradient(135deg, #bae6fd 0%, #7dd3fc 100%) !important;
-  box-shadow: 0 6px 16px rgba(14, 165, 233, 0.3);
+/* Make sure text-white stays white */
+.text-white {
+  color: white !important;
 }
 
-/* For even more left alignment, you can also adjust the expansion panel */
-.sidebar-expansion-panel {
-  background: transparent !important;
-  box-shadow: none !important;
-  border-radius: 0 !important;
-  margin: 4px 8px !important; /* Reduced from 12px to 8px */
+/* Email hover state */
+.hover\:text-gray-200:hover {
+  color: #e5e7eb !important;
 }
