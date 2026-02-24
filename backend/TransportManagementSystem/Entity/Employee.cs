@@ -47,6 +47,7 @@ public class Employee
 
     public bool IsEnable { get; set; } = true;
 
+    public int CategoryId { get; set; }
     [StringLength(50)]
     public string? EmployeeCategory { get; set; }
 

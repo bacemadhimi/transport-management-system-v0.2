@@ -46,7 +46,7 @@ namespace TransportManagementSystem.Data
         public DbSet<City> Citys { get; set; }
         public DbSet<TypeTruck> TypeTrucks { get; set; }
         public DbSet<Employee> Employees { get; set; }
-        public DbSet<Category> Categories { get; set; }
+        //public DbSet<Category> Categories { get; set; }
         public DbSet<GeneralSettings> GeneralSettings { get; set; }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

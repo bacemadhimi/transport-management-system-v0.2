@@ -5,12 +5,12 @@
     <div class="employee-header__actions">
       <div class="employee-header__left">
         <mat-form-field appearance="outline" class="employee-search">
-          <mat-label>{{ t('Chercher employé') || 'Search Employee' }}</mat-label>
+          <mat-label>{{ t('SEARCH_EMPLOYEE') }}</mat-label>
           <input
             matInput
             type="text"
             [formControl]="searchControl"
-            placeholder="{{ t('Chercher employé') || 'Name, email, phone...' }}"
+            placeholder="{{ t('SEARCH_EMPLOYEE_PLACEHOLDER') }}"
           />
         </mat-form-field>
 
@@ -45,7 +45,7 @@
           class="employee-add-btn" 
           (click)="add()" 
           type="button">
-          {{ t('Ajouter') || 'Add Employee' }}
+          {{ t('ADD_EMPLOYEE') }}
         </button>
       </div>
     </div>

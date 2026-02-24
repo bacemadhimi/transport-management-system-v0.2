@@ -1,17 +1,17 @@
 <mat-card class="employee-form-card">
   <header class="employee-form-card__header">
     <div>
-      <h2>{{ t(data.employeeId ? 'Editer Employé' : 'Ajouter Employé') || (data.employeeId ? 'Edit Employee' : 'Add Employee') }}</h2>
+      <h2> {{ t(data.employeeId ? 'EDIT_EMPLOYEE' : 'ADD_EMPLOYEE') }}</h2>
     </div>
   </header>
 
   <form [formGroup]="employeeForm" class="employee-form-grid">
    
-    <mat-label>{{ t('Matricule') || 'ID Number' }}</mat-label>
+    <mat-label>{{ t('CUSTOMER_REG_NUMBER') }}</mat-label>
     <mat-form-field appearance="outline" class="employee-field">
       <input matInput formControlName="idNumber" placeholder="Ex: 12345" />
       <mat-error *ngIf="employeeForm.get('idNumber')?.hasError('required')">
-        Matricules est obligatoire
+        {{t('ID_NUMBER_REQUIRED') }}
       </mat-error>
     </mat-form-field>
 
@@ -20,7 +20,7 @@
     <mat-form-field appearance="outline" class="employee-field">
       <input matInput formControlName="name" placeholder="Ex: John Smith" />
       <mat-error *ngIf="employeeForm.get('name')?.hasError('required')">
-        Nom est obligatoire
+        {{t('DRIVER_NAME_REQUIRED') }}
       </mat-error>
     </mat-form-field>
 
@@ -29,10 +29,10 @@
     <mat-form-field appearance="outline" class="employee-field">
       <input matInput formControlName="email" type="email" placeholder="Ex: john.smith@example.com" />
       <mat-error *ngIf="employeeForm.get('email')?.hasError('required')">
-        Email est obligatoire
+        {{t('EMAIL_REQUIRED') }}
       </mat-error>
       <mat-error *ngIf="employeeForm.get('email')?.hasError('email')">
-        Veuillez entrer un email valide
+        {{ t('EMAIL_INVALID1') }}
       </mat-error>
     </mat-form-field>
 
@@ -41,25 +41,25 @@
     <mat-form-field appearance="outline" class="employee-field">
       <input matInput formControlName="phoneNumber" placeholder="Ex: +1234567890" />
       <mat-error *ngIf="employeeForm.get('phoneNumber')?.hasError('required')">
-        Numéro de téléphone est obligatoire
+        {{ t('PHONE_REQUIRED1') }}
       </mat-error>
     </mat-form-field>
 
     <!-- Employee Category - NEW FIELD -->
-    <mat-label>{{ t('Catégorie d\'employé') || 'Employee Category' }}</mat-label>
+    <mat-label>{{ t('EMPLOYEE_CATEGORY')}}</mat-label>
     <mat-form-field appearance="outline" class="employee-field">
-      <mat-select formControlName="employeeCategory" [disabled]="isSubmitting || loadingCategories" placeholder="Sélectionner une catégorie">
+      <mat-select formControlName="employeeCategory" [disabled]="isSubmitting || loadingCategories" placeholder="{{ t('SELECT_CATEGORY') }}">
         
         <mat-option *ngIf="loadingCategories" disabled>
           <div class="flex items-center">
             <mat-spinner diameter="20" class="mr-2"></mat-spinner>
-            <span>{{ t('Chargement...') || 'Loading...' }}</span>
+            <span>{{ t('LOADING')}}</span>
           </div>
         </mat-option>
         
         <mat-option *ngIf="!loadingCategories && employeeCategories.length === 0" disabled>
           <div class="text-gray-500 italic">
-            {{ t('Aucune catégorie disponible') || 'No categories available' }}
+            {{ t('NO_CATEGORY_AVAILABLE') }}
           </div>
         </mat-option>
         
@@ -73,18 +73,18 @@
       </mat-select>
       
       <mat-hint *ngIf="employeeCategories.length === 0 && !loadingCategories">
-        {{ t('Aucune catégorie définie dans les paramètres') || 'No categories defined in settings' }}
+        {{ t('NO_CATEGORY_DEFINED') }}
       </mat-hint>
     </mat-form-field>
 
     <!-- Truck Type -->
-    <mat-label>{{ t('Type de camion') || 'Truck Type' }}</mat-label>
+    <mat-label>{{ t('TYPE_VEHICULE_LABEL') }}</mat-label>
     <mat-form-field appearance="outline" class="employee-field">
-      <mat-select formControlName="typeTruckId" [disabled]="isSubmitting || loadingTypeTrucks" placeholder="Entrer le type de camion que vous conduisez">
+      <mat-select formControlName="typeTruckId" [disabled]="isSubmitting || loadingTypeTrucks" placeholder="{{ t('TRUCK_TYPE_PLACEHOLDER') }}">
         
         <mat-option *ngIf="!loadingTypeTrucks && typeTrucks.length === 0" disabled>
           <div class="text-gray-500 italic">
-            {{ t('Aucun type disponible') || 'No types available' }}
+            {{ t('NO_TYPE_AVAILABLE') }}
           </div>
         </mat-option>
         
@@ -99,14 +99,14 @@
     </mat-form-field>
 
     
-    <mat-label>{{ t('TABLE_LICENSE_NUMBER') || 'Driving License' }}</mat-label>
+    <mat-label>{{ t('TABLE_LICENSE_NUMBER')}}</mat-label>
     <mat-form-field appearance="outline" class="employee-field">
       <input matInput formControlName="drivingLicense" placeholder="Ex: D-1234567" />
     </mat-form-field>
 
     <!-- File Upload Section -->
     <div class="file-upload-section employee-field--wide">
-      <label class="file-upload-label">{{ t('Joindre Permis Pièce jointe') || 'Driving License Attachment' }}</label>
+      <label class="file-upload-label">{{ t('UPLOAD_LICENSE_ATTACHMENT')}}</label>
       <p class="file-upload-info">Type Supporté: JPG, JPEG, PNG, PDF, DOC, DOCX (Max 5 MB)</p>
 
       <div class="file-upload-container" (click)="triggerFileInput()" [class.has-file]="selectedFile || hasExistingFile">
@@ -150,7 +150,7 @@
           <svg class="upload-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
             <path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z"/>
           </svg>
-          <p>Cliquez pour téléverser ou glissez-déposez</p>
+          <p>{{ t('UPLOAD_HINT') }}</p>
           <small>JPG, PNG, PDF, DOC or DOCX</small>
         </div>
       </div>
