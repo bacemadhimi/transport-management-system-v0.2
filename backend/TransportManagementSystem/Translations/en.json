@@ -443,6 +443,22 @@
   "EMPLOYEE_LIST": "Employee List",
   "SEARCH_EMPLOYEE": "Search Employee",
   "SEARCH_EMPLOYEE_PLACEHOLDER": "Name, email, phone...",
-  "ADD_EMPLOYEE": "Add Employee"
-  
+  "ADD_EMPLOYEE": "Add Employee",
+  "DATE_FIRST_REGISTRATION_LABEL": "Date of first registration",
+  "EMPTY_WEIGHT_LABEL": "Empty weight",
+  "TABLE_ATTACHMENT": "Attachment",
+  "EDIT_EMPLOYEE": "Edit Employee",
+  "ID_NUMBER_REQUIRED": "Employee ID is required",
+  "EMAIL_REQUIRED": "Email is required",
+  "EMAIL_INVALID1": "Please enter a valid email address",
+  "PHONE_REQUIRED1": "Phone number is required",
+  "UPLOAD_HINT": "Click to upload or drag and drop",
+  "EMPLOYEE_CATEGORY": "Employee Category",
+  "SELECT_CATEGORY": "Select a category",
+  "NO_CATEGORY_AVAILABLE": "No category available",
+  "NO_CATEGORY_DEFINED": "No category defined in settings",
+  "NO_TYPE_AVAILABLE": "No type available",
+  "TRUCK_TYPE_PLACEHOLDER": "Enter the type of truck you drive",
+  "UPLOAD_LICENSE_ATTACHMENT": "Attach License / Attachment"
+
 }

@@ -33,14 +33,12 @@ import { ZoneComponent } from './pages/zone/zone';
 import { CityComponent } from './pages/city/city';
 
 import { StatisticsComponent } from './pages/statistics/statistics.component';
-import { OrderSettingsComponent } from './pages/order-settings/order-settings';
 import { TripCreatePageComponent } from './pages/trip-create-page.component/trip-create-page.component';
 import { TripEditPageComponent } from './pages/trip-edit-page.component/trip-edit-page.component';
-import { TripsSettingsComponent } from './pages/trips-settings/trips-settings';
 import { TypeTruck } from './pages/type-truck/type-truck';
 import { Categories } from './pages/categories/categories';
 import { Marque } from './pages/marque/marque';
-import { GeneralSettings } from './pages/general-parameter/general-settings';
+import { GeneralSettings } from './pages/general-settings/general-settings';
 
 
 export const routes: Routes = [
@@ -210,12 +208,6 @@ export const routes: Routes = [
   canActivate: [AuthGuard]
 },
   {
-  path: 'order-settings',
-  component: OrderSettingsComponent,
-  canActivate: [AuthGuard]
-}
-,
-  {
     path: 'trips/create',
     component: TripCreatePageComponent,
      canActivate: [AuthGuard] 
@@ -225,11 +217,6 @@ export const routes: Routes = [
     component: TripEditPageComponent,
      canActivate: [AuthGuard] 
   },
-   {
-  path: 'trips-settings',
-  component: TripsSettingsComponent,
-  canActivate: [AuthGuard]
-},
 {
   path: 'type-trucks',
   component: TypeTruck,

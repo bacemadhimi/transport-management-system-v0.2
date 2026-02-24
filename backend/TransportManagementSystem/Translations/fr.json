@@ -377,7 +377,6 @@
   "SELECT_DATE_FIRST": "Sélectionnez d'abord une date",
   "ON_DATE": "le",
   "SELECT_DRIVER": "Sélectionner un chauffeur",
-  "+": null,
   "AVAILABLE_IN_ZONE": "disponible(s) dans cette zone",
   "ZONE_FILTER_DISABLED_ALL_DRIVERS": "Filtre de zone désactivé (tous les chauffeurs)",
   "AVAILABLE_TOTAL": "disponible(s) au total",
@@ -433,8 +432,8 @@
   "OVERTIME_APPROVAL_REQUIRED": "Approbation requise pour heures supplémentaires",
   "MARQUES_VEHICULES": "Marques de camions",
   "GESTION_VEHICULES": "Gestion des camions",
-  "MARQUE_VEHICULE": "Marque de camion",
-  "TYPE_VEHICULES": "Types de camions",
+  "MARQUE_VEHICULE": "Marque du camion",
+  "TYPE_VEHICULES": "Types des camions",
   "TYPE_VEHICULE_LABEL": "Type de camion",
   "IMMATRICULATION": "Immatriculation",
   "BRAND_LABEL": "Marque",
@@ -446,7 +445,23 @@
   "EMPLOYEE_LIST": "Liste des employés",
   "SEARCH_EMPLOYEE": "Chercher employé",
   "SEARCH_EMPLOYEE_PLACEHOLDER": "Nom, email, téléphone...",
-  "ADD_EMPLOYEE": "Ajouter un employé"
+  "ADD_EMPLOYEE": "Ajouter un employé",
+  "DATE_FIRST_REGISTRATION_LABEL": "Date de première immatriculation",
+  "EMPTY_WEIGHT_LABEL": "Poids à vide",
+  "TABLE_ATTACHMENT": "Pièce Jointe",
+  "EDIT_EMPLOYEE": "Éditer Employé",
+  "ID_NUMBER_REQUIRED": "Le matricule est obligatoire",
+  "EMAIL_REQUIRED": "L'email est obligatoire",
+  "EMAIL_INVALID1": "Veuillez entrer un email valide",
+  "PHONE_REQUIRED1": "Le numéro de téléphone est obligatoire",
+  "UPLOAD_HINT": "Cliquez pour téléverser ou glissez-déposez",
+  "EMPLOYEE_CATEGORY": "Catégorie d'employé",
+  "SELECT_CATEGORY": "Sélectionner une catégorie",
+  "NO_CATEGORY_AVAILABLE": "Aucune catégorie disponible",
+  "NO_CATEGORY_DEFINED": "Aucune catégorie définie dans les paramètres",
+  "NO_TYPE_AVAILABLE": "Aucun type disponible",
+  "TRUCK_TYPE_PLACEHOLDER": "Entrer le type de camion que vous conduisez",
+  "UPLOAD_LICENSE_ATTACHMENT": "Joindre Permis / Pièce jointe"
 
 }
 

@@ -18,6 +18,6 @@ public class UpdateEmployeeRequest
     public int? TypeTruckId { get; set; }
 
     public bool IsEnable { get; set; } = true;
-
+    public string? EmployeeCategory { get; set; }
     public IFormFile? DrivingLicenseFile { get; set; }
 }

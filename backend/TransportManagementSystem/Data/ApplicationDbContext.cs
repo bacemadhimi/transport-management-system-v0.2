@@ -29,7 +29,6 @@ namespace TransportManagementSystem.Data
 
         public DbSet<Delivery> Deliveries { get; set; }
         public DbSet<Order> Orders { get; set; }
-        public DbSet<OrderSetting> OrderSettings { get; set; }
         public DbSet<Traject> Trajects { get; set; }
         public DbSet<TrajectPoint> TrajectPoints { get; set; }
         public DbSet<Location> Locations { get; set; }
@@ -45,7 +44,6 @@ namespace TransportManagementSystem.Data
         public DbSet<Translation> Translations { get; set; }
         public DbSet<Zone> Zones { get; set; }
         public DbSet<City> Citys { get; set; }
-        public DbSet<TripSetting> TripSettings { get; set; }
         public DbSet<TypeTruck> TypeTrucks { get; set; }
         public DbSet<Employee> Employees { get; set; }
         //public DbSet<Category> Categories { get; set; }
@@ -64,7 +62,7 @@ namespace TransportManagementSystem.Data
                 .HasConversion<string>();
 
             modelBuilder.Entity<Truck>()
-                .Property(t => t.ImageBase64)
+                .Property(t => t.ImagesJson)
                 .HasColumnType("nvarchar(max)");
 
             modelBuilder.Entity<Trip>()

@@ -1,5 +1,6 @@
 import { Component, inject, OnInit } from '@angular/core';
 import { Http } from '../../services/http';
+import { SettingsService } from '../../services/settings.service'; 
 import { Table } from '../../components/table/table';
 import { ITruck } from '../../types/truck';
 import { MatButtonModule } from '@angular/material/button';
@@ -21,7 +22,6 @@ import { saveAs } from 'file-saver';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { Translation } from '../../services/Translation';
-import { OrderSettingsService } from '../../services/order-settings.service';
 import { IMarque } from '../../types/marque';
 
 @Component({
@@ -43,7 +43,11 @@ import { IMarque } from '../../types/marque';
 })
 export class Truck implements OnInit {
   constructor(public auth: Auth) {}  
-  loadingUnit: string = ''; 
+  
+ 
+  settingsService = inject(SettingsService);
+  
+  loadingUnit: string = 'palette'; 
   capacityUnits: { value: string; label: string }[] = [];
   marques: IMarque[] = [];
   marqueMap: Map<number, string> = new Map();
@@ -65,7 +69,6 @@ export class Truck implements OnInit {
     
   httpService = inject(Http);
   authService = inject(Auth);
-  orderSettingsService = inject(OrderSettingsService); 
   pagedTruckData!: PagedData<ITruck>;
   totalData!: number;
   filter: any = {
@@ -77,126 +80,148 @@ export class Truck implements OnInit {
   readonly dialog = inject(MatDialog);
   private sanitizer = inject(DomSanitizer);
 
-  get showCols() {
-    return [
-      {
-        key: 'immatriculation',
-        label: this.t('IMMATRICULATION')
-      },
-      {
-        key: 'marque',
-        label: this.t('BRAND_LABEL'),
-        format: (row: ITruck) => {
-          const marqueName = this.getMarqueName(row.marqueTruckId);
-          return marqueName || 'N/A';
-        }
-      },
-      {
-        key: 'capacity',
-        label: this.t('CAPACITY_LABEL'),
-        format: (row: ITruck) => {
-          // Get capacity from typeTruck only
-          const capacity = row.typeTruck?.capacity || 'N/A';
-          const unit = row.typeTruck?.unit || this.loadingUnit || 'tonnes';
-          const unitLabel = this.getCapacityUnitLabel(unit);
-          
-          return this.sanitizer.bypassSecurityTrustHtml(`
-            <span style="display:flex; align-items:center; gap:8px;">
-              <strong>${capacity} ${unitLabel}</strong>
-              <img 
-                src="${this.getLoadingUnitImage(unit)}" 
-                width="50" 
-                height="50" 
-                style="object-fit:contain"
-                onerror="this.style.display='none'"
-              />
-            </span>
-          `);
-        },
-        html: true
-      },
-      {
-        key: 'technicalVisitDate',
-        label: this.t('DATE_VISITE_TRUCK'),
-        format: (row: ITruck) => {
-          if (!row.technicalVisitDate) return '';
-          const date = new Date(row.technicalVisitDate);
-          return date.toLocaleDateString('fr-FR', {
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric'
-          });
-        }
-      },
-      {
-        key: 'status',
-        label: this.t('Status'),
-        format: (row: any) => {
-          let color = '#6b7280';
-          let bg = '#f3f4f6';
-
-          switch (row.status?.toLowerCase()) {
-            case 'disponible':
-              color = '#16a34a';
-              bg = '#dcfce7';
-              break;
-            case 'en mission':
-              color = '#1b0ddf';
-              bg = '#dbeafe';
-              break;
-            case 'maintenance':
-              color = '#e6b30e';
-              bg = '#fef9c3';
-              break;
-            case 'hors service':
-              color = '#dc2626';
-              bg = '#fee2e2';
-              break;
-          }
-
-          return this.sanitizer.bypassSecurityTrustHtml(`
-            <span class="status-pill"
-              style="
-                color: ${color};
-                background-color: ${bg};
-                border: 1px solid ${color}33;
-                padding:4px 10px;
-                border-radius:20px;
-                font-weight:500;
-                font-size:12px;
-                display:inline-block;
-              ">
-              ${row.status ?? ''}
-            </span>
-          `);
-        },
-        html: true
-      },
-      {
-        key: 'color',
-        label: this.t('COLOR_TRUCK'),
-        format: (row: ITruck) => row.color
-      },
-      {
-        key: 'imageBase64',
-        label: this.t('PHOTO_TRUCK'),
-        format: (row: ITruck) => this.getImage(row.imageBase64),
-        html: true
-      },
-      {
-        key: 'Action',
-        label: this.t('Action'),
-        format: () => [this.t('ACTION_EDIT'), this.t('ACTION_DELETE')]
+get showCols() {
+  return [
+    {
+      key: 'immatriculation',
+      label: this.t('IMMATRICULATION')
+    },
+    {
+      key: 'marque',
+      label: this.t('BRAND_LABEL'),
+      format: (row: ITruck) => {
+        const marqueName = this.getMarqueName(row.marqueTruckId);
+        return marqueName || 'N/A';
       }
-    ];
-  }
+    },
+
+    {
+      key: 'typeTruck',
+      label: 'Type de véhicule',
+      format: (row: ITruck) => {
+        if (!row.typeTruck) return 'N/A';
+        
+        return this.sanitizer.bypassSecurityTrustHtml(`
+          <span style="
+            display: inline-block;
+            padding: 4px 8px;
+            background-color: #e9ecef;
+            border-radius: 4px;
+            font-weight: 500;
+          ">
+            ${row.typeTruck.type || 'N/A'}
+          </span>
+        `);
+      },
+      html: true
+    },
+    {
+      key: 'capacity',
+      label: this.t('CAPACITY_LABEL'),
+      format: (row: ITruck) => {
+        if (!row.typeTruck) return 'N/A';
+        
+        const capacity = row.typeTruck.capacity || 'N/A';
+        const unit = row.typeTruck.unit || 'tonnes';
+        const unitLabel = this.getCapacityUnitLabel(unit);
+        
+        return this.sanitizer.bypassSecurityTrustHtml(`
+          <span style="display:flex; align-items:center; gap:8px;">
+            <strong>${capacity} ${unitLabel}</strong>
+            <img 
+              src="${this.getLoadingUnitImage(unit)}" 
+              width="50" 
+              height="50" 
+              style="object-fit:contain"
+              onerror="this.style.display='none'"
+            />
+          </span>
+        `);
+      },
+      html: true
+    },
+    {
+      key: 'technicalVisitDate',
+      label: this.t('DATE_VISITE_TRUCK'),
+      format: (row: ITruck) => {
+        if (!row.technicalVisitDate) return '';
+        const date = new Date(row.technicalVisitDate);
+        return date.toLocaleDateString('fr-FR', {
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric'
+        });
+      }
+    },
+    {
+      key: 'status',
+      label: this.t('Status'),
+      format: (row: any) => {
+        let color = '#6b7280';
+        let bg = '#f3f4f6';
+
+        switch (row.status?.toLowerCase()) {
+          case 'disponible':
+            color = '#16a34a';
+            bg = '#dcfce7';
+            break;
+          case 'en mission':
+            color = '#1b0ddf';
+            bg = '#dbeafe';
+            break;
+          case 'maintenance':
+            color = '#e6b30e';
+            bg = '#fef9c3';
+            break;
+          case 'hors service':
+            color = '#dc2626';
+            bg = '#fee2e2';
+            break;
+        }
+
+        return this.sanitizer.bypassSecurityTrustHtml(`
+          <span class="status-pill"
+            style="
+              color: ${color};
+              background-color: ${bg};
+              border: 1px solid ${color}33;
+              padding:4px 10px;
+              border-radius:20px;
+              font-weight:500;
+              font-size:12px;
+              display:inline-block;
+            ">
+            ${row.status ?? ''}
+          </span>
+        `);
+      },
+      html: true
+    },
+    {
+      key: 'color',
+      label: this.t('COLOR_TRUCK'),
+      format: (row: ITruck) => row.color
+    },
+    {
+      key: 'images',
+      label: this.t('PHOTO_TRUCK'),
+      format: (row: ITruck) => this.getImagesGallery(row.images),
+      html: true
+    },
+    {
+      key: 'Action',
+      label: this.t('Action'),
+      format: () => [this.t('ACTION_EDIT'), this.t('ACTION_DELETE')]
+    }
+  ];
+}
 
   ngOnInit() {
-    this.loadCapacityUnits(); 
     this.loadMarques();
+    this.loadSettings(); 
     this.getLatestData();
 
-    console.log('loadingUnit'+this.loadingUnit)
+    console.log('loadingUnit: ' + this.loadingUnit);
 
     this.searchControl.valueChanges.pipe(debounceTime(250))
       .subscribe((value: string | null) => {
@@ -204,6 +229,28 @@ export class Truck implements OnInit {
         this.filter.pageIndex = 0;
         this.getLatestData();
       });
+  }
+
+
+  private loadSettings(): void {
+    this.settingsService.getOrderSettings().subscribe({
+      next: (settings) => {
+        this.loadingUnit = settings.loadingUnit || 'palette';
+        console.log('✅ Loading unit from settings:', this.loadingUnit);
+      },
+      error: (err) => {
+        console.error('Error loading settings:', err);
+        this.loadingUnit = 'palette'; 
+      }
+    });
+
+  
+    this.settingsService.orderSettings$.subscribe(settings => {
+      if (settings) {
+        this.loadingUnit = settings.loadingUnit || 'palette';
+        console.log('🔄 Loading unit updated:', this.loadingUnit);
+      }
+    });
   }
 
   private loadMarques(): void {
@@ -239,70 +286,54 @@ export class Truck implements OnInit {
     return this.marqueMap.get(marqueId) || 'N/A';
   }
 
-  getLoadingUnitImage(unit: string): string {
-    switch (unit?.toLowerCase()) {
-      case 'palettes':
-        return '/palette.jpg';
-      case 'cartons':
-        return '/carton.webp';
-      case 'tonnes':
-        return '/tonne.png';
-      case 'kg':
-        return '/kg.png';
-      case 'bouteilles':
-        return '/b.png';
-      default:
-        return '/palette.jpg';
-    }
+ getLoadingUnitImage(unit: string): string {
+  if (!unit) return '/palette.jpg';
+  
+  const unitLower = unit.toLowerCase();
+  
+  switch (unitLower) {
+    case 'palettes':
+    case 'palette':
+      return '/palette.jpg';
+    case 'cartons':
+    case 'carton':
+      return '/carton.webp';
+    case 'tonnes':
+    case 'tonne':
+      return '/tonne.png';
+    case 'kg':
+      return '/kg.png';
+    case 'bouteilles':
+    case 'bouteille':
+      return '/b.png';
+    default:
+      return '/palette.jpg';
   }
+}
 
-  private loadCapacityUnits(): void {
-    this.orderSettingsService.getSettings().subscribe({
-      next: (settings: any) => {
-        const units: string[] = Array.isArray(settings.loadingUnit)
-          ? settings.loadingUnit
-          : typeof settings.loadingUnit === 'string'
-            ? [settings.loadingUnit]
-            : [];
-
-        this.capacityUnits = units.length
-          ? units.map(u => ({ value: u, label: this.getCapacityUnitLabel(u) }))
-          : [{ value: 'tonnes', label: 'Tonnes' }];
-
-        if (units.length > 0) {
-          this.loadingUnit = units[0]; 
-        }
-      },
-      error: (err) => {
-        console.error('Erreur récupération loadingUnit', err);
-        this.loadingUnit = 'tonne';
-        this.capacityUnits = [{ value: 'tonnes', label: 'Tonnes' }];
-      }
-    });
-
-    if (this.orderSettingsService.settingsChanges) {
-      this.orderSettingsService.settingsChanges.subscribe(settings => {
-        if (settings && settings.loadingUnit) {
-          const units: string[] = Array.isArray(settings.loadingUnit)
-            ? settings.loadingUnit
-            : [settings.loadingUnit];
-
-          this.capacityUnits = units.map(u => ({ value: u, label: this.getCapacityUnitLabel(u) }));
-          this.loadingUnit = units[0];
-        }
-      });
-    }
+private getCapacityUnitLabel(unit: string): string {
+  console.log('Unit from truck type:', unit);
+  console.log(unit)
+  if (!unit) return 'Tonnes';
+  
+  const unitLower = unit.toLowerCase();
+  
+  switch(unitLower) {
+    case 'palettes':
+    case 'palette':
+      return 'Palettes';
+    case 'cartons':
+    case 'carton':
+      return 'Cartons';
+    case 'tonnes':
+    case 'tonne':
+      return 'Tonnes';
+    case 'kg':
+      return 'KG';
+    default:
+      return unit || 'Tonnes';
   }
-
-  private getCapacityUnitLabel(unit: string): string {
-    console.log('unit',unit)
-    switch(unit) {
-      case 'palettes': return 'Palettes';
-      case 'cartons': return 'Cartons';
-      case 'tonnes': return 'Tonnes';
-      default: return unit;
-    }
-  }
+}
 
   getLatestData() {
     this.httpService.getTrucksList(this.filter).subscribe(result => {
@@ -311,6 +342,8 @@ export class Truck implements OnInit {
       
       if (result.data && result.data.length > 0) {
         console.log('Sample truck data:', result.data[0]);
+ 
+        console.log('Truck typeTruck:', result.data[0].typeTruck);
       }
     });
   }
@@ -380,7 +413,7 @@ export class Truck implements OnInit {
     };
 
     const csvContent = [
-      ['ID', 'Immatriculation', 'Marque', 'Capacité', 'Unité', 'Date Visite', 'Status', 'Couleur'],
+      ['ID', 'Immatriculation', 'Marque', 'Capacité', 'Unité', 'Date Visite', 'Status', 'Couleur', 'Nombre Photos'],
       ...rows.map(r => [
         r.id,
         r.immatriculation,
@@ -389,7 +422,8 @@ export class Truck implements OnInit {
         r.typeTruck?.unit || this.loadingUnit || '',
         r.technicalVisitDate ? new Date(r.technicalVisitDate).toLocaleDateString('fr-FR') : '',
         r.status,
-        r.color
+        r.color,
+        r.images?.length || 0
       ])
     ]
       .map(row => row.map(escape).join(','))
@@ -413,7 +447,8 @@ export class Truck implements OnInit {
       Unité: r.typeTruck?.unit || this.loadingUnit || '',
       'Date Visite': r.technicalVisitDate ? new Date(r.technicalVisitDate).toLocaleDateString('fr-FR') : '',
       Status: r.status,
-      Couleur: r.color
+      Couleur: r.color,
+      'Nombre Photos': r.images?.length || 0
     }));
 
     const worksheet = XLSX.utils.json_to_sheet(excelData);
@@ -445,11 +480,12 @@ export class Truck implements OnInit {
       r.typeTruck ? `${r.typeTruck.capacity || ''} ${r.typeTruck.unit || ''}` : '',
       r.technicalVisitDate ? new Date(r.technicalVisitDate).toLocaleDateString('fr-FR') : '',
       r.status,
-      r.color
+      r.color,
+      r.images?.length || 0
     ]);
 
     autoTable(doc, {
-      head: [['ID', 'Immatriculation', 'Marque', 'Capacité', 'Date Visite', 'Status', 'Couleur']],
+      head: [['ID', 'Immatriculation', 'Marque', 'Capacité', 'Date Visite', 'Status', 'Couleur', 'Photos']],
       body: tableData,
       startY: 20,
       styles: { fontSize: 8, cellPadding: 2 },
@@ -460,6 +496,48 @@ export class Truck implements OnInit {
     doc.text(`Liste des Camions - ${new Date().toLocaleDateString('fr-FR')}`, 14, 10);
     
     doc.save('camions.pdf');
+  }
+
+  getImagesGallery(images?: string[] | null): SafeHtml {
+    if (!images || images.length === 0) {
+      return this.sanitizer.bypassSecurityTrustHtml(`
+        <span style="color:#999">—</span>
+      `);
+    }
+
+    const displayImages = images.slice(0, 3);
+    const remainingCount = images.length - 3;
+
+    const imagesHtml = displayImages.map(base64 => `
+      <img 
+        src="data:image/jpeg;base64,${base64}" 
+        style="width:50px;height:40px;object-fit:cover;border-radius:4px;margin-right:4px;border:1px solid #ddd"
+        onerror="this.style.display='none'"
+      />
+    `).join('');
+
+    const counterHtml = remainingCount > 0 ? `
+      <span style="
+        display:inline-flex;
+        align-items:center;
+        justify-content:center;
+        width:50px;
+        height:40px;
+        background:#f3f4f6;
+        border-radius:4px;
+        font-size:11px;
+        font-weight:600;
+        color:#6b7280;
+        border:1px solid #ddd;
+      ">+${remainingCount}</span>
+    ` : '';
+
+    return this.sanitizer.bypassSecurityTrustHtml(`
+      <div style="display:flex;align-items:center;gap:2px;">
+        ${imagesHtml}
+        ${counterHtml}
+      </div>
+    `);
   }
 
   getImage(base64?: string | null): SafeHtml {

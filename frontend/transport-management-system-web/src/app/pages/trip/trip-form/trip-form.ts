@@ -2,7 +2,7 @@ import { Component, EventEmitter, HostListener, Inject, Input, OnInit, Output, O
 import { AbstractControl, FormArray, FormBuilder, FormControl, FormGroup, FormsModule, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialog, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
-import { CreateDeliveryDto, CreateTripDto, DeliveryStatusOptions, ITripSettings, TripStatus, UpdateTripDto } from '../../../types/trip';
+import { CreateDeliveryDto, CreateTripDto, DeliveryStatusOptions, TripStatus, UpdateTripDto } from '../../../types/trip';
 import { ITruck } from '../../../types/truck';
 import { IDriver } from '../../../types/driver';
 import { ICustomer } from '../../../types/customer';
@@ -37,8 +37,8 @@ import { TruncatePipe } from '../../../../truncate.pipe';
 import { IZone } from '../../../types/zone';
 import { CdkVirtualScrollViewport, ScrollingModule } from '@angular/cdk/scrolling';
 import { Translation } from '../../../services/Translation';
-import { OrderSettingsService } from '../../../services/order-settings.service';
-import { TripSettingsService } from '../../../services/trips-settings.service';
+import { SettingsService } from '../../../services/settings.service'; 
+import { ITripSettings } from '../../../types/general-settings';
 
 interface DialogData {
   tripId?: number;
@@ -284,8 +284,7 @@ export class TripForm implements OnInit {
     private snackBar: MatSnackBar,
     private datePipe: DatePipe,
     private dialog: MatDialog,
-    private orderSettingsService: OrderSettingsService, 
-    private tripSettingsService: TripSettingsService,
+    private settingsService: SettingsService, 
     @Optional() private dialogRef?: MatDialogRef<TripForm>, 
     @Optional() @Inject(MAT_DIALOG_DATA) public data?: DialogData
   ) {
@@ -295,6 +294,7 @@ export class TripForm implements OnInit {
 
   ngOnInit(): void {
     this.initForm();
+    this.loadMarques();
     this.availabilityCheckTimeout = null;
     
     // Handle empty customers case gracefully
@@ -415,31 +415,15 @@ export class TripForm implements OnInit {
   private loadConfiguration(): void {
     this.loadTripSettings();
     this.listenToSettingsChanges();
-    
-    // Load order settings with empty state handling
-    this.orderSettingsService.getSettings().subscribe({
-      next: (settings) => {
-        this.loadingUnit = settings?.loadingUnit || 'palette';
-        this.allowEditOrder = settings?.allowEditOrder || false;
-        this.allowLoadLateOrders = settings?.allowLoadLateOrders || false;
-        this.acceptOrdersWithoutAddress = settings?.acceptOrdersWithoutAddress || false;
-      },
-      error: (error) => {
-        console.error('Error loading settings:', error);
-        // Set defaults
-        this.loadingUnit = 'palette';
-        this.allowEditOrder = false;
-        this.allowLoadLateOrders = false;
-        this.acceptOrdersWithoutAddress = false;
-      }
-    });
 
-    this.orderSettingsService.settingsChanges.subscribe(settings => {
+ this.settingsService.orderSettings$.subscribe(settings => {
+    if (settings) {
       this.loadingUnit = settings?.loadingUnit || 'palette';
       this.allowEditOrder = settings?.allowEditOrder || false;
       this.allowLoadLateOrders = settings?.allowLoadLateOrders || false;
       this.acceptOrdersWithoutAddress = settings?.acceptOrdersWithoutAddress || false;
-    });
+    }
+  });
     
     // Load all data with empty state handling
     this.loadAllCustomers().then(() => {
@@ -700,7 +684,7 @@ export class TripForm implements OnInit {
         return {
           id: apiTruck.Id || apiTruck.id,
           immatriculation: apiTruck.Immatriculation || apiTruck.immatriculation || 'N/A',
-          brand: apiTruck.Brand || apiTruck.brand || 'N/A',
+          marqueTruckId: apiTruck.marqueTruckId || null,
           model: apiTruck.Model || apiTruck.model || '',
           capacity: apiTruck.typeTruck?.capacity || 0,
           capacityUnit: this.loadingUnit || 'tonnes',
@@ -731,7 +715,7 @@ export class TripForm implements OnInit {
         return {
           id: truck.Id || truck.id,
           immatriculation: truck.Immatriculation || truck.immatriculation || 'N/A',
-          brand: truck.Brand || truck.brand || 'N/A',
+          marqueTruckId: truck.marqueTruckId || null,
           model: truck.Model || truck.model || '',
           capacity: truck.typeTruck?.capacity || 0,
           capacityUnit: this.loadingUnit,
@@ -1298,14 +1282,16 @@ export class TripForm implements OnInit {
     return order ? order.weight : 0;
   }
 
-  getSelectedTruckInfo(): string {
-    const truckId = this.tripForm.get('truckId')?.value;
-    if (!truckId) return 'Non sélectionné';
-    
-    const truck = this.trucks.find(t => t.id === truckId);
-    return truck ? `${truck.immatriculation} - ${truck.brand}` : 'Camion inconnu';
-  }
-
+getSelectedTruckInfo(): string {
+  const truckId = this.tripForm.get('truckId')?.value;
+  if (!truckId) return 'Non sélectionné';
+  
+  const truck = this.trucks.find(t => t.id === truckId);
+  if (!truck) return 'Camion inconnu';
+  
+  const marqueName = this.getMarqueName(truck.marqueTruckId);
+  return `${truck.immatriculation} - ${marqueName}`;
+}
   quickAddOrder(order: IOrder): void {
     const customer = this.customers.find(c => c.id === order.customerId);
     
@@ -1974,7 +1960,7 @@ export class TripForm implements OnInit {
     
     // Always allow continuation, just show warning with Yes/No options
     if (percentage >= 100) {
-      const truckName = truck ? `${truck.immatriculation} - ${truck.brand}` : 'Camion sélectionné';
+      const truckName = truck ? `${truck.immatriculation} - ${this.getMarqueName(truck.marqueTruckId)}` : 'Camion sélectionné';
       const excess = totalWeightNumber - capacityNumber;
       const excessPercentage = percentage - 100;
       
@@ -2020,7 +2006,7 @@ export class TripForm implements OnInit {
         title: 'Capacité presque pleine',
         html: `
           <div style="text-align: left; padding: 10px;">
-            <p><strong>${truck ? `${truck.immatriculation} - ${truck.brand}` : 'Camion sélectionné'}</strong></p>
+            <p><strong>${truck ? `${truck.immatriculation} - ${this.getMarqueName(truck.marqueTruckId)}` : 'Camion sélectionné'}</strong></p>
             <div style="background-color: #fef3c7; padding: 15px; border-radius: 5px; margin: 10px 0;">
               <p><strong>Capacité:</strong> ${capacityNumber} ${unitLabelPlural}</p>
               <p><strong>Poids total:</strong> ${totalWeightNumber.toFixed(2)} ${unitLabelPlural}</p>
@@ -2082,7 +2068,7 @@ export class TripForm implements OnInit {
         title: 'DÉPASSEMENT DE CAPACITÉ',
         html: `
           <div style="text-align: left; padding: 10px;">
-            <p><strong>${truck.immatriculation} - ${truck.brand}</strong></p>
+            <p><strong>${truck.immatriculation} - ${this.getMarqueName(truck.marqueTruckId)}</strong></p>
             <div style="background-color: #fee; padding: 15px; border-radius: 5px; margin: 10px 0;">
               <p><strong>Capacité maximum:</strong> ${capacity} ${unitLabelPlural}</p>
               <p><strong>Poids actuel:</strong> ${currentWeight.toFixed(2)} ${unitLabelPlural}</p>
@@ -2117,7 +2103,7 @@ export class TripForm implements OnInit {
         title: 'Capacité presque pleine',
         html: `
           <div style="text-align: left; padding: 10px;">
-            <p><strong>${truck.immatriculation} - ${truck.brand}</strong></p>
+            <p><strong>${truck.immatriculation} - ${this.getMarqueName(truck.marqueTruckId)}</strong></p>
             <div style="background-color: #fef3c7; padding: 15px; border-radius: 5px; margin: 10px 0;">
               <p><strong>Capacité:</strong> ${capacity} ${unitLabelPlural}</p>
               <p><strong>Utilisation actuelle:</strong> ${currentWeight.toFixed(2)} ${unitLabelPlural} (${(currentWeight/capacity*100).toFixed(1)}%)</p>
@@ -6206,12 +6192,12 @@ export class TripForm implements OnInit {
     
     const availableTruck = this.availableTrucks.find(t => t.id === truckId);
     if (availableTruck) {
-      return `${availableTruck.immatriculation} - ${availableTruck.brand}`;
+      return `${availableTruck.immatriculation} - ${this.getMarqueName(availableTruck.marqueTruckId)}`;
     }
     
     const unavailableTruck = this.unavailableTrucks.find(t => t.id === truckId);
     if (unavailableTruck) {
-      return `${unavailableTruck.immatriculation} - ${unavailableTruck.brand}`;
+      return `${unavailableTruck.immatriculation} - ${this.getMarqueName(unavailableTruck.marqueTruckId)}`;
     }
     
     return '';
@@ -6838,28 +6824,29 @@ export class TripForm implements OnInit {
         return '/palette.jpg';
     }
   }
+private loadTripSettings(): void {
+  this.settingsService.getTripSettings().subscribe({
+    next: (settings) => {
+      this.tripSettings = settings;
+      this.updateTruckFieldBasedOnSettings();
+    },
+    error: (error) => {
+      console.error('Erreur chargement paramètres:', error);
+    }
+  });
+}
 
-  private loadTripSettings(): void {
-    this.tripSettingsService.getSettings().subscribe({
-      next: (settings) => {
-        this.tripSettings = settings;
-        this.updateTruckFieldBasedOnSettings();
-      },
-      error: (error) => {
-        console.error('Erreur chargement paramètres:', error);
-      }
-    });
-  }
-
-  private listenToSettingsChanges(): void {
-    this.settingsSubscription = this.tripSettingsService.settingsChanges$.subscribe({
-      next: (updatedSettings) => {
+private listenToSettingsChanges(): void {
+  this.settingsSubscription = this.settingsService.tripSettings$.subscribe({
+    next: (updatedSettings) => {
+      if (updatedSettings) {
         console.log('🔄 Paramètres mis à jour:', updatedSettings);
         this.tripSettings = updatedSettings;
         this.updateTruckFieldBasedOnSettings();
       }
-    });
-  }
+    }
+  });
+}
 
   private updateTruckFieldBasedOnSettings(): void {
     const truckControl = this.tripForm.get('truckId');
@@ -6907,4 +6894,44 @@ export class TripForm implements OnInit {
     const truck = this.trucks.find(t => t.id === truckId);
     return truck ? truck.immatriculation : '';
   }
+
+  marqueMap: Map<number, string> = new Map();
+private loadMarques(): void {
+  this.http.getMarqueTrucks().subscribe({
+    next: (response) => {
+      // Handle different response formats
+      let marquesData: any[] = [];
+      
+      if (response && typeof response === 'object') {
+        // Check if response has a data property (ApiResponse wrapper)
+        if ('data' in response && Array.isArray((response as any).data)) {
+          marquesData = (response as any).data;
+        } 
+        // Check if response is directly an array
+        else if (Array.isArray(response)) {
+          marquesData = response;
+        }
+      }
+      
+      this.marqueMap.clear();
+      marquesData.forEach(marque => {
+        if (marque && marque.id && marque.name) {
+          this.marqueMap.set(marque.id, marque.name);
+        }
+      });
+      
+      console.log('✅ Marques loaded:', this.marqueMap.size, 'marques');
+    },
+    error: (error) => {
+      console.error('Error loading marques:', error);
+    }
+  });
+}
+
+// Add this method to get marque name
+getMarqueName(marqueId?: number): string {
+  console.log(marqueId)
+  if (!marqueId) return 'N/A';
+  return this.marqueMap.get(marqueId) || 'N/A';
+}
 }

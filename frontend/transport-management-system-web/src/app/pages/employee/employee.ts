@@ -59,14 +59,14 @@ export class Employee implements OnInit {
   showDisabled: boolean = false;
 
   showCols = [
-    { key: 'idNumber', label: this.t('Matricule') || 'ID Number' },
-    { key: 'name', label: this.t('Nom') },
+    { key: 'idNumber', label: this.t('CUSTOMER_REG_NUMBER') },
+    { key: 'name', label: this.t('TABLE_NAME') },
     { key: 'email', label: this.t('Email') },
-    { key: 'phoneNumber', label: this.t('Téléphone') },
-    { key: 'drivingLicense', label: this.t('Numéro Permis') || 'License Number' },
+    { key: 'phoneNumber', label: this.t('TABLE_PHONE') },
+    { key: 'drivingLicense', label: this.t('TABLE_LICENSE_NUMBER')},
     {
       key: 'typeTruck',
-      label: this.t('Type de camion') || 'Truck Type',
+      label: this.t('TYPE_VEHICULE_LABEL'),
       format: (row: IEmployee) => {
         if (row.typeTruck) {
           return `${row.typeTruck.type} (${row.typeTruck.capacity} ${row.typeTruck.unit})`;
@@ -76,7 +76,7 @@ export class Employee implements OnInit {
     },
     {
       key: 'attachment',
-      label: 'Pièce Jointe',
+      label: this.t('TABLE_ATTACHMENT'),
       format: (row: IEmployee) => {
         if (row.attachmentFileType) {
           return `<span class="attachment-cell" data-employee-id="${row.id}">
