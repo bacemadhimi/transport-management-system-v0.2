@@ -447,7 +447,9 @@
   "DATE_FIRST_REGISTRATION_LABEL": "Date de première immatriculation",
   "EMPTY_WEIGHT_LABEL": "Poids à vide",
   "CHOOSE_THEME": "Choisir le thème",
-  "RESET_DEFAULT": "Réinitialiser par défaut"
+  "RESET_DEFAULT": "Réinitialiser par défaut",
+  "INTERNAL_EMPLOYEE": "Employé interne",
+  "INTERNAL_EMPLOYEE_HINT": "Activez cette option si l’employé appartient à l’entreprise. Désactivez-la s’il s’agit d’un employé externe."
 
 
 }

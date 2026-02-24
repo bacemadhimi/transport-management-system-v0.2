@@ -277,3 +277,29 @@
 		}
 	}
 }
+.internal-employee-container {
+  grid-column: 1 / -1;
+  margin: 20px 0 24px 0;
+  padding: 8px 0;
+  
+  .checkbox-wrapper {
+    margin-bottom: 8px;
+  }
+  
+  .internal-checkbox {
+    font-weight: 500;
+    
+    ::ng-deep .mat-checkbox-label {
+      line-height: 1.5;
+    }
+  }
+  
+  .checkbox-hint {
+    display: block;
+    margin-left: 24px;
+    font-size: 12px;
+    color: rgba(0, 0, 0, 0.6);
+    line-height: 1.5;
+    max-width: 90%;
+  }
+}

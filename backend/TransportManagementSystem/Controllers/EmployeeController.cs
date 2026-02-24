@@ -144,6 +144,7 @@ public class EmployeeController : ControllerBase
             TypeTruckId = request.TypeTruckId,
             CreatedAt = DateTime.UtcNow,
             EmployeeCategory = request.EmployeeCategory,
+            IsInternal = request.IsInternal,
         };
 
      
@@ -257,6 +258,7 @@ public class EmployeeController : ControllerBase
         existingEmployee.IsEnable = request.IsEnable;
         existingEmployee.UpdatedAt = DateTime.UtcNow;
         existingEmployee.EmployeeCategory = request.EmployeeCategory;
+        existingEmployee.IsInternal = request.IsInternal;
 
 
         if (request.DrivingLicenseFile != null)

@@ -20,4 +20,5 @@ public class UpdateEmployeeRequest
     public bool IsEnable { get; set; } = true;
     public string? EmployeeCategory { get; set; }
     public IFormFile? DrivingLicenseFile { get; set; }
+    public bool IsInternal { get; set; } = true;
 }

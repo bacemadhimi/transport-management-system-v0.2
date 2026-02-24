@@ -173,3 +173,19 @@
     margin-left: 0.25rem;
   }
 }
+.checkbox-field {
+  margin-top: 16px;
+  margin-bottom: 16px;
+  display: flex;
+  flex-direction: column;
+  
+  mat-checkbox {
+    margin-bottom: 4px;
+  }
+  
+  mat-hint {
+    font-size: 12px;
+    color: rgba(0, 0, 0, 0.6);
+    margin-left: 24px;
+  }
+}

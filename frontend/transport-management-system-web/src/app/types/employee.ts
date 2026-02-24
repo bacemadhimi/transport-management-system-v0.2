@@ -16,4 +16,5 @@ export interface IEmployee {
   updatedAt?: Date;
   isEnable: boolean;
   employeeCategory?: string;
+  isInternal: boolean;
 }
