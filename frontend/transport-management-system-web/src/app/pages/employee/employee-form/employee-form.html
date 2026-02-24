@@ -36,6 +36,19 @@
       </mat-error>
     </mat-form-field>
 
+<div class="employee-field--wide" style="margin: 20px 0 24px 0;">
+  <div style="margin-bottom: 8px;">
+    <mat-checkbox 
+      formControlName="isInternal" 
+      color="primary"
+      class="internal-checkbox">
+      {{ t('INTERNAL_EMPLOYEE') || 'Employé interne' }}
+    </mat-checkbox>
+  </div>
+  <mat-hint style="display: block; margin-left: 24px; font-size: 12px; color: rgba(0,0,0,0.6); line-height: 1.5;">
+    {{ t('INTERNAL_EMPLOYEE_HINT') || 'Activez cette option si l\'employé appartient à l\'entreprise. Désactivez-la s\'il s\'agit d\'un employé externe.' }}
+  </mat-hint>
+</div>
     
     <mat-label>{{ t('TABLE_PHONE') }}</mat-label>
     <mat-form-field appearance="outline" class="employee-field">
@@ -68,7 +81,7 @@
         </mat-option>
         
         <mat-option *ngFor="let category of employeeCategories" [value]="category.parameterCode">
-          {{ category.description || category.parameterCode }}
+          {{ category.value || category.parameterCode }}
         </mat-option>
       </mat-select>
       
@@ -76,7 +89,6 @@
         {{ t('NO_CATEGORY_DEFINED') }}
       </mat-hint>
     </mat-form-field>
-
     <!-- Truck Type -->
     <mat-label>{{ t('TYPE_VEHICULE_LABEL') }}</mat-label>
     <mat-form-field appearance="outline" class="employee-field">
