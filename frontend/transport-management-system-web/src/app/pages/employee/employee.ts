@@ -62,7 +62,7 @@ export class Employee implements OnInit {
     { key: 'idNumber', label: this.t('Matricule') || 'ID Number' },
     { key: 'name', label: this.t('Nom') },
     { key: 'email', label: this.t('Email') },
-    { key: 'phoneNumber', label: this.t('Telephone') },
+    { key: 'phoneNumber', label: this.t('Téléphone') },
     { key: 'drivingLicense', label: this.t('Numéro Permis') || 'License Number' },
     {
       key: 'typeTruck',
