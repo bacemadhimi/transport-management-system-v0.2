@@ -445,7 +445,10 @@
   "MAINTENANCE_MANAGEMENT": "Gestion de la maintenance",
   "EMPLOYEE_LIST": "Liste des employés",
   "DATE_FIRST_REGISTRATION_LABEL": "Date de première immatriculation",
-  "EMPTY_WEIGHT_LABEL": "Poids à vide"
+  "EMPTY_WEIGHT_LABEL": "Poids à vide",
+  "CHOOSE_THEME": "Choisir le thème",
+  "RESET_DEFAULT": "Réinitialiser par défaut"
+
 
 }
 
