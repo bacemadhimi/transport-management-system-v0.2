@@ -495,3 +495,66 @@ table {
 .mat-dialog-container {
   background-color: var(--bg-card) !important;
 }
+
+/* Settings button active state */
+button.active {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+/* Rotate animation */
+.rotate-90 {
+  transform: rotate(90deg);
+}
+
+/* Custom scrollbar for dropdown */
+.max-h-96 {
+  max-height: 24rem;
+}
+
+.max-h-96::-webkit-scrollbar {
+  width: 4px;
+}
+
+.max-h-96::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+.max-h-96::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+.max-h-96::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Theme-aware hover class */
+.hover-theme-light:hover {
+  background-color: rgba(var(--primary-color-rgb), 0.1) !important;
+}
+
+/* Theme-aware text color on hover */
+.group:hover .group-hover\:text-theme {
+  color: var(--primary-color) !important;
+}
+
+/* Icon colors using theme */
+[style*="var(--primary-color)"] {
+  transition: all 0.3s ease;
+}
+
+/* Ensure proper contrast for admin badge */
+[style*="var(--primary-color)"][style*="white"] {
+  font-weight: 500;
+  box-shadow: 0 2px 4px rgba(var(--primary-color-rgb), 0.3);
+}
+
+/* Dropdown border using theme light version */
+.border-gray-200 {
+  border-color: #e5e7eb;
+}
+
+/* Footer text using theme text color */
+[style*="var(--text-muted)"] {
+  opacity: 0.8;
+}

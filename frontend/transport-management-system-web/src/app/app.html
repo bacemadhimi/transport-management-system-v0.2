@@ -25,93 +25,166 @@
         routerLink="/profile"
       >
  
-      <!-- Permissions + label -->
-      <div class="relative flex items-center gap-2">
-        <mat-icon
-          class="text-white cursor-pointer hover:text-gray-200 transition-colors"
-          (click)="showPermissions = !showPermissions"
-        >
-          settings
-        </mat-icon>
-        
-        <!-- DROPDOWN MENU -->
-        <div
-          *ngIf="showPermissions"
-          class="absolute right-0 top-10 w-96 bg-white rounded-lg shadow-2xl border border-gray-100 z-50 overflow-hidden"
-        >
-          <!-- Titre du menu -->
-          <div class="px-6 py-4 font-semibold text-gray-800 border-b bg-gradient-to-r from-gray-50 to-gray-100">
-            <div class="flex items-center gap-2">
-              <mat-icon class="text-blue-600">settings</mat-icon>
-              {{ t('SETTINGS') }}
-            </div>
-          </div>
- 
-          <!-- Heures Supplémentaires -->
-          <a
-            *ngIf="authService.hasRole('SuperAdmin') || authService.hasEntityAccess('OVERTIME')"
-            routerLink="/overtime"
-            (click)="showPermissions = false"
-            class="flex items-center gap-3 px-6 py-4 text-base text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors border-b border-gray-100"
-          >
-            <mat-icon class="text-2xl icon-overtime">schedule</mat-icon>
-            <span class="font-medium">{{ t('OVERTIME') }}</span>
-          </a>
- 
-          <!-- Disponibilités chauffeurs -->
-          <a
-            *ngIf="authService.hasRole('SuperAdmin') || authService.hasEntityAccess('DRIVER_AVAILABILITY')"
-            routerLink="/availability"
-            (click)="showPermissions = false"
-            class="flex items-center gap-3 px-6 py-4 text-base text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors border-b border-gray-100"
-          >
-            <mat-icon class="text-2xl icon-availability">event_available</mat-icon>
-            <span class="font-medium">{{ t('DRIVERS') }}</span>
-          </a>
- 
-          <!-- Disponibilités camions -->
-          <a
-            *ngIf="authService.hasRole('SuperAdmin') || authService.hasEntityAccess('TRUCK_AVAILABILITY')"
-            routerLink="/truck-availability"
-            (click)="showPermissions = false"
-            class="flex items-center gap-3 px-6 py-4 text-base text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors border-b border-gray-100"
-          >
-            <mat-icon class="text-2xl icon-truck">local_shipping</mat-icon>
-            <span class="font-medium">{{ t('TRUCKS') }}</span>
-          </a>
- 
-          <!-- Jours fériés -->
-          <a
-            *ngIf="authService.hasRole('SuperAdmin') || authService.hasEntityAccess('DAYOFF')"
-            routerLink="/dayoff"
-            (click)="showPermissions = false"
-            class="flex items-center gap-3 px-6 py-4 text-base text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors border-b border-gray-100"
-          >
-            <mat-icon class="text-2xl icon-dayoff">event_busy</mat-icon>
-            <span class="font-medium">{{ t('DAYOFF') }}</span>
-          </a>
- 
-          <!-- Synchronisation ERP -->
-          <a
-            *ngIf="authService.hasRole('SuperAdmin')"
-            routerLink="/sync"
-            (click)="showPermissions = false"
-            class="flex items-center gap-3 px-6 py-4 text-base text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors border-b border-gray-100"
-          >
-            <mat-icon class="text-2xl icon-sync">sync</mat-icon>
-            <span class="font-medium">{{ t('SYNC') }}</span>
-          </a>
-          <a
-            *ngIf="authService.hasRole('SuperAdmin')"
-            routerLink="/general-settings"
-            (click)="showPermissions = false"
-            class="flex items-center gap-3 px-6 py-4 text-base text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors"
-          >
-            <mat-icon class="text-2xl icon-settings">settings_applications</mat-icon>
-            <span class="font-medium">{{ t('GENERAL_SETTINGS') }}</span>
-          </a>
+<!-- Permissions + label -->
+<div class="relative flex items-center gap-2">
+  <button
+    mat-icon-button
+    class="relative overflow-hidden group"
+    (click)="showPermissions = !showPermissions"
+    [class.active]="showPermissions"
+  >
+    <!-- Animated background -->
+    <div class="absolute inset-0 bg-white opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
+    
+    <!-- Icon with rotation animation -->
+    <mat-icon 
+      class="text-white transition-all duration-500"
+      [class.rotate-90]="showPermissions"
+    >
+      settings
+    </mat-icon>
+  </button>
+  
+  <!-- DROPDOWN MENU - Enhanced with Theme Colors -->
+  <div
+    *ngIf="showPermissions"
+    class="absolute right-0 top-12 w-96 bg-white rounded-xl shadow-2xl border border-gray-200 z-50 overflow-hidden"
+  >
+    <!-- Header with theme gradient -->
+    <div class="px-5 py-4" [style.background]="'var(--primary-gradient)'">
+      <div class="flex items-center gap-3">
+        <div class="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
+          <mat-icon class="text-white">tune</mat-icon>
+        </div>
+        <div>
+          <h3 class="text-white font-semibold">{{ t('SETTINGS') || 'Paramètres' }}</h3>
+          <p class="text-white/80 text-xs">Gestion des accès</p>
         </div>
       </div>
+    </div>
+
+    <!-- Menu Items with Categories -->
+    <div class="py-2 max-h-96 overflow-y-auto">
+      
+      <!-- Section: Gestion du temps -->
+      <div class="mb-2">
+        <div class="px-4 py-2">
+          <span class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Gestion du temps</span>
+        </div>
+        
+        <!-- Heures Supplémentaires -->
+        <a
+          *ngIf="authService.hasRole('SuperAdmin') || authService.hasEntityAccess('OVERTIME')"
+          routerLink="/overtime"
+          (click)="showPermissions = false"
+          class="flex items-center gap-3 px-4 py-3 mx-2 rounded-lg text-sm text-gray-700 transition-all group"
+          [class.hover-theme-light]="true"
+        >
+          <mat-icon class="text-2xl transition-transform group-hover:scale-110" [style.color]="'var(--primary-color)'">schedule</mat-icon>
+          <span class="font-medium flex-1">{{ t('OVERTIME') }}</span>
+          <mat-icon class="text-gray-400 transition-colors group-hover:text-[var(--primary-color)] text-sm">chevron_right</mat-icon>
+        </a>
+
+        <!-- Jours fériés -->
+        <a
+          *ngIf="authService.hasRole('SuperAdmin') || authService.hasEntityAccess('DAYOFF')"
+          routerLink="/dayoff"
+          (click)="showPermissions = false"
+          class="flex items-center gap-3 px-4 py-3 mx-2 rounded-lg text-sm text-gray-700 transition-all group"
+          [class.hover-theme-light]="true"
+        >
+          <mat-icon class="text-2xl transition-transform group-hover:scale-110" [style.color]="'var(--primary-color)'">event_busy</mat-icon>
+          <span class="font-medium flex-1">{{ t('DAYOFF') }}</span>
+          <mat-icon class="text-gray-400 transition-colors group-hover:text-[var(--primary-color)] text-sm">chevron_right</mat-icon>
+        </a>
+      </div>
+
+      <!-- Section: Disponibilités -->
+      <div class="mb-2">
+        <div class="px-4 py-2">
+          <span class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Disponibilités</span>
+        </div>
+        
+        <!-- Disponibilités chauffeurs -->
+        <a
+          *ngIf="authService.hasRole('SuperAdmin') || authService.hasEntityAccess('DRIVER_AVAILABILITY')"
+          routerLink="/availability"
+          (click)="showPermissions = false"
+          class="flex items-center gap-3 px-4 py-3 mx-2 rounded-lg text-sm text-gray-700 transition-all group"
+          [class.hover-theme-light]="true"
+        >
+          <mat-icon class="text-2xl transition-transform group-hover:scale-110" [style.color]="'var(--primary-color)'">event_available</mat-icon>
+          <span class="font-medium flex-1">{{ t('DRIVERS') }}</span>
+          <mat-icon class="text-gray-400 transition-colors group-hover:text-[var(--primary-color)] text-sm">chevron_right</mat-icon>
+        </a>
+
+        <!-- Disponibilités camions -->
+        <a
+          *ngIf="authService.hasRole('SuperAdmin') || authService.hasEntityAccess('TRUCK_AVAILABILITY')"
+          routerLink="/truck-availability"
+          (click)="showPermissions = false"
+          class="flex items-center gap-3 px-4 py-3 mx-2 rounded-lg text-sm text-gray-700 transition-all group"
+          [class.hover-theme-light]="true"
+        >
+          <mat-icon class="text-2xl transition-transform group-hover:scale-110" [style.color]="'var(--primary-color)'">local_shipping</mat-icon>
+          <span class="font-medium flex-1">{{ t('TRUCKS') }}</span>
+          <mat-icon class="text-gray-400 transition-colors group-hover:text-[var(--primary-color)] text-sm">chevron_right</mat-icon>
+        </a>
+      </div>
+
+      <!-- Section: Système -->
+      <div class="mb-2">
+        <div class="px-4 py-2">
+          <span class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Système</span>
+        </div>
+        
+        <!-- Synchronisation ERP -->
+        <a
+          *ngIf="authService.hasRole('SuperAdmin')"
+          routerLink="/sync"
+          (click)="showPermissions = false"
+          class="flex items-center gap-3 px-4 py-3 mx-2 rounded-lg text-sm text-gray-700 transition-all group"
+          [class.hover-theme-light]="true"
+        >
+          <mat-icon class="text-2xl transition-transform group-hover:rotate-180 duration-500" [style.color]="'var(--primary-color)'">sync</mat-icon>
+          <span class="font-medium flex-1">{{ t('SYNC') }}</span>
+          <mat-icon class="text-gray-400 transition-colors group-hover:text-[var(--primary-color)] text-sm">chevron_right</mat-icon>
+        </a>
+
+        <!-- Paramètres généraux -->
+        <a
+          *ngIf="authService.hasRole('SuperAdmin')"
+          routerLink="/general-settings"
+          (click)="showPermissions = false"
+          class="flex items-center gap-3 px-4 py-3 mx-2 rounded-lg text-sm text-gray-700 transition-all group relative"
+          [class.hover-theme-light]="true"
+        >
+          <div class="relative">
+            <mat-icon class="text-2xl transition-transform group-hover:rotate-90 duration-500" [style.color]="'var(--primary-color)'">settings_applications</mat-icon>
+          </div>
+          <span class="font-medium flex-1">{{ t('GENERAL_SETTINGS') }}</span>
+          
+          <!-- Admin badge with theme color -->
+          <span class="px-2 py-0.5 text-xs rounded-full" 
+                [style.background]="'var(--primary-color)'" 
+                [style.color]="'white'">
+            Admin
+          </span>
+          
+          <mat-icon class="text-gray-400 transition-colors group-hover:text-[var(--primary-color)] text-sm">chevron_right</mat-icon>
+        </a>
+      </div>
+    </div>
+
+    <!-- Simple footer -->
+    <div class="px-4 py-3 bg-gray-50 border-t border-gray-100 text-center">
+      <span class="text-xs" [style.color]="'var(--text-muted)'">
+        <mat-icon class="text-sm align-middle mr-1" [style.color]="'var(--text-muted)'">info</mat-icon>
+        Paramètres et permissions
+      </span>
+    </div>
+  </div>
+</div>
      
       <!-- Notification Icon -->
       <div class="relative">
