@@ -18,7 +18,8 @@ public class NotificationRepository : Repository<Notification>, INotificationRep
     public async Task<IEnumerable<Notification>> GetUserNotificationsAsync(int userId, NotificationFilterDto filter)
     {
         var query = _context.Notifications
-            .Where(n => n.UserId == userId)
+             //.Where(n => n.UserId == userId)
+            .Where(n => n.Type == "TRIP_CANCELLED")
             .AsQueryable();
 
         if (filter.IsRead.HasValue)
