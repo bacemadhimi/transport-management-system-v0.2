@@ -558,3 +558,135 @@ button.active {
 [style*="var(--text-muted)"] {
   opacity: 0.8;
 }
+/* Notifications Panel Theme Styles */
+.theme-notifications-panel {
+  box-shadow: 0 20px 50px -12px rgba(var(--primary-color-rgb), 0.25);
+}
+
+/* Notification Item Styles */
+.notification-item {
+  position: relative;
+  transition: all 0.3s ease;
+  border-left: 3px solid transparent;
+}
+
+.notification-item:hover {
+  background-color: var(--bg-light) !important;
+  transform: translateX(2px);
+}
+
+.notification-item.unread {
+  background-color: rgba(var(--primary-color-rgb), 0.05);
+}
+
+.notification-item.unread:hover {
+  background-color: rgba(var(--primary-color-rgb), 0.1) !important;
+}
+
+/* Status badges with theme */
+.status-badge {
+  padding: 4px 8px;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.status-badge.old-status {
+  background: var(--bg-light);
+  color: var(--text-secondary);
+}
+
+.status-badge.new-status {
+  background: var(--primary-gradient);
+  color: white;
+}
+
+/* Notification icon containers */
+.notification-icon-container {
+  transition: all 0.3s ease;
+}
+
+.notification-item:hover .notification-icon-container {
+  transform: scale(1.1);
+}
+
+/* Custom scrollbar with theme colors */
+.theme-notifications-panel::-webkit-scrollbar {
+  width: 4px;
+}
+
+.theme-notifications-panel::-webkit-scrollbar-track {
+  background: var(--bg-light);
+}
+
+.theme-notifications-panel::-webkit-scrollbar-thumb {
+  background: var(--primary-color);
+  border-radius: 4px;
+}
+
+.theme-notifications-panel::-webkit-scrollbar-thumb:hover {
+  background: var(--primary-dark);
+}
+
+/* Animation for new notifications */
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.notification-item:first-child {
+  animation: slideIn 0.3s ease-out;
+}
+
+/* Time stamp */
+.notification-time {
+  color: var(--text-muted);
+  font-size: 0.75rem;
+}
+
+/* Trip reference link */
+.trip-reference {
+  color: var(--primary-color);
+  text-decoration: none;
+  transition: all 0.3s ease;
+}
+
+.trip-reference:hover {
+  color: var(--primary-dark);
+  text-decoration: underline;
+}
+
+/* Empty state */
+.notifications-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  color: var(--text-muted);
+}
+
+.notifications-empty mat-icon {
+  font-size: 3rem;
+  width: 3rem;
+  height: 3rem;
+  margin-bottom: 1rem;
+  opacity: 0.5;
+}
+
+/* Footer button */
+.footer-button {
+  color: var(--primary-color);
+  transition: all 0.3s ease;
+}
+
+.footer-button:hover {
+  color: var(--primary-dark);
+}

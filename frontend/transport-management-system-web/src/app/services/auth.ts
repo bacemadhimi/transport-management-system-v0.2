@@ -243,4 +243,7 @@ export class Auth {
   loginWithGoogle(): Observable<any> {
     return this.http.post(`${environment.apiUrl}/auth/google`, {});
   }
+   getToken(): string | null {
+    return localStorage.getItem('token'); 
+  }
 }

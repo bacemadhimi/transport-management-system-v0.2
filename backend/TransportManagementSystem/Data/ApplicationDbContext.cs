@@ -48,6 +48,7 @@ namespace TransportManagementSystem.Data
         public DbSet<Employee> Employees { get; set; }
         public DbSet<Category> Categories { get; set; }
         public DbSet<GeneralSettings> GeneralSettings { get; set; }
+        public DbSet<Notification> Notifications { get; set; }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -218,6 +219,18 @@ namespace TransportManagementSystem.Data
             modelBuilder.Entity<GeneralSettings>()
                    .HasIndex(p => new { p.ParameterType, p.ParameterCode })
                    .IsUnique();
+
+            modelBuilder.Entity<Notification>(entity =>
+            {
+                entity.HasIndex(e => e.UserId);
+                entity.HasIndex(e => e.Timestamp);
+                entity.HasIndex(e => e.IsRead);
+                entity.HasIndex(e => e.Type);
+                entity.HasIndex(e => e.TripId);
+
+                entity.Property(e => e.AdditionalData)
+                      .HasMaxLength(500);
+            });
         }
 
         public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
