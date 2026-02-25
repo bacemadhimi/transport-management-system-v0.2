@@ -459,6 +459,10 @@
   "NO_CATEGORY_DEFINED": "No category defined in settings",
   "NO_TYPE_AVAILABLE": "No type available",
   "TRUCK_TYPE_PLACEHOLDER": "Enter the type of truck you drive",
-  "UPLOAD_LICENSE_ATTACHMENT": "Attach License / Attachment"
+  "UPLOAD_LICENSE_ATTACHMENT": "Attach License / Attachment",
+  "CHOOSE_THEME": "Choose theme",
+  "RESET_DEFAULT": "Reset to default",
+  "INTERNAL_EMPLOYEE": "Internal Employee",
+  "INTERNAL_EMPLOYEE_HINT": "Enable this option if the employee belongs to the company. Disable it if the employee is external."
   
 }

@@ -10,14 +10,15 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSelectModule } from '@angular/material/select';
 import { Http } from '../../../services/http';
-import { SettingsService } from '../../../services/settings.service'; // ADD THIS
+import { SettingsService } from '../../../services/settings.service'; 
 import { IEmployee } from '../../../types/employee';
 import { ITypeTruck } from '../../../types/type-truck';
 import Swal from 'sweetalert2';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { Translation } from '../../../services/Translation';
 import { Subscription } from 'rxjs';
-import { IGeneralSettings, ParameterType } from '../../../types/general-settings'; // ADD THIS
+import { IGeneralSettings, ParameterType } from '../../../types/general-settings'; 
+import { MatCheckboxModule } from '@angular/material/checkbox';
 
 @Component({
   selector: 'app-employee-form',
@@ -34,7 +35,8 @@ import { IGeneralSettings, ParameterType } from '../../../types/general-settings
     MatProgressSpinnerModule,
     MatTooltipModule,
     MatIconModule,
-    MatSelectModule
+    MatSelectModule,
+    MatCheckboxModule 
   ],
   templateUrl: './employee-form.html',
   styleUrls: ['./employee-form.scss']
@@ -61,7 +63,7 @@ export class EmployeeForm implements OnInit, OnDestroy {
   typeTrucks: ITypeTruck[] = [];
   loadingTypeTrucks = false;
   
-  // ADD THESE PROPERTIES
+
   employeeCategories: IGeneralSettings[] = [];
   loadingCategories = false;
 
@@ -72,12 +74,13 @@ export class EmployeeForm implements OnInit, OnDestroy {
     phoneNumber: this.fb.control<string>('', [Validators.required]),
     drivingLicense: this.fb.control<string>(''),
     typeTruckId: this.fb.control<number | null>(null),
-    employeeCategory: this.fb.control<string>('') // ADD THIS
+    employeeCategory: this.fb.control<string>('') ,
+    isInternal: this.fb.control<boolean>(false)
   });
 
   ngOnInit() {
     this.loadTypeTrucks();
-    this.loadEmployeeCategories(); // ADD THIS
+    this.loadEmployeeCategories(); 
     if (this.data.employeeId) {
       this.loadEmployee(this.data.employeeId);
     }
@@ -149,7 +152,8 @@ export class EmployeeForm implements OnInit, OnDestroy {
           phoneNumber: employee.phoneNumber,
           drivingLicense: employee.drivingLicense || '',
           typeTruckId: employee.typeTruckId || null,
-          employeeCategory: employee.employeeCategory || '' 
+          employeeCategory: employee.employeeCategory || '' ,
+          isInternal: employee.isInternal || false
         });
 
         if (employee.attachmentFileName) {
@@ -242,13 +246,16 @@ export class EmployeeForm implements OnInit, OnDestroy {
     formData.append('phoneNumber', this.employeeForm.get('phoneNumber')?.value || '');
     formData.append('drivingLicense', this.employeeForm.get('drivingLicense')?.value || '');
     
-    // ADD THIS
+   
     const employeeCategory = this.employeeForm.get('employeeCategory')?.value;
     if (employeeCategory) {
       formData.append('employeeCategory', employeeCategory);
     }
-    
+
+    const isInternal = this.employeeForm.get('isInternal')?.value;
+     formData.append('isInternal', isInternal ? 'true' : 'false');
     const typeTruckId = this.employeeForm.get('typeTruckId')?.value;
+
     if (typeTruckId) {
       formData.append('typeTruckId', typeTruckId.toString());
     }
@@ -287,12 +294,15 @@ export class EmployeeForm implements OnInit, OnDestroy {
     formData.append('drivingLicense', this.employeeForm.get('drivingLicense')?.value || '');
     formData.append('isEnable', 'true');
     
-    // ADD THIS
+   
     const employeeCategory = this.employeeForm.get('employeeCategory')?.value;
     if (employeeCategory) {
       formData.append('employeeCategory', employeeCategory);
     }
-    
+
+     const isInternal = this.employeeForm.get('isInternal')?.value;
+     formData.append('isInternal', isInternal ? 'true' : 'false');
+     
     const typeTruckId = this.employeeForm.get('typeTruckId')?.value;
     if (typeTruckId) {
       formData.append('typeTruckId', typeTruckId.toString());

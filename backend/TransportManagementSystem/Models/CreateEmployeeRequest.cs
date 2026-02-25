@@ -17,4 +17,5 @@ public class CreateEmployeeRequest
 
     public string? EmployeeCategory { get; set; }
     public IFormFile? DrivingLicenseFile { get; set; }
+    public bool IsInternal { get; set; } = true;
 }
