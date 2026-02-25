@@ -20,7 +20,6 @@ import autoTable from 'jspdf-autotable';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { Auth } from '../../services/auth';
 import { CommonModule } from '@angular/common';
-import { interval } from 'rxjs';
 import { NotificationService } from '../../services/Notification';
 import Swal from 'sweetalert2';
 import { MatDatepickerModule } from '@angular/material/datepicker';
@@ -31,7 +30,7 @@ import { ITruck } from '../../types/truck';
 import { IDriver } from '../../types/driver';
 import { SettingsService } from '../../services/settings.service'; 
 import { Translation } from '../../services/Translation';
-
+import { SignalRService, TripNotification } from '../../services/signalr.service';
 
 @Component({
   selector: 'app-trip',
@@ -83,6 +82,7 @@ getActions(row: any, actions: string[]) {
  
   private sanitizer = inject(DomSanitizer);
   httpService = inject(Http);
+  signalRService = inject(SignalRService);
   pagedTripData!: PagedData<ITrip>;
   totalData!: number;
   allowEditTrip: boolean = false;
@@ -115,9 +115,7 @@ getActions(row: any, actions: string[]) {
   router = inject(Router);
   readonly dialog = inject(MatDialog);
  
-  private refreshSubscription?: Subscription;
-  private readonly REFRESH_INTERVAL = 1000;
-  private isManualRefreshInProgress = false;
+  private signalRSubscription?: Subscription;
  
 showCols = [
   {
@@ -391,6 +389,9 @@ showCols = [
     this.getLatestData();
     this.loadTrucks();
     this.loadDrivers();
+    
+    // Initialize SignalR for real-time status updates
+    this.initializeSignalR();
  
  
     this.searchControl.valueChanges.pipe(debounceTime(250))
@@ -455,8 +456,60 @@ showCols = [
         this.filter.pageIndex = 0;
         this.getLatestData();
       });
-   
-    this.startAutoRefresh();
+  }
+ 
+  private initializeSignalR(): void {
+    // Subscribe to all notifications and update table when status changes
+    this.signalRSubscription = this.signalRService.notifications$.subscribe({
+      next: (notifications) => {
+        if (notifications.length > 0) {
+          // Process only the latest notification
+          const latestNotification = notifications[0];
+          this.updateTripStatusInTable(latestNotification);
+        }
+      }
+    });
+ 
+    // Log connection status (optional, for debugging)
+    this.signalRService.connectionStatus$.subscribe(isConnected => {
+      console.log('🔌 SignalR for trips:', isConnected ? 'connected - real-time updates active' : 'disconnected');
+    });
+  }
+ 
+  private updateTripStatusInTable(notification: TripNotification): void {
+    // Only process if we have data and the notification has a tripId
+    if (!this.pagedTripData?.data || !notification.tripId) return;
+ 
+    // Find the trip in the current page data
+    const tripIndex = this.pagedTripData.data.findIndex(t => t.id === notification.tripId);
+    
+    if (tripIndex !== -1) {
+      // Create a copy of the trip with updated values
+      const updatedTrip = { ...this.pagedTripData.data[tripIndex] };
+      
+      // Update status based on notification type
+      if (notification.type === 'STATUS_CHANGE' && notification.newStatus) {
+        updatedTrip.tripStatus = notification.newStatus as TripStatus;
+      } else if (notification.type === 'TRIP_CANCELLED') {
+        updatedTrip.tripStatus = TripStatus.Cancelled;
+      }
+      
+      // Create new array with the updated trip
+      const updatedData = [...this.pagedTripData.data];
+      updatedData[tripIndex] = updatedTrip;
+      
+      // Update the paged data (creates new reference to trigger change detection)
+      this.pagedTripData = {
+        ...this.pagedTripData,
+        data: updatedData
+      };
+      
+      console.log(`✅ Trip ${notification.tripReference} status updated to ${updatedTrip.tripStatus} in table`);
+    } else {
+      // Trip not in current page - we could optionally refresh if it's an important update
+      // But for performance, we don't refresh automatically
+      console.log(`Trip ${notification.tripReference} not in current view - no update needed`);
+    }
   }
  
     private loadTrucks() {
@@ -537,81 +590,12 @@ showCols = [
   }
  
   ngOnDestroy() {
-    this.stopAutoRefresh();
-  }
- 
-  private startAutoRefresh(): void {
-    this.stopAutoRefresh();
-   
-    this.refreshSubscription = interval(this.REFRESH_INTERVAL)
-      .subscribe(() => {
-        if (!this.isManualRefreshInProgress) {
-          this.silentRefresh();
-        }
-      });
-  }
- 
-  private stopAutoRefresh(): void {
-    if (this.refreshSubscription) {
-      this.refreshSubscription.unsubscribe();
-      this.refreshSubscription = undefined;
+    // Clean up SignalR subscription
+    if (this.signalRSubscription) {
+      this.signalRSubscription.unsubscribe();
     }
   }
  
-private silentRefresh(): void {
-  if (document.hidden) return;
- 
-  const scrollPosition = window.scrollY;
- 
-  this.httpService.getTripsList(this.filter).subscribe({
-    next: (result: any) => {
-      const newData = result?.data?.data || [];
-      const oldData = this.pagedTripData?.data || [];
-     
-      if (this.hasDataChanged(oldData, newData)) {
-        this.pagedTripData = {
-          data: newData,
-          totalData: result?.data?.totalData || 0
-        };
-        this.totalData = result?.data?.totalData || 0;
-       
-        setTimeout(() => {
-          window.scrollTo(0, scrollPosition);
-        }, 0);
-      }
-    },
-    error: (error) => {
-      console.debug('Background refresh failed:', error);
-    }
-  });
-}
- 
-private hasDataChanged(oldData: any[], newData: any[]): boolean {
-  if (!oldData || !newData) return true;
-  if (oldData.length !== newData.length) return true;
- 
-  for (let i = 0; i < oldData.length; i++) {
-    const oldTrip = oldData[i];
-    const newTrip = newData[i];
-   
-    if (!oldTrip || !newTrip) return true;
-   
-    if (oldTrip.tripStatus !== newTrip.tripStatus) {
-      return true;
-    }
-    if (oldTrip.completedDeliveries !== newTrip.completedDeliveries) {
-      return true;
-    }
-    if (oldTrip.estimatedStartDate !== newTrip.estimatedStartDate) {
-      return true;
-    }
-    if (oldTrip.estimatedEndDate !== newTrip.estimatedEndDate) {
-      return true;
-    }
-  }
- 
-  return false;
-}
   add() {
     this.router.navigate(['trips/create']);
   }
@@ -904,9 +888,6 @@ onSort(event: any): void {
  
  
 getLatestData() {
-  this.isManualRefreshInProgress = true;
- 
- 
   const apiFilter = {
     ...this.filter,
     sortColumn: this.sortColumn,
@@ -928,7 +909,6 @@ getLatestData() {
         this.pagedTripData = { data: [], totalData: 0 };
         this.totalData = 0;
       }
-      this.isManualRefreshInProgress = false;
     },
     error: (error) => {
       console.error('Error loading trips:', error);
@@ -936,7 +916,6 @@ getLatestData() {
         duration: 3000,
         verticalPosition: 'top'
       });
-      this.isManualRefreshInProgress = false;
     }
   });
 }

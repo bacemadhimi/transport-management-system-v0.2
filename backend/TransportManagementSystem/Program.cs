@@ -5,12 +5,15 @@ using System.Text;
 using System.Text.Json.Serialization;
 using TransportManagementSystem.Data;
 using TransportManagementSystem.Entity;
+using TransportManagementSystem.Hubs;
+using TransportManagementSystem.Interfaces;
+using TransportManagementSystem.Repositories;
 using TransportManagementSystem.Service;
 using TransportManagementSystem.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
-
+builder.Services.AddSignalR();
 builder.Services
     .AddControllers()
     .AddJsonOptions(options =>
@@ -21,15 +24,30 @@ builder.Services
 builder.Services.AddHttpClient();
 builder.Services.AddOpenApi();
 
-builder.Services.AddCors(option =>
+
+builder.Services.AddCors(options =>
 {
-    option.AddPolicy("AllowCrosOrigin", policy =>
+
+    options.AddPolicy("SignalRCors", policy =>
     {
-        policy.AllowAnyOrigin();
-        policy.AllowAnyMethod();
-        policy.AllowAnyHeader();
+        policy.WithOrigins(
+            "http://localhost:4200",
+            "http://localhost:8100"  
+        )
+        .AllowAnyHeader()
+        .AllowAnyMethod()
+        .AllowCredentials();
+    });
+
+  
+    options.AddPolicy("AllowCrosOrigin", policy =>
+    {
+        policy.AllowAnyOrigin()
+              .AllowAnyMethod()
+              .AllowAnyHeader();
     });
 });
+
 builder.Services.AddDbContext<QadDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("QadConnection")));
 
@@ -37,9 +55,9 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(
         builder.Configuration.GetConnectionString("DefaultConnection"),
         sqlOptions => sqlOptions.EnableRetryOnFailure(
-            maxRetryCount: 5,                    
-            maxRetryDelay: TimeSpan.FromSeconds(10), 
-            errorNumbersToAdd: null               
+            maxRetryCount: 5,
+            maxRetryDelay: TimeSpan.FromSeconds(10),
+            errorNumbersToAdd: null
         )
     )
     .EnableSensitiveDataLogging()
@@ -61,11 +79,9 @@ builder.Services.AddScoped<IRepository<TypeTruck>, Repository<TypeTruck>>();
 builder.Services.AddScoped<IRepository<Employee>, Repository<Employee>>();
 builder.Services.AddScoped<IRepository<GeneralSettings>, Repository<GeneralSettings>>();
 
-
 builder.Services.AddScoped<UserHelper>();
 builder.Services.AddScoped<SyncService>();
 builder.Services.AddScoped<OrderSyncService>();
-
 
 builder.Services.AddScoped<IRepository<Customer>, Repository<Customer>>();
 builder.Services.AddScoped<IRepository<Delivery>, Repository<Delivery>>();
@@ -75,10 +91,10 @@ builder.Services.AddSingleton<IConfiguration>(builder.Configuration);
 builder.Services.AddScoped<IRepository<MarqueTruck>, Repository<MarqueTruck>>();
 builder.Services.AddScoped<IRepository<Zone>, Repository<Zone>>();
 builder.Services.AddScoped<IStatisticsService, StatisticsService>();
-
+builder.Services.AddScoped<INotificationService, NotificationService>();
+builder.Services.AddScoped<INotificationRepository, NotificationRepository>();
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-
     .AddJwtBearer(options =>
     {
         options.TokenValidationParameters = new TokenValidationParameters()
@@ -89,6 +105,25 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             IssuerSigningKey = new SymmetricSecurityKey(
                 Encoding.UTF8.GetBytes(builder.Configuration.GetValue<string>("JwtKey")!)
             )
+        };
+
+    
+        options.Events = new JwtBearerEvents
+        {
+            OnMessageReceived = context =>
+            {
+                var accessToken = context.Request.Query["access_token"];
+
+
+                var path = context.HttpContext.Request.Path;
+                if (!string.IsNullOrEmpty(accessToken) &&
+                    path.StartsWithSegments("/triphub"))
+                {
+              
+                    context.Token = accessToken;
+                }
+                return Task.CompletedTask;
+            }
         };
     });
 
@@ -124,16 +159,14 @@ builder.Services.AddSwaggerGen(c =>
 
 var app = builder.Build();
 
-
 using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
     dbContext.Database.Migrate();
- 
+
     var dataSeedHelper = new DataSeedHelper(dbContext);
     dataSeedHelper.InsertData();
 }
-
 
 if (app.Environment.IsDevelopment())
 {
@@ -142,9 +175,16 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseCors("AllowCrosOrigin");
+
+app.UseRouting();  
+
+app.UseCors("SignalRCors"); 
+
 app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
+
+app.MapHub<TripHub>("/triphub");
 app.MapControllers();
+
 app.Run();
