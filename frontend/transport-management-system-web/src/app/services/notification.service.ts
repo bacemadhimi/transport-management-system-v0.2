@@ -59,4 +59,8 @@ export class NotificationService {
   markAllAsRead(): Observable<any> {
     return this.http.put(`${this.apiUrl}/mark-all-read`, {});
   }
+  // In your notification.service.ts
+deleteAllNotifications(): Observable<any> {
+  return this.http.delete(`${this.apiUrl}/delete-all`);
+}
 }

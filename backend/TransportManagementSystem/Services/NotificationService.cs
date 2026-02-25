@@ -1,5 +1,7 @@
 ﻿using Microsoft.AspNetCore.SignalR;
+using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
+using TransportManagementSystem.Data;
 using TransportManagementSystem.Entity;
 using TransportManagementSystem.Hubs;
 using TransportManagementSystem.Interfaces;
@@ -11,15 +13,18 @@ public class NotificationService : INotificationService
 {
     private readonly IHubContext<TripHub> _hubContext;
     private readonly INotificationRepository _notificationRepository;
+    private readonly ApplicationDbContext _context;
     private readonly ILogger<NotificationService> _logger;
 
     public NotificationService(
         IHubContext<TripHub> hubContext,
         INotificationRepository notificationRepository,
+        ApplicationDbContext context,
         ILogger<NotificationService> logger)
     {
         _hubContext = hubContext;
         _notificationRepository = notificationRepository;
+        _context = context;
         _logger = logger;
     }
 
@@ -27,7 +32,7 @@ public class NotificationService : INotificationService
     {
         try
         {
-            // Create notification entity
+            // Create notification entity (no user association)
             var notification = new Notification
             {
                 Type = "STATUS_CHANGE",
@@ -40,8 +45,6 @@ public class NotificationService : INotificationService
                 NewStatus = statusChange.NewStatus,
                 DriverName = statusChange.DriverName,
                 TruckImmatriculation = statusChange.TruckImmatriculation,
-                IsRead = false,
-                UserId = userId,
                 AdditionalData = JsonConvert.SerializeObject(new
                 {
                     ChangedAt = statusChange.ChangedAt,
@@ -50,11 +53,11 @@ public class NotificationService : INotificationService
                 CreatedAt = DateTime.UtcNow
             };
 
-            // Save to database
-            await _notificationRepository.AddAsync(notification);
-            await _notificationRepository.SaveChangesAsync();
+            // Save to database (uncomment if you want to save status changes)
+            // await _notificationRepository.AddAsync(notification);
+            // await _notificationRepository.SaveChangesAsync();
 
-            // Send real-time notification via SignalR
+            // Create DTO for SignalR
             var notificationDto = new TripNotificationDto
             {
                 Id = notification.Id,
@@ -68,25 +71,16 @@ public class NotificationService : INotificationService
                 NewStatus = notification.NewStatus,
                 DriverName = notification.DriverName,
                 TruckImmatriculation = notification.TruckImmatriculation,
-                IsRead = notification.IsRead
+                IsRead = false // Default for broadcast
             };
 
-            // Send to specific user
-            await _hubContext.Clients.User(userId.ToString()).SendAsync("ReceiveNotification", notificationDto);
-
-            // Also send to trip group
-            await _hubContext.Clients.Group($"trip-{statusChange.TripId}")
-                .SendAsync("ReceiveNotification", notificationDto);
-
-            // Update unread count for user
-            var unreadCount = await GetUnreadCount(userId);
-            await _hubContext.Clients.User(userId.ToString()).SendAsync("UpdateUnreadCount", unreadCount);
-
-            _logger.LogInformation($"Saved and sent status change notification for trip {statusChange.TripReference} to user {userId}");
+            // Send to ALL connected clients
+            await _hubContext.Clients.All.SendAsync("ReceiveNotification", notificationDto);
+            _logger.LogInformation($"✅ Sent status change to ALL clients for trip {statusChange.TripReference}");
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error saving/sending trip status change notification");
+            _logger.LogError(ex, "Error sending trip status change notification");
         }
     }
 
@@ -94,6 +88,7 @@ public class NotificationService : INotificationService
     {
         try
         {
+            // Create notification (no user association)
             var notification = new Notification
             {
                 Type = "TRIP_CANCELLED",
@@ -104,8 +99,6 @@ public class NotificationService : INotificationService
                 TripReference = tripReference,
                 DriverName = driverName,
                 TruckImmatriculation = truckImmatriculation,
-                IsRead = false,
-                UserId = userId,
                 AdditionalData = JsonConvert.SerializeObject(new
                 {
                     CancellationMessage = message ?? "No message provided"
@@ -113,9 +106,28 @@ public class NotificationService : INotificationService
                 CreatedAt = DateTime.UtcNow
             };
 
+            // Save to database
             await _notificationRepository.AddAsync(notification);
             await _notificationRepository.SaveChangesAsync();
 
+            // Get all active users
+            var allUserIds = await _context.Users
+                // Assuming you have an IsActive field
+                .Select(u => u.Id)
+                .ToListAsync();
+
+            // Create UserNotification entries for each user (unread by default)
+            var userNotifications = allUserIds.Select(uid => new UserNotification
+            {
+                NotificationId = notification.Id,
+                UserId = uid,
+                IsRead = false
+            }).ToList();
+
+            await _context.UserNotifications.AddRangeAsync(userNotifications);
+            await _context.SaveChangesAsync();
+
+            // Create DTO for SignalR
             var notificationDto = new TripNotificationDto
             {
                 Id = notification.Id,
@@ -127,20 +139,18 @@ public class NotificationService : INotificationService
                 TripReference = notification.TripReference,
                 DriverName = notification.DriverName,
                 TruckImmatriculation = notification.TruckImmatriculation,
-                IsRead = notification.IsRead
+                IsRead = false // Default for broadcast
             };
 
-            await _hubContext.Clients.User(userId.ToString()).SendAsync("ReceiveNotification", notificationDto);
+            // Broadcast to ALL clients
+            await _hubContext.Clients.All.SendAsync("ReceiveNotification", notificationDto);
             await _hubContext.Clients.Group($"trip-{tripId}").SendAsync("ReceiveNotification", notificationDto);
 
-            var unreadCount = await GetUnreadCount(userId);
-            await _hubContext.Clients.User(userId.ToString()).SendAsync("UpdateUnreadCount", unreadCount);
-
-            _logger.LogInformation($"Saved and sent cancellation notification for trip {tripReference} to user {userId}");
+            _logger.LogInformation($"✅ Sent cancellation notification for trip {tripReference} to ALL clients");
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error saving/sending trip cancellation notification");
+            _logger.LogError(ex, "Error sending trip cancellation notification");
         }
     }
 
@@ -148,6 +158,7 @@ public class NotificationService : INotificationService
     {
         try
         {
+            // Create notification (no user association)
             var notification = new Notification
             {
                 Type = "NEW_TRIP",
@@ -156,14 +167,30 @@ public class NotificationService : INotificationService
                 Timestamp = DateTime.UtcNow,
                 TripId = tripId,
                 TripReference = tripReference,
-                IsRead = false,
-                UserId = userId,
                 CreatedAt = DateTime.UtcNow
             };
 
             await _notificationRepository.AddAsync(notification);
             await _notificationRepository.SaveChangesAsync();
 
+            // Get all active users
+            var allUserIds = await _context.Users
+               
+                .Select(u => u.Id)
+                .ToListAsync();
+
+            // Create UserNotification entries for each user
+            var userNotifications = allUserIds.Select(uid => new UserNotification
+            {
+                NotificationId = notification.Id,
+                UserId = uid,
+                IsRead = false
+            }).ToList();
+
+            await _context.UserNotifications.AddRangeAsync(userNotifications);
+            await _context.SaveChangesAsync();
+
+            // Create DTO for SignalR
             var notificationDto = new TripNotificationDto
             {
                 Id = notification.Id,
@@ -173,47 +200,112 @@ public class NotificationService : INotificationService
                 Timestamp = notification.Timestamp,
                 TripId = notification.TripId,
                 TripReference = notification.TripReference,
-                IsRead = notification.IsRead
+                IsRead = false
             };
 
-            await _hubContext.Clients.User(userId.ToString()).SendAsync("ReceiveNotification", notificationDto);
+            // Broadcast to ALL clients
+            await _hubContext.Clients.All.SendAsync("ReceiveNotification", notificationDto);
 
-            var unreadCount = await GetUnreadCount(userId);
-            await _hubContext.Clients.User(userId.ToString()).SendAsync("UpdateUnreadCount", unreadCount);
-
-            _logger.LogInformation($"Saved and sent new trip notification for trip {tripReference} to user {userId}");
+            _logger.LogInformation($"✅ Sent new trip notification for trip {tripReference} to ALL clients");
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error saving/sending new trip notification");
+            _logger.LogError(ex, "Error sending new trip notification");
         }
     }
 
-    public async Task<IEnumerable<Notification>> GetUserNotifications(int userId, NotificationFilterDto filter)
+    public async Task<IEnumerable<NotificationDto>> GetUserNotifications(int userId, NotificationFilterDto filter)
     {
-        return await _notificationRepository.GetUserNotificationsAsync(userId, filter);
+        var query = from n in _context.Notifications
+                    join un in _context.UserNotifications on n.Id equals un.NotificationId
+                    where un.UserId == userId
+                    orderby n.Timestamp descending
+                    select new NotificationDto
+                    {
+                        Id = n.Id,
+                        Type = n.Type,
+                        Title = n.Title,
+                        Message = n.Message,
+                        Timestamp = n.Timestamp,
+                        TripId = n.TripId,
+                        TripReference = n.TripReference,
+                        OldStatus = n.OldStatus,
+                        NewStatus = n.NewStatus,
+                        DriverName = n.DriverName,
+                        TruckImmatriculation = n.TruckImmatriculation,
+                        IsRead = un.IsRead,
+                        AdditionalData = n.AdditionalData,
+                        CreatedAt = n.CreatedAt
+                    };
+
+        // Apply filters
+        if (filter.IsRead.HasValue)
+            query = query.Where(n => n.IsRead == filter.IsRead.Value);
+
+        if (!string.IsNullOrEmpty(filter.Type))
+            query = query.Where(n => n.Type == filter.Type);
+
+        if (filter.FromDate.HasValue)
+            query = query.Where(n => n.Timestamp >= filter.FromDate.Value);
+
+        if (filter.ToDate.HasValue)
+            query = query.Where(n => n.Timestamp <= filter.ToDate.Value);
+
+        // Pagination
+        if (filter.PageSize > 0)
+        {
+            query = query
+                .Skip(filter.PageIndex * filter.PageSize)
+                .Take(filter.PageSize);
+        }
+
+        return await query.ToListAsync();
     }
 
     public async Task<int> GetUnreadCount(int userId)
     {
-        return await _notificationRepository.GetUnreadCountAsync(userId);
+        return await _context.UserNotifications
+            .CountAsync(un => un.UserId == userId && !un.IsRead);
     }
 
     public async Task MarkAsRead(int notificationId, int userId)
     {
-        await _notificationRepository.MarkAsReadAsync(notificationId, userId);
+        var userNotification = await _context.UserNotifications
+            .FirstOrDefaultAsync(un => un.NotificationId == notificationId && un.UserId == userId);
 
-        // Update unread count via SignalR
-        var unreadCount = await GetUnreadCount(userId);
-        await _hubContext.Clients.User(userId.ToString()).SendAsync("UpdateUnreadCount", unreadCount);
+        if (userNotification != null)
+        {
+            userNotification.IsRead = true;
+            userNotification.ReadAt = DateTime.UtcNow;
+            await _context.SaveChangesAsync();
+
+            // Update unread count via SignalR for this specific user
+            var unreadCount = await GetUnreadCount(userId);
+            await _hubContext.Clients.User(userId.ToString()).SendAsync("UpdateUnreadCount", unreadCount);
+
+            _logger.LogInformation($"✅ Notification {notificationId} marked as read by user {userId}");
+        }
     }
 
     public async Task MarkAllAsRead(int userId)
     {
-        await _notificationRepository.MarkAllAsReadAsync(userId);
+        var userNotifications = await _context.UserNotifications
+            .Where(un => un.UserId == userId && !un.IsRead)
+            .ToListAsync();
 
-        var unreadCount = await GetUnreadCount(userId);
+        foreach (var un in userNotifications)
+        {
+            un.IsRead = true;
+            un.ReadAt = DateTime.UtcNow;
+        }
+
+        await _context.SaveChangesAsync();
+
+        // Update unread count via SignalR
+        var unreadCount = 0;
         await _hubContext.Clients.User(userId.ToString()).SendAsync("UpdateUnreadCount", unreadCount);
+
+        _logger.LogInformation($"✅ All notifications marked as read by user {userId}");
     }
 
     public async Task SendNotificationToAll(TripNotificationDto notification)
@@ -249,6 +341,62 @@ public class NotificationService : INotificationService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error sending notification to role {Role}", role);
+        }
+    }
+    public async Task DeleteAllNotificationsForUser(int userId)
+    {
+        try
+        {
+            _logger.LogInformation($"📝 Deleting all notifications for user {userId}");
+
+            // Get all user notifications for this user
+            var userNotifications = await _context.UserNotifications
+                .Where(un => un.UserId == userId)
+                .ToListAsync();
+
+            if (userNotifications.Any())
+            {
+                // Get notification IDs that are only used by this user
+                var notificationIds = userNotifications.Select(un => un.NotificationId).ToList();
+
+                // Check which notifications are only used by this user
+                var notificationsToDelete = new List<Notification>();
+
+                foreach (var notificationId in notificationIds)
+                {
+                    var otherUsersCount = await _context.UserNotifications
+                        .CountAsync(un => un.NotificationId == notificationId && un.UserId != userId);
+
+                    // If no other users have this notification, delete it
+                    if (otherUsersCount == 0)
+                    {
+                        var notification = await _context.Notifications
+                            .FindAsync(notificationId);
+                        if (notification != null)
+                            notificationsToDelete.Add(notification);
+                    }
+                }
+
+                // Delete user notifications
+                _context.UserNotifications.RemoveRange(userNotifications);
+
+                // Delete notifications that are no longer referenced
+                if (notificationsToDelete.Any())
+                    _context.Notifications.RemoveRange(notificationsToDelete);
+
+                await _context.SaveChangesAsync();
+
+                _logger.LogInformation($"✅ Deleted {userNotifications.Count} user notifications and {notificationsToDelete.Count} notifications for user {userId}");
+            }
+            else
+            {
+                _logger.LogInformation($"ℹ️ No notifications found for user {userId}");
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, $"❌ Error deleting notifications for user {userId}");
+            throw;
         }
     }
 }

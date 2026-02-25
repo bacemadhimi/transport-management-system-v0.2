@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 using TransportManagementSystem.Entity;
+using TransportManagementSystem.Models;
 using TransportManagementSystem.Services;
 
 namespace TransportManagementSystem.Controllers;
@@ -117,6 +118,24 @@ public class NotificationsController : ControllerBase
         {
             _logger.LogError(ex, "Error cleaning up old notifications");
             return StatusCode(500, new ApiResponse(false, "Error cleaning up old notifications"));
+        }
+    }
+
+    [HttpDelete("delete-all")]
+    public async Task<IActionResult> DeleteAllNotifications()
+    {
+        try
+        {
+            var userId = GetCurrentUserId();
+            await _notificationService.DeleteAllNotificationsForUser(userId);
+
+            _logger.LogInformation($"✅ All notifications deleted for user {userId}");
+            return Ok(new ApiResponse(true, "All notifications deleted successfully"));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error deleting notifications");
+            return StatusCode(500, new ApiResponse(false, "Error deleting notifications"));
         }
     }
 }

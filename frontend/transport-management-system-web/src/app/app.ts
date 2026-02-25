@@ -43,6 +43,7 @@ export class App implements OnInit, OnDestroy {
   protected readonly title = signal('transport-management-system-web');
   showThemePicker = false;
   themes!: Theme[];
+  allNotifications: TripNotification[] = [];
   currentTheme!: Theme;
   authService = inject(Auth);
   httpService = inject(Http);
@@ -119,21 +120,40 @@ loadNotificationsFromDatabase(pageIndex: number = 0, pageSize: number = 20) {
   this.http.get(`${environment.apiUrl}/api/notifications?pageIndex=${pageIndex}&pageSize=${pageSize}`).subscribe({
     next: (response: any) => {
       if (response.success) {
+        // Get ALL notifications from database and map them
+        const allDbNotifications = (response.data.notifications as any[]).map((n: any) => ({
+          ...n,
+          // Convert isRead from number (0/1) to boolean
+          isRead: n.isRead === true || n.isRead === 1 || n.isRead === 'true',
+          timestamp: new Date(n.timestamp)
+        })) as TripNotification[];
+        
+        // Store all for reference
+        this.allNotifications = allDbNotifications;
+        
+        // STRICT FILTER: ONLY keep TRIP_CANCELLED
+        const cancelledNotifications = allDbNotifications.filter((n: TripNotification) => 
+          n.type === 'TRIP_CANCELLED'
+        );
+        
         if (pageIndex === 0) {
-          // First page - replace notifications
-          this.notifications = response.data.notifications;
+          // First page - replace with cancelled only
+          this.notifications = cancelledNotifications;
         } else {
-          // Subsequent pages - append
-          this.notifications = [...this.notifications, ...response.data.notifications];
+          // Subsequent pages - append cancelled only (check duplicates)
+          const existingIds = new Set(this.notifications.map((n: TripNotification) => n.id));
+          const uniqueNewCancelled = cancelledNotifications.filter((n: TripNotification) => !existingIds.has(n.id));
+          this.notifications = [...this.notifications, ...uniqueNewCancelled];
         }
         
-        this.unreadNotificationsCount = response.data.unreadCount;
-        this.totalNotifications = response.data.totalCount;
+        // Count ONLY unread cancelled notifications
+        this.unreadNotificationsCount = this.notifications.filter((n: TripNotification) => !n.isRead).length;
         
-        // Check if there are more notifications to load
+        this.totalNotifications = response.data.totalCount;
         this.hasMoreNotifications = this.notifications.length < this.totalNotifications;
         
-        console.log('📋 Loaded notifications from database:', this.notifications.length, 'Total:', this.totalNotifications);
+        console.log('📚 DB Load - Cancelled only:', this.notifications.length);
+        console.log('📚 Unread count:', this.unreadNotificationsCount);
       }
     },
     error: (err) => console.error('Error loading notifications from database:', err)
@@ -150,29 +170,43 @@ refreshNotifications() {
   this.loadNotificationsFromDatabase(0, this.pageSize);
 }
 initializeSignalR() {
-  // Subscribe to notifications
+  // Subscribe to real-time notifications
   this.notificationsSubscription = this.signalRService.notifications$.subscribe(
-    notifications => {
-      this.notifications = notifications;
-      this.unreadNotificationsCount = notifications.filter(n => !n.isRead).length;
-      console.log('📋 Notifications loaded:', notifications.length);
-    }
-  );
-
-  // Subscribe to unread count updates
-  this.signalRService.unreadCount$.subscribe(
-    count => {
-      this.unreadNotificationsCount = count;
-    }
-  );
-
-  // Subscribe to connection status
-  this.connectionStatusSubscription = this.signalRService.connectionStatus$.subscribe(
-    isConnected => {
-      console.log('SignalR connection status:', isConnected ? 'Connected' : 'Disconnected');
-      if (isConnected) {
-        this.signalRService.requestNotificationPermission();
+    (realtimeNotifications: TripNotification[]) => {
+      console.log('📬 Raw real-time notifications:', realtimeNotifications);
+      
+      // Ensure isRead is boolean and timestamp is Date
+      const processedNotifications = realtimeNotifications.map(n => ({
+        ...n,
+        isRead: n.isRead === true,
+        timestamp: new Date(n.timestamp)
+      }));
+      
+      // Store ALL real-time notifications for reference
+      this.allNotifications = [...this.allNotifications, ...processedNotifications];
+      
+      // STRICT FILTER: ONLY keep TRIP_CANCELLED
+      const newCancelled = processedNotifications.filter((n: TripNotification) => 
+        n.type === 'TRIP_CANCELLED'
+      );
+      
+      // Add new cancelled to existing notifications (avoid duplicates)
+      if (newCancelled.length > 0) {
+        // Check for duplicates by ID
+        const existingIds = new Set(this.notifications.map((n: TripNotification) => n.id));
+        const uniqueNewCancelled = newCancelled.filter((n: TripNotification) => !existingIds.has(n.id));
+        
+        // Add to beginning of array
+        this.notifications = [...uniqueNewCancelled, ...this.notifications];
+        
+        console.log('✅ Added new cancelled notifications:', uniqueNewCancelled.length);
       }
+      
+      // Count ONLY unread cancelled notifications
+      this.unreadNotificationsCount = this.notifications.filter((n: TripNotification) => !n.isRead).length;
+      
+      console.log('📋 Current cancelled notifications:', this.notifications.length);
+      console.log('📋 Unread cancelled count:', this.unreadNotificationsCount);
     }
   );
 }
@@ -217,9 +251,16 @@ initializeSignalR() {
 
 async markAllNotificationsAsRead() {
   await this.signalRService.markAllAsRead();
+  // Update local state
+  this.notifications = this.notifications.map(n => ({ ...n, isRead: true }));
+  this.unreadNotificationsCount = 0;
+  console.log('✅ All cancelled notifications marked as read');
 }
 
 clearAllNotifications() {
+  this.notifications = [];
+  this.allNotifications = [];
+  this.unreadNotificationsCount = 0;
   this.signalRService.clearNotifications();
 }
 
@@ -227,6 +268,9 @@ clearAllNotifications() {
 async markNotificationAsRead(notification: TripNotification) {
   if (!notification.isRead) {
     await this.signalRService.markAsRead(notification.id);
+    // Update local state
+    notification.isRead = true;
+    this.unreadNotificationsCount = this.notifications.filter((n: TripNotification) => !n.isRead).length;
   }
 }
 

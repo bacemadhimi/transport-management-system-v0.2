@@ -49,6 +49,7 @@ namespace TransportManagementSystem.Data
         public DbSet<Category> Categories { get; set; }
         public DbSet<GeneralSettings> GeneralSettings { get; set; }
         public DbSet<Notification> Notifications { get; set; }
+        public DbSet<UserNotification> UserNotifications { get; set; }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -220,17 +221,22 @@ namespace TransportManagementSystem.Data
                    .HasIndex(p => new { p.ParameterType, p.ParameterCode })
                    .IsUnique();
 
-            modelBuilder.Entity<Notification>(entity =>
-            {
-                entity.HasIndex(e => e.UserId);
-                entity.HasIndex(e => e.Timestamp);
-                entity.HasIndex(e => e.IsRead);
-                entity.HasIndex(e => e.Type);
-                entity.HasIndex(e => e.TripId);
+            modelBuilder.Entity<UserNotification>()
+                   .HasIndex(un => new { un.NotificationId, un.UserId })
+                   .IsUnique(); // Prevent duplicate entries
 
-                entity.Property(e => e.AdditionalData)
-                      .HasMaxLength(500);
-            });
+            modelBuilder.Entity<UserNotification>()
+                .HasOne(un => un.Notification)
+                .WithMany(n => n.UserNotifications)
+                .HasForeignKey(un => un.NotificationId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<UserNotification>()
+                .HasOne(un => un.User)
+                .WithMany()
+                .HasForeignKey(un => un.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
         }
 
         public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
