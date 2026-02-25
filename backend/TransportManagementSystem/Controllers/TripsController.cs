@@ -6,6 +6,7 @@ using System.Security.Claims;
 using TransportManagementSystem.Data;
 using TransportManagementSystem.Entity;
 using TransportManagementSystem.Models;
+using TransportManagementSystem.Services;
 using static TransportManagementSystem.Entity.Delivery;
 
 namespace TransportManagementSystem.Controllers;
@@ -18,15 +19,18 @@ public class TripsController : ControllerBase
     private readonly IRepository<Trip> tripRepository;
     private readonly IRepository<Delivery> deliveryRepository;
     private readonly ApplicationDbContext context;
+    private readonly INotificationService _notificationService;
 
     public TripsController(
         IRepository<Trip> tripRepository,
         IRepository<Delivery> deliveryRepository,
-        ApplicationDbContext context)
+        ApplicationDbContext context,
+        INotificationService notificationService)
     {
         this.tripRepository = tripRepository;
         this.deliveryRepository = deliveryRepository;
         this.context = context;
+        this._notificationService = notificationService;
     }
 
     [HttpGet("PaginationAndSearch")]
@@ -345,7 +349,7 @@ public class TripsController : ControllerBase
         }
 
         var tripReference = $"LIV-{year}-{nextSequence:D3}";
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
 
         var trip = new Trip
         {
@@ -353,7 +357,7 @@ public class TripsController : ControllerBase
             TripReference = tripReference,
             EstimatedDistance = model.EstimatedDistance,
             EstimatedDuration = model.EstimatedDuration,
-            CreatedById = int.Parse(userId),
+            CreatedById = userId,
             CreatedAt = DateTime.UtcNow,
             TruckId = model.TruckId,
             DriverId = model.DriverId,
@@ -404,6 +408,8 @@ public class TripsController : ControllerBase
         await context.SaveChangesAsync();
 
         var createdTrip = await GetTripByIdInternal(trip.Id);
+        await _notificationService.NotifyNewTripCreated(trip.Id, trip.TripReference ?? trip.BookingId, userId);
+
         return CreatedAtAction(nameof(GetTripById),
             new { id = trip.Id },
             new ApiResponse(true, "Trajet créé avec succès", createdTrip));
@@ -567,8 +573,7 @@ public class TripsController : ControllerBase
     public async Task<IActionResult> UpdateTripStatus(int id, [FromBody] UpdateTripStatusDto model)
     {
         var trip = await tripRepository.Query()
-            .Include(t => t.Truck).
-                  ThenInclude(t => t.TypeTruck)
+            .Include(t => t.Truck)
             .Include(t => t.Driver)
             .Include(t => t.Deliveries)
                 .ThenInclude(d => d.Order)
@@ -583,6 +588,9 @@ public class TripsController : ControllerBase
                 $"Transition de statut invalide: {TripStatusTransitions.GetStatusLabel(trip.TripStatus)} → {TripStatusTransitions.GetStatusLabel(model.Status)}"));
         }
 
+        var oldStatus = trip.TripStatus;
+        var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        var userName = User.FindFirstValue(ClaimTypes.Name);
 
         await UpdateOrderStatusesBasedOnTripStatus(trip, model.Status);
         trip.TripStatus = model.Status;
@@ -599,6 +607,22 @@ public class TripsController : ControllerBase
 
         tripRepository.Update(trip);
         await context.SaveChangesAsync();
+
+        // Send SignalR notification for status change
+        var statusChange = new TripStatusChangeDto
+        {
+            TripId = trip.Id,
+            TripReference = trip.TripReference ?? trip.BookingId,
+            OldStatus = TripStatusTransitions.GetStatusLabel(oldStatus),
+            NewStatus = TripStatusTransitions.GetStatusLabel(model.Status),
+            DriverName = trip.Driver?.Name,
+            TruckImmatriculation = trip.Truck?.Immatriculation,
+            Message = model.Notes,
+            ChangedAt = DateTime.UtcNow,
+            ChangedBy = userName ?? userId.ToString() ?? "System"
+        };
+
+        await _notificationService.NotifyTripStatusChanged(statusChange, userId);
 
         return Ok(new ApiResponse(true,
             $"Statut du trajet mis à jour: {TripStatusTransitions.GetStatusLabel(model.Status)}",
@@ -625,8 +649,7 @@ public class TripsController : ControllerBase
     public async Task<IActionResult> CancelTrip(int id, [FromBody] CancelTripDto model)
     {
         var trip = await tripRepository.Query()
-            .Include(t => t.Truck).
-                  ThenInclude(t => t.TypeTruck)
+            .Include(t => t.Truck)
             .Include(t => t.Driver)
             .Include(t => t.Deliveries)
                 .ThenInclude(d => d.Order)
@@ -637,6 +660,11 @@ public class TripsController : ControllerBase
 
         if (trip.TripStatus == TripStatus.Receipt || trip.TripStatus == TripStatus.Cancelled)
             return BadRequest(new ApiResponse(false, "Ce voyage ne peut pas être annulé"));
+
+        // Store driver and truck info before cancellation
+        var driverName = trip.Driver?.Name;
+        var truckImmatriculation = trip.Truck?.Immatriculation;
+        var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
 
         if (trip.DriverId != 0 && trip.EstimatedStartDate.HasValue && trip.EstimatedEndDate.HasValue)
         {
@@ -668,6 +696,16 @@ public class TripsController : ControllerBase
 
         await context.SaveChangesAsync();
 
+        // Send SignalR notification for cancellation
+        await _notificationService.NotifyTripCancelled(
+          trip.Id,
+          trip.TripReference ?? trip.BookingId,
+          model.Message,
+          driverName,
+          truckImmatriculation,
+          userId
+         );
+
         return Ok(new ApiResponse(true, "Voyage annulé avec succès", new
         {
             trip.Id,
@@ -676,7 +714,6 @@ public class TripsController : ControllerBase
             trip.ActualEndDate
         }));
     }
-
     private Task UpdateOrderStatusesBasedOnTripStatus(
         Trip trip,
         TripStatus newTripStatus)
