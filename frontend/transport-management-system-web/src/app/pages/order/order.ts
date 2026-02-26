@@ -426,6 +426,7 @@ getLatestData() {
       const dataArray = result?.data?.data || [];
       const totalCount = result?.data?.totalData || 0;
 
+      
       this.pagedOrderData = { data: dataArray, totalData: totalCount };
       this.dataSource.data = dataArray;
           this.allOrders = dataArray; 
