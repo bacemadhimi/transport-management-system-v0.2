@@ -1,20 +1,25 @@
+import { ITypeTruck } from "./type-truck";
+
 export interface ITruck {
   id: number;
   immatriculation: string;
   brand: string;
-  capacity: number; // Capacité totale en kg
-  capacityUnit?: string; // "kg" ou "tonnes"
   currentLoad?: number; // Charge actuelle
   loadType?: 'palettes' | 'cartons' | 'poid'; // Type de chargement
   technicalVisitDate: string | null;
+  dateOfFirstRegistration: string | null;
+  emptyWeight: number;
   status: string;
   color: string;
-  imageBase64: string | null;
+  images?: string[] | null;
   isEnable?: boolean;
   disabled?: boolean;
   tooltip?: string;
   availabilityMessage?: string;
   zoneId?: number;
+  typeTruckId: number;
+  typeTruck?: ITypeTruck;
+  marqueTruckId: number; 
 }
 
 export interface IZone {

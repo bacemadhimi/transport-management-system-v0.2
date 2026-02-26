@@ -24,6 +24,10 @@ import { ICreateZoneDto, IUpdateZoneDto, IZone } from '../types/zone';
 import { DailyForecast, WeatherData } from '../types/weather';
 import { ApiResponses, ICreateCityDto, ICity, IUpdateCityDto } from '../types/city';
 import { AvailabilityRequestDto, DriverAvailabilityDto, DriverOvertimeCheckDto, DriverOvertimeResultDto } from '../types/driver-overtime';
+import { ITypeTruck } from '../types/type-truck';
+import { ICategorys } from '../types/categorys';
+import { IMarque, IMarqueDto } from '../types/marque';
+import { IGeneralSettings, IGeneralSettingsDto, IOrderSettings, ITripSettings, ORDER_SETTING_KEYS, ParameterType, SearchOptions, TRIP_SETTING_KEYS } from '../types/general-settings';
 
 @Injectable({
   providedIn: 'root'
@@ -226,20 +230,44 @@ private formatDateForApi(date: string | Date): string {
     return this.http.get<PagedData<IFuelVendor>>(environment.apiUrl + '/api/FuelVendor/Search?' + params.toString());
   }
 
+
+
+ getCategoriesList(filter: any) {
+    const params = new HttpParams({ fromObject: filter });
+    return this.http.get<PagedData<ICategorys>>(environment.apiUrl + '/api/Category/PaginationAndSearch?' + params.toString());
+  }
+
   getFuelVendor(id: number) {
     return this.http.get<IFuelVendor>(environment.apiUrl + '/api/FuelVendor/' + id);
   }
 
+  getCategory(id: number) {
+    return this.http.get<ICategorys>(environment.apiUrl + '/api/Category/' + id);
+  }
   addFuelVendor(vendor: any) {
     return this.http.post<IFuelVendor>(environment.apiUrl + '/api/FuelVendor', vendor);
+  }
+
+  //ADD CATEGORY
+   addCategory(category: any) {
+    return this.http.post<ICategorys>(environment.apiUrl + '/api/Category', category);
   }
 
   updateFuelVendor(id: number, vendor: any) {
     return this.http.put<IFuelVendor>(environment.apiUrl + '/api/FuelVendor/' + id, vendor);
   }
+  
+  //UPDATE CATEGORY
+  updateCategory(id: number, category: any) {
+    return this.http.put<ICategorys>(environment.apiUrl + '/api/Category/' + id, category);
+  }
 
   deleteFuelVendor(id: number) {
     return this.http.delete(environment.apiUrl + '/api/FuelVendor/' + id);
+  }
+
+   deleteCategory(id: number) {
+    return this.http.delete(environment.apiUrl + '/api/Category/' + id);
   }
 
   getFuelVendors() {
@@ -553,8 +581,19 @@ markOrdersReadyToLoad(orderIds: number[]) {
 
 
 
-getAvailableTrucks() {
-  return this.http.get<ITruck[]>(environment.apiUrl + '/api/Trucks/available');
+getAvailableTrucks(date: string, zoneId?: number | null, excludeTripId?: number) {
+  let url = `${environment.apiUrl}/api/Trucks/available?date=${date}`;
+  
+  if (zoneId) {
+    url += `&zoneId=${zoneId}`;
+  }
+  
+  if (excludeTripId) {
+    url += `&excludeTripId=${excludeTripId}`;
+  }
+  
+  console.log('📡 Appel API:', url);
+  return this.http.get(url);
 }
 
 
@@ -1300,6 +1339,232 @@ getClientName(customerId: number): Observable<string> {
 }
  getAllCustomers() {
     return this.http.get<ICustomer[]>(environment.apiUrl + '/api/customer/list');
+  }
+
+  // ===== EMPLOYEE =====
+  getEmployeesList(filter: any) {
+    const params = new HttpParams({ fromObject: filter });
+    return this.http.get<PagedData<any>>(environment.apiUrl + '/api/Employee/PaginationAndSearch?' + params.toString());
+  }
+
+  getEmployee(id: number) {
+    return this.http.get<any>(environment.apiUrl + '/api/Employee/' + id);
+  }
+
+  addEmployee(employeeData: any) {
+    return this.http.post(environment.apiUrl + '/api/Employee', employeeData);
+  }
+
+  updateEmployee(id: number, employeeData: any) {
+    return this.http.put(environment.apiUrl + '/api/Employee/' + id, employeeData);
+  }
+
+  deleteEmployee(id: number) {
+    return this.http.delete(environment.apiUrl + '/api/Employee/' + id);
+  }
+
+  enableEmployee(id: number) {
+    return this.http.put(environment.apiUrl + `/api/Employee/${id}`, { isEnable: true });
+  }
+
+  downloadEmployeeAttachment(id: number) {
+    return this.http.get(environment.apiUrl + `/api/Employee/${id}/download-attachment`, {
+      responseType: 'blob'
+    });
+  }
+
+  getTruckTypes() {
+    return this.http.get<any[]>(environment.apiUrl + '/api/TruckType');
+  }
+  getTypeTrucksList(filter: any) {
+  return this.http.get<PagedData<ITypeTruck>>(`${environment.apiUrl}/api/TypeTruck`, { params: filter });
+}
+
+getTypeTruck(id: number) {
+  return this.http.get<ITypeTruck>(`${environment.apiUrl}/api/TypeTruck/${id}`);
+}
+
+addTypeTruck(typeTruck: ITypeTruck) {
+  return this.http.post<ITypeTruck>(`${environment.apiUrl}/api/TypeTruck`, typeTruck);
+}
+
+updateTypeTruck(id: number, typeTruck: ITypeTruck) {
+  return this.http.put<ITypeTruck>(`${environment.apiUrl}/api/TypeTruck/${id}`, typeTruck);
+}
+
+deleteTypeTruck(id: number) {
+  return this.http.delete(`${environment.apiUrl}/api/TypeTruck/${id}`);
+}
+ getTypeTrucks() {
+    return this.http.get<ICustomer[]>(environment.apiUrl + '/api/TypeTruck/list');
+  }
+getTrucksByDate(date: Date, locationId?: number): Observable<ITruck[]> {
+  const params = new HttpParams()
+    .set('date', date.toISOString())
+    .set('locationId', locationId?.toString() || '');
+    
+  return this.http.get<ITruck[]>(`${environment.apiUrl}/api/trucks/available`, { params }).pipe(
+    catchError(error => {
+      console.error('Error in getTrucksByDate:', error);
+      return of([]);
+    })
+  );
+}
+// Marque endpoints
+getMarques(filter?: any): Observable<PagedData<ICity>> {
+  const params = new HttpParams({ fromObject: filter || {} });
+  return this.http.get<PagedData<ICity>>(`${environment.apiUrl}/api/MarqueTruck`, { params });
+}
+getMarque(id: number) {
+  return this.http.get<IMarque>(`${environment.apiUrl}/api/MarqueTruck/${id}`);
+}
+
+addMarque(marque: IMarqueDto) {
+  return this.http.post<IMarque>(`${environment.apiUrl}/api/MarqueTruck`, marque);
+}
+
+updateMarque(id: number, marque: IMarqueDto) {
+  return this.http.put<IMarque>(`${environment.apiUrl}/api/MarqueTruck/${id}`, marque);
+}
+
+deleteMarque(id: number) {
+  return this.http.delete(`${environment.apiUrl}/api/MarqueTruck/${id}`);
+}
+getMarqueTrucks() {
+    return this.http.get<IMarque[]>(environment.apiUrl + '/api/MarqueTruck/list');
+  }
+getGeneralSettings(searchOptions: SearchOptions) {
+  let params = new HttpParams();
+  
+  // Add parameters only if they have values
+  if (searchOptions.pageIndex !== undefined && searchOptions.pageIndex !== null) {
+    params = params.set('pageIndex', searchOptions.pageIndex.toString());
+  }
+  if (searchOptions.pageSize !== undefined && searchOptions.pageSize !== null) {
+    params = params.set('pageSize', searchOptions.pageSize.toString());
+  }
+  if (searchOptions.search && searchOptions.search.trim() !== '') {
+    params = params.set('search', searchOptions.search.trim());
+  }
+  if (searchOptions.parameterType && searchOptions.parameterType !== '') {
+    params = params.set('parameterType', searchOptions.parameterType);
+  }
+  
+  console.log('Request params:', params.toString()); 
+  
+  return this.http.get<PagedData<IGeneralSettings>>(
+    `${environment.apiUrl}/api/GeneralSettings/PaginationAndSearch`,
+    { params }
+  );
+}
+
+getGeneralSetting(id: number) {
+  return this.http.get<IGeneralSettings>(`${environment.apiUrl}/api/GeneralSettings/${id}`);
+}
+
+addGeneralSettings(parameter: IGeneralSettingsDto) {
+  return this.http.post<IGeneralSettings>(`${environment.apiUrl}/api/GeneralSettings`, parameter);
+}
+
+updateGeneralSettings(id: number, parameter: IGeneralSettingsDto) {
+  return this.http.put<IGeneralSettings>(`${environment.apiUrl}/api/GeneralSettings/${id}`, parameter);
+}
+
+deleteGeneralSettings(id: number) {
+  return this.http.delete(`${environment.apiUrl}/api/GeneralSettings/${id}`);
+}
+getOrderSettings(): Observable<IOrderSettings> {
+    const options: SearchOptions = {
+      pageIndex: 0,
+      pageSize: 100,
+      parameterType: ParameterType.ORDER
+    };
+    
+    return this.getGeneralSettings(options).pipe(
+      map((response: PagedData<IGeneralSettings>) => {
+        return this.mapToOrderSettings(response.data || []);
+      })
+    );
+  }
+getTripSettings(): Observable<ITripSettings> {
+    const options: SearchOptions = {
+      pageIndex: 0,
+      pageSize: 100,
+      parameterType: ParameterType.TRIP
+    };
+    
+    return this.getGeneralSettings(options).pipe(
+      map((response: PagedData<IGeneralSettings>) => {
+        return this.mapToTripSettings(response.data || []);
+      })
+    );
+  }
+  private mapToOrderSettings(settings: IGeneralSettings[]): IOrderSettings {
+    const settingsMap = new Map(settings.map(s => [s.parameterCode, s.value]));
+    
+    return {
+      allowEditOrder: this.getBooleanValue(settingsMap, ORDER_SETTING_KEYS.ALLOW_EDIT_ORDER, true),
+      allowEditDeliveryDate: this.getBooleanValue(settingsMap, ORDER_SETTING_KEYS.ALLOW_DELIVERY_DATE_EDIT, true),
+      allowLoadLateOrders: this.getBooleanValue(settingsMap, ORDER_SETTING_KEYS.ALLOW_LOAD_LATE_ORDERS, true),
+      acceptOrdersWithoutAddress: this.getBooleanValue(settingsMap, ORDER_SETTING_KEYS.ACCEPT_ORDERS_WITHOUT_ADDRESS, true),
+      planningHorizon: this.getNumberValue(settingsMap, ORDER_SETTING_KEYS.PLANNING_HORIZON, 30),
+      loadingUnit: this.getStringValue(settingsMap, ORDER_SETTING_KEYS.LOADING_UNIT, 'palette')
+    };
+  }
+
+  private mapToTripSettings(settings: IGeneralSettings[]): ITripSettings {
+    const settingsMap = new Map(settings.map(s => [s.parameterCode, s.value]));
+    
+    return {
+      allowEditTrips: this.getBooleanValue(settingsMap, TRIP_SETTING_KEYS.ALLOW_EDIT_TRIPS, true),
+      allowDeleteTrips: this.getBooleanValue(settingsMap, TRIP_SETTING_KEYS.ALLOW_DELETE_TRIPS, true),
+      editTimeLimit: this.getNumberValue(settingsMap, TRIP_SETTING_KEYS.EDIT_TIME_LIMIT, 60),
+      maxTripsPerDay: this.getNumberValue(settingsMap, TRIP_SETTING_KEYS.MAX_TRIPS_PER_DAY, 10),
+      tripOrder: this.getStringValue(settingsMap, TRIP_SETTING_KEYS.TRIP_ORDER, 'chronological'),
+      requireDeleteConfirmation: this.getBooleanValue(settingsMap, TRIP_SETTING_KEYS.REQUIRE_DELETE_CONFIRMATION, true),
+      notifyOnTripEdit: this.getBooleanValue(settingsMap, TRIP_SETTING_KEYS.NOTIFY_ON_TRIP_EDIT, false),
+      notifyOnTripDelete: this.getBooleanValue(settingsMap, TRIP_SETTING_KEYS.NOTIFY_ON_TRIP_DELETE, false),
+      linkDriverToTruck: this.getBooleanValue(settingsMap, TRIP_SETTING_KEYS.LINK_DRIVER_TO_TRUCK, true)
+    };
+  }
+   private orderSettingsToDto(settings: IOrderSettings): IGeneralSettingsDto[] {
+    return [
+      { parameterType: ParameterType.ORDER, parameterCode: ORDER_SETTING_KEYS.ALLOW_EDIT_ORDER, value: String(settings.allowEditOrder), description: 'Allow editing orders' },
+      { parameterType: ParameterType.ORDER, parameterCode: ORDER_SETTING_KEYS.ALLOW_DELIVERY_DATE_EDIT, value: String(settings.allowEditDeliveryDate), description: 'Allow editing delivery date' },
+      { parameterType: ParameterType.ORDER, parameterCode: ORDER_SETTING_KEYS.ALLOW_LOAD_LATE_ORDERS, value: String(settings.allowLoadLateOrders), description: 'Allow loading late orders' },
+      { parameterType: ParameterType.ORDER, parameterCode: ORDER_SETTING_KEYS.ACCEPT_ORDERS_WITHOUT_ADDRESS, value: String(settings.acceptOrdersWithoutAddress), description: 'Accept orders without address' },
+      { parameterType: ParameterType.ORDER, parameterCode: ORDER_SETTING_KEYS.PLANNING_HORIZON, value: String(settings.planningHorizon), description: 'Planning horizon in days' },
+      { parameterType: ParameterType.ORDER, parameterCode: ORDER_SETTING_KEYS.LOADING_UNIT, value: settings.loadingUnit, description: 'Default loading unit' }
+    ];
+  }
+
+  private tripSettingsToDto(settings: ITripSettings): IGeneralSettingsDto[] {
+    return [
+      { parameterType: ParameterType.TRIP, parameterCode: TRIP_SETTING_KEYS.ALLOW_EDIT_TRIPS, value: String(settings.allowEditTrips), description: 'Allow editing trips' },
+      { parameterType: ParameterType.TRIP, parameterCode: TRIP_SETTING_KEYS.ALLOW_DELETE_TRIPS, value: String(settings.allowDeleteTrips), description: 'Allow deleting trips' },
+      { parameterType: ParameterType.TRIP, parameterCode: TRIP_SETTING_KEYS.EDIT_TIME_LIMIT, value: String(settings.editTimeLimit), description: 'Edit limit in minutes' },
+      { parameterType: ParameterType.TRIP, parameterCode: TRIP_SETTING_KEYS.MAX_TRIPS_PER_DAY, value: String(settings.maxTripsPerDay), description: 'Maximum trips per day' },
+      { parameterType: ParameterType.TRIP, parameterCode: TRIP_SETTING_KEYS.TRIP_ORDER, value: settings.tripOrder, description: 'Trip ordering method' },
+      { parameterType: ParameterType.TRIP, parameterCode: TRIP_SETTING_KEYS.REQUIRE_DELETE_CONFIRMATION, value: String(settings.requireDeleteConfirmation), description: 'Require delete confirmation' },
+      { parameterType: ParameterType.TRIP, parameterCode: TRIP_SETTING_KEYS.NOTIFY_ON_TRIP_EDIT, value: String(settings.notifyOnTripEdit), description: 'Notify when trip edited' },
+      { parameterType: ParameterType.TRIP, parameterCode: TRIP_SETTING_KEYS.NOTIFY_ON_TRIP_DELETE, value: String(settings.notifyOnTripDelete), description: 'Notify when trip deleted' },
+      { parameterType: ParameterType.TRIP, parameterCode: TRIP_SETTING_KEYS.LINK_DRIVER_TO_TRUCK, value: String(settings.linkDriverToTruck), description: 'Driver must match truck' }
+    ];
+  }
+
+  private getBooleanValue(map: Map<string, string>, key: string, defaultValue: boolean): boolean {
+    const value = map.get(key);
+    return value ? value.toLowerCase() === 'true' : defaultValue;
+  }
+
+  private getNumberValue(map: Map<string, string>, key: string, defaultValue: number): number {
+    const value = map.get(key);
+    return value ? parseInt(value, 10) : defaultValue;
+  }
+
+  private getStringValue(map: Map<string, string>, key: string, defaultValue: string): string {
+    const value = map.get(key);
+    return value || defaultValue;
   }
 }
 

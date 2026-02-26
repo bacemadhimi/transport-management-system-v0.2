@@ -12,7 +12,7 @@
             public decimal EstimatedDistance { get; set; }
             public int TruckId { get; set; }
             public string TruckImmatriculation { get; set; }
-            public string TruckBrand { get; set; }
+            public int MarqueTruckId { get; set; }
             public int? TruckZoneId { get; set; }
             public int DriverId { get; set; }
             public string DriverName { get; set; }

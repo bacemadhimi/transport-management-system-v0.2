@@ -1,0 +1,30 @@
+<div class="marque-page">
+  <div class="marque-header">
+    <h1 class="marque-title">La liste des marques de camions</h1>
+
+    <div class="marque-header__actions">
+      <mat-form-field appearance="outline" class="marque-search">
+        <mat-label>Chercher marque</mat-label>
+        <input
+          matInput
+          type="text"
+          [formControl]="searchControl"
+          placeholder="Nom de la marque"
+        />
+      </mat-form-field>
+
+      <button *ngIf="auth.hasPermission('MARQUE_ADD')" mat-flat-button class="marque-add-btn" (click)="add()" type="button">
+        Ajouter
+      </button>
+    </div>
+  </div>
+
+  <app-table
+    [PagedData]="pagedMarqueData"
+    [pageIndex]="filter.pageIndex"
+    [pageSize]="filter.pageSize"
+    [displayedColumns]="showCols"
+    (rowClick)="onRowClick($event)"
+    (onPageChange)="pageChange($event)">
+  </app-table>
+</div>

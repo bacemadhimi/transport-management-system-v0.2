@@ -6,6 +6,7 @@ using System.Security.Claims;
 using TransportManagementSystem.Data;
 using TransportManagementSystem.Entity;
 using TransportManagementSystem.Models;
+using TransportManagementSystem.Services;
 using static TransportManagementSystem.Entity.Delivery;
 
 namespace TransportManagementSystem.Controllers;
@@ -18,15 +19,18 @@ public class TripsController : ControllerBase
     private readonly IRepository<Trip> tripRepository;
     private readonly IRepository<Delivery> deliveryRepository;
     private readonly ApplicationDbContext context;
+    private readonly INotificationService _notificationService;
 
     public TripsController(
         IRepository<Trip> tripRepository,
         IRepository<Delivery> deliveryRepository,
-        ApplicationDbContext context)
+        ApplicationDbContext context,
+        INotificationService notificationService)
     {
         this.tripRepository = tripRepository;
         this.deliveryRepository = deliveryRepository;
         this.context = context;
+        this._notificationService = notificationService;
     }
 
     [HttpGet("PaginationAndSearch")]
@@ -205,7 +209,8 @@ public class TripsController : ControllerBase
     public async Task<IActionResult> GetTripById(int id)
     {
         var trip = await tripRepository.Query()
-            .Include(t => t.Truck)
+            .Include(t => t.Truck).
+                  ThenInclude(t => t.TypeTruck)
             .Include(t => t.Driver)
             .Include(t => t.Deliveries)
                 .ThenInclude(d => d.Customer)
@@ -237,12 +242,20 @@ public class TripsController : ControllerBase
             {
                 Id = trip.Truck.Id,
                 Immatriculation = trip.Truck.Immatriculation,
-                Brand = trip.Truck.Brand,
-                Capacity = trip.Truck.Capacity,
+                MarqueTruckId = trip.Truck.MarqueTruckId,
                 Color = trip.Truck.Color,
                 Status = trip.Truck.Status,
                 TechnicalVisitDate = trip.Truck.TechnicalVisitDate,
-                CapacityUnit = trip.Truck.CapacityUnit
+                DateOfFirstRegistration = trip.Truck.DateOfFirstRegistration,
+                EmptyWeight = trip.Truck.EmptyWeight,
+                TypeTruckId = trip.Truck.TypeTruckId,
+                TypeTruck = trip.Truck.TypeTruck != null ? new TypeTruckDto
+                {
+                    Id = trip.Truck.TypeTruck.Id,
+                    Type = trip.Truck.TypeTruck.Type,
+                    Capacity = trip.Truck.TypeTruck.Capacity,
+                    Unit = trip.Truck.TypeTruck.Unit
+                } : null,
             } : null,
             Driver = trip.Driver != null ? new DriverDto
             {
@@ -336,7 +349,7 @@ public class TripsController : ControllerBase
         }
 
         var tripReference = $"LIV-{year}-{nextSequence:D3}";
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
 
         var trip = new Trip
         {
@@ -344,7 +357,7 @@ public class TripsController : ControllerBase
             TripReference = tripReference,
             EstimatedDistance = model.EstimatedDistance,
             EstimatedDuration = model.EstimatedDuration,
-            CreatedById = int.Parse(userId),
+            CreatedById = userId,
             CreatedAt = DateTime.UtcNow,
             TruckId = model.TruckId,
             DriverId = model.DriverId,
@@ -395,6 +408,8 @@ public class TripsController : ControllerBase
         await context.SaveChangesAsync();
 
         var createdTrip = await GetTripByIdInternal(trip.Id);
+        //await _notificationService.NotifyNewTripCreated(trip.Id, trip.TripReference ?? trip.BookingId, userId);
+
         return CreatedAtAction(nameof(GetTripById),
             new { id = trip.Id },
             new ApiResponse(true, "Trajet créé avec succès", createdTrip));
@@ -407,7 +422,8 @@ public class TripsController : ControllerBase
             return BadRequest(new ApiResponse(false, "Données invalides", ModelState));
 
         var trip = await context.Trips
-            .Include(t => t.Truck)
+            .Include(t => t.Truck).
+                  ThenInclude(t => t.TypeTruck)
             .Include(t => t.Driver)
             .Include(t => t.Deliveries)
             .FirstOrDefaultAsync(t => t.Id == id);
@@ -544,7 +560,8 @@ public class TripsController : ControllerBase
         await context.SaveChangesAsync();
 
         var updatedTrip = await context.Trips
-            .Include(t => t.Truck)
+            .Include(t => t.Truck).
+                  ThenInclude(t => t.TypeTruck)
             .Include(t => t.Driver)
             .Include(t => t.Deliveries)
             .FirstOrDefaultAsync(t => t.Id == trip.Id);
@@ -571,6 +588,9 @@ public class TripsController : ControllerBase
                 $"Transition de statut invalide: {TripStatusTransitions.GetStatusLabel(trip.TripStatus)} → {TripStatusTransitions.GetStatusLabel(model.Status)}"));
         }
 
+        var oldStatus = trip.TripStatus;
+        var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        var userName = User.FindFirstValue(ClaimTypes.Name);
 
         await UpdateOrderStatusesBasedOnTripStatus(trip, model.Status);
         trip.TripStatus = model.Status;
@@ -587,6 +607,22 @@ public class TripsController : ControllerBase
 
         tripRepository.Update(trip);
         await context.SaveChangesAsync();
+
+        // Send SignalR notification for status change
+        var statusChange = new TripStatusChangeDto
+        {
+            TripId = trip.Id,
+            TripReference = trip.TripReference ?? trip.BookingId,
+            OldStatus = TripStatusTransitions.GetStatusLabel(oldStatus),
+            NewStatus = TripStatusTransitions.GetStatusLabel(model.Status),
+            DriverName = trip.Driver?.Name,
+            TruckImmatriculation = trip.Truck?.Immatriculation,
+            Message = model.Notes,
+            ChangedAt = DateTime.UtcNow,
+            ChangedBy = userName ?? userId.ToString() ?? "System"
+        };
+
+        await _notificationService.NotifyTripStatusChanged(statusChange, userId);
 
         return Ok(new ApiResponse(true,
             $"Statut du trajet mis à jour: {TripStatusTransitions.GetStatusLabel(model.Status)}",
@@ -625,6 +661,11 @@ public class TripsController : ControllerBase
         if (trip.TripStatus == TripStatus.Receipt || trip.TripStatus == TripStatus.Cancelled)
             return BadRequest(new ApiResponse(false, "Ce voyage ne peut pas être annulé"));
 
+        // Store driver and truck info before cancellation
+        var driverName = trip.Driver?.Name;
+        var truckImmatriculation = trip.Truck?.Immatriculation;
+        var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+
         if (trip.DriverId != 0 && trip.EstimatedStartDate.HasValue && trip.EstimatedEndDate.HasValue)
         {
             await RestoreDriverAvailabilityForTrip(trip.DriverId, trip.EstimatedStartDate.Value, trip.EstimatedEndDate.Value, trip.TripReference);
@@ -655,6 +696,16 @@ public class TripsController : ControllerBase
 
         await context.SaveChangesAsync();
 
+        // Send SignalR notification for cancellation
+        await _notificationService.NotifyTripCancelled(
+          trip.Id,
+          trip.TripReference ?? trip.BookingId,
+          model.Message,
+          driverName,
+          truckImmatriculation,
+          userId
+         );
+
         return Ok(new ApiResponse(true, "Voyage annulé avec succès", new
         {
             trip.Id,
@@ -663,7 +714,6 @@ public class TripsController : ControllerBase
             trip.ActualEndDate
         }));
     }
-
     private Task UpdateOrderStatusesBasedOnTripStatus(
         Trip trip,
         TripStatus newTripStatus)
@@ -711,7 +761,8 @@ public class TripsController : ControllerBase
     public async Task<IActionResult> DeleteTrip(int id)
     {
         var trip = await tripRepository.Query()
-            .Include(t => t.Truck)
+           .Include(t => t.Truck).
+                  ThenInclude(t => t.TypeTruck)
             .Include(t => t.Driver)
             .Include(t => t.Deliveries)
             .FirstOrDefaultAsync(t => t.Id == id);
@@ -826,7 +877,8 @@ public class TripsController : ControllerBase
     private async Task<TripDetailsDto> GetTripByIdInternal(int id)
     {
         var trip = await tripRepository.Query()
-            .Include(t => t.Truck)
+            .Include(t => t.Truck).
+                  ThenInclude(t => t.TypeTruck)
             .Include(t => t.Driver)
             .Include(t => t.Deliveries)
                 .ThenInclude(d => d.Customer)
@@ -859,12 +911,20 @@ public class TripsController : ControllerBase
             {
                 Id = trip.Truck.Id,
                 Immatriculation = trip.Truck.Immatriculation,
-                Brand = trip.Truck.Brand,
-                Capacity = trip.Truck.Capacity,
+                MarqueTruckId = trip.Truck.MarqueTruckId,
                 Color = trip.Truck.Color,
                 Status = trip.Truck.Status,
                 TechnicalVisitDate = trip.Truck.TechnicalVisitDate,
-                CapacityUnit = trip.Truck.CapacityUnit
+                DateOfFirstRegistration = trip.Truck.DateOfFirstRegistration,
+                EmptyWeight = trip.Truck.EmptyWeight,
+                TypeTruckId = trip.Truck.TypeTruckId,
+                TypeTruck = trip.Truck.TypeTruck != null ? new TypeTruckDto
+                {
+                    Id = trip.Truck.TypeTruck.Id,
+                    Type = trip.Truck.TypeTruck.Type,
+                    Capacity = trip.Truck.TypeTruck.Capacity,
+                    Unit = trip.Truck.TypeTruck.Unit
+                } : null,
             } : null,
             Driver = trip.Driver != null ? new DriverDto
             {
@@ -1283,7 +1343,8 @@ public class TripsController : ControllerBase
 
         var trip = await context.Trips
             .Include(t => t.Driver)
-            .Include(t => t.Truck)
+            .Include(t => t.Truck).
+                  ThenInclude(t => t.TypeTruck)
             .Include(t => t.Deliveries)
                 .ThenInclude(d => d.Customer)
             .Include(t => t.Deliveries)
@@ -1431,7 +1492,7 @@ public class TripsController : ControllerBase
                 // Truck
                 TruckId = t.Truck.Id,
                 TruckImmatriculation = t.Truck.Immatriculation,
-                TruckBrand = t.Truck.Brand,
+                MarqueTruckId = t.Truck.MarqueTruckId,
                 TruckZoneId = t.Truck.ZoneId,
 
                 // Deliveries

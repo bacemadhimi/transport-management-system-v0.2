@@ -25,7 +25,126 @@ namespace TransportManagementSystem.Data
             {
                 // Appliquer les migrations
                 dbContext.Database.Migrate();
+                // Check if ORDER or TRIP settings already exist
+                if (!dbContext.GeneralSettings.Any(p => p.ParameterType == "ORDER" || p.ParameterType == "TRIP"))
+                {
+                    var settings = new List<GeneralSettings>
+    {
+        // ===== ORDER SETTINGS =====
+        new GeneralSettings
+        {
+            ParameterType = "ORDER",
+            ParameterCode = "ALLOW_EDIT_ORDER",
+            Value = "true",
+            Description = "Allow editing orders"
+        },
+        new GeneralSettings
+        {
+            ParameterType = "ORDER",
+            ParameterCode = "ALLOW_DELIVERY_DATE_EDIT",
+            Value = "true",
+            Description = "Allow editing delivery date"
+        },
+        new GeneralSettings
+        {
+            ParameterType = "ORDER",
+            ParameterCode = "ALLOW_LOAD_LATE_ORDERS",
+            Value = "true",
+            Description = "Allow loading late orders"
+        },
+        new GeneralSettings
+        {
+            ParameterType = "ORDER",
+            ParameterCode = "ACCEPT_ORDERS_WITHOUT_ADDRESS",
+            Value = "true",
+            Description = "Accept orders without address"
+        },
+        new GeneralSettings
+        {
+            ParameterType = "ORDER",
+            ParameterCode = "LOADING_UNIT",
+            Value = "palette",
+            Description = "Default loading unit"
+        },
+        new GeneralSettings
+        {
+            ParameterType = "ORDER",
+            ParameterCode = "PLANNING_HORIZON",
+            Value = "30",
+            Description = "Planning horizon in days"
+        },
 
+        // ===== TRIP SETTINGS =====
+        new GeneralSettings
+        {
+            ParameterType = "TRIP",
+            ParameterCode = "ALLOW_EDIT_TRIPS",
+            Value = "true",
+            Description = "Allow editing trips"
+        },
+        new GeneralSettings
+        {
+            ParameterType = "TRIP",
+            ParameterCode = "ALLOW_DELETE_TRIPS",
+            Value = "true",
+            Description = "Allow deleting trips"
+        },
+        new GeneralSettings
+        {
+            ParameterType = "TRIP",
+            ParameterCode = "EDIT_TIME_LIMIT",
+            Value = "60",
+            Description = "Edit limit in minutes"
+        },
+        new GeneralSettings
+        {
+            ParameterType = "TRIP",
+            ParameterCode = "MAX_TRIPS_PER_DAY",
+            Value = "10",
+            Description = "Maximum trips per day"
+        },
+        new GeneralSettings
+        {
+            ParameterType = "TRIP",
+            ParameterCode = "TRIP_ORDER",
+            Value = "chronological",
+            Description = "Trip ordering method"
+        },
+        new GeneralSettings
+        {
+            ParameterType = "TRIP",
+            ParameterCode = "REQUIRE_DELETE_CONFIRMATION",
+            Value = "true",
+            Description = "Require delete confirmation"
+        },
+        new GeneralSettings
+        {
+            ParameterType = "TRIP",
+            ParameterCode = "NOTIFY_ON_TRIP_EDIT",
+            Value = "false",
+            Description = "Notify when trip edited"
+        },
+        new GeneralSettings
+        {
+            ParameterType = "TRIP",
+            ParameterCode = "NOTIFY_ON_TRIP_DELETE",
+            Value = "false",
+            Description = "Notify when trip deleted"
+        },
+        new GeneralSettings
+        {
+            ParameterType = "TRIP",
+            ParameterCode = "LINK_DRIVER_TO_TRUCK",
+            Value = "true",
+            Description = "Driver must match truck"
+        }
+    };
+
+                    dbContext.GeneralSettings.AddRange(settings);
+                    dbContext.SaveChanges();
+
+                    Console.WriteLine("✔ ORDER & TRIP settings seeded successfully!");
+                }
                 // Seed UserGroups (SuperAdmin, Admin)
                 if (!dbContext.UserGroups.Any())
                 {
@@ -77,6 +196,7 @@ namespace TransportManagementSystem.Data
                     {
         "ACCUEIL",
         "CHAUFFEUR",
+        "EMPLOYEE",
         "CONVOYEUR",
         "TRUCK",
         "ORDER",
@@ -103,6 +223,7 @@ namespace TransportManagementSystem.Data
     {
         { "ACCUEIL", new[] { "VIEW" } },
         { "CHAUFFEUR", new[] { "VIEW","ADD","EDIT", "ENABLE","DISABLE", "PRINT", "APPROVED" } },
+        { "EMPLOYEE", new[] { "VIEW","ADD","EDIT", "ENABLE","DISABLE", "PRINT", "APPROVED" } },
         { "CONVOYEUR", new[] { "VIEW","ADD","EDIT", "ENABLE", "DISABLE", "PRINT", "APPROVED" } },
         { "TRUCK", new[] { "VIEW","ADD","EDIT", "ENABLE","DISABLE", "PRINT", "APPROVED" } },
         { "ORDER", new[] { "VIEW","ADD","EDIT","DELETE","ENABLE","DISABLE", "PRINT", "LOAD" } },
@@ -248,7 +369,34 @@ namespace TransportManagementSystem.Data
 
                 Console.WriteLine("Zones de Tunisie seedées avec succès !");
             }
+            // Seed Governorates (Tunisia)
+            if (!dbContext.GeneralSettings.Any(p => p.ParameterType == "GOVERNORATE"))
+            {
+                var now = DateTime.UtcNow;
 
+                var tunisianGovernorates = new List<string>
+    {
+        "Tunis", "Ariana", "Ben Arous", "Manouba", "Bizerte", "Nabeul", "Zaghouan",
+        "Sousse", "Monastir", "Mahdia", "Sfax", "Kairouan", "Kasserine", "Sidi Bouzid",
+        "Gabès", "Médenine", "Tataouine", "Gafsa", "Tozeur", "Kébili", "Béja",
+        "Jendouba", "Le Kef", "Siliana"
+    };
+
+                int codeIndex = 1; // GOV1, GOV2, ...
+
+                var governorates = tunisianGovernorates.Select(name => new GeneralSettings
+                {
+                    ParameterType = "GOVERNORATE",
+                    ParameterCode = name,
+                    Description = $"Governorate {name}",
+                    Value = $"GOV{codeIndex++}"   // <-- optional Value field
+                }).ToList();
+
+                dbContext.GeneralSettings.AddRange(governorates);
+                dbContext.SaveChanges();
+
+                Console.WriteLine($"✔ {governorates.Count} Governorates seeded!");
+            }
             if (!dbContext.Citys.Any())
             {
                 var now = DateTime.UtcNow;
@@ -476,7 +624,7 @@ namespace TransportManagementSystem.Data
                 var now = DateTime.UtcNow;
                 var rnd = new Random();
                 var zones = dbContext.Zones.ToList();
-                var brands = new[] { "Volvo", "Scania", "MAN", "Mercedes", "DAF", "Iveco", "Renault" };
+                var MarqueTruckIds = new[] { "Volvo", "Scania", "MAN", "Mercedes", "DAF", "Iveco", "Renault" };
                 var colors = new[]
                                   {
                                     "#F5F5DC", // Beige
@@ -486,42 +634,107 @@ namespace TransportManagementSystem.Data
                                     "#000000"  // Noir
                                 };
 
-                var statuses = new[] { "Disponible", "En mission", "Maintenance" , "Hors service" };
+                var statuses = new[] { "Disponible", "En mission", "Maintenance", "Hors service" };
 
                 // Capacités palettes réalistes
                 var paletteCapacities = new[] { 10, 12, 14, 18, 20, 22, 26, 30, 33 };
-
-                var trucks = new List<Truck>();
-
-                for (int i = 1; i <= 25; i++)
+                if (!dbContext.TypeTrucks.Any())
                 {
-                    var serie = (i % 2 == 0) ? "RS" : "TN";
-
-                    int codeGouv = 100 + rnd.Next(0, 80);  
-                    int numero = 1000 + i;
-                    var zone = zones[rnd.Next(zones.Count)];
-                    trucks.Add(new Truck
+                    var types = new List<TypeTruck>
                     {
-                        Immatriculation = $"{codeGouv} {serie} {numero}",
-                        Brand = brands[rnd.Next(brands.Length)],
-                        Color = colors[rnd.Next(colors.Length)],
+                        new TypeTruck { Type = "Poids lourd", Capacity = 33, Unit = "Palette" },
+                        new TypeTruck { Type = "Utilitaire", Capacity = 12, Unit = "Palette" },
+                        new TypeTruck { Type = "Camion moyen", Capacity = 20, Unit = "Palette" }
+                    };
 
-                        CapacityUnit = "palettes",
-                        Capacity = paletteCapacities[rnd.Next(paletteCapacities.Length)],
+                    dbContext.TypeTrucks.AddRange(types);
+                    dbContext.SaveChanges();
 
-                        TechnicalVisitDate = now.AddMonths(rnd.Next(-6, 12)),
-                        Status = statuses[rnd.Next(statuses.Length)],
-                        IsEnable = true,
-                        ZoneId = zone.Id
-                    });
+                    Console.WriteLine("✔ TypeTrucks seedés !");
                 }
+                if (!dbContext.MarqueTrucks.Any())
+                {
+                    var brandsToSeed = new List<MarqueTruck>
+    {
+        new MarqueTruck { Name = "Volvo" },
+        new MarqueTruck { Name = "Scania" },
+        new MarqueTruck { Name = "MAN" },
+        new MarqueTruck { Name = "Mercedes" },
+        new MarqueTruck { Name = "DAF" },
+        new MarqueTruck { Name = "Iveco" },
+        new MarqueTruck { Name = "Renault" }
+    };
 
-                dbContext.Trucks.AddRange(trucks);
-                dbContext.SaveChanges();
+                    dbContext.MarqueTrucks.AddRange(brandsToSeed);
+                    dbContext.SaveChanges();
 
-                Console.WriteLine($"{trucks.Count} camions seedés (capacité palette) !");
+                    Console.WriteLine("✔ MarqueTrucks seeded successfully!");
+                }
+                if (!dbContext.GeneralSettings.Any(p =>
+                    p.ParameterType == "EMPLOYEE_CATEGORY" &&
+                    p.ParameterCode == "DRIVER"))
+                                {
+                                    var employeeCategories = new List<GeneralSettings>
+                    {
+                        new GeneralSettings
+                        {
+                            ParameterType = "EMPLOYEE_CATEGORY",
+                            ParameterCode = "DRIVER",
+                            Description = "Driver",
+                            Value = "DRIVER"
+                        }
+                    };
+
+                    dbContext.GeneralSettings.AddRange(employeeCategories);
+                    dbContext.SaveChanges();
+
+                    Console.WriteLine("✔ Employee Category DRIVER seeded !");
+                }
+                // ✅ Seed Trucks
+                if (!dbContext.Trucks.Any())
+                {
+                    var trucks = new List<Truck>();
+                    var typeVehicules = dbContext.TypeTrucks.ToList();
+                    var brands = dbContext.MarqueTrucks.ToList();
+
+					if (!typeVehicules.Any() || !brands.Any() || !zones.Any())
+                    {
+                        Console.WriteLine("⚠ Cannot seed trucks. Missing TypeTruck, MarqueTruck or Zone data.");
+                        return;
+                    }
+
+                    for (int i = 1; i <= 25; i++)
+                    {
+                        var serie = (i % 2 == 0) ? "RS" : "TN";
+
+                        int codeGouv = 100 + rnd.Next(0, 80);
+                        int numero = 1000 + i;
+
+                        var zone = zones[rnd.Next(zones.Count)];
+                        var selectedType = typeVehicules[rnd.Next(typeVehicules.Count)];
+                        var selectedBrand = brands[rnd.Next(brands.Count)];
+
+                        trucks.Add(new Truck
+                        {
+                            Immatriculation = $"{codeGouv} {serie} {numero}",
+                            MarqueTruckId = selectedBrand.Id,
+                            Color = colors[rnd.Next(colors.Length)],
+                            TechnicalVisitDate = now.AddMonths(rnd.Next(-6, 12)),
+                            DateOfFirstRegistration = now.AddYears(-rnd.Next(1, 8)),
+                            EmptyWeight = rnd.Next(3000, 12000),
+                            Status = statuses[rnd.Next(statuses.Length)],
+                            IsEnable = true,
+                            ZoneId = zone.Id,
+                            TypeTruckId = selectedType.Id
+                        });
+                    }
+
+                    dbContext.Trucks.AddRange(trucks);
+                    dbContext.SaveChanges();
+
+                    Console.WriteLine($"✔ {trucks.Count} Trucks seeded successfully!");
+                }
             }
-
         }
 
 

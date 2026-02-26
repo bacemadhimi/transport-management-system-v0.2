@@ -8,25 +8,25 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatDialogModule, MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { MatSelectModule } from '@angular/material/select';
 import { Http } from '../../../services/http';
+import { SettingsService } from '../../../services/settings.service'; // ADD THIS
 import { CreateOrderDto, IOrder, OrderStatus } from '../../../types/order';
 import Swal from 'sweetalert2';
 import { ICustomer } from '../../../types/customer';
 import { MatIconModule } from '@angular/material/icon';
 import { DateAdapter, MatNativeDateModule } from '@angular/material/core';
 import { MatDatepicker } from '@angular/material/datepicker';
-
 import { MatDatepickerModule } from '@angular/material/datepicker';
-
 import { MAT_DATE_LOCALE, MAT_DATE_FORMATS } from '@angular/material/core';
 import { FrDateAdapter } from '../../../types/fr-date-adapter';
-import { OrderSettingsService } from '../../../services/order-settings.service';
 import { Translation } from '../../../services/Translation';
 
+// REMOVE this import:
+// import { OrderSettingsService } from '../../../services/order-settings.service';
 
 @Component({
   selector: 'app-order-form',
   standalone: true,
-   providers: [
+  providers: [
     { provide: MAT_DATE_LOCALE, useValue: 'fr-FR' },
     { provide: DateAdapter, useClass: FrDateAdapter }
   ],
@@ -41,21 +41,19 @@ import { Translation } from '../../../services/Translation';
     MatDialogModule,
     MatSelectModule,
     MatIconModule,
-     MatDatepickerModule, 
+    MatDatepickerModule, 
   ],
   templateUrl: './order-form.html',
   styleUrls: ['./order-form.scss']
 })
-
-
 export class OrderFormComponent implements OnInit {
-    @ViewChild('picker') picker!: MatDatepicker<Date>;
+  @ViewChild('picker') picker!: MatDatepicker<Date>;
+  
   fb = inject(FormBuilder);
   httpService = inject(Http);
-  settingsService = inject(OrderSettingsService);
+  settingsService = inject(SettingsService); // REPLACE with SettingsService
   dialogRef = inject(MatDialogRef<OrderFormComponent>);
-data = inject<{ orderId?: number; loadingUnit?: string }>(MAT_DIALOG_DATA, { optional: true }) ?? {};
-
+  data = inject<{ orderId?: number; loadingUnit?: string }>(MAT_DIALOG_DATA, { optional: true }) ?? {};
 
   isSubmitting = false;
   showingAlert = false;
@@ -63,112 +61,126 @@ data = inject<{ orderId?: number; loadingUnit?: string }>(MAT_DIALOG_DATA, { opt
   orderStatusEnum = OrderStatus;
   loadingUnit: string = 'palette';
   minDate: Date = new Date(); 
-   maxDeliveryDate: Date = new Date(); 
-    allowEditDeliveryDate: boolean = true;
+  maxDeliveryDate: Date = new Date(); 
+  allowEditDeliveryDate: boolean = true;
   planningHorizon: number = 3; 
+  
   orderForm = this.fb.group({
     customerId: this.fb.control<number | null>(null, [Validators.required]),
     reference: this.fb.control<string>(''),
     weight: this.fb.control<number>(0, [Validators.required, Validators.min(0.1)]),
-  weightUnit: this.fb.control<string>('palette', [Validators.required]),
-
+    weightUnit: this.fb.control<string>('palette', [Validators.required]),
     deliveryAddress: this.fb.control<string>(''),
     notes: this.fb.control<string>(''),
-  
     deliveryDate: this.fb.control<Date | null>(null, [Validators.required])
   });
 
   ngOnInit() {
     this.loadCustomers();
-     if (this.data?.loadingUnit) {
+    
+    if (this.data?.loadingUnit) {
       this.loadingUnit = this.data.loadingUnit;
     }
-      this.settingsService.getSettings().subscribe({
-    next: (res) => {
-      this.allowEditDeliveryDate = res.allowEditDeliveryDate;
-        this.planningHorizon = res.planningHorizon;
-                this.updateMaxDeliveryDate(); // calculer max date
-      // Désactiver le contrôle si nécessaire
-      if (!this.allowEditDeliveryDate) {
-        this.orderForm.get('deliveryDate')?.disable();
+    
+    // Load settings from new SettingsService
+    this.settingsService.getOrderSettings().subscribe({
+      next: (settings) => {
+        this.allowEditDeliveryDate = settings.allowEditDeliveryDate;
+        this.planningHorizon = settings.planningHorizon;
+        this.loadingUnit = settings.loadingUnit || 'palette';
+        
+        this.updateMaxDeliveryDate(); // calculate max date
+        
+        // Disable control if not allowed
+        if (!this.allowEditDeliveryDate) {
+          this.orderForm.get('deliveryDate')?.disable();
+        }
+        
+        // Update weight unit with loading unit from settings
+        this.orderForm.patchValue({
+          weightUnit: this.loadingUnit
+        });
+      },
+      error: (err) => {
+        console.error('Erreur récupération settings:', err);
+        // Default values on error
+        this.allowEditDeliveryDate = true;
+        this.planningHorizon = 30;
+        this.loadingUnit = 'palette';
+        this.updateMaxDeliveryDate();
       }
-    },
-    error: (err) => console.error('Erreur récupération settings:', err)
-  });
+    });
+    
     if (this.data.orderId) {
       this.loadOrder(this.data.orderId);
     }
   }
 
-    // Calcul de la date max selon l'horizon et la date existante
+  // Calculate max date based on horizon and existing date
   updateMaxDeliveryDate(orderDate?: Date) {
     const today = new Date();
     const horizonDate = new Date();
     horizonDate.setDate(today.getDate() + this.planningHorizon);
 
-    // si date existante > horizon, on la garde
+    // if existing date > horizon, keep it
     if (orderDate && orderDate > horizonDate) {
       this.maxDeliveryDate = orderDate;
     } else {
       this.maxDeliveryDate = horizonDate;
     }
   }
-private formatDateLocal(date: Date | null | undefined): string | undefined {
-  if (!date) return undefined; 
+  
+  private formatDateLocal(date: Date | null | undefined): string | undefined {
+    if (!date) return undefined; 
 
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0'); 
-  const day = String(date.getDate()).padStart(2, '0');
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0'); 
+    const day = String(date.getDate()).padStart(2, '0');
 
-  return `${year}-${month}-${day}`;
-}
+    return `${year}-${month}-${day}`;
+  }
 
   private translation = inject(Translation);
-   t(key: string): string { return this.translation.t(key); }
+  t(key: string): string { return this.translation.t(key); }
 
-loadCustomers() {
- this.httpService.getCustomers().subscribe({
-  next: (res) => {
-    console.log('Customers loaded:', res); 
-    this.customers = res;
-  },
-  error: (err) => console.error(err)
-});
+  loadCustomers() {
+    this.httpService.getCustomers().subscribe({
+      next: (res) => {
+        console.log('Customers loaded:', res); 
+        this.customers = res;
+      },
+      error: (err) => console.error(err)
+    });
+  }
 
-}
+  loadOrder(id: number) {
+    this.httpService.getOrderById(id).subscribe({
+      next: (response: any) => {
+        const order = response.data;
 
-
-loadOrder(id: number) {
-  this.httpService.getOrderById(id).subscribe({
-    next: (response: any) => {
-
-      
-      const order = response.data;
-
-this.orderForm.patchValue({
-  customerId: order.customerId,
-  reference: order.reference,
-  weight: order.weight,
-    weightUnit: order.weightUnit, 
-  deliveryAddress: order.deliveryAddress || '',
-  notes: order.notes || '',
-deliveryDate: order.deliveryDate ? new Date(order.deliveryDate) : null,
- 
-});
- // mettre à jour maxDeliveryDate selon date existante
+        this.orderForm.patchValue({
+          customerId: order.customerId,
+          reference: order.reference,
+          weight: order.weight,
+          weightUnit: order.weightUnit || this.loadingUnit, 
+          deliveryAddress: order.deliveryAddress || '',
+          notes: order.notes || '',
+          deliveryDate: order.deliveryDate ? new Date(order.deliveryDate) : null,
+        });
+        
+        // update maxDeliveryDate based on existing date
         this.updateMaxDeliveryDate(order.deliveryDate ? new Date(order.deliveryDate) : undefined);
-      
-      Object.keys(this.orderForm.controls).forEach(key => {
-        const control = this.orderForm.get(key);
-        console.log(`📋 ${key}:`, control?.value, 'valid:', control?.valid);
-      });
-    },
-    error: (err) => {
-      console.error('Error:', err);
-  
-    }
-  });
-}
+        
+        Object.keys(this.orderForm.controls).forEach(key => {
+          const control = this.orderForm.get(key);
+          console.log(`📋 ${key}:`, control?.value, 'valid:', control?.valid);
+        });
+      },
+      error: (err) => {
+        console.error('Error:', err);
+      }
+    });
+  }
 
   onSubmit() {
     if (!this.orderForm.valid || this.isSubmitting) return;
@@ -182,20 +194,17 @@ deliveryDate: order.deliveryDate ? new Date(order.deliveryDate) : null,
       customerId: formValue.customerId!,
       reference: formValue.reference || undefined,
       weight: formValue.weight!,
-      weightUnit: formValue.weightUnit!,
+      weightUnit: formValue.weightUnit || this.loadingUnit,
       deliveryAddress: formValue.deliveryAddress || undefined,
       notes: formValue.notes || undefined,
-     customerCity: selectedCustomer?.gouvernorat ,
-deliveryDate: this.formatDateLocal(formValue.deliveryDate)
-
-
+      customerCity: selectedCustomer?.gouvernorat,
+      deliveryDate: this.formatDateLocal(formValue.deliveryDate)
     };
 
     if (this.data.orderId) {
       this.httpService.updateOrder(this.data.orderId, orderData).subscribe({
         next: () => {
-          //this.showSuccessAlert('Commande modifiée avec succès');
-           this.showSuccessAlert(this.t('ORDER_UPDATED_SUCCESS'));
+          this.showSuccessAlert(this.t('ORDER_UPDATED_SUCCESS'));
         },
         error: (err) => {
           this.handleError(err, 'modifier');
@@ -204,8 +213,6 @@ deliveryDate: this.formatDateLocal(formValue.deliveryDate)
     } else {
       this.httpService.createOrder(orderData).subscribe({
         next: () => {
-          
-          //this.showSuccessAlert('Commande ajoutée avec succès');
           this.showSuccessAlert(this.t('ADDED_SUCCESS'));
         },
         error: (err) => {

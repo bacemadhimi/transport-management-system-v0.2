@@ -29,7 +29,6 @@ namespace TransportManagementSystem.Data
 
         public DbSet<Delivery> Deliveries { get; set; }
         public DbSet<Order> Orders { get; set; }
-        public DbSet<OrderSetting> OrderSettings { get; set; }
         public DbSet<Traject> Trajects { get; set; }
         public DbSet<TrajectPoint> TrajectPoints { get; set; }
         public DbSet<Location> Locations { get; set; }
@@ -45,8 +44,12 @@ namespace TransportManagementSystem.Data
         public DbSet<Translation> Translations { get; set; }
         public DbSet<Zone> Zones { get; set; }
         public DbSet<City> Citys { get; set; }
-        public DbSet<TripSetting> TripSettings { get; set; }
-
+        public DbSet<TypeTruck> TypeTrucks { get; set; }
+        public DbSet<Employee> Employees { get; set; }
+        //public DbSet<Category> Categories { get; set; }
+        public DbSet<GeneralSettings> GeneralSettings { get; set; }
+        public DbSet<Notification> Notifications { get; set; }
+        public DbSet<UserNotification> UserNotifications { get; set; }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -61,7 +64,7 @@ namespace TransportManagementSystem.Data
                 .HasConversion<string>();
 
             modelBuilder.Entity<Truck>()
-                .Property(t => t.ImageBase64)
+                .Property(t => t.ImagesJson)
                 .HasColumnType("nvarchar(max)");
 
             modelBuilder.Entity<Trip>()
@@ -205,6 +208,34 @@ namespace TransportManagementSystem.Data
                 .HasForeignKey(d => d.ZoneId)
                 .IsRequired()
                 .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<Truck>(entity =>
+            {
+                entity.HasOne(t => t.TypeTruck)
+                    .WithMany(tv => tv.Trucks) 
+                    .HasForeignKey(t => t.TypeTruckId)  
+                    .OnDelete(DeleteBehavior.Cascade); 
+            });
+
+            modelBuilder.Entity<GeneralSettings>()
+                   .HasIndex(p => new { p.ParameterType, p.ParameterCode })
+                   .IsUnique();
+
+            modelBuilder.Entity<UserNotification>()
+                   .HasIndex(un => new { un.NotificationId, un.UserId })
+                   .IsUnique(); // Prevent duplicate entries
+
+            modelBuilder.Entity<UserNotification>()
+                .HasOne(un => un.Notification)
+                .WithMany(n => n.UserNotifications)
+                .HasForeignKey(un => un.NotificationId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<UserNotification>()
+                .HasOne(un => un.User)
+                .WithMany()
+                .HasForeignKey(un => un.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
 
         }
 

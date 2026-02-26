@@ -17,6 +17,7 @@ import {
 } from '../../types/truck';
 import { IDriver } from '../../types/driver';
 import * as L from 'leaflet';
+import { Http } from '../../services/http';
 
 @Component({
   selector: 'app-statistics',
@@ -153,7 +154,8 @@ export class StatisticsComponent implements OnInit, AfterViewInit, OnDestroy {
   };
 
   constructor(
-    private statisticsService: StatisticsService
+    private statisticsService: StatisticsService,
+    private httpService: Http
   ) {
     this.initializeDates();
     this.calculateRegionBounds();
@@ -163,6 +165,7 @@ export class StatisticsComponent implements OnInit, AfterViewInit, OnDestroy {
   // ========== CYCLES DE VIE ==========
   ngOnInit(): void {
     this.updateLastUpdateTime();
+    this.loadMarques();
     this.loadTrucks();
     this.loadDrivers();
   }
@@ -338,7 +341,7 @@ export class StatisticsComponent implements OnInit, AfterViewInit, OnDestroy {
         ...truck,
         zoneName: zone?.name || 'Non assigné',
         zoneCoordinates: zone ? { lat: zone.latitude, lng: zone.longitude } : undefined,
-        imageBase64: truck.imageBase64 || null
+        imageBase64: (truck.images && truck.images.length > 0) ? truck.images[0] : null
       };
     });
   }
@@ -943,7 +946,8 @@ export class StatisticsComponent implements OnInit, AfterViewInit, OnDestroy {
       const status = STATUS_CONFIG[truck.status] || STATUS_CONFIG['available'];
       const truckColor = truck.color || this.getStatusColor(truck.status);
       
-      const formattedImage = this.formatBase64Image(truck.imageBase64);
+      const firstImage = (truck.images && truck.images.length > 0) ? truck.images[0] : null;
+      const formattedImage = this.formatBase64Image(firstImage);
       const hasValidImage = !!formattedImage;
       
       let iconHtml = '';
@@ -1058,7 +1062,7 @@ export class StatisticsComponent implements OnInit, AfterViewInit, OnDestroy {
             ${truck.immatriculation}
           </div>
           <div style="color: #6c757d; font-size: 14px; margin-bottom: 8px;">
-            ${truck.brand} • ${truck.capacity}t
+            ${this.getMarqueName(truck.marqueTruckId)} • ${truck.typeTruck?.capacity}t
           </div>
           <div style="display: inline-block; padding: 4px 12px; background: ${color}20; border-radius: 20px; color: ${color}; font-weight: 600; font-size: 12px;">
             ${status.label}
@@ -1233,8 +1237,9 @@ private createDriverPopup(
   
   // ✅ Find truck by ID to get immatriculation
   const assignedTruck = driver.idCamion ? this.trucks.find(t => t.id === driver.idCamion) : null;
+  const marqueName = assignedTruck ? this.getMarqueName(assignedTruck.marqueTruckId) : '';
   const truckDisplay = assignedTruck 
-    ? `${assignedTruck.immatriculation} - ${assignedTruck.brand}` 
+    ? `${assignedTruck.immatriculation} - ${marqueName}` 
     : 'Non assigné';
   
   const popup = document.createElement('div');
@@ -1502,12 +1507,13 @@ private createDriverPopup(
   }
 
   // ========== UTILITAIRES ==========
-  getTruckDisplay(truck: ITruck): string {
-    const status = STATUS_CONFIG[truck.status]?.label || truck.status;
-    const zone = TUNISIA_ZONES.find(z => z.id === truck.zoneId);
-    const zoneName = zone?.name || 'Non assigné';
-    return `${truck.immatriculation} - ${truck.brand} (${truck.capacity}t) - ${status} - ${zoneName}`;
-  }
+getTruckDisplay(truck: ITruck): string {
+  const status = STATUS_CONFIG[truck.status]?.label || truck.status;
+  const zone = TUNISIA_ZONES.find(z => z.id === truck.zoneId);
+  const zoneName = zone?.name || 'Non assigné';
+  const marqueName = this.getMarqueName(truck.marqueTruckId);
+  return `${truck.immatriculation} - ${marqueName} (${truck.typeTruck?.capacity}t) - ${status} - ${zoneName}`;
+}
 
   getDriverDisplay(driver: IDriver): string {
     const status = this.getDriverStatusLabel(driver);
@@ -1516,11 +1522,12 @@ private createDriverPopup(
     return `${driver.name} - ${driver.permisNumber} - ${status} - ${zoneName}`;
   }
 
-  getSelectedTruckName(): string {
-    if (!this.filter.truckId) return 'Tous les Camions';
-    const truck = this.trucks.find(t => t.id === this.filter.truckId);
-    return truck ? `${truck.immatriculation} (${truck.brand})` : 'Camion Sélectionné';
-  }
+getSelectedTruckName(): string {
+  if (!this.filter.truckId) return 'Tous les Camions';
+  const truck = this.trucks.find(t => t.id === this.filter.truckId);
+  const marqueName = truck ? this.getMarqueName(truck.marqueTruckId) : '';
+  return truck ? `${truck.immatriculation} (${marqueName})` : 'Camion Sélectionné';
+}
 
   getSelectedDriverName(): string {
     if (!this.filter.driverId) return 'Tous les Chauffeurs';
@@ -1576,4 +1583,26 @@ private createDriverPopup(
   toggleHelp(): void {
     this.showHelp = !this.showHelp;
   }
+  marqueMap: Map<number, string> = new Map();
+
+// Add this method to load marques
+private loadMarques(): void {
+  this.httpService.getMarqueTrucks().subscribe({
+    next: (marques) => {
+      this.marqueMap.clear();
+      marques.forEach(marque => {
+        this.marqueMap.set(marque.id, marque.name);
+      });
+    },
+    error: (error) => {
+      console.error('Error loading marques:', error);
+    }
+  });
+}
+
+// Add this method to get marque name
+getMarqueName(marqueId?: number): string {
+  if (!marqueId) return 'N/A';
+  return this.marqueMap.get(marqueId) || 'N/A';
+}
 }

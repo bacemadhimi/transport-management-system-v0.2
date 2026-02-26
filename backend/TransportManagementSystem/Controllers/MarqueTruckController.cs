@@ -121,5 +121,11 @@ namespace TransportManagementSystem.Controllers
             return Ok(new { message = "La marque a été supprimée avec succès" });
         }
 
+        [HttpGet("list")]
+        public async Task<ActionResult<IEnumerable<MarqueTruck>>> GetMarqueTrucksList()
+        {
+            var MarqueTrucks = await marqueTruckRepository.GetAll();
+            return Ok(MarqueTrucks);
+        }
     }
 }

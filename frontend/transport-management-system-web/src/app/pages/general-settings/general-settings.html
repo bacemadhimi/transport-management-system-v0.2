@@ -1,0 +1,66 @@
+<div class="settings-page">
+  <div class="settings-header">
+    <h1 class="settings-title">Paramètres généraux</h1>
+
+    <div class="settings-header__actions">
+      <div class="filters-container">
+        <!-- Search field - searches in ParameterType, ParameterCode, Description -->
+        <mat-form-field appearance="outline" class="settings-search">
+          <mat-label>Rechercher</mat-label>
+          <input
+            matInput
+            type="text"
+            [formControl]="searchControl"
+            placeholder="Type, code ou description"
+          />
+          <mat-icon matSuffix>search</mat-icon>
+          <mat-hint>Recherche dans type, code et description</mat-hint>
+        </mat-form-field>
+
+        <!-- Type filter - exact match on ParameterType -->
+        <mat-form-field appearance="outline" class="settings-type-filter">
+          <mat-label>Filtrer par type</mat-label>
+          <mat-select [formControl]="typeControl">
+            <mat-option value="">Tous les types</mat-option>
+            <mat-option *ngFor="let type of parameterTypes" [value]="type">
+              {{ formatParameterType(type) }}
+            </mat-option>
+          </mat-select>
+          <mat-icon matSuffix>filter_list</mat-icon>
+          <mat-hint>Filtrage exact par type</mat-hint>
+        </mat-form-field>
+      </div>
+
+      <button *ngIf="auth.hasPermission('PARAMETER_ADD')" 
+              mat-flat-button 
+              color="primary"
+              class="settings-add-btn" 
+              (click)="add()">
+        <mat-icon>add</mat-icon>
+        Ajouter
+      </button>
+    </div>
+  </div>
+
+  <!-- Display current filters (optional) -->
+  <div class="active-filters" *ngIf="filter.parameterType || filter.search">
+    <span class="filter-label">Filtres actifs:</span>
+    <span class="filter-badge" *ngIf="filter.parameterType">
+      Type: {{ formatParameterType(filter.parameterType) }}
+      <mat-icon (click)="typeControl.setValue('')">close</mat-icon>
+    </span>
+    <span class="filter-badge" *ngIf="filter.search">
+      Recherche: "{{ filter.search }}"
+      <mat-icon (click)="searchControl.setValue('')">close</mat-icon>
+    </span>
+  </div>
+
+<app-table
+  [PagedData]="pagedParameterData"
+  [pageIndex]="filter.pageIndex ?? 0"
+  [pageSize]="filter.pageSize ?? 10"
+  [displayedColumns]="showCols"
+  (rowClick)="onRowClick($event)"
+  (onPageChange)="pageChange($event)">
+</app-table>
+</div>

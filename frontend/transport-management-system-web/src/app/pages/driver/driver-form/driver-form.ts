@@ -10,6 +10,7 @@ import { MatDialogModule, MAT_DIALOG_DATA, MatDialogRef } from '@angular/materia
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatIconModule } from '@angular/material/icon';
 import { Http } from '../../../services/http';
+import { SettingsService } from '../../../services/settings.service'; // ADD THIS
 import { IDriver } from '../../../types/driver';
 import { IZone } from '../../../types/zone';
 import Swal from 'sweetalert2';
@@ -18,8 +19,10 @@ import { Subscription } from 'rxjs';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { ICity } from '../../../types/city';
 import { Translation } from '../../../services/Translation';
-import { TripSettingsService } from '../../../services/trips-settings.service';
-import { ITripSettings } from '../../../types/trip';
+
+// REMOVE this import:
+// import { TripSettingsService } from '../../../services/trips-settings.service';
+// import { ITripSettings } from '../../../types/trip';
 
 @Component({
   selector: 'app-driver-form',
@@ -46,7 +49,7 @@ export class DriverForm implements OnInit, OnDestroy {
   httpService = inject(Http);
   dialogRef = inject(MatDialogRef<DriverForm>);
   data = inject<{ driverId?: number }>(MAT_DIALOG_DATA, { optional: true }) ?? {};
-  tripSettingsService = inject(TripSettingsService);
+  settingsService = inject(SettingsService); // REPLACE with SettingsService
   translation = inject(Translation);
 
   @ViewChild('phoneInput') phoneInput!: ElementRef<HTMLInputElement>;
@@ -54,10 +57,8 @@ export class DriverForm implements OnInit, OnDestroy {
   
   private iti: any;
   
- 
-  tripSettings: ITripSettings | null = null;
+  tripSettings: any = null; // You can define a proper interface or use 'any'
   private settingsSubscription: Subscription | null = null;
-
 
   imageBase64: string | null = null;
   imagePreview: string | null = null;
@@ -66,7 +67,6 @@ export class DriverForm implements OnInit, OnDestroy {
   hasExistingImage = false;
   selectedFile: File | null = null;
   
- 
   trucks: any[] = [];
   loadingTrucks: boolean = false;
   isSubmitting = false;
@@ -77,7 +77,6 @@ export class DriverForm implements OnInit, OnDestroy {
   loadingCities = false;
   cities: ICity[] = [];
 
-  
   driverForm = this.fb.group({
     name: this.fb.control<string>('', [Validators.required]),
     email: this.fb.control<string>('', [Validators.required, Validators.email]),
@@ -91,7 +90,6 @@ export class DriverForm implements OnInit, OnDestroy {
 
   statuses = ['Disponible', 'En mission', 'Indisponible'];
 
- 
   ngOnInit() {
     this.loadActiveZones();
     this.loadTrucks();
@@ -117,16 +115,15 @@ export class DriverForm implements OnInit, OnDestroy {
     }
   }
 
-  
   private loadTripSettings() {
-    this.tripSettingsService.getSettings().subscribe({
+    this.settingsService.getTripSettings().subscribe({
       next: (settings) => {
         this.tripSettings = settings;
         this.updateTruckFieldValidation();
       },
       error: (error) => {
         console.error('Erreur chargement paramètres:', error);
-   
+        // Default settings if API fails
         this.tripSettings = {
           linkDriverToTruck: true,
           allowEditTrips: true,
@@ -144,11 +141,13 @@ export class DriverForm implements OnInit, OnDestroy {
   }
 
   private listenToSettingsChanges() {
-    this.settingsSubscription = this.tripSettingsService.settingsChanges$.subscribe({
+    this.settingsSubscription = this.settingsService.tripSettings$.subscribe({
       next: (updatedSettings) => {
-        console.log('🔄 Paramètres mis à jour:', updatedSettings);
-        this.tripSettings = updatedSettings;
-        this.updateTruckFieldValidation();
+        if (updatedSettings) {
+          console.log('🔄 Paramètres mis à jour:', updatedSettings);
+          this.tripSettings = updatedSettings;
+          this.updateTruckFieldValidation();
+        }
       }
     });
   }
@@ -159,12 +158,12 @@ export class DriverForm implements OnInit, OnDestroy {
     if (!truckControl) return;
     
     if (this.tripSettings?.linkDriverToTruck) {
-     
+      // Champ requis si linkDriverToTruck est true
       truckControl.setValidators([Validators.required]);
       truckControl.enable({ emitEvent: false });
       console.log('🚛 Champ camion REQUIS');
     } else {
-     
+      // Champ optionnel si linkDriverToTruck est false
       truckControl.clearValidators();
       truckControl.setValue(null, { emitEvent: false }); 
       truckControl.disable({ emitEvent: false });
@@ -173,7 +172,6 @@ export class DriverForm implements OnInit, OnDestroy {
     
     truckControl.updateValueAndValidity({ emitEvent: false });
   }
-
 
   private loadTrucks() {
     this.loadingTrucks = true;
@@ -268,7 +266,6 @@ export class DriverForm implements OnInit, OnDestroy {
     this.subscriptions.push(driverSub);
   }
 
-
   onSubmit() {
     if (!this.driverForm.valid || this.isSubmitting) return;
 
@@ -297,7 +294,6 @@ export class DriverForm implements OnInit, OnDestroy {
           this.showingAlert = true;
           Swal.fire({
             icon: 'success',
-           // title: 'Chauffeur modifié avec succès',
             title: this.t('DRIVER_UPDATED_SUCCESS'),
             confirmButtonText: 'OK',
             allowOutsideClick: false,
@@ -323,7 +319,6 @@ export class DriverForm implements OnInit, OnDestroy {
           this.showingAlert = true;
           Swal.fire({
             icon: 'success',
-            //title: 'Chauffeur ajouté avec succès',
             title: this.t('DRIVER_ADDED_SUCCESS'),
             confirmButtonText: 'OK',
             allowOutsideClick: false,
@@ -348,7 +343,6 @@ export class DriverForm implements OnInit, OnDestroy {
   onCancel() {
     this.dialogRef.close();
   }
-
 
   onFileSelected(event: Event) {
     const file = (event.target as HTMLInputElement).files?.[0];
@@ -462,7 +456,6 @@ export class DriverForm implements OnInit, OnDestroy {
     });
   }
 
-
   private onZoneChange(zoneId: number | null): void {
     if (!zoneId) {
       this.cities = [];
@@ -503,7 +496,6 @@ export class DriverForm implements OnInit, OnDestroy {
     this.subscriptions.push(citiesSub);
   }
 
- 
   ngAfterViewInit() {
     const loadScript = (src: string) =>
       new Promise<void>((resolve, reject) => {
@@ -554,7 +546,6 @@ export class DriverForm implements OnInit, OnDestroy {
         console.error('Failed to load intl-tel-input scripts.');
       });
   }
-
 
   t(key: string): string {
     return this.translation.t(key);

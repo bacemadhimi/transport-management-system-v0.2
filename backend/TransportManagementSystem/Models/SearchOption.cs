@@ -26,6 +26,7 @@ namespace TransportManagementSystem.Models
         public int? DriverId { get; set; }
         public DateTime? StartDate { get; set; }
         public DateTime? EndDate { get; set; }
+        public string? ParameterType { get; set; }
     }
     public class PagedData<T>
     {

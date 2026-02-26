@@ -1,10 +1,10 @@
 import { HttpClient } from '@angular/common/http';
-import { inject, Injectable, signal } from '@angular/core';
+import { inject, Injectable, signal, NgZone } from '@angular/core';
 import { environment } from '../../environments/environment.development';
 import { IAuthToken } from '../types/auth';
 import { Router } from '@angular/router';
 import { IUser } from '../types/user';
-import { Observable } from 'rxjs';
+import { Observable, tap } from 'rxjs';
 import { JwtHelperService } from '@auth0/angular-jwt';
 
 @Injectable({ providedIn: 'root' })
@@ -12,11 +12,23 @@ export class Auth {
   http = inject(HttpClient);
   user = signal<IUser | null>(null);
   router = inject(Router);
+  private ngZone = inject(NgZone);
   private jwtHelper = new JwtHelperService();
+  
+  // Timer for auto logout
+  private logoutTimer: any;
+  private tokenCheckInterval: any;
 
   // ----------- Auth & Token ----------------
   login(email: string, password: string) {
-    return this.http.post<IAuthToken>(`${environment.apiUrl}/api/Auth/login`, { email, password });
+    return this.http.post<IAuthToken>(`${environment.apiUrl}/api/Auth/login`, { email, password })
+      .pipe(
+        tap((authToken) => {
+          this.saveToken(authToken);
+          this.setLogoutTimer(authToken.token);
+          this.startTokenCheck(); // Start checking token expiration
+        })
+      );
   }
 
   saveToken(authToken: IAuthToken) {
@@ -25,15 +37,131 @@ export class Auth {
   }
 
   logout() {
+    console.log('Logging out - token expired');
+    
+    // Clear all timers
+    if (this.logoutTimer) {
+      clearTimeout(this.logoutTimer);
+      this.logoutTimer = null;
+    }
+    
+    if (this.tokenCheckInterval) {
+      clearInterval(this.tokenCheckInterval);
+      this.tokenCheckInterval = null;
+    }
+    
     localStorage.removeItem('authLila');
     localStorage.removeItem('token');
-    this.router.navigateByUrl("/login");
+    this.user.set(null);
+    
+    // Force redirect to login
+    this.ngZone.run(() => {
+      this.router.navigateByUrl('/login', { replaceUrl: true });
+    });
+  }
+
+  // Start periodic token check (every second for real-time)
+  private startTokenCheck() {
+    // Clear any existing interval
+    if (this.tokenCheckInterval) {
+      clearInterval(this.tokenCheckInterval);
+    }
+    
+    // Check token every second for real-time expiration
+    this.ngZone.runOutsideAngular(() => {
+      this.tokenCheckInterval = setInterval(() => {
+        this.ngZone.run(() => {
+          this.checkTokenExpiration();
+        });
+      }, 1000); // Check every 1 second
+    });
+  }
+
+  private checkTokenExpiration() {
+    const token = localStorage.getItem('token');
+    const currentUrl = this.router.url;
+    
+    // Don't check on login page
+    if (currentUrl.includes('/login')) {
+      return;
+    }
+    
+    if (token) {
+      try {
+        if (this.jwtHelper.isTokenExpired(token)) {
+          console.log('Token expired at:', new Date().toLocaleTimeString());
+          this.logout();
+        }
+      } catch (error) {
+        console.error('Error checking token:', error);
+        this.logout();
+      }
+    } else if (!currentUrl.includes('/login')) {
+      // No token but not on login page
+      this.logout();
+    }
+  }
+
+  // Set timer to auto logout when token expires
+  private setLogoutTimer(token: string) {
+    // Clear any existing timer
+    if (this.logoutTimer) {
+      clearTimeout(this.logoutTimer);
+    }
+    
+    const expirationDate = this.jwtHelper.getTokenExpirationDate(token);
+    if (!expirationDate) return;
+    
+    const expiresIn = expirationDate.getTime() - new Date().getTime();
+    
+    console.log(`Token expires in ${Math.floor(expiresIn / 1000)} seconds`);
+    
+    // Set timer to logout when token expires
+    this.logoutTimer = setTimeout(() => {
+      console.log('Token expiration timer triggered');
+      this.logout();
+    }, expiresIn);
+  }
+
+  // Check token on app initialization
+  checkTokenOnInit() {
+    const token = localStorage.getItem('token');
+    if (token) {
+      try {
+        if (this.jwtHelper.isTokenExpired(token)) {
+          console.log('Token expired on init');
+          this.logout();
+          return false;
+        } else {
+          console.log('Token valid on init');
+          this.setLogoutTimer(token);
+          this.startTokenCheck(); // Start checking
+          return true;
+        }
+      } catch (error) {
+        console.error('Error checking token on init:', error);
+        this.logout();
+        return false;
+      }
+    }
+    return false;
   }
 
   get isLoggedIn(): boolean {
     const token = localStorage.getItem('token');
     if (!token) return false;
-    return !this.jwtHelper.isTokenExpired(token);
+    
+    try {
+      if (this.jwtHelper.isTokenExpired(token)) {
+        console.log('Token expired in getter');
+        this.logout(); // This will redirect
+        return false;
+      }
+      return true;
+    } catch (error) {
+      console.error('Error in isLoggedIn:', error);
+      return false;
+    }
   }
 
   get authDetail(): IAuthToken | null {
@@ -48,42 +176,38 @@ export class Auth {
   }
 
   hasPermission(permission: string): boolean {
-    if (this.hasRole('SuperAdmin')) return true; // SuperAdmin a tout
+    if (this.hasRole('SuperAdmin')) return true;
     const permissions = this.authDetail?.permissions ?? [];
     return permissions.includes(permission);
   }
 
-  /**
-   * Vérifie si l'utilisateur a au moins un droit sur une entité
-   * @param entity : nom de l'entité, ex: 'CONVOYEUR', 'TRUCK'
-   */
   hasEntityAccess(entity: string): boolean {
     if (this.hasRole('SuperAdmin')) return true;
     const perms = this.authDetail?.permissions ?? [];
-    // Cherche si l'utilisateur a au moins un droit CRUD ou PRINT sur l'entité
     return perms.some(p => p.startsWith(entity + '_'));
   }
 
-hasAccueilAccess(): boolean { return this.hasEntityAccess('ACCUEIL'); }
-hasChauffeurAccess(): boolean { return this.hasEntityAccess('CHAUFFEUR'); }
-hasConvoyeurAccess(): boolean { return this.hasEntityAccess('CONVOYEUR'); }
-hasTruckAccess(): boolean { return this.hasEntityAccess('TRUCK'); }
-hasOrderAccess(): boolean { return this.hasEntityAccess('ORDER'); }
-hasTravelAccess(): boolean { return this.hasEntityAccess('TRAVEL'); }
-hasHistoriqueTravelAccess(): boolean { return this.hasEntityAccess('HISTORIQUE_TRAVEL'); }
-hasLocationAccess(): boolean { return this.hasEntityAccess('LOCATION'); }
-hasUserAccess(): boolean { return this.hasEntityAccess('USER'); }
-hasUserGroupAccess(): boolean { return this.hasEntityAccess('USER_GROUP'); }
-hasPermissionAccess(): boolean { return this.hasEntityAccess('PERMISSION'); }
-hasCustomerAccess(): boolean { return this.hasEntityAccess('CUSTOMER'); }
-hasFuelVendorAccess(): boolean { return this.hasEntityAccess('FUEL_VENDOR'); }
-hasFuelAccess(): boolean { return this.hasEntityAccess('FUEL'); }
-hasMechanicAccess(): boolean { return this.hasEntityAccess('MECHANIC'); }
-hasVendorAccess(): boolean { return this.hasEntityAccess('VENDOR'); }
-hasTruckMaintenanceAccess(): boolean { return this.hasEntityAccess('TRUCK_MAINTENANCE'); }
-hasOvertimeAccess(): boolean { return this.hasEntityAccess('OVERTIME'); }
-hasAvailabilityAccess(): boolean { return this.hasEntityAccess('AVAILABILITY'); }
-hasDayoffAccess(): boolean { return this.hasEntityAccess('DAYOFF'); }
+  // Helper methods for entity access
+  hasAccueilAccess(): boolean { return this.hasEntityAccess('ACCUEIL'); }
+  hasChauffeurAccess(): boolean { return this.hasEntityAccess('CHAUFFEUR'); }
+  hasConvoyeurAccess(): boolean { return this.hasEntityAccess('CONVOYEUR'); }
+  hasTruckAccess(): boolean { return this.hasEntityAccess('TRUCK'); }
+  hasOrderAccess(): boolean { return this.hasEntityAccess('ORDER'); }
+  hasTravelAccess(): boolean { return this.hasEntityAccess('TRAVEL'); }
+  hasHistoriqueTravelAccess(): boolean { return this.hasEntityAccess('HISTORIQUE_TRAVEL'); }
+  hasLocationAccess(): boolean { return this.hasEntityAccess('LOCATION'); }
+  hasUserAccess(): boolean { return this.hasEntityAccess('USER'); }
+  hasUserGroupAccess(): boolean { return this.hasEntityAccess('USER_GROUP'); }
+  hasPermissionAccess(): boolean { return this.hasEntityAccess('PERMISSION'); }
+  hasCustomerAccess(): boolean { return this.hasEntityAccess('CUSTOMER'); }
+  hasFuelVendorAccess(): boolean { return this.hasEntityAccess('FUEL_VENDOR'); }
+  hasFuelAccess(): boolean { return this.hasEntityAccess('FUEL'); }
+  hasMechanicAccess(): boolean { return this.hasEntityAccess('MECHANIC'); }
+  hasVendorAccess(): boolean { return this.hasEntityAccess('VENDOR'); }
+  hasTruckMaintenanceAccess(): boolean { return this.hasEntityAccess('TRUCK_MAINTENANCE'); }
+  hasOvertimeAccess(): boolean { return this.hasEntityAccess('OVERTIME'); }
+  hasAvailabilityAccess(): boolean { return this.hasEntityAccess('AVAILABILITY'); }
+  hasDayoffAccess(): boolean { return this.hasEntityAccess('DAYOFF'); }
 
   get profileImage(): string | null {
     const pic = this.user()?.profileImage;
@@ -111,16 +235,15 @@ hasDayoffAccess(): boolean { return this.hasEntityAccess('DAYOFF'); }
       error: () => this.user.set(null)
     });
   }
-   changePassword(data: { oldPassword: string; newPassword: string }): Observable<any> {
+  
+  changePassword(data: { oldPassword: string; newPassword: string }): Observable<any> {
     return this.http.post(`${environment.apiUrl}/api/auth/change-password`, data);
   }
-  // Dans votre service Auth, ajoutez cette méthode
-loginWithGoogle(): Observable<any> {
-  // Implémentation selon votre backend
-  // Exemple avec AngularFire ou OAuth2
-  return this.http.post(`${environment.apiUrl}/auth/google`, {});
   
-  // Ou avec Firebase
-  // return from(this.afAuth.signInWithPopup(new GoogleAuthProvider()));
-}
+  loginWithGoogle(): Observable<any> {
+    return this.http.post(`${environment.apiUrl}/auth/google`, {});
+  }
+   getToken(): string | null {
+    return localStorage.getItem('token'); 
+  }
 }

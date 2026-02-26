@@ -13,15 +13,20 @@ public class Truck
     public string Immatriculation { get; set; }
 
     [Required]
-    public string CapacityUnit { get; set; } = "tonnes";
-    [Required]
-    public int Capacity { get; set; }
-
-    [Required]
     public DateTime TechnicalVisitDate { get; set; }
 
     [Required]
-    public string Brand { get; set; } 
+    public DateTime DateOfFirstRegistration { get; set; }
+
+    [Required]
+    public int EmptyWeight { get; set; }
+
+    [Required]
+    public int MarqueTruckId { get; set; }
+
+    [ForeignKey("MarqueTruckId")]
+    public MarqueTruck? MarqueTruck { get; set; }
+
 
     [Required]
     public string Status { get; set; }
@@ -29,9 +34,12 @@ public class Truck
     [Required]
     public string Color { get; set; }
 
-    public string? ImageBase64 { get; set; }
+    
+    public string? ImagesJson { get; set; }
     public bool IsEnable { get; set; } = true;
     public virtual ICollection<TruckAvailability>? Availabilities { get; set; }
     public int? ZoneId { get; set; }
     public Zone? Zone { get; set; }
+    public int TypeTruckId { get; set; }
+    public TypeTruck? TypeTruck { get; set; }
 }

@@ -7,6 +7,7 @@ import { AuthGuard } from './services/auth.guard';
 import { User } from './pages/user/user';
 import { Truck } from './pages/truck/truck';
 import { Driver } from './pages/driver/driver';
+import { Employee } from './pages/employee/employee';
 import { Trip } from './pages/trip/trip';
 import { HistoricTrip } from './pages/historic-trip/historic-trip';
 
@@ -32,10 +33,12 @@ import { ZoneComponent } from './pages/zone/zone';
 import { CityComponent } from './pages/city/city';
 
 import { StatisticsComponent } from './pages/statistics/statistics.component';
-import { OrderSettingsComponent } from './pages/order-settings/order-settings';
 import { TripCreatePageComponent } from './pages/trip-create-page.component/trip-create-page.component';
 import { TripEditPageComponent } from './pages/trip-edit-page.component/trip-edit-page.component';
-import { TripsSettingsComponent } from './pages/trips-settings/trips-settings';
+import { TypeTruck } from './pages/type-truck/type-truck';
+import { Categories } from './pages/categories/categories';
+import { Marque } from './pages/marque/marque';
+import { GeneralSettings } from './pages/general-settings/general-settings';
 
 
 export const routes: Routes = [
@@ -60,6 +63,18 @@ export const routes: Routes = [
   },
 
   {
+    path: 'employees',
+    component: Employee,
+    canActivate: [AuthGuard]
+  },
+
+  {
+    path: 'categories',
+    component: Categories,
+    canActivate: [AuthGuard]
+  },
+
+  {
     path: 'profile',
     component: Profile,
     canActivate: [AuthGuard]
@@ -68,6 +83,7 @@ export const routes: Routes = [
   {
   path: 'user',
   component: User,
+  canActivate: [AuthGuard]
 },
   {
     path: "trucks",
@@ -192,22 +208,33 @@ export const routes: Routes = [
   canActivate: [AuthGuard]
 },
   {
-  path: 'order-settings',
-  component: OrderSettingsComponent,
-  canActivate: [AuthGuard]
-}
-,
-  {
     path: 'trips/create',
-    component: TripCreatePageComponent
+    component: TripCreatePageComponent,
+     canActivate: [AuthGuard] 
   },
   {
     path: 'trips/edit/:id',
-    component: TripEditPageComponent
+    component: TripEditPageComponent,
+     canActivate: [AuthGuard] 
   },
-   {
-  path: 'trips-settings',
-  component: TripsSettingsComponent,
+{
+  path: 'type-trucks',
+  component: TypeTruck,
   canActivate: [AuthGuard]
-}
+},
+{
+  path: 'marques',
+  component: Marque,
+  canActivate: [AuthGuard],
+   
+},
+{
+    path: 'general-settings',
+    component: GeneralSettings,
+    canActivate: [AuthGuard],
+  },
+  {
+    path: '**',
+    redirectTo: 'login'
+  }
 ];

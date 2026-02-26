@@ -25,121 +25,361 @@
         routerLink="/profile"
       >
  
-      <!-- Permissions + label -->
-      <div class="relative flex items-center gap-2">
-        <mat-icon
-          class="text-white cursor-pointer hover:text-gray-200 transition-colors"
-          (click)="showPermissions = !showPermissions"
-        >
-          settings
-        </mat-icon>
-        
-        <!-- DROPDOWN MENU -->
-        <div
-          *ngIf="showPermissions"
-          class="absolute right-0 top-10 w-96 bg-white rounded-lg shadow-2xl border border-gray-100 z-50 overflow-hidden"
-        >
-          <!-- Titre du menu -->
-          <div class="px-6 py-4 font-semibold text-gray-800 border-b bg-gradient-to-r from-gray-50 to-gray-100">
-            <div class="flex items-center gap-2">
-              <mat-icon class="text-blue-600">settings</mat-icon>
-              {{ t('SETTINGS') }}
-            </div>
-          </div>
- 
-          <!-- Heures Supplémentaires -->
-          <a
-            *ngIf="authService.hasRole('SuperAdmin') || authService.hasEntityAccess('OVERTIME')"
-            routerLink="/overtime"
-            (click)="showPermissions = false"
-            class="flex items-center gap-3 px-6 py-4 text-base text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors border-b border-gray-100"
-          >
-            <mat-icon class="text-2xl text-blue-500">schedule</mat-icon>
-            <span class="font-medium">{{ t('OVERTIME') }}</span>
-          </a>
- 
-          <!-- Disponibilités chauffeurs -->
-          <a
-            *ngIf="authService.hasRole('SuperAdmin') || authService.hasEntityAccess('DRIVER_AVAILABILITY')"
-            routerLink="/availability"
-            (click)="showPermissions = false"
-            class="flex items-center gap-3 px-6 py-4 text-base text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors border-b border-gray-100"
-          >
-            <mat-icon class="text-2xl text-green-500">event_available</mat-icon>
-            <span class="font-medium">{{ t('DRIVERS') }}</span>
-          </a>
- 
-          <!-- Disponibilités camions -->
-          <a
-            *ngIf="authService.hasRole('SuperAdmin') || authService.hasEntityAccess('TRUCK_AVAILABILITY')"
-            routerLink="/truck-availability"
-            (click)="showPermissions = false"
-            class="flex items-center gap-3 px-6 py-4 text-base text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors border-b border-gray-100"
-          >
-            <mat-icon class="text-2xl text-orange-500">local_shipping</mat-icon>
-            <span class="font-medium">{{ t('TRUCKS') }}</span>
-          </a>
- 
-          <!-- Jours fériés -->
-          <a
-            *ngIf="authService.hasRole('SuperAdmin') || authService.hasEntityAccess('DAYOFF')"
-            routerLink="/dayoff"
-            (click)="showPermissions = false"
-            class="flex items-center gap-3 px-6 py-4 text-base text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors border-b border-gray-100"
-          >
-            <mat-icon class="text-2xl text-purple-500">event_busy</mat-icon>
-            <span class="font-medium">{{ t('DAYOFF') }}</span>
-          </a>
- 
-          <!-- Synchronisation ERP -->
-          <a
-            *ngIf="authService.hasRole('SuperAdmin')"
-            routerLink="/sync"
-            (click)="showPermissions = false"
-            class="flex items-center gap-3 px-6 py-4 text-base text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors border-b border-gray-100"
-          >
-            <mat-icon class="text-2xl text-cyan-500">sync</mat-icon>
-            <span class="font-medium">{{ t('SYNC') }}</span>
-          </a>
-
-          <!-- Paramètres Commandes -->
-          <a
-            *ngIf="authService.hasRole('SuperAdmin')"
-            routerLink="/order-settings"
-            (click)="showPermissions = false"
-            class="flex items-center gap-3 px-6 py-4 text-base text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors"
-          >
-            <mat-icon class="text-2xl text-indigo-500">settings</mat-icon>
-            <span class="font-medium">{{ t('ORDER_SETTINGS') }}</span>
-          </a>
- <a
-            *ngIf="authService.hasRole('SuperAdmin')"
-            routerLink="/trips-settings"
-            (click)="showPermissions = false"
-            class="flex items-center gap-3 px-6 py-4 text-base text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors"
-          >
-            <mat-icon class="text-2xl text-indigo-500">map</mat-icon>
-            <span class="font-medium">{{ t('TRIP_SETTINGS') }}</span>
-          </a>
+<!-- Permissions + label -->
+<div class="relative flex items-center gap-2">
+  <button
+    mat-icon-button
+    class="relative overflow-hidden group"
+    (click)="showPermissions = !showPermissions"
+    [class.active]="showPermissions"
+  >
+    <!-- Animated background -->
+    <div class="absolute inset-0 bg-white opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
+    
+    <!-- Icon with rotation animation -->
+    <mat-icon 
+      class="text-white transition-all duration-500"
+      [class.rotate-90]="showPermissions"
+    >
+      settings
+    </mat-icon>
+  </button>
+  
+  <!-- DROPDOWN MENU - Enhanced with Theme Colors -->
+  <div
+    *ngIf="showPermissions"
+    class="absolute right-0 top-12 w-96 bg-white rounded-xl shadow-2xl border border-gray-200 z-50 overflow-hidden"
+  >
+    <!-- Header with theme gradient -->
+    <div class="px-5 py-4" [style.background]="'var(--primary-gradient)'">
+      <div class="flex items-center gap-3">
+        <div class="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
+          <mat-icon class="text-white">tune</mat-icon>
+        </div>
+        <div>
+          <h3 class="text-white font-semibold">{{ t('SETTINGS') || 'Paramètres' }}</h3>
+          <p class="text-white/80 text-xs">Gestion des accès</p>
         </div>
       </div>
-     
-      <!-- Notification Icon -->
-      <div class="relative">
-        <button mat-icon-button (click)="openNotification()" class="hover:bg-blue-700 rounded-full transition-colors">
-          <mat-icon class="text-white">notifications</mat-icon>
-        </button>
+    </div>
+
+    <!-- Menu Items with Categories -->
+    <div class="py-2 max-h-96 overflow-y-auto">
       
-        <!-- Badge -->
-        <span *ngIf="cancelledTripsCount > 0"
-              class="absolute -top-1 -right-1 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white bg-red-600 rounded-full shadow-lg animate-pulse">
-          {{ cancelledTripsCount }}
-        </span>
+      <!-- Section: Gestion du temps -->
+      <div class="mb-2">
+        <div class="px-4 py-2">
+          <span class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Gestion du temps</span>
+        </div>
+        
+        <!-- Heures Supplémentaires -->
+        <a
+          *ngIf="authService.hasRole('SuperAdmin') || authService.hasEntityAccess('OVERTIME')"
+          routerLink="/overtime"
+          (click)="showPermissions = false"
+          class="flex items-center gap-3 px-4 py-3 mx-2 rounded-lg text-sm text-gray-700 transition-all group"
+          [class.hover-theme-light]="true"
+        >
+          <mat-icon class="text-2xl transition-transform group-hover:scale-110" [style.color]="'var(--primary-color)'">schedule</mat-icon>
+          <span class="font-medium flex-1">{{ t('OVERTIME') }}</span>
+          <mat-icon class="text-gray-400 transition-colors group-hover:text-[var(--primary-color)] text-sm">chevron_right</mat-icon>
+        </a>
+
+        <!-- Jours fériés -->
+        <a
+          *ngIf="authService.hasRole('SuperAdmin') || authService.hasEntityAccess('DAYOFF')"
+          routerLink="/dayoff"
+          (click)="showPermissions = false"
+          class="flex items-center gap-3 px-4 py-3 mx-2 rounded-lg text-sm text-gray-700 transition-all group"
+          [class.hover-theme-light]="true"
+        >
+          <mat-icon class="text-2xl transition-transform group-hover:scale-110" [style.color]="'var(--primary-color)'">event_busy</mat-icon>
+          <span class="font-medium flex-1">{{ t('DAYOFF') }}</span>
+          <mat-icon class="text-gray-400 transition-colors group-hover:text-[var(--primary-color)] text-sm">chevron_right</mat-icon>
+        </a>
       </div>
+
+      <!-- Section: Disponibilités -->
+      <div class="mb-2">
+        <div class="px-4 py-2">
+          <span class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Disponibilités</span>
+        </div>
+        
+        <!-- Disponibilités chauffeurs -->
+        <a
+          *ngIf="authService.hasRole('SuperAdmin') || authService.hasEntityAccess('DRIVER_AVAILABILITY')"
+          routerLink="/availability"
+          (click)="showPermissions = false"
+          class="flex items-center gap-3 px-4 py-3 mx-2 rounded-lg text-sm text-gray-700 transition-all group"
+          [class.hover-theme-light]="true"
+        >
+          <mat-icon class="text-2xl transition-transform group-hover:scale-110" [style.color]="'var(--primary-color)'">event_available</mat-icon>
+          <span class="font-medium flex-1">{{ t('DRIVERS') }}</span>
+          <mat-icon class="text-gray-400 transition-colors group-hover:text-[var(--primary-color)] text-sm">chevron_right</mat-icon>
+        </a>
+
+        <!-- Disponibilités camions -->
+        <a
+          *ngIf="authService.hasRole('SuperAdmin') || authService.hasEntityAccess('TRUCK_AVAILABILITY')"
+          routerLink="/truck-availability"
+          (click)="showPermissions = false"
+          class="flex items-center gap-3 px-4 py-3 mx-2 rounded-lg text-sm text-gray-700 transition-all group"
+          [class.hover-theme-light]="true"
+        >
+          <mat-icon class="text-2xl transition-transform group-hover:scale-110" [style.color]="'var(--primary-color)'">local_shipping</mat-icon>
+          <span class="font-medium flex-1">{{ t('TRUCKS') }}</span>
+          <mat-icon class="text-gray-400 transition-colors group-hover:text-[var(--primary-color)] text-sm">chevron_right</mat-icon>
+        </a>
+      </div>
+
+      <!-- Section: Système -->
+      <div class="mb-2">
+        <div class="px-4 py-2">
+          <span class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Système</span>
+        </div>
+        
+        <!-- Synchronisation ERP -->
+        <a
+          *ngIf="authService.hasRole('SuperAdmin')"
+          routerLink="/sync"
+          (click)="showPermissions = false"
+          class="flex items-center gap-3 px-4 py-3 mx-2 rounded-lg text-sm text-gray-700 transition-all group"
+          [class.hover-theme-light]="true"
+        >
+          <mat-icon class="text-2xl transition-transform group-hover:rotate-180 duration-500" [style.color]="'var(--primary-color)'">sync</mat-icon>
+          <span class="font-medium flex-1">{{ t('SYNC') }}</span>
+          <mat-icon class="text-gray-400 transition-colors group-hover:text-[var(--primary-color)] text-sm">chevron_right</mat-icon>
+        </a>
+
+        <!-- Paramètres généraux -->
+        <a
+          *ngIf="authService.hasRole('SuperAdmin')"
+          routerLink="/general-settings"
+          (click)="showPermissions = false"
+          class="flex items-center gap-3 px-4 py-3 mx-2 rounded-lg text-sm text-gray-700 transition-all group relative"
+          [class.hover-theme-light]="true"
+        >
+          <div class="relative">
+            <mat-icon class="text-2xl transition-transform group-hover:rotate-90 duration-500" [style.color]="'var(--primary-color)'">settings_applications</mat-icon>
+          </div>
+          <span class="font-medium flex-1">{{ t('GENERAL_SETTINGS') }}</span>
+          
+          <!-- Admin badge with theme color -->
+          <span class="px-2 py-0.5 text-xs rounded-full" 
+                [style.background]="'var(--primary-color)'" 
+                [style.color]="'white'">
+            Admin
+          </span>
+          
+          <mat-icon class="text-gray-400 transition-colors group-hover:text-[var(--primary-color)] text-sm">chevron_right</mat-icon>
+        </a>
+      </div>
+    </div>
+
+    <!-- Simple footer -->
+    <div class="px-4 py-3 bg-gray-50 border-t border-gray-100 text-center">
+      <span class="text-xs" [style.color]="'var(--text-muted)'">
+        <mat-icon class="text-sm align-middle mr-1" [style.color]="'var(--text-muted)'">info</mat-icon>
+        Paramètres et permissions
+      </span>
+    </div>
+  </div>
+</div>
+     
+<!-- Notification Icon with Badge - Shows ALL unread notifications count -->
+<div class="relative">
+  <button 
+    mat-icon-button 
+    (click)="openNotificationPanel()" 
+    class="rounded-full transition-colors hover-button relative">
+    <mat-icon class="text-white">notifications</mat-icon>
+    
+    <!-- Badge for ALL unread notifications (general) -->
+    <span *ngIf="unreadNotificationsCount > 0"
+          class="absolute -top-1 -right-1 inline-flex items-center justify-center min-w-[20px] h-5 px-1 text-xs font-bold leading-none text-white bg-red-600 rounded-full shadow-lg animate-pulse">
+      {{ unreadNotificationsCount > 99 ? '99+' : unreadNotificationsCount }}
+    </span>
+  </button>
+
+  <!-- Optional: Small dot indicator for presence (like Facebook) -->
+  <span *ngIf="unreadNotificationsCount > 0 && showOnlineDot"
+        class="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></span>
+</div>
+
+<!-- Notifications Panel - FACEBOOK STYLE with Theme Colors -->
+<div 
+  *ngIf="showNotificationsPanel"
+  class="absolute right-0 top-12 w-96 bg-white rounded-xl shadow-2xl border border-gray-200 z-50 overflow-hidden theme-notifications-panel facebook-style-panel"
+  style="max-height: 500px; overflow-y: auto;">
+
+  <!-- Header with Theme Gradient and Tabs -->
+  <div class="px-4 py-3 text-white sticky top-0 z-10" [style.background]="'var(--primary-gradient)'">
+    <div class="flex justify-between items-center mb-2">
+      <div class="flex items-center gap-2">
+        <mat-icon>notifications</mat-icon>
+        <span class="font-semibold text-lg">Notifications</span>
+      </div>
+      <div class="flex gap-1">
+        <button mat-icon-button (click)="markAllNotificationsAsRead()" class="text-white" title="Mark all as read">
+          <mat-icon>done_all</mat-icon>
+        </button>
+        <button mat-icon-button (click)="clearAllNotifications()" class="text-white" title="Clear all">
+          <mat-icon>clear_all</mat-icon>
+        </button>
+        <button mat-icon-button (click)="showNotificationsPanel = false" class="text-white">
+          <mat-icon>close</mat-icon>
+        </button>
+      </div>
+    </div>
+    
+    <!-- Facebook-style tabs for filtering -->
+    <div class="flex gap-4 mt-1 border-b border-white/20">
+      <button 
+        (click)="selectedNotificationTab = 'all'"
+        class="text-sm font-medium pb-2 px-1 transition-colors relative"
+        [class.text-white]="selectedNotificationTab === 'all'"
+        [class.text-white/70]="selectedNotificationTab !== 'all'"
+        [style.border-bottom]="selectedNotificationTab === 'all' ? '2px solid white' : 'none'">
+        All 
+        <span class="ml-1 text-xs bg-white/20 px-1.5 rounded-full">{{ notifications.length }}</span>
+      </button>
+      <button 
+        (click)="selectedNotificationTab = 'unread'"
+        class="text-sm font-medium pb-2 px-1 transition-colors relative"
+        [class.text-white]="selectedNotificationTab === 'unread'"
+        [class.text-white/70]="selectedNotificationTab !== 'unread'"
+        [style.border-bottom]="selectedNotificationTab === 'unread' ? '2px solid white' : 'none'">
+        Unread 
+        <span class="ml-1 text-xs bg-white/20 px-1.5 rounded-full">{{ unreadNotificationsCount }}</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Notifications List -->
+  <div class="divide-y divide-gray-100">
+    <!-- Empty State -->
+    <div *ngIf="filteredNotifications.length === 0" class="p-8 text-center" [style.color]="'var(--text-muted)'">
+      <mat-icon class="text-4xl mb-2" [style.color]="'var(--text-muted)'">notifications_off</mat-icon>
+      <p class="font-medium">No notifications</p>
+      <p class="text-sm mt-1">You're all caught up!</p>
+    </div>
+
+    <!-- Notification Items -->
+    <div 
+      *ngFor="let notification of filteredNotifications" 
+      class="p-4 cursor-pointer transition-all notification-item hover:shadow-md"
+      [class.unread]="!notification.isRead"
+      [style.border-left]="!notification.isRead ? '3px solid var(--primary-color)' : 'none'"
+      (click)="viewTripDetails(notification.tripId); markNotificationAsRead(notification)">
+      
+      <div class="flex gap-3">
+        <!-- Icon with dynamic background based on type -->
+        <div class="flex-shrink-0">
+          <div class="w-10 h-10 rounded-full flex items-center justify-center shadow-sm"
+               [ngStyle]="{
+                 'background': notification.type === 'STATUS_CHANGE' ? 'rgba(var(--primary-color-rgb), 0.1)' :
+                             notification.type === 'TRIP_CANCELLED' ? '#fee2e2' :
+                             notification.type === 'NEW_TRIP' ? '#dcfce7' : '#f3f4f6'
+               }">
+            <mat-icon [ngStyle]="{
+              'color': notification.type === 'STATUS_CHANGE' ? 'var(--primary-color)' :
+                       notification.type === 'TRIP_CANCELLED' ? '#ef4444' :
+                       notification.type === 'NEW_TRIP' ? '#10b981' : 'var(--text-muted)'
+            }">
+              {{ getNotificationIcon(notification.type) }}
+            </mat-icon>
+          </div>
+        </div>
+
+        <!-- Content -->
+        <div class="flex-1 min-w-0">
+          <div class="flex justify-between items-start">
+            <p class="font-semibold text-sm text-gray-900 truncate">
+              {{ notification.title }}
+            </p>
+            <span class="text-xs whitespace-nowrap ml-2" [style.color]="'var(--text-muted)'">
+              {{ notification.timestamp | date:'HH:mm' }}
+            </span>
+          </div>
+          
+          <p class="text-sm mt-0.5 line-clamp-2" [style.color]="'var(--text-secondary)'">
+            {{ notification.message }}
+          </p>
+
+          <!-- Status Change Details with Theme Colors -->
+          <div *ngIf="notification.type === 'STATUS_CHANGE'" class="mt-2 flex items-center gap-2 text-xs">
+            <span class="px-2 py-1 rounded-full" 
+                  [style.background]="'var(--bg-light)'" 
+                  [style.color]="'var(--text-secondary)'">
+              {{ notification.oldStatus }}
+            </span>
+            <mat-icon class="text-sm" [style.color]="'var(--text-muted)'" style="font-size: 14px;">arrow_forward</mat-icon>
+            <span class="px-2 py-1 rounded-full font-medium text-white"
+                  [style.background]="'var(--primary-gradient)'">
+              {{ notification.newStatus }}
+            </span>
+          </div>
+
+          <!-- Trip Reference with Theme Color -->
+          <div *ngIf="notification.tripReference" class="mt-1 flex items-center gap-1 text-xs" [style.color]="'var(--text-muted)'">
+            <mat-icon class="text-xs" [style.color]="'var(--primary-color)'" style="font-size: 12px;">local_shipping</mat-icon>
+            <span>{{ notification.tripReference }}</span>
+          </div>
+
+          <!-- Driver/Truck Info -->
+          <div *ngIf="notification.driverName || notification.truckImmatriculation" 
+               class="mt-1 flex gap-3 text-xs" [style.color]="'var(--text-muted)'">
+            <span *ngIf="notification.driverName" class="flex items-center gap-1">
+              <mat-icon class="text-xs" [style.color]="'var(--primary-color)'" style="font-size: 12px;">person</mat-icon> 
+              {{ notification.driverName }}
+            </span>
+            <span *ngIf="notification.truckImmatriculation" class="flex items-center gap-1">
+              <mat-icon class="text-xs" [style.color]="'var(--primary-color)'" style="font-size: 12px;">local_shipping</mat-icon> 
+              {{ notification.truckImmatriculation }}
+            </span>
+          </div>
+
+          <!-- Time ago indicator (Facebook style) -->
+          <div class="mt-1 text-xs" [style.color]="'var(--text-muted)'">
+            {{ getTimeAgo(notification.timestamp) }}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<!-- Footer with "See all notifications" and "Load more" -->
+<div class="px-4 py-3 border-t text-center footer-container" 
+     [style.background]="'var(--bg-light)'" 
+     [style.border-color]="'var(--border-color)'">
+  
+  <!-- Show "Load more" if there are more notifications -->
+  <button 
+    *ngIf="notifications.length >= 20 && hasMoreNotifications"
+    (click)="loadMoreNotifications()" 
+    class="text-xs mb-2 transition-colors block w-full"
+    [style.color]="'var(--primary-color)'">
+    Load more notifications
+  </button>
+  
+  <!-- Original "See all notifications" button -->
+  <button 
+    *ngIf="notifications.length > 3"
+    (click)="viewAllNotifications()" 
+    class="text-sm font-medium transition-colors footer-button"
+    [style.color]="'var(--primary-color)'">
+    See all notifications
+  </button>
+  
+  <div *ngIf="notifications.length <= 3" class="text-xs" [style.color]="'var(--text-muted)'">
+    You're all caught up
+  </div>
+</div>
+</div>
 
       <!-- Language Selector with Flags -->
       <div class="relative group">
-        <button mat-icon-button class="hover:bg-blue-700 rounded-full transition-colors">
+        <button mat-icon-button class="rounded-full transition-colors hover-button">
           <div class="w-6 h-6 rounded-full overflow-hidden shadow-sm border border-white">
             <img [src]="currentLanguage === 'en' ? 'en.png' : 'fr.png'" 
                  [alt]="currentLanguage === 'en' ? 'English' : 'French'"
@@ -152,7 +392,7 @@
           <!-- English -->
           <button (click)="changeLanguage('en')" 
                   class="w-full px-4 py-3 flex items-center gap-3 hover:bg-blue-50 transition-colors border-b border-gray-100 first:rounded-t-lg"
-                  [class.bg-blue-50]="currentLanguage === 'en'">
+                  [class.active-language]="currentLanguage === 'en'">
             <div class="w-6 h-6 rounded overflow-hidden shadow-sm">
               <img src="en.png" alt="English" class="w-full h-full object-cover">
             </div>
@@ -163,7 +403,7 @@
           <!-- French -->
           <button (click)="changeLanguage('fr')" 
                   class="w-full px-4 py-3 flex items-center gap-3 hover:bg-blue-50 transition-colors rounded-b-lg"
-                  [class.bg-blue-50]="currentLanguage === 'fr'">
+                  [class.active-language]="currentLanguage === 'fr'">
             <div class="w-6 h-6 rounded overflow-hidden shadow-sm">
               <img src="fr.png" alt="French" class="w-full h-full object-cover">
             </div>
@@ -173,8 +413,68 @@
         </div>
       </div>
 
+  <!-- Theme Color Picker -->
+<div class="relative" (mouseleave)="showThemePicker = false">
+  <button 
+    mat-icon-button 
+    class="rounded-full transition-colors hover-button theme-picker-btn"
+    (click)="showThemePicker = !showThemePicker"
+    [style.background]="currentTheme?.primary">
+    <mat-icon class="text-white">palette</mat-icon>
+  </button>
+
+  <!-- Theme Picker Dropdown -->
+  <div 
+    *ngIf="showThemePicker"
+    class="absolute right-0 top-10 w-80 bg-white rounded-lg shadow-2xl border border-gray-100 z-50 overflow-hidden"
+    style="max-height: 500px; overflow-y: auto;">
+    
+    <div class="px-4 py-3 font-semibold text-gray-800 border-b bg-gradient-to-r from-gray-50 to-gray-100 sticky top-0 z-10">
+      <div class="flex items-center gap-2">
+        <mat-icon class="text-gray-600">color_lens</mat-icon>
+        <span>{{ t('CHOOSE_THEME') || 'Choose Theme' }}</span>
+      </div>
+    </div>
+
+    <div class="p-3">
+      <!-- Theme Grid - 3 columns -->
+      <div class="grid grid-cols-3 gap-2">
+        <button
+          *ngFor="let theme of themes"
+          (click)="changeTheme(theme)"
+          class="flex flex-col items-center p-2 rounded-lg hover:bg-gray-50 transition-colors relative"
+          [class.theme-active]="currentTheme?.name === theme.name">
+          
+          <!-- Color Preview -->
+          <div class="w-full h-10 rounded-lg mb-2 flex overflow-hidden shadow-sm">
+            <div class="flex-1" [style.background]="theme.primary"></div>
+            <div class="flex-1" [style.background]="theme.primaryDark"></div>
+          </div>
+          
+          <!-- Theme Name -->
+          <span class="text-xs font-medium text-gray-700">{{ theme.name }}</span>
+          
+          <!-- Check Icon for Active Theme -->
+          <mat-icon *ngIf="currentTheme?.name === theme.name" 
+                    class="text-green-500 absolute top-1 right-1 text-sm">
+            check_circle
+          </mat-icon>
+        </button>
+      </div>
+
+      <!-- Reset to Default -->
+      <button 
+        (click)="resetToDefaultTheme()"
+        class="w-full mt-3 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition-colors flex items-center justify-center gap-2">
+        <mat-icon class="text-sm">restart_alt</mat-icon>
+        {{ t('RESET_DEFAULT') || 'Reset to Default' }}
+      </button>
+    </div>
+  </div>
+</div>
+
       <!-- Logout -->
-      <button (click)="logout()" mat-icon-button class="text-white hover:bg-blue-700 rounded-full transition-colors">
+      <button (click)="logout()" mat-icon-button class="text-white rounded-full transition-colors hover-button">
         <mat-icon>logout</mat-icon>
       </button>
   
@@ -197,26 +497,16 @@
           <a matListItemTitle class="sidebar-text">{{ t('DASHBOARD') }}</a>
         </mat-list-item>
 
-        <!-- Drivers -->
+        <!-- Employees -->
         <mat-list-item 
-          *ngIf="authService.hasRole('SuperAdmin') || authService.hasEntityAccess('CHAUFFEUR')"
-          routerLink="/drivers"
+          *ngIf="authService.hasRole('SuperAdmin') || authService.hasEntityAccess('EMPLOYEE')"
+          routerLink="/employees"
           routerLinkActive="active-menu-item"
           class="sidebar-item">
-          <mat-icon matListItemIcon class="sidebar-icon">badge</mat-icon>
-          <a matListItemTitle class="sidebar-text">{{ t('DRIVERS') }}</a>
+          <mat-icon matListItemIcon class="sidebar-icon">work</mat-icon>
+          <a matListItemTitle class="sidebar-text">{{ t('Employee_Management') || 'Employees' }}</a>
         </mat-list-item>
-
-        <!-- Convoyeurs -->
-        <mat-list-item 
-          *ngIf="authService.hasRole('SuperAdmin') || authService.hasEntityAccess('CONVOYEUR')"
-          routerLink="/convoyeurs"
-          routerLinkActive="active-menu-item"
-          class="sidebar-item">
-          <mat-icon matListItemIcon class="sidebar-icon">groups</mat-icon>
-          <a matListItemTitle class="sidebar-text">{{ t('CONVOYEURS') }}</a>
-        </mat-list-item>
-
+        
         <!-- Trucks -->
         <mat-list-item 
           *ngIf="authService.hasRole('SuperAdmin') || authService.hasEntityAccess('TRUCK')"
@@ -226,7 +516,23 @@
           <mat-icon matListItemIcon class="sidebar-icon">local_shipping</mat-icon>
           <a matListItemTitle class="sidebar-text">{{ t('TRUCKS') }}</a>
         </mat-list-item>
-
+        <mat-list-item 
+          *ngIf="authService.hasRole('SuperAdmin') || authService.hasEntityAccess('TYPE_VEHICULE')"
+          routerLink="/type-trucks"
+          routerLinkActive="active-menu-item"
+          class="sidebar-item">
+          <mat-icon matListItemIcon class="sidebar-icon">category</mat-icon>
+          <a matListItemTitle class="sidebar-text">{{ t('TYPE_VEHICULES') }}</a>
+        </mat-list-item>
+        <mat-list-item 
+          *ngIf="authService.hasRole('SuperAdmin') || authService.hasEntityAccess('MARQUE_VEHICULE')"
+          routerLink="/marques"
+          routerLinkActive="active-menu-item"
+          class="sidebar-item">
+          <mat-icon matListItemIcon class="sidebar-icon">branding_watermark</mat-icon>
+          <a matListItemTitle class="sidebar-text">{{ t('MARQUES_VEHICULES') }}</a>
+        </mat-list-item>
+        
         <!-- Orders -->
         <mat-list-item 
           *ngIf="authService.hasRole('SuperAdmin') || authService.hasEntityAccess('ORDER')"
@@ -278,20 +584,6 @@
               class="submenu-item">
               <mat-icon matListItemIcon class="submenu-icon">location_on</mat-icon>
               <a matListItemTitle class="submenu-text">{{ t('LOCATIONS') }}</a>
-            </mat-list-item>
-            <mat-list-item 
-              routerLink="/zones"
-              routerLinkActive="active-submenu-item"
-              class="submenu-item">
-              <mat-icon matListItemIcon class="submenu-icon">map</mat-icon>
-              <a matListItemTitle class="submenu-text">{{ t('ZONE') }}</a>
-            </mat-list-item>
-            <mat-list-item 
-              routerLink="/city"
-              routerLinkActive="active-submenu-item"
-              class="submenu-item">
-              <mat-icon matListItemIcon class="submenu-icon">location_city</mat-icon>
-              <a matListItemTitle class="submenu-text">{{ t('CITY') }}</a>
             </mat-list-item>
             <mat-list-item 
               routerLink="/statics"
@@ -444,9 +736,9 @@
     </div>
   </mat-drawer>
 
-  <mat-drawer-content>
-    <main class="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50">
-      <router-outlet></router-outlet>
-    </main>
-  </mat-drawer-content>
+<mat-drawer-content>
+  <main class="min-h-screen">
+    <router-outlet></router-outlet>
+  </main>
+</mat-drawer-content>
 </mat-drawer-container>
