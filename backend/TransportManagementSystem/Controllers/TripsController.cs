@@ -408,7 +408,7 @@ public class TripsController : ControllerBase
         await context.SaveChangesAsync();
 
         var createdTrip = await GetTripByIdInternal(trip.Id);
-        await _notificationService.NotifyNewTripCreated(trip.Id, trip.TripReference ?? trip.BookingId, userId);
+        //await _notificationService.NotifyNewTripCreated(trip.Id, trip.TripReference ?? trip.BookingId, userId);
 
         return CreatedAtAction(nameof(GetTripById),
             new { id = trip.Id },

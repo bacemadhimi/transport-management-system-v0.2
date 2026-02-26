@@ -32,6 +32,26 @@ import { SettingsService } from '../../services/settings.service';
 import { Translation } from '../../services/Translation';
 import { SignalRService, TripNotification } from '../../services/signalr.service';
 
+// Status transition rules (matching the backend C# class)
+const VALID_STATUS_TRANSITIONS: { [key in TripStatus]?: TripStatus[] } = {
+  [TripStatus.Planned]: [TripStatus.Accepted, TripStatus.Cancelled],
+  [TripStatus.Accepted]: [TripStatus.LoadingInProgress, TripStatus.Cancelled],
+  [TripStatus.LoadingInProgress]: [TripStatus.DeliveryInProgress, TripStatus.Cancelled],
+  [TripStatus.DeliveryInProgress]: [TripStatus.Receipt, TripStatus.Cancelled],
+  [TripStatus.Receipt]: [], // End state
+  [TripStatus.Cancelled]: [] // End state
+};
+
+// Helper function to check if a status transition is valid
+function isValidStatusTransition(currentStatus: TripStatus, newStatus: TripStatus): boolean {
+  // Same status is always valid (no change)
+  if (currentStatus === newStatus) return true;
+  
+  // Check if the transition is allowed
+  const allowedTransitions = VALID_STATUS_TRANSITIONS[currentStatus];
+  return allowedTransitions ? allowedTransitions.includes(newStatus) : false;
+}
+
 @Component({
   selector: 'app-trip',
   standalone: true,
@@ -463,9 +483,10 @@ showCols = [
     this.signalRSubscription = this.signalRService.notifications$.subscribe({
       next: (notifications) => {
         if (notifications.length > 0) {
-          // Process only the latest notification
-          const latestNotification = notifications[0];
-          this.updateTripStatusInTable(latestNotification);
+          // Process ALL notifications to maintain status sequence
+          notifications.forEach(notification => {
+            this.updateTripStatusInTable(notification);
+          });
         }
       }
     });
@@ -484,31 +505,52 @@ showCols = [
     const tripIndex = this.pagedTripData.data.findIndex(t => t.id === notification.tripId);
     
     if (tripIndex !== -1) {
-      // Create a copy of the trip with updated values
-      const updatedTrip = { ...this.pagedTripData.data[tripIndex] };
+      // Get current trip
+      const currentTrip = this.pagedTripData.data[tripIndex];
+      const currentStatus = currentTrip.tripStatus;
       
-      // Update status based on notification type
+      // Determine new status based on notification type
+      let newStatus: TripStatus | undefined;
+      
       if (notification.type === 'STATUS_CHANGE' && notification.newStatus) {
-        updatedTrip.tripStatus = notification.newStatus as TripStatus;
+        newStatus = notification.newStatus as TripStatus;
       } else if (notification.type === 'TRIP_CANCELLED') {
-        updatedTrip.tripStatus = TripStatus.Cancelled;
+        newStatus = TripStatus.Cancelled;
       }
       
-      // Create new array with the updated trip
-      const updatedData = [...this.pagedTripData.data];
-      updatedData[tripIndex] = updatedTrip;
+      // If no new status, exit
+      if (!newStatus) return;
       
-      // Update the paged data (creates new reference to trigger change detection)
-      this.pagedTripData = {
-        ...this.pagedTripData,
-        data: updatedData
-      };
+      // Check if this is a valid status transition
+      const isValidTransition = isValidStatusTransition(currentStatus, newStatus);
       
-      console.log(`✅ Trip ${notification.tripReference} status updated to ${updatedTrip.tripStatus} in table`);
+      console.log(`🔄 Status transition: ${currentStatus} → ${newStatus} - Valid: ${isValidTransition}`);
+      
+      // Only update if the transition is valid
+      if (isValidTransition) {
+        // Create a copy of the trip with updated values
+        const updatedTrip = { ...currentTrip };
+        updatedTrip.tripStatus = newStatus;
+        
+        const updatedData = [...this.pagedTripData.data];
+        updatedData[tripIndex] = updatedTrip;
+        
+        // Update the paged data (creates new reference to trigger change detection)
+        this.pagedTripData = {
+          ...this.pagedTripData,
+          data: updatedData
+        };
+        
+        console.log(`✅ Trip ${notification.tripReference} status updated from ${currentStatus} to ${newStatus} in table`);
+      } else {
+        console.log(`⚠️ Invalid status transition: ${currentStatus} → ${newStatus} - Refreshing data from server`);
+        // If invalid transition, refresh data from server to get correct state
+        this.getLatestData();
+      }
     } else {
-      // Trip not in current page - we could optionally refresh if it's an important update
-      // But for performance, we don't refresh automatically
-      console.log(`Trip ${notification.tripReference} not in current view - no update needed`);
+      // Trip not in current page - refresh data to ensure consistency
+      console.log(`Trip ${notification.tripReference} not in current view - refreshing data`);
+      this.getLatestData();
     }
   }
  

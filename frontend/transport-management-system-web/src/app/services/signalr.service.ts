@@ -128,16 +128,17 @@ export class SignalRService {
 
 
 private addNotification(notification: TripNotification, pageSize: number = 20) {
+  console.log('📬 Adding notification:', notification);
+  
   const currentNotifications = this.notificationsSubject.value;
   notification.timestamp = new Date(notification.timestamp);
   
-  
-  const exists = currentNotifications.some(n => n.id === notification.id);
-  if (!exists) {
-
+  // For STATUS_CHANGE notifications, don't check for duplicates by ID
+  // since they might have the same ID from random generation
+  if (notification.type === 'STATUS_CHANGE') {
+    // Add without duplicate check
     const updatedNotifications = [notification, ...currentNotifications];
     
-   
     const maxNotifications = pageSize * 2;
     if (updatedNotifications.length > maxNotifications) {
       updatedNotifications.pop();
@@ -145,9 +146,49 @@ private addNotification(notification: TripNotification, pageSize: number = 20) {
     
     this.notificationsSubject.next(updatedNotifications);
     
- 
+    // Update unread count
     const currentUnread = this.unreadCountSubject.value;
     this.unreadCountSubject.next(currentUnread + 1);
+    
+    console.log('✅ STATUS_CHANGE notification added');
+  } 
+  // For TRIP_CANCELLED notifications (which have real IDs from database)
+  else if (notification.type === 'TRIP_CANCELLED') {
+    // Check for duplicates by ID since these are from database
+    const exists = currentNotifications.some(n => n.id === notification.id);
+    if (!exists) {
+      const updatedNotifications = [notification, ...currentNotifications];
+      
+      const maxNotifications = pageSize * 2;
+      if (updatedNotifications.length > maxNotifications) {
+        updatedNotifications.pop();
+      }
+      
+      this.notificationsSubject.next(updatedNotifications);
+      
+      const currentUnread = this.unreadCountSubject.value;
+      this.unreadCountSubject.next(currentUnread + 1);
+      
+      console.log('✅ TRIP_CANCELLED notification added');
+    } else {
+      console.log('⚠️ Duplicate TRIP_CANCELLED notification ignored');
+    }
+  }
+  // For any other notification types
+  else {
+    const updatedNotifications = [notification, ...currentNotifications];
+    
+    const maxNotifications = pageSize * 2;
+    if (updatedNotifications.length > maxNotifications) {
+      updatedNotifications.pop();
+    }
+    
+    this.notificationsSubject.next(updatedNotifications);
+    
+    const currentUnread = this.unreadCountSubject.value;
+    this.unreadCountSubject.next(currentUnread + 1);
+    
+    console.log('✅ Notification added');
   }
 }
 
@@ -210,10 +251,20 @@ private addNotification(notification: TripNotification, pageSize: number = 20) {
   }
 
   
-  clearNotifications() {
+ async clearNotifications() {
+  try {
+    // Call API to delete from database
+    await this.notificationService.deleteAllNotifications().toPromise();
+    
+    // Clear local subjects
     this.notificationsSubject.next([]);
     this.unreadCountSubject.next(0);
+    
+    console.log('🗑️ All notifications cleared from database and local state');
+  } catch (error) {
+    console.error('Error clearing notifications:', error);
   }
+}
 
 
   async refreshNotifications() {
