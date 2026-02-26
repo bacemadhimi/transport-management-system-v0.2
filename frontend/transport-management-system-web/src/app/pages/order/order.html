@@ -290,7 +290,7 @@
 <ng-container matColumnDef="deliveryAddress">
   <th mat-header-cell *matHeaderCellDef>Adresse livraison</th>
   <td mat-cell *matCellDef="let element">
-    {{ element.deliveryAddress }} 
+  {{ element.deliveryAddress || element.customerName  }}
   </td>
 </ng-container>
 
