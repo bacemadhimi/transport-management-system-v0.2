@@ -463,6 +463,6 @@
   "CHOOSE_THEME": "Choose theme",
   "RESET_DEFAULT": "Reset to default",
   "INTERNAL_EMPLOYEE": "Internal Employee",
-  "INTERNAL_EMPLOYEE_HINT": "Enable this option if the employee belongs to the company. Disable it if the employee is external."
-  
+  "INTERNAL_EMPLOYEE_HINT": "Enable this option if the employee belongs to the company. Disable it if the employee is external.",
+  "CATEGORY_TABLE": "Employee Category"
 }
