@@ -501,16 +501,15 @@ namespace TransportManagementSystem.Data
             }
             var driverGroup = dbContext.UserGroups.First(r => r.Name == "Driver");
             // Seed MANY Drivers + Users
-            if (!dbContext.Drivers.Any())
+            var driverCategory = dbContext.GeneralSettings.First(p =>
+         p.ParameterType == "EMPLOYEE_CATEGORY" &&
+         p.ParameterCode == "DRIVER");
+            if (!dbContext.Employees.Any(e => e.CategoryId == driverCategory.Id))
             {
                 var now = DateTime.UtcNow;
-                var zones = dbContext.Zones.ToList();
-                var cities = dbContext.Citys.ToList();
                 var rnd = new Random();
 
-                var drivers = new List<Driver>();
-                var users = new List<User>();
-                var userGroupLinks = new List<UserGroup2User>();
+                var employees = new List<Employee>();
 
                 var names = new[]
                 {
@@ -523,64 +522,32 @@ namespace TransportManagementSystem.Data
 
                 foreach (var name in names)
                 {
-                    var zone = zones[rnd.Next(zones.Count)];
-                    var city = cities.Where(c => c.ZoneId == zone.Id)
-                                      .OrderBy(x => rnd.Next())
-                                      .First();
-
-                    var email = $"{name.ToLower()}{index}@tms.demo";
-
-                    // DRIVER
-                    var driver = new Driver
+                    employees.Add(new Employee
                     {
+                       
+                        IdNumber = $"DRV-{1000 + index}",
                         Name = $"{name} Driver {index}",
-                        Email = email,
-                        Phone = $"2{rnd.Next(1000000, 9999999)}",
-                        phoneCountry = "+216",
-                        PermisNumber = $"TN-{rnd.Next(10000, 99999)}",
-                        Status = "Disponible",
+                        PhoneNumber = $"2{rnd.Next(1000000, 9999999)}",
+                        Email = $"{name.ToLower()}{index}@tms.demo",
+                        CategoryId = driverCategory.Id,
+
+                     
+                        EmployeeCategory = "DRIVER",
+                        DrivingLicense = $"TN-{rnd.Next(10000, 99999)}",
+                        IsInternal = true,
                         IsEnable = true,
-                        ZoneId = zone.Id,
-                        CityId = city.Id,
+
+                        CreatedAt = now,
                         UpdatedAt = now
-                    };
-
-                    drivers.Add(driver);
-
-                    // USER
-                    var user = new User
-                    {
-                        Email = email,
-                        Password = passwordHelper.HashPassword("12345"),
-                        Name = driver.Name,
-                        Phone = driver.Phone,
-                        phoneCountry = driver.phoneCountry
-                    };
-
-                    users.Add(user);
+                    });
 
                     index++;
                 }
 
-                // Save Drivers + Users
-                dbContext.Drivers.AddRange(drivers);
-                dbContext.Users.AddRange(users);
+                dbContext.Employees.AddRange(employees);
                 dbContext.SaveChanges();
 
-                // Link Users to Driver Group
-                foreach (var user in users)
-                {
-                    userGroupLinks.Add(new UserGroup2User
-                    {
-                        UserId = user.Id,
-                        UserGroupId = driverGroup.Id
-                    });
-                }
-
-                dbContext.UserGroup2Users.AddRange(userGroupLinks);
-                dbContext.SaveChanges();
-
-                Console.WriteLine($"✔ {drivers.Count} Drivers + Users Driver seedés !");
+                Console.WriteLine($"✔ {employees.Count} Employees (DRIVER) seedés !");
             }
 
             // 8Seed MANY Convoyeurs
