@@ -64,6 +64,8 @@ export class Employee implements OnInit {
     { key: 'email', label: this.t('Email') },
     { key: 'phoneNumber', label: this.t('TABLE_PHONE') },
     { key: 'drivingLicense', label: this.t('TABLE_LICENSE_NUMBER')},
+    { key: 'isInternal', label: this.t('INTERNAL_EMPLOYEE')},
+     { key: 'employeeCategory', label:this.t('CATEGORY_TABLE')},
     {
       key: 'typeTruck',
       label: this.t('TYPE_VEHICULE_LABEL'),
