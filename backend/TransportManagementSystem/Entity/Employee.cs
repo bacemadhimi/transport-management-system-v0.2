@@ -50,6 +50,6 @@ public class Employee
     public int CategoryId { get; set; }
     [StringLength(50)]
     public string? EmployeeCategory { get; set; }
-
+    //
     public bool IsInternal { get; set; } = true;
 }
