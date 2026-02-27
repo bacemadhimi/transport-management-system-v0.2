@@ -443,7 +443,7 @@
   "EMPLOYEE_LIST": "Employee List",
   "SEARCH_EMPLOYEE": "Search Employee",
   "SEARCH_EMPLOYEE_PLACEHOLDER": "Name, email, phone...",
-  "ADD_EMPLOYEE": "Add Employee",
+  "ADD_EMPLOYEE": "Add",
   "DATE_FIRST_REGISTRATION_LABEL": "Date of first registration",
   "EMPTY_WEIGHT_LABEL": "Empty weight",
   "TABLE_ATTACHMENT": "Attachment",
@@ -464,5 +464,10 @@
   "RESET_DEFAULT": "Reset to default",
   "INTERNAL_EMPLOYEE": "Internal Employee",
   "INTERNAL_EMPLOYEE_HINT": "Enable this option if the employee belongs to the company. Disable it if the employee is external.",
-  "CATEGORY_TABLE": "Employee Category"
+  "CATEGORY_TABLE": "Employee Category",
+  "EMPLOYEE_DELETE_CONFIRM": "Are you sure you want to delete employee",
+  "EMPLOYEE_DELETE_SUCCESS": "Employee deleted successfully",
+  "FIRST_REGISTRATION_DATE": "Date of first registration"
+
+
 }

@@ -53,13 +53,11 @@ public class WeatherController : ControllerBase
             var client = _httpClientFactory.CreateClient();
             var response = await client.GetAsync(url);
             var content = await response.Content.ReadAsStringAsync();
-
             if (!response.IsSuccessStatusCode)
             {
               
                 return StatusCode((int)response.StatusCode, JsonSerializer.Deserialize<JsonElement>(content));
             }
-
             return Content(content, "application/json");
         }
         catch (Exception ex)
