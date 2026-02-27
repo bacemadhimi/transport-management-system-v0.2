@@ -34,43 +34,37 @@ namespace TransportManagementSystem.Data
         new GeneralSettings
         {
             ParameterType = "ORDER",
-            ParameterCode = "ALLOW_EDIT_ORDER",
-            Value = "true",
+            ParameterCode = "ALLOW_EDIT_ORDER=true",
             Description = "Allow editing orders"
         },
         new GeneralSettings
         {
             ParameterType = "ORDER",
-            ParameterCode = "ALLOW_DELIVERY_DATE_EDIT",
-            Value = "true",
+            ParameterCode = "ALLOW_DELIVERY_DATE_EDIT=true",
             Description = "Allow editing delivery date"
         },
         new GeneralSettings
         {
             ParameterType = "ORDER",
-            ParameterCode = "ALLOW_LOAD_LATE_ORDERS",
-            Value = "true",
+            ParameterCode = "ALLOW_LOAD_LATE_ORDERS=true",
             Description = "Allow loading late orders"
         },
         new GeneralSettings
         {
             ParameterType = "ORDER",
-            ParameterCode = "ACCEPT_ORDERS_WITHOUT_ADDRESS",
-            Value = "true",
+            ParameterCode = "ACCEPT_ORDERS_WITHOUT_ADDRESS=true",
             Description = "Accept orders without address"
         },
         new GeneralSettings
         {
             ParameterType = "ORDER",
-            ParameterCode = "LOADING_UNIT",
-            Value = "palette",
+            ParameterCode = "LOADING_UNIT=palette",
             Description = "Default loading unit"
         },
         new GeneralSettings
         {
             ParameterType = "ORDER",
-            ParameterCode = "PLANNING_HORIZON",
-            Value = "30",
+            ParameterCode = "PLANNING_HORIZON=30",
             Description = "Planning horizon in days"
         },
 
@@ -78,64 +72,55 @@ namespace TransportManagementSystem.Data
         new GeneralSettings
         {
             ParameterType = "TRIP",
-            ParameterCode = "ALLOW_EDIT_TRIPS",
-            Value = "true",
+            ParameterCode = "ALLOW_EDIT_TRIPS=true",
             Description = "Allow editing trips"
         },
         new GeneralSettings
         {
             ParameterType = "TRIP",
-            ParameterCode = "ALLOW_DELETE_TRIPS",
-            Value = "true",
+            ParameterCode = "ALLOW_DELETE_TRIPS=true",
             Description = "Allow deleting trips"
         },
         new GeneralSettings
         {
             ParameterType = "TRIP",
-            ParameterCode = "EDIT_TIME_LIMIT",
-            Value = "60",
+            ParameterCode = "EDIT_TIME_LIMIT=60",
             Description = "Edit limit in minutes"
         },
         new GeneralSettings
         {
             ParameterType = "TRIP",
-            ParameterCode = "MAX_TRIPS_PER_DAY",
-            Value = "10",
+            ParameterCode = "MAX_TRIPS_PER_DAY=10",
             Description = "Maximum trips per day"
         },
         new GeneralSettings
         {
             ParameterType = "TRIP",
-            ParameterCode = "TRIP_ORDER",
-            Value = "chronological",
+            ParameterCode = "TRIP_ORDER=chronological",
             Description = "Trip ordering method"
         },
         new GeneralSettings
         {
             ParameterType = "TRIP",
-            ParameterCode = "REQUIRE_DELETE_CONFIRMATION",
-            Value = "true",
+            ParameterCode = "REQUIRE_DELETE_CONFIRMATION=true",
             Description = "Require delete confirmation"
         },
         new GeneralSettings
         {
             ParameterType = "TRIP",
-            ParameterCode = "NOTIFY_ON_TRIP_EDIT",
-            Value = "false",
+            ParameterCode = "NOTIFY_ON_TRIP_EDIT=false",
             Description = "Notify when trip edited"
         },
         new GeneralSettings
         {
             ParameterType = "TRIP",
-            ParameterCode = "NOTIFY_ON_TRIP_DELETE",
-            Value = "false",
+            ParameterCode = "NOTIFY_ON_TRIP_DELETE=false",
             Description = "Notify when trip deleted"
         },
         new GeneralSettings
         {
             ParameterType = "TRIP",
-            ParameterCode = "LINK_DRIVER_TO_TRUCK",
-            Value = "true",
+            ParameterCode = "LINK_DRIVER_TO_TRUCK=true",
             Description = "Driver must match truck"
         }
     };
@@ -369,34 +354,7 @@ namespace TransportManagementSystem.Data
 
                 Console.WriteLine("Zones de Tunisie seedées avec succès !");
             }
-            // Seed Governorates (Tunisia)
-            if (!dbContext.GeneralSettings.Any(p => p.ParameterType == "GOVERNORATE"))
-            {
-                var now = DateTime.UtcNow;
-
-                var tunisianGovernorates = new List<string>
-    {
-        "Tunis", "Ariana", "Ben Arous", "Manouba", "Bizerte", "Nabeul", "Zaghouan",
-        "Sousse", "Monastir", "Mahdia", "Sfax", "Kairouan", "Kasserine", "Sidi Bouzid",
-        "Gabès", "Médenine", "Tataouine", "Gafsa", "Tozeur", "Kébili", "Béja",
-        "Jendouba", "Le Kef", "Siliana"
-    };
-
-                int codeIndex = 1; // GOV1, GOV2, ...
-
-                var governorates = tunisianGovernorates.Select(name => new GeneralSettings
-                {
-                    ParameterType = "GOVERNORATE",
-                    ParameterCode = name,
-                    Description = $"Governorate {name}",
-                    Value = $"GOV{codeIndex++}"   // <-- optional Value field
-                }).ToList();
-
-                dbContext.GeneralSettings.AddRange(governorates);
-                dbContext.SaveChanges();
-
-                Console.WriteLine($"✔ {governorates.Count} Governorates seeded!");
-            }
+    
             if (!dbContext.Citys.Any())
             {
                 var now = DateTime.UtcNow;
@@ -499,56 +457,6 @@ namespace TransportManagementSystem.Data
 
                 Console.WriteLine($"✔ {locations.Count} Locations seedées (par zone) !");
             }
-            var driverGroup = dbContext.UserGroups.First(r => r.Name == "Driver");
-            // Seed MANY Drivers + Users
-            var driverCategory = dbContext.GeneralSettings.First(p =>
-         p.ParameterType == "EMPLOYEE_CATEGORY" &&
-         p.ParameterCode == "DRIVER");
-            if (!dbContext.Employees.Any(e => e.CategoryId == driverCategory.Id))
-            {
-                var now = DateTime.UtcNow;
-                var rnd = new Random();
-
-                var employees = new List<Employee>();
-
-                var names = new[]
-                {
-        "Ahmed","Yassine","Sami","Mohamed","Ali","Hichem","Karim","Walid",
-        "Nabil","Fathi","Aymen","Anis","Slim","Marwen","Bilel",
-        "Oussama","Zied","Rami","Tarek","Lotfi"
-    };
-
-                int index = 1;
-
-                foreach (var name in names)
-                {
-                    employees.Add(new Employee
-                    {
-                       
-                        IdNumber = $"DRV-{1000 + index}",
-                        Name = $"{name} Driver {index}",
-                        PhoneNumber = $"2{rnd.Next(1000000, 9999999)}",
-                        Email = $"{name.ToLower()}{index}@tms.demo",
-                        CategoryId = driverCategory.Id,
-
-                     
-                        EmployeeCategory = "DRIVER",
-                        DrivingLicense = $"TN-{rnd.Next(10000, 99999)}",
-                        IsInternal = true,
-                        IsEnable = true,
-
-                        CreatedAt = now,
-                        UpdatedAt = now
-                    });
-
-                    index++;
-                }
-
-                dbContext.Employees.AddRange(employees);
-                dbContext.SaveChanges();
-
-                Console.WriteLine($"✔ {employees.Count} Employees (DRIVER) seedés !");
-            }
 
             // 8Seed MANY Convoyeurs
             if (!dbContext.Convoyeurs.Any())
@@ -648,7 +556,7 @@ namespace TransportManagementSystem.Data
                             ParameterType = "EMPLOYEE_CATEGORY",
                             ParameterCode = "DRIVER",
                             Description = "Driver",
-                            Value = "DRIVER"
+                         
                         }
                     };
 
@@ -657,6 +565,54 @@ namespace TransportManagementSystem.Data
 
                     Console.WriteLine("✔ Employee Category DRIVER seeded !");
                 }
+                var driverGroup = dbContext.UserGroups.First(r => r.Name == "Driver");
+                // Seed MANY Drivers + Users
+                var driverCategory = dbContext.GeneralSettings.First(p =>
+             p.ParameterType == "EMPLOYEE_CATEGORY" &&
+             p.ParameterCode == "DRIVER");
+                if (!dbContext.Employees.Any(e => e.CategoryId == driverCategory.Id))
+                {
+                    var employees = new List<Employee>();
+
+                    var names = new[]
+                    {
+        "Ahmed","Yassine","Sami","Mohamed","Ali","Hichem","Karim","Walid",
+        "Nabil","Fathi","Aymen","Anis","Slim","Marwen","Bilel",
+        "Oussama","Zied","Rami","Tarek","Lotfi"
+    };
+
+                    int index = 1;
+
+                    foreach (var name in names)
+                    {
+                        employees.Add(new Employee
+                        {
+
+                            IdNumber = $"DRV-{1000 + index}",
+                            Name = $"{name} Driver {index}",
+                            PhoneNumber = $"2{rnd.Next(1000000, 9999999)}",
+                            Email = $"{name.ToLower()}{index}@tms.demo",
+                            CategoryId = driverCategory.Id,
+
+
+                            EmployeeCategory = "DRIVER",
+                            DrivingLicense = $"TN-{rnd.Next(10000, 99999)}",
+                            IsInternal = true,
+                            IsEnable = true,
+
+                            CreatedAt = now,
+                            UpdatedAt = now
+                        });
+
+                        index++;
+                    }
+
+                    dbContext.Employees.AddRange(employees);
+                    dbContext.SaveChanges();
+
+                    Console.WriteLine($"✔ {employees.Count} Employees (DRIVER) seedés !");
+                }
+
                 // ✅ Seed Trucks
                 if (!dbContext.Trucks.Any())
                 {

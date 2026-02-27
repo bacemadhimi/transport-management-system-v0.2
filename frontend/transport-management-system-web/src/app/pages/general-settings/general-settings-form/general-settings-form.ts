@@ -9,9 +9,10 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatDialogModule, MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { Http } from '../../../services/http';
-import { IGeneralSettings, IGeneralSettingsDto, ParameterType } from '../../../types/general-settings';
+import { IGeneralSettings, IGeneralSettingsDto } from '../../../types/general-settings';
 import { MatIconModule } from '@angular/material/icon';
 import Swal from 'sweetalert2';
+import { MatTooltipModule } from '@angular/material/tooltip';
 
 @Component({
   selector: 'app-general-settings-form',
@@ -27,7 +28,8 @@ import Swal from 'sweetalert2';
     MatButtonModule,
     MatDialogModule,
     MatProgressSpinnerModule,
-    MatIconModule
+    MatIconModule,
+    MatTooltipModule
   ],
   templateUrl: './general-settings-form.html',
   styleUrls: ['./general-settings-form.scss']
@@ -40,20 +42,32 @@ export class GeneralSettingsForm implements OnInit {
 
   isSubmitting = false;
 
-  // Available parameter types
-  parameterTypes = Object.values(ParameterType);
+  // Fixed parameter type - only EMPLOYEE_CATEGORY
+  readonly parameterType = 'EMPLOYEE_CATEGORY';
 
-  // Form with fields matching GeneralSettings entity
+  // Common employee category codes
+  readonly suggestedCodes = [
+    'DRIVER',
+    'CONVOYEUR',
+    'MECHANIC',
+    'ADMIN',
+    'MANAGER',
+    'SUPERVISOR',
+    'OPERATOR',
+    'LOADER',
+    'DISPATCHER',
+    'PLANNER'
+  ];
+
+  // Form with fields matching GeneralSettings entity (no value field)
   parameterForm = this.fb.group({
-    parameterType: this.fb.control<ParameterType | null>(null, [Validators.required]),
     parameterCode: this.fb.control<string>('', [
       Validators.required, 
-      Validators.maxLength(50)
-    ]),
-    value: this.fb.control<string>('', [
-    Validators.maxLength(100)
+      Validators.maxLength(50),
+      Validators.pattern(/^[A-Z0-9_]+$/) // Only uppercase letters, numbers, and underscores
     ]),
     description: this.fb.control<string>('', [
+      Validators.required,
       Validators.maxLength(200)
     ])
   });
@@ -68,10 +82,13 @@ export class GeneralSettingsForm implements OnInit {
     this.httpService.getGeneralSetting(this.data.parameterId!).subscribe({
       next: (parameter: IGeneralSettings) => {
         console.log("Parameter loaded:", parameter);
+        
+        // Parse the parameterCode which is in "CODE=value" format
+        // For employee categories, we only need the code part
+        const [code] = this.parseParameterCode(parameter.parameterCode);
+        
         this.parameterForm.patchValue({
-          parameterType: parameter.parameterType,
-          parameterCode: parameter.parameterCode,
-          value: parameter.value,
+          parameterCode: code,
           description: parameter.description
         });
       },
@@ -87,6 +104,24 @@ export class GeneralSettingsForm implements OnInit {
     });
   }
 
+  /**
+   * Parse parameterCode which is in format "CODE=value"
+   */
+  private parseParameterCode(parameterCode: string): [string, string] {
+    const parts = parameterCode.split('=');
+    if (parts.length === 2) {
+      return [parts[0], parts[1]];
+    }
+    // Fallback for backward compatibility
+    return [parameterCode, ''];
+  }
+
+  selectSuggestedCode(code: string) {
+    this.parameterForm.patchValue({
+      parameterCode: code
+    });
+  }
+
   onSubmit() {
     if (this.parameterForm.invalid || this.isSubmitting) {
       this.markFormGroupTouched(this.parameterForm);
@@ -95,18 +130,18 @@ export class GeneralSettingsForm implements OnInit {
 
     this.isSubmitting = true;
 
-    // Create DTO matching backend entity
-    const parameterDto: IGeneralSettingsDto = {
-      parameterType: this.parameterForm.value.parameterType!,
-      parameterCode: this.parameterForm.value.parameterCode!.trim().toUpperCase(),
-      description: this.parameterForm.value.description!.trim(),
-      value: this.parameterForm.value.value?.trim() || '',
-    };
+    const formValue = this.parameterForm.value;
+    
+    // For employee categories, we don't need a value, just the code
+    // But the backend expects "CODE=value" format, so we'll use a default value
+    const fullParameterCode = `${formValue.parameterCode!.trim().toUpperCase()}=true`;
 
-    // Add id for update if needed
-    if (this.data.parameterId) {
-      parameterDto.id = this.data.parameterId;
-    }
+    // Create DTO matching backend entity (without id field)
+    const parameterDto: IGeneralSettingsDto = {
+      parameterType: this.parameterType,
+      parameterCode: fullParameterCode,
+      description: formValue.description!.trim()
+    };
 
     console.log('Submitting DTO:', parameterDto);
 
@@ -120,8 +155,8 @@ export class GeneralSettingsForm implements OnInit {
         this.isSubmitting = false;
         Swal.fire({
           icon: 'success',
-          title: this.data.parameterId ? 'Paramètre modifié' : 'Paramètre ajouté',
-          text: this.data.parameterId ? 'Le paramètre a été modifié avec succès' : 'Le paramètre a été ajouté avec succès',
+          title: this.data.parameterId ? 'Catégorie modifiée' : 'Catégorie ajoutée',
+          text: this.data.parameterId ? 'La catégorie a été modifiée avec succès' : 'La catégorie a été ajoutée avec succès',
           timer: 2000,
           showConfirmButton: false
         }).then(() => this.dialogRef.close(true));
@@ -145,9 +180,7 @@ export class GeneralSettingsForm implements OnInit {
             const errors = error.error.errors;
             console.log('Validation errors:', errors);
             
-            if (errors.parameterType) {
-              errorMessage = `Type: ${errors.parameterType.join(', ')}`;
-            } else if (errors.parameterCode) {
+            if (errors.parameterCode) {
               errorMessage = `Code: ${errors.parameterCode.join(', ')}`;
             } else if (errors.description) {
               errorMessage = `Description: ${errors.description.join(', ')}`;
@@ -159,7 +192,7 @@ export class GeneralSettingsForm implements OnInit {
             }
           }
         } else if (error.status === 409 || (error.status === 400 && error.error?.message?.includes('existe déjà'))) {
-          errorMessage = 'Ce code de paramètre existe déjà pour ce type';
+          errorMessage = 'Ce code de catégorie existe déjà';
         }
         
         Swal.fire({
@@ -186,27 +219,17 @@ export class GeneralSettingsForm implements OnInit {
   getErrorMessage(controlName: string): string {
     const control = this.parameterForm.get(controlName);
     
-    if (controlName === 'parameterType') {
-      if (control?.hasError('required')) return 'Le type de paramètre est obligatoire';
-    }
-    
     if (controlName === 'parameterCode') {
       if (control?.hasError('required')) return 'Le code est obligatoire';
       if (control?.hasError('maxlength')) return 'Le code ne doit pas dépasser 50 caractères';
+      if (control?.hasError('pattern')) return 'Utilisez uniquement des majuscules, chiffres et underscores';
+    }
+    
+    if (controlName === 'description') {
+      if (control?.hasError('required')) return 'La description est obligatoire';
+      if (control?.hasError('maxlength')) return 'La description ne doit pas dépasser 200 caractères';
     }
     
     return '';
   }
-
-formatParameterType(type: string): string {
-  const typeMap: { [key: string]: string } = {
-    'GOVERNORATE': 'Gouvernorat',
-    'REGION': 'Région',
-    'ZONE': 'Zone',
-    'EMPLOYEE_CATEGORY': 'Catégorie d\'employé',
-    'ORDER': 'Commande',
-    'TRIP': 'Voyage'
-  };
-  return typeMap[type] || type;
-}
 }

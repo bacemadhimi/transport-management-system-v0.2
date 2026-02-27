@@ -50,6 +50,8 @@ namespace TransportManagementSystem.Data
         public DbSet<GeneralSettings> GeneralSettings { get; set; }
         public DbSet<Notification> Notifications { get; set; }
         public DbSet<UserNotification> UserNotifications { get; set; }
+        public DbSet<GeographicalLevel> GeographicalLevels { get; set; }
+        public DbSet<GeographicalEntity> GeographicalEntities { get; set; }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -236,6 +238,31 @@ namespace TransportManagementSystem.Data
                 .WithMany()
                 .HasForeignKey(un => un.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<GeographicalLevel>()
+           .HasIndex(l => l.LevelNumber)
+           .IsUnique();
+
+            modelBuilder.Entity<GeographicalLevel>()
+                .HasIndex(l => l.Name)
+                .IsUnique();
+
+            // GeographicalEntity configuration
+            modelBuilder.Entity<GeographicalEntity>()
+                .HasOne(e => e.Level)
+                .WithMany()
+                .HasForeignKey(e => e.LevelId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<GeographicalEntity>()
+                .HasOne(e => e.Parent)
+                .WithMany(e => e.Children)
+                .HasForeignKey(e => e.ParentId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<GeographicalEntity>()
+                .HasIndex(e => new { e.LevelId, e.Name })
+                .IsUnique();
 
         }
 

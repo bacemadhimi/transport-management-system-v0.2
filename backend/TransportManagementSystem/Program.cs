@@ -86,6 +86,8 @@ builder.Services.AddScoped<OrderSyncService>();
 builder.Services.AddScoped<IRepository<Customer>, Repository<Customer>>();
 builder.Services.AddScoped<IRepository<Delivery>, Repository<Delivery>>();
 builder.Services.AddScoped<IRepository<Order>, Repository<Order>>();
+builder.Services.AddScoped<IRepository<GeographicalEntity>, Repository<GeographicalEntity>>();
+builder.Services.AddScoped<IRepository<GeographicalLevel>, Repository<GeographicalLevel>>();
 
 builder.Services.AddSingleton<IConfiguration>(builder.Configuration);
 builder.Services.AddScoped<IRepository<MarqueTruck>, Repository<MarqueTruck>>();
