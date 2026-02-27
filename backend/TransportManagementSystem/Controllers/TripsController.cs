@@ -1462,14 +1462,6 @@ public class TripsController : ControllerBase
             }
         }
 
-        if (zoneId.HasValue)
-        {
-            query = query.Where(t =>
-                (t.Truck != null && t.Truck.ZoneId == zoneId.Value) ||
-                t.Deliveries.Any(d => d.Customer != null && d.Customer.ZoneId == zoneId.Value)
-            );
-        }
-
         var trips = await query
             .OrderByDescending(t => t.EstimatedStartDate)
             .Select(t => new TripMapDto
@@ -1493,7 +1485,7 @@ public class TripsController : ControllerBase
                 TruckId = t.Truck.Id,
                 TruckImmatriculation = t.Truck.Immatriculation,
                 MarqueTruckId = t.Truck.MarqueTruckId,
-                TruckZoneId = t.Truck.ZoneId,
+            
 
                 // Deliveries
                 Deliveries = t.Deliveries.Select(d => new DeliveryMapDto

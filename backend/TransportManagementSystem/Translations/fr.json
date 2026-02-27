@@ -465,7 +465,8 @@
   "CHOOSE_THEME": "Choisir le thème",
   "RESET_DEFAULT": "Réinitialiser par défaut",
   "INTERNAL_EMPLOYEE": "Employé interne",
-  "INTERNAL_EMPLOYEE_HINT": "Activez cette option si l’employé appartient à l’entreprise. Désactivez-la s’il s’agit d’un employé externe."
+  "INTERNAL_EMPLOYEE_HINT": "Activez cette option si l’employé appartient à l’entreprise. Désactivez-la s’il s’agit d’un employé externe.",
+  "GEOGRAPHICAL_ENTITIES_LABEL": "Entités géographiques"
 
 
 }

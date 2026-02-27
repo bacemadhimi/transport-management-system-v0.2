@@ -52,6 +52,7 @@ namespace TransportManagementSystem.Data
         public DbSet<UserNotification> UserNotifications { get; set; }
         public DbSet<GeographicalLevel> GeographicalLevels { get; set; }
         public DbSet<GeographicalEntity> GeographicalEntities { get; set; }
+        public DbSet<TruckGeographicalEntity> TruckGeographicalEntities { get; set; }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -203,13 +204,6 @@ namespace TransportManagementSystem.Data
                  .IsRequired(false)
                  .OnDelete(DeleteBehavior.Restrict);
 
-
-            modelBuilder.Entity<Truck>()
-                .HasOne(d => d.Zone)
-                .WithMany(z => z.Trucks)
-                .HasForeignKey(d => d.ZoneId)
-                .IsRequired()
-                .OnDelete(DeleteBehavior.Restrict);
 
             modelBuilder.Entity<Truck>(entity =>
             {

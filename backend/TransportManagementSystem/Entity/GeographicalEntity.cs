@@ -34,4 +34,5 @@ public class GeographicalEntity
 
     // Navigation property for children
     public virtual ICollection<GeographicalEntity> Children { get; set; }
+    public virtual ICollection<TruckGeographicalEntity> TruckGeographicalEntities { get; set; }
 }

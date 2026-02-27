@@ -647,7 +647,6 @@ namespace TransportManagementSystem.Data
                             EmptyWeight = rnd.Next(3000, 12000),
                             Status = statuses[rnd.Next(statuses.Length)],
                             IsEnable = true,
-                            ZoneId = zone.Id,
                             TypeTruckId = selectedType.Id
                         });
                     }
