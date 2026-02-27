@@ -1,27 +1,20 @@
 import { Component, inject, OnInit } from '@angular/core';
 import { Http } from '../../services/http';
-import { IGeneralSettings, ParameterType, SearchOptions, IGeographicalLevel } from '../../types/general-settings';
+import { IGeneralSettings, ParameterType, IGeographicalLevel, IGeographicalEntity } from '../../types/general-settings';
 import { MatButtonModule } from '@angular/material/button';
-import { FormControl, FormsModule, ReactiveFormsModule, FormGroup, FormBuilder, Validators, FormArray } from '@angular/forms';
+import { FormsModule, ReactiveFormsModule, FormGroup, FormBuilder, Validators, FormArray, FormControl } from '@angular/forms';
 import { MatDialog } from '@angular/material/dialog';
 import { GeneralSettingsForm } from './general-settings-form/general-settings-form';
+import { GeographicalEntityForm } from './geographical-entity-form/geographical-entity-form';
 import { MatSelectModule } from '@angular/material/select';
 import { MatCardModule } from '@angular/material/card';
 import { MatInputModule } from '@angular/material/input';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatCheckboxModule } from '@angular/material/checkbox';
-import { MatSlideToggleModule } from '@angular/material/slide-toggle';
-import { MatExpansionModule } from '@angular/material/expansion';
-import { MatDividerModule } from '@angular/material/divider';
 import { MatIconModule } from '@angular/material/icon';
-import { MatListModule } from '@angular/material/list';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatTableModule } from '@angular/material/table';
-import { MatPaginatorModule } from '@angular/material/paginator';
-import { MatSortModule } from '@angular/material/sort';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { debounceTime, distinctUntilChanged } from 'rxjs';
-import { PagedData } from '../../types/paged-data';
 import { Auth } from '../../services/auth';
 import { CommonModule } from '@angular/common';
 import Swal from 'sweetalert2';
@@ -39,15 +32,9 @@ import Swal from 'sweetalert2';
     MatInputModule,
     MatFormFieldModule,
     MatCheckboxModule,
-    MatSlideToggleModule,
-    MatExpansionModule,
-    MatDividerModule,
     MatIconModule,
-    MatListModule,
     MatProgressSpinnerModule,
     MatTableModule,
-    MatPaginatorModule,
-    MatSortModule,
     MatTooltipModule
   ],
   templateUrl: './general-settings.html',
@@ -67,22 +54,28 @@ export class GeneralSettings implements OnInit {
   // Data
   orderSettings: IGeneralSettings[] = [];
   tripSettings: IGeneralSettings[] = [];
+  employeeCategories: IGeneralSettings[] = [];
   geographicalLevels: IGeographicalLevel[] = [];
-  allParameters: IGeneralSettings[] = [];
+  geographicalEntities: IGeographicalEntity[] = [];
+  filteredEntities: IGeographicalEntity[] = [];
   
-  // Table configuration
-  displayedColumns: string[] = ['parameterType', 'parameterCode', 'description', 'actions'];
-  
-  // Available parameter types
-  parameterTypes = Object.values(ParameterType);
-
   // Loading states
   isLoading = false;
   isSaving = false;
+  loadingCategories = false;
+  loadingEntities = false;
+  isSavingGeographical = false;
+
+  // Filters
+  entityLevelFilter = new FormControl('all');
 
   // Options for select inputs
   loadingUnitOptions = ['palette', 'kg', 'tonne', 'm³'];
-  tripOrderOptions = ['chronological', 'priority', 'geographical', 'optimized'];
+  tripOrderOptions = ['chronologique', 'priorité', 'géographique', 'optimisé'];
+
+  // Table columns
+  employeeColumns: string[] = ['code', 'description', 'value', 'actions'];
+  entityColumns: string[] = ['name', 'level', 'parent', 'coordinates', 'status', 'actions'];
 
   // Mapping of parameter codes to form control names
   private orderControlMap: { [key: string]: string } = {
@@ -109,6 +102,11 @@ export class GeneralSettings implements OnInit {
   ngOnInit() {
     this.initForms();
     this.loadAllSettings();
+    
+    // Filter entities when level filter changes
+    this.entityLevelFilter.valueChanges.subscribe(levelId => {
+      this.filterEntities(levelId);
+    });
   }
 
   initForms() {
@@ -128,7 +126,7 @@ export class GeneralSettings implements OnInit {
       ALLOW_DELETE_TRIPS: [false],
       EDIT_TIME_LIMIT: [60, [Validators.min(1)]],
       MAX_TRIPS_PER_DAY: [10, [Validators.min(1)]],
-      TRIP_ORDER: ['chronological'],
+      TRIP_ORDER: ['chronologique'],
       REQUIRE_DELETE_CONFIRMATION: [true],
       NOTIFY_ON_TRIP_EDIT: [false],
       NOTIFY_ON_TRIP_DELETE: [false],
@@ -144,12 +142,11 @@ export class GeneralSettings implements OnInit {
   loadAllSettings() {
     this.isLoading = true;
     
-    // Load ORDER settings - get all
+    // Load ORDER settings
     this.httpService.getAllSettingsByType('ORDER').subscribe({
       next: (settings) => {
         this.orderSettings = settings;
         this.populateOrderForm(settings);
-        this.updateAllParameters();
       },
       error: (error) => {
         console.error('Error loading order settings:', error);
@@ -157,12 +154,11 @@ export class GeneralSettings implements OnInit {
       }
     });
 
-    // Load TRIP settings - get all
+    // Load TRIP settings
     this.httpService.getAllSettingsByType('TRIP').subscribe({
       next: (settings) => {
         this.tripSettings = settings;
         this.populateTripForm(settings);
-        this.updateAllParameters();
       },
       error: (error) => {
         console.error('Error loading trip settings:', error);
@@ -170,12 +166,27 @@ export class GeneralSettings implements OnInit {
       }
     });
 
+    // Load Employee Categories
+    this.loadEmployeeCategories();
+
     // Load Geographical Levels
     this.loadGeographicalLevels();
   }
 
-  updateAllParameters() {
-    this.allParameters = [...this.orderSettings, ...this.tripSettings];
+  loadEmployeeCategories(): void {
+    this.loadingCategories = true;
+    
+    this.httpService.getAllSettingsByType('EMPLOYEE_CATEGORY').subscribe({
+      next: (categories) => {
+        this.employeeCategories = categories;
+        this.loadingCategories = false;
+      },
+      error: (error) => {
+        console.error('Error loading employee categories:', error);
+        this.loadingCategories = false;
+        this.showError('Impossible de charger les catégories d\'employés');
+      }
+    });
   }
 
   loadGeographicalLevels() {
@@ -183,22 +194,49 @@ export class GeneralSettings implements OnInit {
       next: (levels) => {
         this.geographicalLevels = levels;
         this.populateGeographicalLevelsForm(levels);
+        this.loadGeographicalEntities();
       },
       error: (error) => {
         console.error('Error loading geographical levels:', error);
-        this.showError('Impossible de charger les niveaux géographiques');
-      },
-      complete: () => {
+        this.geographicalLevels = [];
+        this.populateGeographicalLevelsForm([]);
         this.isLoading = false;
       }
     });
+  }
+
+  loadGeographicalEntities() {
+    this.loadingEntities = true;
+    
+    this.httpService.getGeographicalEntities().subscribe({
+      next: (entities) => {
+        this.geographicalEntities = entities;
+        this.filterEntities('all');
+        this.loadingEntities = false;
+        this.isLoading = false;
+      },
+      error: (error) => {
+        console.error('Error loading geographical entities:', error);
+        this.geographicalEntities = [];
+        this.filteredEntities = [];
+        this.loadingEntities = false;
+        this.isLoading = false;
+      }
+    });
+  }
+
+  filterEntities(levelId: string | number | null) {
+    if (!levelId || levelId === 'all') {
+      this.filteredEntities = [...this.geographicalEntities];
+    } else {
+      this.filteredEntities = this.geographicalEntities.filter(e => e.levelId === Number(levelId));
+    }
   }
 
   populateOrderForm(settings: IGeneralSettings[]) {
     const formValues: any = {};
     
     settings.forEach(setting => {
-      // Parse the ParameterCode which contains "KEY=value"
       const [key, value] = this.parseParameterCode(setting.parameterCode);
       const controlName = this.orderControlMap[key];
       
@@ -214,7 +252,6 @@ export class GeneralSettings implements OnInit {
     const formValues: any = {};
     
     settings.forEach(setting => {
-      // Parse the ParameterCode which contains "KEY=value"
       const [key, value] = this.parseParameterCode(setting.parameterCode);
       const controlName = this.tripControlMap[key];
       
@@ -227,22 +264,18 @@ export class GeneralSettings implements OnInit {
   }
 
   populateGeographicalLevelsForm(levels: IGeographicalLevel[]) {
-    // Clear existing controls
-    while (this.geographicalLevelsArray.length) {
-      this.geographicalLevelsArray.removeAt(0);
-    }
+    const levelsArray = this.geographicalLevelsForm.get('levels') as FormArray;
+    levelsArray.clear();
     
-    // Add new controls
     levels.forEach(level => {
       const levelGroup = this.fb.group({
-        id: [level.id || 0],
+        id: [level.id],
         name: [level.name, Validators.required],
         levelNumber: [level.levelNumber, [Validators.required, Validators.min(1), Validators.max(5)]],
-        isMappable: [level.isMappable || false],
-        isActive: [level.isActive !== undefined ? level.isActive : true]
+        isMappable: [level.isMappable],
+        isActive: [level.isActive]
       });
-      
-      this.geographicalLevelsArray.push(levelGroup);
+      levelsArray.push(levelGroup);
     });
   }
 
@@ -251,20 +284,25 @@ export class GeneralSettings implements OnInit {
     if (parts.length === 2) {
       return [parts[0], parts[1]];
     }
-    // Fallback for backward compatibility
-    return [parameterCode, parameterCode];
+    return [parameterCode, ''];
+  }
+
+  extractCode(parameterCode: string): string {
+    return parameterCode.split('=')[0];
+  }
+
+  extractValue(parameterCode: string): string {
+    const parts = parameterCode.split('=');
+    return parts.length === 2 ? parts[1] : '';
   }
 
   parseSettingValue(value: string): any {
-    // Try to parse as boolean
     if (value.toLowerCase() === 'true') return true;
     if (value.toLowerCase() === 'false') return false;
     
-    // Try to parse as number
     const num = Number(value);
     if (!isNaN(num)) return num;
     
-    // Return as string
     return value;
   }
 
@@ -284,9 +322,7 @@ export class GeneralSettings implements OnInit {
     const formValue = this.orderSettingsForm.value;
     const updates: IGeneralSettings[] = [];
     
-    // Create or update each setting
     Object.keys(formValue).forEach(key => {
-      // Find the parameter code from the control map
       const parameterCode = Object.keys(this.orderControlMap).find(
         code => this.orderControlMap[code] === key
       );
@@ -301,13 +337,11 @@ export class GeneralSettings implements OnInit {
       );
       
       if (existing) {
-        // Update existing
         updates.push({
           ...existing,
           parameterCode: fullParameterCode
         });
       } else {
-        // Create new
         updates.push({
           id: 0,
           parameterType: 'ORDER',
@@ -331,7 +365,6 @@ export class GeneralSettings implements OnInit {
     const updates: IGeneralSettings[] = [];
     
     Object.keys(formValue).forEach(key => {
-      // Find the parameter code from the control map
       const parameterCode = Object.keys(this.tripControlMap).find(
         code => this.tripControlMap[code] === key
       );
@@ -363,32 +396,7 @@ export class GeneralSettings implements OnInit {
     this.saveSettings(updates, 'Paramètres de voyage enregistrés avec succès');
   }
 
-  saveGeographicalLevels() {
-    if (this.geographicalLevelsForm.invalid) {
-      this.showError('Veuillez remplir tous les champs requis');
-      return;
-    }
-    
-    this.isSaving = true;
-    const levels = this.geographicalLevelsForm.value.levels;
-    
-    this.httpService.updateGeographicalLevels(levels).subscribe({
-      next: () => {
-        this.showSuccess('Niveaux géographiques enregistrés avec succès');
-        this.loadGeographicalLevels();
-      },
-      error: (error) => {
-        console.error('Error saving geographical levels:', error);
-        this.showError('Erreur lors de l\'enregistrement des niveaux géographiques');
-      },
-      complete: () => {
-        this.isSaving = false;
-      }
-    });
-  }
-
   saveSettings(updates: IGeneralSettings[], successMessage: string) {
-    // Since your API might not support bulk update, we'll update one by one
     const updatePromises = updates.map(setting => {
       if (setting.id > 0) {
         return this.httpService.updateGeneralSettings(setting.id, setting).toPromise();
@@ -409,6 +417,30 @@ export class GeneralSettings implements OnInit {
       .finally(() => {
         this.isSaving = false;
       });
+  }
+
+  saveGeographicalLevels() {
+    if (this.geographicalLevelsForm.invalid) {
+      this.showError('Veuillez remplir tous les champs requis');
+      return;
+    }
+
+    this.isSavingGeographical = true;
+    const levels = this.geographicalLevelsForm.value.levels;
+
+    this.httpService.updateGeographicalLevels(levels).subscribe({
+      next: () => {
+        this.showSuccess('Niveaux géographiques enregistrés avec succès');
+        this.loadGeographicalLevels();
+      },
+      error: (error) => {
+        console.error('Error saving geographical levels:', error);
+        this.showError('Erreur lors de l\'enregistrement des niveaux géographiques');
+      },
+      complete: () => {
+        this.isSavingGeographical = false;
+      }
+    });
   }
 
   getDescriptionForKey(key: string): string {
@@ -432,32 +464,25 @@ export class GeneralSettings implements OnInit {
     return descriptions[key] || key;
   }
 
-  // ========== DIALOG METHODS ==========
+  // ========== EMPLOYEE CATEGORY DIALOGS ==========
 
-  /**
-   * Open dialog to add a new parameter
-   */
   openAddParameterDialog(): void {
     const dialogRef = this.dialog.open(GeneralSettingsForm, {
       width: '600px',
       maxWidth: '95vw',
       panelClass: 'settings-form-dialog',
       disableClose: true,
-      data: {} // Empty data = add mode
+      data: {}
     });
 
     dialogRef.afterClosed().subscribe(result => {
       if (result) {
-        this.loadAllSettings(); // Refresh data
-        this.showSuccess('Paramètre ajouté avec succès');
+        this.loadAllSettings();
+        this.showSuccess('Catégorie ajoutée avec succès');
       }
     });
   }
 
-  /**
-   * Open dialog to edit an existing parameter
-   * @param parameter The parameter to edit
-   */
   openEditParameterDialog(parameter: IGeneralSettings): void {
     const dialogRef = this.dialog.open(GeneralSettingsForm, {
       width: '600px',
@@ -469,20 +494,16 @@ export class GeneralSettings implements OnInit {
 
     dialogRef.afterClosed().subscribe(result => {
       if (result) {
-        this.loadAllSettings(); // Refresh data
-        this.showSuccess('Paramètre mis à jour avec succès');
+        this.loadAllSettings();
+        this.showSuccess('Catégorie modifiée avec succès');
       }
     });
   }
 
-  /**
-   * Delete a parameter with confirmation
-   * @param parameter The parameter to delete
-   */
   deleteParameter(parameter: IGeneralSettings): void {
     Swal.fire({
       title: 'Êtes-vous sûr?',
-      text: `Voulez-vous vraiment supprimer le paramètre "${this.extractCode(parameter.parameterCode)}"?`,
+      text: `Voulez-vous vraiment supprimer la catégorie "${this.extractCode(parameter.parameterCode)}"?`,
       icon: 'warning',
       showCancelButton: true,
       confirmButtonColor: '#d33',
@@ -493,7 +514,7 @@ export class GeneralSettings implements OnInit {
       if (result.isConfirmed) {
         this.httpService.deleteGeneralSettings(parameter.id).subscribe({
           next: () => {
-            this.showSuccess('Paramètre supprimé avec succès');
+            this.showSuccess('Catégorie supprimée avec succès');
             this.loadAllSettings();
           },
           error: (error) => {
@@ -505,19 +526,90 @@ export class GeneralSettings implements OnInit {
     });
   }
 
-  /**
-   * Extract code from parameterCode (format: "CODE=value")
-   */
-  extractCode(parameterCode: string): string {
-    return parameterCode.split('=')[0];
+  // ========== GEOGRAPHICAL ENTITY DIALOGS ==========
+
+  openAddEntityDialog(): void {
+    if (this.geographicalLevels.length === 0) {
+      this.showWarning('Veuillez d\'abord créer des niveaux géographiques');
+      return;
+    }
+
+    const dialogRef = this.dialog.open(GeographicalEntityForm, {
+      width: '600px',
+      maxWidth: '95vw',
+      panelClass: 'settings-form-dialog',
+      disableClose: true,
+      data: { 
+        levels: this.geographicalLevels,
+        entities: this.geographicalEntities 
+      }
+    });
+
+    dialogRef.afterClosed().subscribe(result => {
+      if (result) {
+        this.loadGeographicalEntities();
+        this.showSuccess('Entité géographique ajoutée avec succès');
+      }
+    });
   }
 
-  /**
-   * Extract value from parameterCode (format: "CODE=value")
-   */
-  extractValue(parameterCode: string): string {
-    const parts = parameterCode.split('=');
-    return parts.length === 2 ? parts[1] : parameterCode;
+  openEditEntityDialog(entity: IGeographicalEntity): void {
+    const dialogRef = this.dialog.open(GeographicalEntityForm, {
+      width: '600px',
+      maxWidth: '95vw',
+      panelClass: 'settings-form-dialog',
+      disableClose: true,
+      data: { 
+        entityId: entity.id,
+        levels: this.geographicalLevels,
+        entities: this.geographicalEntities 
+      }
+    });
+
+    dialogRef.afterClosed().subscribe(result => {
+      if (result) {
+        this.loadGeographicalEntities();
+        this.showSuccess('Entité géographique modifiée avec succès');
+      }
+    });
+  }
+
+  deleteEntity(entity: IGeographicalEntity): void {
+    Swal.fire({
+      title: 'Êtes-vous sûr?',
+      text: `Voulez-vous vraiment supprimer l'entité "${entity.name}"?`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#3085d6',
+      confirmButtonText: 'Oui, supprimer!',
+      cancelButtonText: 'Annuler'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        this.httpService.deleteGeographicalEntity(entity.id!).subscribe({
+          next: () => {
+            this.showSuccess('Entité supprimée avec succès');
+            this.loadGeographicalEntities();
+          },
+          error: (error) => {
+            console.error('Error deleting entity:', error);
+            this.showError('Erreur lors de la suppression');
+          }
+        });
+      }
+    });
+  }
+
+  // ========== HELPER METHODS ==========
+
+  getLevelName(levelId: number): string {
+    const level = this.geographicalLevels.find(l => l.id === levelId);
+    return level ? `${level.name} (Niv. ${level.levelNumber})` : 'Inconnu';
+  }
+
+  getEntityName(entityId: number): string {
+    const entity = this.geographicalEntities.find(e => e.id === entityId);
+    return entity ? entity.name : 'Inconnu';
   }
 
   // ========== GEOGRAPHICAL LEVELS METHODS ==========
@@ -554,7 +646,6 @@ export class GeneralSettings implements OnInit {
     }).then((result) => {
       if (result.isConfirmed) {
         levelsArray.removeAt(index);
-        // Renumber remaining levels
         for (let i = 0; i < levelsArray.length; i++) {
           levelsArray.at(i).get('levelNumber')?.setValue(i + 1);
         }
@@ -592,7 +683,6 @@ export class GeneralSettings implements OnInit {
     });
   }
 
-  // Helper to get form arrays
   get geographicalLevelsArray(): FormArray {
     return this.geographicalLevelsForm.get('levels') as FormArray;
   }

@@ -5,18 +5,18 @@
     
     <!-- Action buttons -->
     <div class="flex flex-wrap gap-3">
-  <button 
-    mat-raised-button 
-    (click)="openAddParameterDialog()" 
-    [disabled]="isLoading"
-    class="theme-primary-btn"
-    [style.background]="'var(--primary-gradient)'"
-  >
-    <mat-icon>add</mat-icon>
-    <span class="hidden sm:inline ml-1">Ajouter un paramètre</span>
-    <span class="sm:hidden">Ajouter</span>
-  </button>
-</div>
+      <button 
+        mat-raised-button 
+        (click)="openAddParameterDialog()" 
+        [disabled]="isLoading"
+        class="theme-primary-btn"
+        [style.background]="'var(--primary-gradient)'"
+      >
+        <mat-icon>add</mat-icon>
+        <span class="hidden sm:inline ml-1">Ajouter une catégorie</span>
+        <span class="sm:hidden">Ajouter</span>
+      </button>
+    </div>
   </div>
 
   <!-- Loading State -->
@@ -57,41 +57,43 @@
 
           <!-- Form Fields Section -->
           <div class="form-fields-section">
-            <!-- Loading Unit Field -->
-            <div class="form-field-wrapper">
-              <mat-form-field appearance="outline" class="full-width">
-                <mat-label>Unité de chargement</mat-label>
-                <mat-select formControlName="LOADING_UNIT">
-                  <mat-option *ngFor="let option of loadingUnitOptions" [value]="option">
-                    {{option}}
-                  </mat-option>
-                </mat-select>
-                <mat-icon matSuffix>arrow_drop_down</mat-icon>
-              </mat-form-field>
-              <mat-hint class="field-hint">Unité par défaut pour les chargements</mat-hint>
-            </div>
+            <div class="form-fields-grid">
+              <!-- Loading Unit Field -->
+              <div class="form-field-wrapper">
+                <mat-form-field appearance="outline" class="full-width">
+                  <mat-label>Unité de chargement</mat-label>
+                  <mat-select formControlName="LOADING_UNIT">
+                    <mat-option *ngFor="let option of loadingUnitOptions" [value]="option">
+                      {{option}}
+                    </mat-option>
+                  </mat-select>
+                  <mat-icon matSuffix>arrow_drop_down</mat-icon>
+                </mat-form-field>
+                <mat-hint class="field-hint">Unité par défaut pour les chargements</mat-hint>
+              </div>
 
-            <!-- Planning Horizon Field -->
-            <div class="form-field-wrapper">
-              <mat-form-field appearance="outline" class="full-width">
-                <mat-label>Horizon de planification (jours)</mat-label>
-                <input matInput type="number" formControlName="PLANNING_HORIZON">
-                <mat-icon matSuffix>calendar_today</mat-icon>
-              </mat-form-field>
-              <mat-hint class="field-hint">Nombre de jours pour la planification</mat-hint>
-              <mat-error *ngIf="orderSettingsForm.get('PLANNING_HORIZON')?.hasError('min')" class="field-error">
-                Minimum 1 jour
-              </mat-error>
-              <mat-error *ngIf="orderSettingsForm.get('PLANNING_HORIZON')?.hasError('max')" class="field-error">
-                Maximum 365 jours
-              </mat-error>
+              <!-- Planning Horizon Field -->
+              <div class="form-field-wrapper">
+                <mat-form-field appearance="outline" class="full-width">
+                  <mat-label>Horizon de planification (jours)</mat-label>
+                  <input matInput type="number" formControlName="PLANNING_HORIZON">
+                  <mat-icon matSuffix>calendar_today</mat-icon>
+                </mat-form-field>
+                <mat-hint class="field-hint">Nombre de jours pour la planification</mat-hint>
+                <mat-error *ngIf="orderSettingsForm.get('PLANNING_HORIZON')?.hasError('min')" class="field-error">
+                  Minimum 1 jour
+                </mat-error>
+                <mat-error *ngIf="orderSettingsForm.get('PLANNING_HORIZON')?.hasError('max')" class="field-error">
+                  Maximum 365 jours
+                </mat-error>
+              </div>
             </div>
           </div>
         </form>
       </mat-card-content>
 
       <mat-card-actions align="end">
-        <button mat-raised-button color="primary" (click)="saveOrderSettings()" [disabled]="orderSettingsForm.invalid || isSaving">
+        <button mat-raised-button (click)="saveOrderSettings()" [disabled]="orderSettingsForm.invalid || isSaving" class="theme-primary-btn">
           <mat-icon>save</mat-icon>
           Enregistrer les paramètres des commandes
         </button>
@@ -182,9 +184,96 @@
       </mat-card-content>
 
       <mat-card-actions align="end">
-        <button mat-raised-button color="primary" (click)="saveTripSettings()" [disabled]="tripSettingsForm.invalid || isSaving">
+        <button mat-raised-button (click)="saveTripSettings()" [disabled]="tripSettingsForm.invalid || isSaving" class="theme-primary-btn">
           <mat-icon>save</mat-icon>
           Enregistrer les paramètres des voyages
+        </button>
+      </mat-card-actions>
+    </mat-card>
+
+    <!-- Employee Categories Card -->
+    <mat-card class="settings-card">
+      <mat-card-header>
+        <mat-icon class="card-icon">badge</mat-icon>
+        <div class="card-header-text">
+          <mat-card-title>Catégories d'Employés</mat-card-title>
+          <mat-card-subtitle>
+            Gérez les catégories d'employés ({{employeeCategories.length}})
+          </mat-card-subtitle>
+        </div>
+      </mat-card-header>
+
+      <mat-card-content>
+        <!-- Loading State for Employee Categories -->
+        <div *ngIf="loadingCategories" class="flex justify-center items-center py-8">
+          <mat-spinner diameter="30"></mat-spinner>
+        </div>
+
+        <!-- Employee Categories Table -->
+        <div *ngIf="!loadingCategories" class="overflow-x-auto">
+          <table mat-table [dataSource]="employeeCategories" class="w-full">
+            <!-- Code Column -->
+            <ng-container matColumnDef="code">
+              <th mat-header-cell *matHeaderCellDef>Code</th>
+              <td mat-cell *matCellDef="let category">
+                <span class="font-mono text-sm font-medium" [style.color]="'var(--primary-color)'">
+                  {{extractCode(category.parameterCode)}}
+                </span>
+              </td>
+            </ng-container>
+
+            <!-- Description Column -->
+            <ng-container matColumnDef="description">
+              <th mat-header-cell *matHeaderCellDef>Description</th>
+              <td mat-cell *matCellDef="let category">{{category.description}}</td>
+            </ng-container>
+
+            <!-- Value Column -->
+            <ng-container matColumnDef="value">
+              <th mat-header-cell *matHeaderCellDef>Valeur</th>
+              <td mat-cell *matCellDef="let category">
+                <span class="px-2 py-1 rounded-full text-xs" 
+                      [style.background]="'rgba(var(--primary-color-rgb), 0.1)'"
+                      [style.color]="'var(--primary-color)'">
+                  {{extractValue(category.parameterCode)}}
+                </span>
+              </td>
+            </ng-container>
+
+            <!-- Actions Column -->
+            <ng-container matColumnDef="actions">
+              <th mat-header-cell *matHeaderCellDef>Actions</th>
+              <td mat-cell *matCellDef="let category">
+                <button mat-icon-button (click)="openEditParameterDialog(category)" matTooltip="Modifier" [style.color]="'var(--primary-color)'">
+                  <mat-icon>edit</mat-icon>
+                </button>
+                <button mat-icon-button color="warn" (click)="deleteParameter(category)" matTooltip="Supprimer">
+                  <mat-icon>delete</mat-icon>
+                </button>
+              </td>
+            </ng-container>
+
+            <tr mat-header-row *matHeaderRowDef="employeeColumns"></tr>
+            <tr mat-row *matRowDef="let row; columns: employeeColumns;"></tr>
+
+            <!-- Empty state -->
+            <tr class="mat-row" *matNoDataRow>
+              <td class="mat-cell text-center p-8" [attr.colspan]="employeeColumns.length">
+                <div class="flex flex-col items-center gap-2" [style.color]="'var(--text-muted)'">
+                  <mat-icon class="text-4xl">badge</mat-icon>
+                  <p class="text-lg font-medium">Aucune catégorie d'employé</p>
+                  <p class="text-sm">Cliquez sur "Ajouter une catégorie" pour créer votre première catégorie</p>
+                </div>
+              </td>
+            </tr>
+          </table>
+        </div>
+      </mat-card-content>
+
+      <mat-card-actions align="end">
+        <button mat-raised-button (click)="openAddParameterDialog()" class="theme-primary-btn">
+          <mat-icon>add</mat-icon>
+          Nouvelle catégorie
         </button>
       </mat-card-actions>
     </mat-card>
@@ -192,11 +281,11 @@
     <!-- Geographical Levels Card -->
     <mat-card class="settings-card">
       <mat-card-header>
-        <mat-icon class="card-icon">map</mat-icon>
+        <mat-icon class="card-icon">layers</mat-icon>
         <div class="card-header-text">
           <mat-card-title>Niveaux Géographiques</mat-card-title>
           <mat-card-subtitle>
-            Configurez jusqu'à 5 niveaux hiérarchiques
+            Configurez les niveaux hiérarchiques ({{geographicalLevels.length}}/5 maximum)
           </mat-card-subtitle>
         </div>
       </mat-card-header>
@@ -204,6 +293,7 @@
       <mat-card-content>
         <form [formGroup]="geographicalLevelsForm">
           <div formArrayName="levels" class="levels-container">
+            <!-- Level Items -->
             <div *ngFor="let level of geographicalLevelsArray.controls; let i = index" 
                  [formGroupName]="i" 
                  class="level-item">
@@ -230,7 +320,7 @@
                 </mat-form-field>
 
                 <mat-checkbox formControlName="isMappable">
-                  Cartographiable
+                  Cartographiable (nécessite des coordonnées)
                 </mat-checkbox>
 
                 <mat-checkbox formControlName="isActive">
@@ -240,10 +330,10 @@
             </div>
 
             <!-- Add Level Button -->
-            <button class="add-level-btn" 
+            <button *ngIf="geographicalLevelsArray.length < 5" 
+                    class="add-level-btn" 
                     type="button" 
-                    (click)="addGeographicalLevel()"
-                    [disabled]="geographicalLevelsArray.length >= 5">
+                    (click)="addGeographicalLevel()">
               <mat-icon>add</mat-icon>
               Ajouter un niveau
             </button>
@@ -258,11 +348,131 @@
       </mat-card-content>
 
       <mat-card-actions align="end">
-        <button mat-raised-button color="primary" (click)="saveGeographicalLevels()" [disabled]="geographicalLevelsForm.invalid || isSaving">
+        <button mat-raised-button (click)="saveGeographicalLevels()" [disabled]="geographicalLevelsForm.invalid || isSavingGeographical" class="theme-primary-btn">
           <mat-icon>save</mat-icon>
-          Enregistrer les niveaux géographiques
+          Enregistrer les niveaux
         </button>
       </mat-card-actions>
+    </mat-card>
+
+    <!-- Geographical Entities Card -->
+    <mat-card class="settings-card">
+      <mat-card-header>
+        <mat-icon class="card-icon">map</mat-icon>
+        <div class="card-header-text">
+          <mat-card-title>Entités Géographiques</mat-card-title>
+          <mat-card-subtitle>
+            Gérez les entités avec leurs coordonnées ({{filteredEntities.length}})
+          </mat-card-subtitle>
+        </div>
+      </mat-card-header>
+
+      <mat-card-content>
+        <!-- Level Filter -->
+        <div class="filter-section">
+          <mat-form-field appearance="outline" class="filter-select">
+            <mat-label>Filtrer par niveau</mat-label>
+            <mat-select [formControl]="entityLevelFilter">
+              <mat-option [value]="'all'">Tous les niveaux</mat-option>
+              <mat-option *ngFor="let level of geographicalLevels" [value]="level.id">
+                {{level.name}} (Niveau {{level.levelNumber}})
+              </mat-option>
+            </mat-select>
+          </mat-form-field>
+
+          <button mat-raised-button (click)="openAddEntityDialog()" class="theme-primary-btn" [disabled]="geographicalLevels.length === 0">
+            <mat-icon>add_location</mat-icon>
+            Nouvelle entité
+          </button>
+        </div>
+
+        <!-- Loading State -->
+        <div *ngIf="loadingEntities" class="flex justify-center items-center py-8">
+          <mat-spinner diameter="30"></mat-spinner>
+        </div>
+
+        <!-- Entities Table -->
+        <div *ngIf="!loadingEntities" class="overflow-x-auto">
+          <table mat-table [dataSource]="filteredEntities" class="w-full">
+            <!-- Name Column -->
+            <ng-container matColumnDef="name">
+              <th mat-header-cell *matHeaderCellDef>Nom</th>
+              <td mat-cell *matCellDef="let entity">{{entity.name}}</td>
+            </ng-container>
+
+            <!-- Level Column -->
+            <ng-container matColumnDef="level">
+              <th mat-header-cell *matHeaderCellDef>Niveau</th>
+              <td mat-cell *matCellDef="let entity">
+                <span class="level-badge" [style.background]="'rgba(var(--primary-color-rgb), 0.1)'" [style.color]="'var(--primary-color)'">
+                  {{getLevelName(entity.levelId)}}
+                </span>
+              </td>
+            </ng-container>
+
+            <!-- Parent Column -->
+            <ng-container matColumnDef="parent">
+              <th mat-header-cell *matHeaderCellDef>Parent</th>
+              <td mat-cell *matCellDef="let entity">
+                {{entity.parentId ? getEntityName(entity.parentId) : '-'}}
+              </td>
+            </ng-container>
+
+            <!-- Coordinates Column -->
+            <ng-container matColumnDef="coordinates">
+              <th mat-header-cell *matHeaderCellDef>Coordonnées</th>
+              <td mat-cell *matCellDef="let entity">
+                <div *ngIf="entity.latitude && entity.longitude; else noCoords">
+                  <span class="coords-badge" matTooltip="Latitude: {{entity.latitude}}, Longitude: {{entity.longitude}}">
+                    <mat-icon class="text-sm">location_on</mat-icon>
+                    {{entity.latitude | number:'1.4-4'}}, {{entity.longitude | number:'1.4-4'}}
+                  </span>
+                </div>
+                <ng-template #noCoords>
+                  <span class="text-gray-400 text-sm">-</span>
+                </ng-template>
+              </td>
+            </ng-container>
+
+            <!-- Status Column -->
+            <ng-container matColumnDef="status">
+              <th mat-header-cell *matHeaderCellDef>Statut</th>
+              <td mat-cell *matCellDef="let entity">
+                <span class="status-badge" [class.active]="entity.isActive" [class.inactive]="!entity.isActive">
+                  {{entity.isActive ? 'Actif' : 'Inactif'}}
+                </span>
+              </td>
+            </ng-container>
+
+            <!-- Actions Column -->
+            <ng-container matColumnDef="actions">
+              <th mat-header-cell *matHeaderCellDef>Actions</th>
+              <td mat-cell *matCellDef="let entity">
+                <button mat-icon-button (click)="openEditEntityDialog(entity)" matTooltip="Modifier" [style.color]="'var(--primary-color)'">
+                  <mat-icon>edit</mat-icon>
+                </button>
+                <button mat-icon-button color="warn" (click)="deleteEntity(entity)" matTooltip="Supprimer">
+                  <mat-icon>delete</mat-icon>
+                </button>
+              </td>
+            </ng-container>
+
+            <tr mat-header-row *matHeaderRowDef="entityColumns"></tr>
+            <tr mat-row *matRowDef="let row; columns: entityColumns;"></tr>
+
+            <!-- Empty state -->
+            <tr class="mat-row" *matNoDataRow>
+              <td class="mat-cell text-center p-8" [attr.colspan]="entityColumns.length">
+                <div class="flex flex-col items-center gap-2" [style.color]="'var(--text-muted)'">
+                  <mat-icon class="text-4xl">map</mat-icon>
+                  <p class="text-lg font-medium">Aucune entité géographique</p>
+                  <p class="text-sm">Configurez d'abord des niveaux, puis ajoutez des entités</p>
+                </div>
+              </td>
+            </tr>
+          </table>
+        </div>
+      </mat-card-content>
     </mat-card>
   </div>
 </div>

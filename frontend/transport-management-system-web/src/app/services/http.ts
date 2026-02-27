@@ -27,7 +27,7 @@ import { AvailabilityRequestDto, DriverAvailabilityDto, DriverOvertimeCheckDto, 
 import { ITypeTruck } from '../types/type-truck';
 import { ICategorys } from '../types/categorys';
 import { IMarque, IMarqueDto } from '../types/marque';
-import { IGeneralSettings , IGeographicalLevel, SearchOptions,  } from '../types/general-settings';
+import { IGeneralSettings , IGeographicalEntity, IGeographicalLevel, SearchOptions,  } from '../types/general-settings';
 
 @Injectable({
   providedIn: 'root'
@@ -1470,18 +1470,6 @@ getAllSettingsByType(parameterType: string): Observable<IGeneralSettings[]> {
   );
 }
 
-getGeographicalLevels(): Observable<IGeographicalLevel[]> {
-  return this.http.get<IGeographicalLevel[]>(
-    `${environment.apiUrl}/api/GeographicalLevels`
-  );
-}
-
-updateGeographicalLevels(levels: IGeographicalLevel[]): Observable<any> {
-  return this.http.put(
-    `${environment.apiUrl}/api/GeographicalLevels/bulk`,
-    levels
-  );
-}
 addGeneralSettings(parameter: Omit<IGeneralSettings, 'id'>): Observable<IGeneralSettings> {
     return this.http.post<IGeneralSettings>(
       `${environment.apiUrl}/api/GeneralSettings`, 
@@ -1494,6 +1482,35 @@ addGeneralSettings(parameter: Omit<IGeneralSettings, 'id'>): Observable<IGeneral
       parameter
     );
   }
+  // Add these methods to your Http service
+
+getGeographicalLevels(): Observable<IGeographicalLevel[]> {
+  return this.http.get<IGeographicalLevel[]>(`${environment.apiUrl}/api/GeographicalLevels`);
+}
+
+updateGeographicalLevels(levels: IGeographicalLevel[]): Observable<IGeographicalLevel[]> {
+  return this.http.put<IGeographicalLevel[]>(`${environment.apiUrl}/api/GeographicalLevels/bulk`, levels);
+}
+
+getGeographicalEntities(): Observable<IGeographicalEntity[]> {
+  return this.http.get<IGeographicalEntity[]>(`${environment.apiUrl}/api/GeographicalEntities`);
+}
+
+getGeographicalEntity(id: number): Observable<IGeographicalEntity> {
+  return this.http.get<IGeographicalEntity>(`${environment.apiUrl}/api/GeographicalEntities/${id}`);
+}
+
+addGeographicalEntity(entity: any): Observable<IGeographicalEntity> {
+  return this.http.post<IGeographicalEntity>(`${environment.apiUrl}/api/GeographicalEntities`, entity);
+}
+
+updateGeographicalEntity(id: number, entity: any): Observable<IGeographicalEntity> {
+  return this.http.put<IGeographicalEntity>(`${environment.apiUrl}/api/GeographicalEntities/${id}`, entity);
+}
+
+deleteGeographicalEntity(id: number): Observable<void> {
+  return this.http.delete<void>(`${environment.apiUrl}/api/GeographicalEntities/${id}`);
+}
 }
 
 

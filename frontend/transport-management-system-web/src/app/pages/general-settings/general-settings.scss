@@ -471,3 +471,163 @@
     }
   }
 }
+// Geographical Entities Table Styles
+.filter-section {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+
+  .filter-select {
+    flex: 1;
+    min-width: 250px;
+  }
+
+  button {
+    height: 56px;
+    padding: 0 24px;
+    border-radius: 12px;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+}
+
+// Level badge
+.level-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  background: rgba(var(--primary-color-rgb), 0.1);
+  color: var(--primary-color);
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: rgba(var(--primary-color-rgb), 0.15);
+    transform: translateY(-1px);
+  }
+}
+
+// Coordinates badge
+.coords-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  background: #f0f9ff;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  color: #0369a1;
+  border: 1px solid #bae6fd;
+  cursor: help;
+  transition: all 0.2s ease;
+
+  .mat-icon {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+    color: #0284c7;
+  }
+
+  &:hover {
+    background: #e0f2fe;
+    border-color: #7dd3fc;
+  }
+}
+
+// Status badge
+.status-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+
+  &.active {
+    background: rgba(16, 185, 129, 0.1);
+    color: #065f46;
+    border: 1px solid rgba(16, 185, 129, 0.3);
+
+    &:hover {
+      background: rgba(16, 185, 129, 0.15);
+    }
+  }
+
+  &.inactive {
+    background: rgba(239, 68, 68, 0.1);
+    color: #b91c1c;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+
+    &:hover {
+      background: rgba(239, 68, 68, 0.15);
+    }
+  }
+}
+
+// Dark mode adjustments
+@media (prefers-color-scheme: dark) {
+  .coords-badge {
+    background: #1e293b;
+    border-color: #334155;
+    color: #7dd3fc;
+
+    .mat-icon {
+      color: #38bdf8;
+    }
+
+    &:hover {
+      background: #2d3a4f;
+      border-color: #38bdf8;
+    }
+  }
+
+  .status-badge {
+    &.active {
+      background: rgba(16, 185, 129, 0.2);
+      color: #6ee7b7;
+    }
+
+    &.inactive {
+      background: rgba(239, 68, 68, 0.2);
+      color: #fca5a5;
+    }
+  }
+}
+
+// Responsive table
+@media (max-width: 768px) {
+  .filter-section {
+    flex-direction: column;
+    align-items: stretch;
+
+    .filter-select {
+      width: 100%;
+    }
+
+    button {
+      width: 100%;
+    }
+  }
+
+  .mat-mdc-table {
+    .mat-mdc-header-cell {
+      padding: 8px;
+      font-size: 0.8rem;
+    }
+
+    .mat-mdc-cell {
+      padding: 8px;
+      font-size: 0.85rem;
+    }
+
+    .level-badge,
+    .coords-badge,
+    .status-badge {
+      padding: 2px 8px;
+      font-size: 0.75rem;
+    }
+  }
+}
