@@ -61,7 +61,7 @@ export interface PagedData<T> {
 
 // Geographical Levels Types
 export interface IGeographicalLevel {
-  id?: number;
+  id: number;
   name: string;
   levelNumber: number;
   isMappable: boolean;
@@ -69,7 +69,7 @@ export interface IGeographicalLevel {
 }
 
 export interface IGeographicalEntity {
-  id?: number;
+  id: number;
   name: string;
   levelId: number;
   parentId?: number;
