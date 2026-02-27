@@ -151,67 +151,87 @@ export class GeographicalEntityForm implements OnInit {
     return `https://www.google.com/maps?q=${lat},${lng}`;
   }
 
-  onSubmit(): void {
-    if (this.entityForm.invalid) {
-      Object.keys(this.entityForm.controls).forEach(key => {
-        this.entityForm.get(key)?.markAsTouched();
-      });
-      return;
-    }
-
-    this.isSubmitting = true;
-    const formValue = this.entityForm.value;
-
-    const entityData: any = {
-      name: formValue.name.trim(),
-      levelId: formValue.levelId,
-      parentId: formValue.parentId || null,
-      isActive: formValue.isActive
-    };
-
-    // Add coordinates if provided
-    if (formValue.latitude !== null && formValue.latitude !== undefined) {
-      entityData.latitude = Number(formValue.latitude);
-    }
-    if (formValue.longitude !== null && formValue.longitude !== undefined) {
-      entityData.longitude = Number(formValue.longitude);
-    }
-
-    const request = this.data.entityId
-      ? this.httpService.updateGeographicalEntity(this.data.entityId, entityData)
-      : this.httpService.addGeographicalEntity(entityData);
-
-    request.subscribe({
-      next: () => {
-        this.isSubmitting = false;
-        Swal.fire({
-          icon: 'success',
-          title: 'Succès',
-          text: this.data.entityId ? 'Entité modifiée avec succès' : 'Entité ajoutée avec succès',
-          timer: 2000,
-          showConfirmButton: false
-        }).then(() => this.dialogRef.close(true));
-      },
-      error: (error) => {
-        this.isSubmitting = false;
-        console.error('Error saving entity:', error);
-        
-        let errorMessage = 'Erreur lors de l\'enregistrement';
-        if (error.status === 400) {
-          errorMessage = error.error?.message || 'Données invalides';
-        } else if (error.status === 409) {
-          errorMessage = 'Une entité avec ce nom existe déjà pour ce niveau';
-        }
-        
-        Swal.fire({
-          icon: 'error',
-          title: 'Erreur',
-          text: errorMessage,
-          confirmButtonText: 'OK'
-        });
-      }
+ onSubmit(): void {
+  if (this.entityForm.invalid) {
+    Object.keys(this.entityForm.controls).forEach(key => {
+      const control = this.entityForm.get(key);
+      control?.markAsTouched();
     });
+    return;
   }
+
+  this.isSubmitting = true;
+  const formValue = this.entityForm.value;
+
+  // Create DTO that matches what backend expects
+  const entityData: any = {
+    name: formValue.name.trim(),
+    levelId: formValue.levelId,
+    isActive: formValue.isActive
+  };
+
+  // Add ID for updates
+  if (this.data.entityId) {
+    entityData.id = this.data.entityId;
+  }
+
+  // Add parentId only if selected
+  if (formValue.parentId) {
+    entityData.parentId = formValue.parentId;
+  }
+
+  // Add coordinates if provided
+  if (formValue.latitude !== null && formValue.latitude !== undefined) {
+    entityData.latitude = Number(formValue.latitude);
+  }
+  if (formValue.longitude !== null && formValue.longitude !== undefined) {
+    entityData.longitude = Number(formValue.longitude);
+  }
+
+  console.log('Submitting entity data:', entityData);
+
+  const request = this.data.entityId
+    ? this.httpService.updateGeographicalEntity(this.data.entityId, entityData)
+    : this.httpService.addGeographicalEntity(entityData);
+
+  request.subscribe({
+    next: (response) => {
+      console.log('Entity saved successfully:', response);
+      this.isSubmitting = false;
+      Swal.fire({
+        icon: 'success',
+        title: 'Succès',
+        text: this.data.entityId ? 'Entité modifiée avec succès' : 'Entité ajoutée avec succès',
+        timer: 2000,
+        showConfirmButton: false
+      }).then(() => this.dialogRef.close(true));
+    },
+    error: (error) => {
+      this.isSubmitting = false;
+      console.error('Error saving entity:', error);
+      console.error('Error details:', error.error);
+      
+      let errorMessage = 'Erreur lors de l\'enregistrement';
+      
+      if (error.status === 400) {
+        if (error.error?.message) {
+          errorMessage = error.error.message;
+        } else if (error.error?.title) {
+          errorMessage = error.error.title;
+        }
+      } else if (error.status === 409) {
+        errorMessage = 'Une entité avec ce nom existe déjà pour ce niveau';
+      }
+      
+      Swal.fire({
+        icon: 'error',
+        title: 'Erreur',
+        text: errorMessage,
+        confirmButtonText: 'OK'
+      });
+    }
+  });
+}
 
   onCancel(): void {
     this.dialogRef.close();

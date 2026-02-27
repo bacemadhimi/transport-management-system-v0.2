@@ -100,24 +100,24 @@ public class GeographicalEntitiesController : ControllerBase
 
     // POST: api/GeographicalEntities
     [HttpPost]
-    public async Task<IActionResult> Create([FromBody] GeographicalEntity model)
+    public async Task<IActionResult> Create([FromBody] GeographicalEntityDto dto)
     {
-        if (model == null)
+        if (dto == null)
             return BadRequest("Invalid data.");
 
         // Validate level exists
-        var level = await _context.GeographicalLevels.FindAsync(model.LevelId);
+        var level = await _context.GeographicalLevels.FindAsync(dto.LevelId);
         if (level == null)
             return BadRequest("Invalid level ID.");
 
         // Validate coordinates if level is mappable
-        if (level.IsMappable && (!model.Latitude.HasValue || !model.Longitude.HasValue))
+        if (level.IsMappable && (!dto.Latitude.HasValue || !dto.Longitude.HasValue))
             return BadRequest($"Coordinates are required for {level.Name} level.");
 
         // Validate parent if provided
-        if (model.ParentId.HasValue)
+        if (dto.ParentId.HasValue)
         {
-            var parent = await _context.GeographicalEntities.FindAsync(model.ParentId);
+            var parent = await _context.GeographicalEntities.FindAsync(dto.ParentId);
             if (parent == null)
                 return BadRequest("Invalid parent ID.");
 
@@ -129,26 +129,46 @@ public class GeographicalEntitiesController : ControllerBase
 
         // Check for duplicate name at same level
         bool nameExists = await _context.GeographicalEntities
-            .AnyAsync(e => e.LevelId == model.LevelId && e.Name.ToUpper() == model.Name.ToUpper());
+            .AnyAsync(e => e.LevelId == dto.LevelId && e.Name.ToUpper() == dto.Name.ToUpper());
 
         if (nameExists)
             return Conflict("An entity with this name already exists at this level.");
 
-        model.CreatedAt = DateTime.UtcNow;
-        model.UpdatedAt = DateTime.UtcNow;
-        model.IsActive = true;
+        var entity = new GeographicalEntity
+        {
+            Name = dto.Name,
+            LevelId = dto.LevelId,
+            ParentId = dto.ParentId,
+            Latitude = dto.Latitude,
+            Longitude = dto.Longitude,
+            IsActive = dto.IsActive,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
+        };
 
-        _context.GeographicalEntities.Add(model);
+        _context.GeographicalEntities.Add(entity);
         await _context.SaveChangesAsync();
 
-        return CreatedAtAction(nameof(GetById), new { id = model.Id }, model);
+        // Load navigation properties for response
+        await _context.Entry(entity)
+            .Reference(e => e.Level)
+            .LoadAsync();
+
+        if (entity.ParentId.HasValue)
+        {
+            await _context.Entry(entity)
+                .Reference(e => e.Parent)
+                .LoadAsync();
+        }
+
+        return CreatedAtAction(nameof(GetById), new { id = entity.Id }, entity);
     }
 
     // PUT: api/GeographicalEntities/{id}
     [HttpPut("{id}")]
-    public async Task<IActionResult> Update(int id, [FromBody] GeographicalEntity model)
+    public async Task<IActionResult> Update(int id, [FromBody] GeographicalEntityDto dto)
     {
-        if (model == null || id != model.Id)
+        if (dto == null || id != dto.Id)
             return BadRequest("Invalid data.");
 
         var existing = await _context.GeographicalEntities.FindAsync(id);
@@ -156,18 +176,18 @@ public class GeographicalEntitiesController : ControllerBase
             return NotFound();
 
         // Validate level exists
-        var level = await _context.GeographicalLevels.FindAsync(model.LevelId);
+        var level = await _context.GeographicalLevels.FindAsync(dto.LevelId);
         if (level == null)
             return BadRequest("Invalid level ID.");
 
         // Validate coordinates if level is mappable
-        if (level.IsMappable && (!model.Latitude.HasValue || !model.Longitude.HasValue))
+        if (level.IsMappable && (!dto.Latitude.HasValue || !dto.Longitude.HasValue))
             return BadRequest($"Coordinates are required for {level.Name} level.");
 
         // Validate parent if provided
-        if (model.ParentId.HasValue)
+        if (dto.ParentId.HasValue)
         {
-            var parent = await _context.GeographicalEntities.FindAsync(model.ParentId);
+            var parent = await _context.GeographicalEntities.FindAsync(dto.ParentId);
             if (parent == null)
                 return BadRequest("Invalid parent ID.");
 
@@ -179,20 +199,33 @@ public class GeographicalEntitiesController : ControllerBase
 
         // Check for duplicate name at same level (excluding current)
         bool nameExists = await _context.GeographicalEntities
-            .AnyAsync(e => e.LevelId == model.LevelId && e.Name.ToUpper() == model.Name.ToUpper() && e.Id != id);
+            .AnyAsync(e => e.LevelId == dto.LevelId && e.Name.ToUpper() == dto.Name.ToUpper() && e.Id != id);
 
         if (nameExists)
             return Conflict("An entity with this name already exists at this level.");
 
-        existing.Name = model.Name;
-        existing.LevelId = model.LevelId;
-        existing.ParentId = model.ParentId;
-        existing.Latitude = model.Latitude;
-        existing.Longitude = model.Longitude;
-        existing.IsActive = model.IsActive;
+        existing.Name = dto.Name;
+        existing.LevelId = dto.LevelId;
+        existing.ParentId = dto.ParentId;
+        existing.Latitude = dto.Latitude;
+        existing.Longitude = dto.Longitude;
+        existing.IsActive = dto.IsActive;
         existing.UpdatedAt = DateTime.UtcNow;
 
         await _context.SaveChangesAsync();
+
+        // Load navigation properties for response
+        await _context.Entry(existing)
+            .Reference(e => e.Level)
+            .LoadAsync();
+
+        if (existing.ParentId.HasValue)
+        {
+            await _context.Entry(existing)
+                .Reference(e => e.Parent)
+                .LoadAsync();
+        }
+
         return Ok(existing);
     }
 
