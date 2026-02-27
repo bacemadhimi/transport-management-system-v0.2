@@ -164,14 +164,22 @@ export class Employee implements OnInit {
     ref.afterClosed().subscribe(() => this.getLatestData());
   }
 
+  // delete(employee: IEmployee) {
+  //   if (confirm(`Voulez-vous vraiment supprimer l'employé ${employee.name}?`)) {
+  //     this.httpService.deleteEmployee(employee.id).subscribe(() => {
+  //       alert("Employé supprimé avec succès");
+  //       this.getLatestData();
+  //     });
+  //   }
+  // }
   delete(employee: IEmployee) {
-    if (confirm(`Voulez-vous vraiment supprimer l'employé ${employee.name}?`)) {
-      this.httpService.deleteEmployee(employee.id).subscribe(() => {
-        alert("Employé supprimé avec succès");
-        this.getLatestData();
-      });
-    }
+  if (confirm(`${this.t('EMPLOYEE_DELETE_CONFIRM')} ${employee.name}?`)) {
+    this.httpService.deleteEmployee(employee.id).subscribe(() => {
+      alert(this.t('EMPLOYEE_DELETE_SUCCESS'));
+      this.getLatestData();
+    });
   }
+}
 
   onRowClick(event: any) {
     console.log('Row clicked:', event);

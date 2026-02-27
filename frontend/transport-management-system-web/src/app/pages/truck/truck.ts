@@ -197,6 +197,24 @@ get showCols() {
       },
       html: true
     },
+       {
+      key: 'dateOfFirstRegistration',
+      label: this.t('FIRST_REGISTRATION_DATE'),
+      format: (row: ITruck) => {
+        if (!row.dateOfFirstRegistration) return '';
+        const date = new Date(row.dateOfFirstRegistration);
+        return date.toLocaleDateString('fr-FR', {
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric'
+        });
+      }
+    },
+     {
+      key: 'emptyWeight',
+      label: this.t('EMPTY_WEIGHT_LABEL'),
+      format: (row: ITruck) => row.emptyWeight ? `${row.emptyWeight} kg` : 'N/A'
+    },
     {
       key: 'color',
       label: this.t('COLOR_TRUCK'),
@@ -413,7 +431,7 @@ private getCapacityUnitLabel(unit: string): string {
     };
 
     const csvContent = [
-      ['ID', 'Immatriculation', 'Marque', 'Capacité', 'Unité', 'Date Visite', 'Status', 'Couleur', 'Nombre Photos'],
+      ['ID', 'Immatriculation', 'Marque', 'Capacité', 'Unité', 'Date Visite', 'Status', 'Couleur','Date de première mise en circulation', 'Nombre Photos'],
       ...rows.map(r => [
         r.id,
         r.immatriculation,
@@ -423,6 +441,7 @@ private getCapacityUnitLabel(unit: string): string {
         r.technicalVisitDate ? new Date(r.technicalVisitDate).toLocaleDateString('fr-FR') : '',
         r.status,
         r.color,
+        r.dateOfFirstRegistration ? new Date(r.dateOfFirstRegistration).toLocaleDateString('fr-FR') : '',
         r.images?.length || 0
       ])
     ]
@@ -448,6 +467,7 @@ private getCapacityUnitLabel(unit: string): string {
       'Date Visite': r.technicalVisitDate ? new Date(r.technicalVisitDate).toLocaleDateString('fr-FR') : '',
       Status: r.status,
       Couleur: r.color,
+      'Date de première mise en circulation': r.dateOfFirstRegistration ? new Date(r.dateOfFirstRegistration).toLocaleDateString('fr-FR') : '',
       'Nombre Photos': r.images?.length || 0
     }));
 
@@ -481,6 +501,7 @@ private getCapacityUnitLabel(unit: string): string {
       r.technicalVisitDate ? new Date(r.technicalVisitDate).toLocaleDateString('fr-FR') : '',
       r.status,
       r.color,
+      r.dateOfFirstRegistration ? new Date(r.dateOfFirstRegistration).toLocaleDateString('fr-FR') : '',
       r.images?.length || 0
     ]);
 
