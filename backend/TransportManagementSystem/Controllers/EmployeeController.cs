@@ -176,14 +176,14 @@ public class EmployeeController : ControllerBase
                     IdNumber = request.IdNumber,
                     Name = request.Name,
                     PhoneNumber = request.PhoneNumber,
-                    PhoneCountry = request.PhoneCountry ?? "+216",
+                    PhoneCountry = request.PhoneCountry ?? "tn",
                     Email = request.Email,
                     DrivingLicense = request.DrivingLicense,
                     TypeTruckId = request.TypeTruckId,
                     CreatedAt = DateTime.UtcNow,
                     EmployeeCategory = "DRIVER",
                     IsInternal = request.IsInternal,
-                    Status = "Disponible", // Default status for drivers
+                    Status = "Disponible", 
                     ImageBase64 = null
                 };
                 break;
@@ -194,7 +194,7 @@ public class EmployeeController : ControllerBase
                     IdNumber = request.IdNumber,
                     Name = request.Name,
                     PhoneNumber = request.PhoneNumber,
-                    PhoneCountry = request.PhoneCountry ?? "+216",
+                    PhoneCountry = request.PhoneCountry ?? "tn",
                     Email = request.Email,
                     DrivingLicense = request.DrivingLicense,
                     TypeTruckId = request.TypeTruckId,
@@ -202,7 +202,7 @@ public class EmployeeController : ControllerBase
                     EmployeeCategory = "CONVOYEUR",
                     IsInternal = request.IsInternal,
                     Matricule = request.Matricule ?? string.Empty,
-                    Status = request.Status ?? "ACTIVE",
+                    Status = request.Status ?? "Disponible",
                    
                 };
                 break;
@@ -213,7 +213,7 @@ public class EmployeeController : ControllerBase
                     IdNumber = request.IdNumber,
                     Name = request.Name,
                     PhoneNumber = request.PhoneNumber,
-                    PhoneCountry = request.PhoneCountry ?? "+216",
+                    PhoneCountry = request.PhoneCountry ?? "tn",
                     Email = request.Email,
                     DrivingLicense = request.DrivingLicense,
                     TypeTruckId = request.TypeTruckId,

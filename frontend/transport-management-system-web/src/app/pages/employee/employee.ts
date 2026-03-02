@@ -143,21 +143,24 @@ export class Employee implements OnInit {
     const ref = this.dialog.open(EmployeeForm, { 
       panelClass: 'm-auto', 
       data: { employeeId: employee.id },
-      width: '650px',  
-      maxWidth: '95vw',
+      width: '90vw',
+      maxWidth: '1200px',
+      minWidth: '400px',
+      height: 'auto',
       maxHeight: '90vh',
-      disableClose: false 
     });
     ref.afterClosed().subscribe(() => this.getLatestData());
   }
 
   openDialog() {
     const ref = this.dialog.open(EmployeeForm, { 
-      panelClass: 'm-auto', 
       data: {},
-      width: '650px',
-      maxWidth: '95vw',
-      maxHeight: '90vh'
+      panelClass: 'm-auto',
+      width: '90vw',
+      maxWidth: '1200px',
+      minWidth: '400px',
+      height: 'auto',
+      maxHeight: '90vh',
     });
     ref.afterClosed().subscribe(() => this.getLatestData());
   }

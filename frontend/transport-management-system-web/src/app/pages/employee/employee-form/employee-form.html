@@ -1,181 +1,276 @@
 <mat-card class="employee-form-card">
   <header class="employee-form-card__header">
     <div>
-      <h2> {{ t(data.employeeId ? 'EDIT_EMPLOYEE' : 'ADD_EMPLOYEE') }}</h2>
+      <h2>{{ t(data.employeeId ? 'EDIT_EMPLOYEE' : 'ADD_EMPLOYEE') }}</h2>
     </div>
   </header>
 
-  <form [formGroup]="employeeForm" class="employee-form-grid">
-   
-    <mat-label>{{ t('CUSTOMER_REG_NUMBER') }}</mat-label>
-    <mat-form-field appearance="outline" class="employee-field">
-      <input matInput formControlName="idNumber" placeholder="Ex: 12345" />
-      <mat-error *ngIf="employeeForm.get('idNumber')?.hasError('required')">
-        {{t('ID_NUMBER_REQUIRED') }}
-      </mat-error>
-    </mat-form-field>
+  <form [formGroup]="employeeForm" class="employee-form">
+    <!-- 2-Column Grid Layout -->
+    <div class="form-grid">
+      
+      <!-- Row 1: ID Number and Name -->
+      <div class="form-row">
+        <div class="form-field">
+          <mat-label>{{ t('CUSTOMER_REG_NUMBER') }} <span class="required-star">*</span></mat-label>
+          <mat-form-field appearance="outline" class="full-width">
+            <input matInput formControlName="idNumber" placeholder="Ex: 12345" />
+            <mat-error *ngIf="employeeForm.get('idNumber')?.hasError('required')">
+              {{ t('ID_NUMBER_REQUIRED') }}
+            </mat-error>
+          </mat-form-field>
+        </div>
 
-   
-    <mat-label>{{ t('TABLE_NAME') }}</mat-label>
-    <mat-form-field appearance="outline" class="employee-field">
-      <input matInput formControlName="name" placeholder="Ex: John Smith" />
-      <mat-error *ngIf="employeeForm.get('name')?.hasError('required')">
-        {{t('DRIVER_NAME_REQUIRED') }}
-      </mat-error>
-    </mat-form-field>
+        <div class="form-field">
+          <mat-label>{{ t('TABLE_NAME') }} <span class="required-star">*</span></mat-label>
+          <mat-form-field appearance="outline" class="full-width">
+            <input matInput formControlName="name" placeholder="Ex: John Smith" />
+            <mat-error *ngIf="employeeForm.get('name')?.hasError('required')">
+              {{ t('DRIVER_NAME_REQUIRED') }}
+            </mat-error>
+          </mat-form-field>
+        </div>
+      </div>
 
-    
-    <mat-label>{{ t('TABLE_EMAIL') }}</mat-label>
-    <mat-form-field appearance="outline" class="employee-field">
+  <!-- Row 2: Email and Phone -->
+<div class="form-row">
+  <div class="form-field">
+    <mat-label>{{ t('TABLE_EMAIL') }} <span class="required-star">*</span></mat-label>
+    <mat-form-field appearance="outline" class="employee-field full-width">
       <input matInput formControlName="email" type="email" placeholder="Ex: john.smith@example.com" />
       <mat-error *ngIf="employeeForm.get('email')?.hasError('required')">
-        {{t('EMAIL_REQUIRED') }}
+        {{ t('EMAIL_REQUIRED') }}
       </mat-error>
       <mat-error *ngIf="employeeForm.get('email')?.hasError('email')">
         {{ t('EMAIL_INVALID1') }}
       </mat-error>
     </mat-form-field>
-
-<div class="employee-field--wide" style="margin: 20px 0 24px 0;">
-  <div style="margin-bottom: 8px;">
-    <mat-checkbox 
-      formControlName="isInternal" 
-      color="primary"
-      class="internal-checkbox">
-      {{ t('INTERNAL_EMPLOYEE') || 'Employé interne' }}
-    </mat-checkbox>
   </div>
-  <mat-hint style="display: block; margin-left: 24px; font-size: 12px; color: rgba(0,0,0,0.6); line-height: 1.5;">
-    {{ t('INTERNAL_EMPLOYEE_HINT') || 'Activez cette option si l\'employé appartient à l\'entreprise. Désactivez-la s\'il s\'agit d\'un employé externe.' }}
-  </mat-hint>
-</div>
-    
-    <mat-label>{{ t('TABLE_PHONE') }}</mat-label>
-    <mat-form-field appearance="outline" class="employee-field">
-      <input matInput formControlName="phoneNumber" placeholder="Ex: +1234567890" />
-      <mat-error *ngIf="employeeForm.get('phoneNumber')?.hasError('required')">
-        {{ t('PHONE_REQUIRED1') }}
-      </mat-error>
-    </mat-form-field>
 
-    <!-- Employee Category - NEW FIELD -->
-    <mat-label>{{ t('EMPLOYEE_CATEGORY')}}</mat-label>
-    <mat-form-field appearance="outline" class="employee-field">
-      <mat-select formControlName="employeeCategory" [disabled]="isSubmitting || loadingCategories" placeholder="{{ t('SELECT_CATEGORY') }}">
-        
-        <mat-option *ngIf="loadingCategories" disabled>
-          <div class="flex items-center">
-            <mat-spinner diameter="20" class="mr-2"></mat-spinner>
-            <span>{{ t('LOADING')}}</span>
-          </div>
-        </mat-option>
-        
-        <mat-option *ngIf="!loadingCategories && employeeCategories.length === 0" disabled>
-          <div class="text-gray-500 italic">
-            {{ t('NO_CATEGORY_AVAILABLE') }}
-          </div>
-        </mat-option>
-        
-        <mat-option [value]="null">
-          <span class="text-gray-500">{{ t('-- Aucune --') || '-- None --' }}</span>
-        </mat-option>
-        
-        <mat-option *ngFor="let category of employeeCategories" [value]="category.parameterCode">
-          {{ category.parameterCode }}
-        </mat-option>
-      </mat-select>
+  <div class="form-field">
+    <mat-label>{{ t('TABLE_PHONE') }} <span class="required-star">*</span></mat-label>
+    <div class="phone-field-container">
+      <div class="phone-input-group">
+        <input 
+          #phoneInput
+          type="tel"
+          class="phone-input stylish-phone"
+          [value]="employeeForm.get('phoneNumber')?.value"
+          [placeholder]="countryPlaceholder" />
+        <span class="country-badge" *ngIf="employeeForm.get('phoneCountry')?.value">
+          {{ employeeForm.get('phoneCountry')?.value | uppercase }}
+        </span>
+      </div>
+      <input type="hidden" formControlName="phoneNumber" />
+      <input type="hidden" formControlName="phoneCountry" />
       
-      <mat-hint *ngIf="employeeCategories.length === 0 && !loadingCategories">
-        {{ t('NO_CATEGORY_DEFINED') }}
-      </mat-hint>
-    </mat-form-field>
-    <!-- Truck Type -->
-    <mat-label>{{ t('TYPE_VEHICULE_LABEL') }}</mat-label>
-    <mat-form-field appearance="outline" class="employee-field">
-      <mat-select formControlName="typeTruckId" [disabled]="isSubmitting || loadingTypeTrucks" placeholder="{{ t('TRUCK_TYPE_PLACEHOLDER') }}">
-        
-        <mat-option *ngIf="!loadingTypeTrucks && typeTrucks.length === 0" disabled>
-          <div class="text-gray-500 italic">
-            {{ t('NO_TYPE_AVAILABLE') }}
+      <div class="phone-validation" *ngIf="employeeForm.get('phoneNumber')?.invalid && employeeForm.get('phoneNumber')?.touched">
+        <span class="phone-error-text" *ngIf="employeeForm.get('phoneNumber')?.hasError('required')">
+          {{ t('PHONE_REQUIRED1') }}
+        </span>
+        <span class="phone-error-text" *ngIf="employeeForm.get('phoneNumber')?.hasError('pattern')">
+          {{ t('INVALID_PHONE_FORMAT') || 'Format de téléphone invalide pour ce pays' }}
+        </span>
+      </div>
+      
+      <div class="phone-helper" *ngIf="!employeeForm.get('phoneNumber')?.invalid && employeeForm.get('phoneCountry')?.value">
+        <small>Exemple: {{ countryPlaceholder }}</small>
+      </div>
+    </div>
+  </div>
+</div>
+      <!-- Row 3: Internal Checkbox (full width) -->
+      <div class="form-row full-width">
+        <div class="form-field full-width">
+          <div class="internal-checkbox-container">
+            <mat-checkbox 
+              formControlName="isInternal" 
+              color="primary"
+              class="internal-checkbox">
+              {{ t('INTERNAL_EMPLOYEE') || 'Employé interne' }}
+            </mat-checkbox>
+            <mat-hint class="checkbox-hint">
+              {{ t('INTERNAL_EMPLOYEE_HINT') || 'Activez cette option si l\'employé appartient à l\'entreprise. Désactivez-la s\'il s\'agit d\'un employé externe.' }}
+            </mat-hint>
           </div>
-        </mat-option>
-        
-        <mat-option [value]="null">
-          <span class="text-gray-500">{{ t('-- Aucun --') || '-- None --' }}</span>
-        </mat-option>
-        
-        <mat-option *ngFor="let typeTruck of typeTrucks" [value]="+typeTruck.id">
-          {{ typeTruck.type }} ({{ typeTruck.capacity }} {{ typeTruck.unit }})
-        </mat-option>
-      </mat-select>
-    </mat-form-field>
-
-    
-    <mat-label>{{ t('TABLE_LICENSE_NUMBER')}}</mat-label>
-    <mat-form-field appearance="outline" class="employee-field">
-      <input matInput formControlName="drivingLicense" placeholder="Ex: D-1234567" />
-    </mat-form-field>
-
-    <!-- File Upload Section -->
-    <div class="file-upload-section employee-field--wide">
-      <label class="file-upload-label">{{ t('UPLOAD_LICENSE_ATTACHMENT')}}</label>
-      <p class="file-upload-info">Type Supporté: JPG, JPEG, PNG, PDF, DOC, DOCX (Max 5 MB)</p>
-
-      <div class="file-upload-container" (click)="triggerFileInput()" [class.has-file]="selectedFile || hasExistingFile">
-        <input
-          #fileInput
-          type="file"
-          (change)="onFileSelected($event)"
-          accept=".jpg,.jpeg,.png,.pdf,.doc,.docx,.gif,.bmp"
-          style="display: none"
-        />
-
-        <div *ngIf="!selectedFile && !filePreview && hasExistingFile" class="file-info">
-          <svg class="file-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z"/>
-          </svg>
-          <p>{{ originalFileName || 'File already uploaded' }}</p>
-          <button type="button" mat-button color="primary" (click)="triggerFileInput(); $event.stopPropagation()">
-            Replace File
-          </button>
-        </div>
-
-        <div *ngIf="selectedFile && filePreview" class="file-preview">
-          <img [src]="filePreview" alt="Preview" class="preview-image" />
-          <p>{{ originalFileName }}</p>
-          <button type="button" mat-button color="warn" (click)="removeFile(); $event.stopPropagation()">
-            Remove
-          </button>
-        </div>
-
-        <div *ngIf="selectedFile && !filePreview" class="file-info">
-          <svg class="file-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z"/>
-          </svg>
-          <p>{{ originalFileName }}</p>
-          <button type="button" mat-button color="warn" (click)="removeFile(); $event.stopPropagation()">
-            Remove
-          </button>
-        </div>
-
-        <div *ngIf="!selectedFile && !filePreview && !hasExistingFile" class="file-placeholder">
-          <svg class="upload-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z"/>
-          </svg>
-          <p>{{ t('UPLOAD_HINT') }}</p>
-          <small>JPG, PNG, PDF, DOC or DOCX</small>
         </div>
       </div>
 
-      <p *ngIf="fileError" class="error-message">{{ fileError }}</p>
-    </div>
+      <!-- Row 4: Employee Category and Truck Type (conditional) -->
+      <div class="form-row">
+        <div class="form-field">
+          <mat-label>{{ t('EMPLOYEE_CATEGORY') }} <span class="required-star">*</span></mat-label>
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-select 
+              formControlName="employeeCategory" 
+              [disabled]="isSubmitting || loadingCategories" 
+              placeholder="{{ t('SELECT_CATEGORY') }}">
+              
+              <mat-option *ngIf="loadingCategories" disabled>
+                <div class="flex items-center">
+                  <mat-spinner diameter="20" class="mr-2"></mat-spinner>
+                  <span>{{ t('LOADING') }}</span>
+                </div>
+              </mat-option>
+              
+              <mat-option *ngIf="!loadingCategories && employeeCategories.length === 0" disabled>
+                <div class="text-gray-500 italic">
+                  {{ t('NO_CATEGORY_AVAILABLE') }}
+                </div>
+              </mat-option>
+              
+              <mat-option *ngFor="let category of employeeCategories" [value]="category.parameterCode">
+                {{ getCategoryLabel(category.parameterCode) }}
+              </mat-option>
+            </mat-select>
+            
+            <mat-error *ngIf="employeeForm.get('employeeCategory')?.hasError('required')">
+              {{ t('CATEGORY_REQUIRED') || 'La catégorie est obligatoire' }}
+            </mat-error>
+            
+            <mat-hint *ngIf="employeeCategories.length === 0 && !loadingCategories">
+              {{ t('NO_CATEGORY_DEFINED') }}
+            </mat-hint>
+          </mat-form-field>
+        </div>
 
-    <div class="form-footer">
-      <button mat-flat-button color="primary" type="submit" [disabled]="employeeForm.invalid || isSubmitting" (click)="submit()">
-        <mat-spinner *ngIf="isSubmitting" diameter="20"></mat-spinner>
-        <span *ngIf="!isSubmitting">{{ t(data.employeeId ? 'SAVE_BTN' : 'ADD_BTN') || (data.employeeId ? 'Update' : 'Add') }}</span>
-      </button>
-      <button mat-button type="button" (click)="closeDialog()">{{ t('CANCEL') || 'Cancel' }}</button>
+        <!-- Truck Type - Only for DRIVER (appears in same row as category) -->
+        <div class="form-field" *ngIf="shouldShowTruckType()">
+          <mat-label>{{ t('TYPE_VEHICULE_LABEL') }} <span class="required-star" *ngIf="isTruckTypeRequired()">*</span></mat-label>
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-select formControlName="typeTruckId" [disabled]="isSubmitting || loadingTypeTrucks" placeholder="{{ t('TRUCK_TYPE_PLACEHOLDER') }}">
+              
+              <mat-option *ngIf="!loadingTypeTrucks && typeTrucks.length === 0" disabled>
+                <div class="text-gray-500 italic">
+                  {{ t('NO_TYPE_AVAILABLE') }}
+                </div>
+              </mat-option>
+              
+              <mat-option [value]="null">
+                <span class="text-gray-500">{{ t('-- Aucun --') || '-- None --' }}</span>
+              </mat-option>
+              
+              <mat-option *ngFor="let typeTruck of typeTrucks" [value]="+typeTruck.id">
+                {{ typeTruck.type }} ({{ typeTruck.capacity }} {{ typeTruck.unit }})
+              </mat-option>
+            </mat-select>
+            <mat-error *ngIf="employeeForm.get('typeTruckId')?.hasError('required')">
+              {{ t('TRUCK_TYPE_REQUIRED') || 'Le type de véhicule est obligatoire pour un chauffeur' }}
+            </mat-error>
+          </mat-form-field>
+        </div>
+
+        <!-- Empty placeholder when truck type is not shown (to maintain 2-column layout) -->
+        <div class="form-field" *ngIf="!shouldShowTruckType() && employeeForm.get('employeeCategory')?.value">
+          <!-- Empty div to maintain grid -->
+        </div>
+      </div>
+
+      <!-- Row 5: Driving License (full width or with empty placeholder) -->
+      <div class="form-row" *ngIf="shouldShowDrivingLicense()">
+        <div class="form-field">
+          <mat-label>{{ t('TABLE_LICENSE_NUMBER') }} 
+            <span class="required-star" *ngIf="isDrivingLicenseRequired()">*</span>
+          </mat-label>
+          <mat-form-field appearance="outline" class="full-width">
+            <input matInput formControlName="drivingLicense" placeholder="Ex: D-1234567" />
+            <mat-error *ngIf="employeeForm.get('drivingLicense')?.hasError('required')">
+              {{ t('LICENSE_REQUIRED') || 'Le numéro de permis est obligatoire' }}
+            </mat-error>
+          </mat-form-field>
+        </div>
+        <div class="form-field">
+          <!-- Empty placeholder for 2-column alignment -->
+        </div>
+      </div>
+
+      <!-- Row 6: License Attachment (full width) -->
+      <div class="form-row full-width" *ngIf="shouldShowLicenseAttachment()">
+        <div class="form-field full-width">
+          <div class="file-upload-section">
+            <label class="file-upload-label">
+              {{ t('UPLOAD_LICENSE_ATTACHMENT') }}
+              <span class="required-star" *ngIf="isLicenseAttachmentRequired()">*</span>
+            </label>
+            <p class="file-upload-info">{{ t('SUPPORTED_FILE_TYPES') || 'Type Supporté: JPG, JPEG, PNG, PDF, DOC, DOCX (Max 5 MB)' }}</p>
+
+            <div class="file-upload-container" (click)="triggerFileInput()" [class.has-file]="selectedFile || hasExistingFile">
+              <input
+                #fileInput
+                type="file"
+                (change)="onFileSelected($event)"
+                accept=".jpg,.jpeg,.png,.pdf,.doc,.docx,.gif,.bmp"
+                style="display: none"
+              />
+
+              <div *ngIf="!selectedFile && !filePreview && hasExistingFile" class="file-info">
+                <svg class="file-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z"/>
+                </svg>
+                <p>{{ originalFileName || 'File already uploaded' }}</p>
+                <button type="button" mat-button color="primary" (click)="triggerFileInput(); $event.stopPropagation()">
+                  {{ t('REPLACE_FILE') || 'Replace File' }}
+                </button>
+              </div>
+
+              <div *ngIf="selectedFile && filePreview" class="file-preview">
+                <img [src]="filePreview" alt="Preview" class="preview-image" />
+                <p>{{ originalFileName }}</p>
+                <button type="button" mat-button color="warn" (click)="removeFile(); $event.stopPropagation()">
+                  {{ t('REMOVE') || 'Remove' }}
+                </button>
+              </div>
+
+              <div *ngIf="selectedFile && !filePreview" class="file-info">
+                <svg class="file-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z"/>
+                </svg>
+                <p>{{ originalFileName }}</p>
+                <button type="button" mat-button color="warn" (click)="removeFile(); $event.stopPropagation()">
+                  {{ t('REMOVE') || 'Remove' }}
+                </button>
+              </div>
+
+              <div *ngIf="!selectedFile && !filePreview && !hasExistingFile" class="file-placeholder">
+                <svg class="upload-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z"/>
+                </svg>
+                <p>{{ t('UPLOAD_HINT') || 'Click to upload or drag and drop' }}</p>
+                <small>{{ t('SUPPORTED_FORMATS') || 'JPG, PNG, PDF, DOC or DOCX' }}</small>
+              </div>
+            </div>
+
+            <p *ngIf="fileError" class="error-message">{{ fileError }}</p>
+            <p *ngIf="isLicenseAttachmentRequired() && !selectedFile && !hasExistingFile && employeeForm.get('employeeCategory')?.touched" class="error-message">
+              {{ t('LICENSE_ATTACHMENT_REQUIRED') || 'Le fichier de permis est obligatoire pour les chauffeurs et mécaniciens' }}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Row 7: Convoyeur Info Message (full width) -->
+      <div class="form-row full-width" *ngIf="employeeForm.get('employeeCategory')?.value === 'CONVOYEUR'">
+        <div class="form-field full-width">
+          <div class="info-message">
+            <i class="fas fa-info-circle"></i>
+            <span>{{ t('CONVOYEUR_INFO') || 'Aucune information supplémentaire requise pour les convoyeurs.' }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Row 8: Form Actions (full width) -->
+      <div class="form-row full-width">
+        <div class="form-field full-width">
+          <div class="form-footer">
+            <button mat-flat-button color="primary" type="submit" [disabled]="employeeForm.invalid || isSubmitting" (click)="submit()">
+              <mat-spinner *ngIf="isSubmitting" diameter="20"></mat-spinner>
+              <span *ngIf="!isSubmitting">{{ t(data.employeeId ? 'SAVE_BTN' : 'ADD_BTN') || (data.employeeId ? 'Update' : 'Add') }}</span>
+            </button>
+            <button mat-button type="button" (click)="closeDialog()">{{ t('CANCEL') || 'Cancel' }}</button>
+          </div>
+        </div>
+      </div>
+
     </div>
   </form>
 </mat-card>

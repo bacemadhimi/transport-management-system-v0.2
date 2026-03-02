@@ -17,4 +17,5 @@ export interface IEmployee {
   isEnable: boolean;
   employeeCategory?: string;
   isInternal: boolean;
+  phoneCountry?: string;
 }
