@@ -32,53 +32,54 @@
         </div>
       </div>
 
-  <!-- Row 2: Email and Phone -->
-<div class="form-row">
-  <div class="form-field">
-    <mat-label>{{ t('TABLE_EMAIL') }} <span class="required-star">*</span></mat-label>
-    <mat-form-field appearance="outline" class="employee-field full-width">
-      <input matInput formControlName="email" type="email" placeholder="Ex: john.smith@example.com" />
-      <mat-error *ngIf="employeeForm.get('email')?.hasError('required')">
-        {{ t('EMAIL_REQUIRED') }}
-      </mat-error>
-      <mat-error *ngIf="employeeForm.get('email')?.hasError('email')">
-        {{ t('EMAIL_INVALID1') }}
-      </mat-error>
-    </mat-form-field>
-  </div>
+      <!-- Row 2: Email and Phone -->
+      <div class="form-row">
+        <div class="form-field">
+          <mat-label>{{ t('TABLE_EMAIL') }} <span class="required-star">*</span></mat-label>
+          <mat-form-field appearance="outline" class="employee-field full-width">
+            <input matInput formControlName="email" type="email" placeholder="Ex: john.smith@example.com" />
+            <mat-error *ngIf="employeeForm.get('email')?.hasError('required')">
+              {{ t('EMAIL_REQUIRED') }}
+            </mat-error>
+            <mat-error *ngIf="employeeForm.get('email')?.hasError('email')">
+              {{ t('EMAIL_INVALID1') }}
+            </mat-error>
+          </mat-form-field>
+        </div>
 
-  <div class="form-field">
-    <mat-label>{{ t('TABLE_PHONE') }} <span class="required-star">*</span></mat-label>
-    <div class="phone-field-container">
-      <div class="phone-input-group">
-        <input 
-          #phoneInput
-          type="tel"
-          class="phone-input stylish-phone"
-          [value]="employeeForm.get('phoneNumber')?.value"
-          [placeholder]="countryPlaceholder" />
-        <span class="country-badge" *ngIf="employeeForm.get('phoneCountry')?.value">
-          {{ employeeForm.get('phoneCountry')?.value | uppercase }}
-        </span>
+        <div class="form-field">
+          <mat-label>{{ t('TABLE_PHONE') }} <span class="required-star">*</span></mat-label>
+          <div class="phone-field-container">
+            <div class="phone-input-group">
+              <input 
+                #phoneInput
+                type="tel"
+                class="phone-input stylish-phone"
+                [value]="employeeForm.get('phoneNumber')?.value"
+                [placeholder]="countryPlaceholder" />
+              <span class="country-badge" *ngIf="employeeForm.get('phoneCountry')?.value">
+                {{ employeeForm.get('phoneCountry')?.value | uppercase }}
+              </span>
+            </div>
+            <input type="hidden" formControlName="phoneNumber" />
+            <input type="hidden" formControlName="phoneCountry" />
+            
+            <div class="phone-validation" *ngIf="employeeForm.get('phoneNumber')?.invalid && employeeForm.get('phoneNumber')?.touched">
+              <span class="phone-error-text" *ngIf="employeeForm.get('phoneNumber')?.hasError('required')">
+                {{ t('PHONE_REQUIRED1') }}
+              </span>
+              <span class="phone-error-text" *ngIf="employeeForm.get('phoneNumber')?.hasError('pattern')">
+                {{ t('INVALID_PHONE_FORMAT') || 'Format de téléphone invalide pour ce pays' }}
+              </span>
+            </div>
+            
+            <div class="phone-helper" *ngIf="!employeeForm.get('phoneNumber')?.invalid && employeeForm.get('phoneCountry')?.value">
+              <small>Exemple: {{ countryPlaceholder }}</small>
+            </div>
+          </div>
+        </div>
       </div>
-      <input type="hidden" formControlName="phoneNumber" />
-      <input type="hidden" formControlName="phoneCountry" />
-      
-      <div class="phone-validation" *ngIf="employeeForm.get('phoneNumber')?.invalid && employeeForm.get('phoneNumber')?.touched">
-        <span class="phone-error-text" *ngIf="employeeForm.get('phoneNumber')?.hasError('required')">
-          {{ t('PHONE_REQUIRED1') }}
-        </span>
-        <span class="phone-error-text" *ngIf="employeeForm.get('phoneNumber')?.hasError('pattern')">
-          {{ t('INVALID_PHONE_FORMAT') || 'Format de téléphone invalide pour ce pays' }}
-        </span>
-      </div>
-      
-      <div class="phone-helper" *ngIf="!employeeForm.get('phoneNumber')?.invalid && employeeForm.get('phoneCountry')?.value">
-        <small>Exemple: {{ countryPlaceholder }}</small>
-      </div>
-    </div>
-  </div>
-</div>
+
       <!-- Row 3: Internal Checkbox (full width) -->
       <div class="form-row full-width">
         <div class="form-field full-width">
@@ -163,6 +164,145 @@
         <!-- Empty placeholder when truck type is not shown (to maintain 2-column layout) -->
         <div class="form-field" *ngIf="!shouldShowTruckType() && employeeForm.get('employeeCategory')?.value">
           <!-- Empty div to maintain grid -->
+        </div>
+      </div>
+
+      <!-- Geographical Entities - Only for DRIVER -->
+      <div class="form-row full-width" *ngIf="shouldShowGeographicalEntities()">
+        <div class="form-field full-width">
+          <div class="form-field-group">
+            <mat-label>{{ t('GEOGRAPHICAL_ENTITIES_LABEL') || 'Localisations du chauffeur' }} 
+              <span class="required-star">*</span>
+            </mat-label>
+            
+            <div class="hierarchical-selector" *ngIf="!loadingGeographicalEntities; else loadingTemplate">
+              <!-- No entities message -->
+              <div *ngIf="geographicalEntities.length === 0" class="no-entities-message">
+                <mat-icon>info</mat-icon>
+                <p>Aucune localisation active disponible</p>
+                <p class="small">Configurez d'abord des entités géographiques</p>
+              </div>
+
+              <!-- Inline dropdowns container -->
+              <div class="inline-dropdowns">
+                <!-- Level 1 Dropdown -->
+                <div class="dropdown-item" *ngIf="level1Entities.length > 0">
+                  <div class="dropdown-label">{{ getLevelName(1) }}</div>
+                  <mat-form-field appearance="outline" class="compact-dropdown">
+                    <mat-select 
+                      [formControl]="level1Control"
+                      [placeholder]="'Sélectionner'">
+                      <mat-option [value]="null">Aucun</mat-option>
+                      <mat-option *ngFor="let entity of level1Entities" [value]="entity.id">
+                        <span class="entity-name">{{ entity.name }}</span>
+                        <span *ngIf="entity.latitude && entity.longitude" class="coords-hint">
+                          ({{ entity.latitude | number:'1.2-2' }}, {{ entity.longitude | number:'1.2-2' }})
+                        </span>
+                      </mat-option>
+                    </mat-select>
+                  </mat-form-field>
+                </div>
+
+                <!-- Level 2 Dropdown -->
+                <div class="dropdown-item" *ngIf="level2Entities.length > 0">
+                  <div class="dropdown-label">{{ getLevelName(2) }}</div>
+                  <mat-form-field appearance="outline" class="compact-dropdown">
+                    <mat-select 
+                      [formControl]="level2Control"
+                      [disabled]="!level1Control.value"
+                      [placeholder]="'Sélectionner'">
+                      <mat-option [value]="null">Aucun</mat-option>
+                      <mat-option *ngFor="let entity of level2Entities" [value]="entity.id">
+                        <span class="entity-name">{{ entity.name }}</span>
+                        <span *ngIf="entity.latitude && entity.longitude" class="coords-hint">
+                          ({{ entity.latitude | number:'1.2-2' }}, {{ entity.longitude | number:'1.2-2' }})
+                        </span>
+                      </mat-option>
+                    </mat-select>
+                  </mat-form-field>
+                </div>
+
+                <!-- Level 3 Dropdown -->
+                <div class="dropdown-item" *ngIf="level3Entities.length > 0">
+                  <div class="dropdown-label">{{ getLevelName(3) }}</div>
+                  <mat-form-field appearance="outline" class="compact-dropdown">
+                    <mat-select 
+                      [formControl]="level3Control"
+                      [disabled]="!level2Control.value"
+                      [placeholder]="'Sélectionner'">
+                      <mat-option [value]="null">Aucun</mat-option>
+                      <mat-option *ngFor="let entity of level3Entities" [value]="entity.id">
+                        <span class="entity-name">{{ entity.name }}</span>
+                        <span *ngIf="entity.latitude && entity.longitude" class="coords-hint">
+                          ({{ entity.latitude | number:'1.2-2' }}, {{ entity.longitude | number:'1.2-2' }})
+                        </span>
+                      </mat-option>
+                    </mat-select>
+                  </mat-form-field>
+                </div>
+
+                <!-- Level 4 Dropdown -->
+                <div class="dropdown-item" *ngIf="level4Entities.length > 0">
+                  <div class="dropdown-label">{{ getLevelName(4) }}</div>
+                  <mat-form-field appearance="outline" class="compact-dropdown">
+                    <mat-select 
+                      [formControl]="level4Control"
+                      [disabled]="!level3Control.value"
+                      [placeholder]="'Sélectionner'">
+                      <mat-option [value]="null">Aucun</mat-option>
+                      <mat-option *ngFor="let entity of level4Entities" [value]="entity.id">
+                        <span class="entity-name">{{ entity.name }}</span>
+                        <span *ngIf="entity.latitude && entity.longitude" class="coords-hint">
+                          ({{ entity.latitude | number:'1.2-2' }}, {{ entity.longitude | number:'1.2-2' }})
+                        </span>
+                      </mat-option>
+                    </mat-select>
+                  </mat-form-field>
+                </div>
+
+                <!-- Level 5 Dropdown -->
+                <div class="dropdown-item" *ngIf="level5Entities.length > 0">
+                  <div class="dropdown-label">{{ getLevelName(5) }}</div>
+                  <mat-form-field appearance="outline" class="compact-dropdown">
+                    <mat-select 
+                      [formControl]="level5Control"
+                      [disabled]="!level4Control.value"
+                      [placeholder]="'Sélectionner'">
+                      <mat-option [value]="null">Aucun</mat-option>
+                      <mat-option *ngFor="let entity of level5Entities" [value]="entity.id">
+                        <span class="entity-name">{{ entity.name }}</span>
+                        <span *ngIf="entity.latitude && entity.longitude" class="coords-hint">
+                          ({{ entity.latitude | number:'1.2-2' }}, {{ entity.longitude | number:'1.2-2' }})
+                        </span>
+                      </mat-option>
+                    </mat-select>
+                  </mat-form-field>
+                </div>
+              </div>
+
+              <!-- Selected Entities Summary -->
+              <div class="selected-summary" *ngIf="selectedEntities.length > 0">
+                <h4>Localisations sélectionnées ({{ selectedEntities.length }})</h4>
+                <div class="selected-chips">
+                  <span class="selected-chip" *ngFor="let id of selectedEntities">
+                    {{ getEntityName(id) }}
+                    <mat-icon (click)="removeEntity(id)">close</mat-icon>
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <ng-template #loadingTemplate>
+              <div class="loading-entities">
+                <mat-spinner diameter="30"></mat-spinner>
+                <span>Chargement des localisations...</span>
+              </div>
+            </ng-template>
+
+            <mat-error *ngIf="employeeForm.get('geographicalEntityIds')?.invalid && employeeForm.get('geographicalEntityIds')?.touched">
+              {{ getErrorMessage('geographicalEntityIds') }}
+            </mat-error>
+          </div>
         </div>
       </div>
 
@@ -262,7 +402,7 @@
       <div class="form-row full-width">
         <div class="form-field full-width">
           <div class="form-footer">
-            <button mat-flat-button color="primary" type="submit" [disabled]="employeeForm.invalid || isSubmitting" (click)="submit()">
+            <button mat-flat-button color="primary" type="submit" [disabled]="employeeForm.invalid || isSubmitting || loadingGeographicalEntities" (click)="submit()">
               <mat-spinner *ngIf="isSubmitting" diameter="20"></mat-spinner>
               <span *ngIf="!isSubmitting">{{ t(data.employeeId ? 'SAVE_BTN' : 'ADD_BTN') || (data.employeeId ? 'Update' : 'Add') }}</span>
             </button>

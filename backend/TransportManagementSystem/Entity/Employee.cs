@@ -52,4 +52,5 @@ public class Employee
     public string? EmployeeCategory { get; set; }
 
     public bool IsInternal { get; set; } = true;
+    public virtual ICollection<DriverGeographicalEntity>? DriverGeographicalEntities { get; set; }
 }

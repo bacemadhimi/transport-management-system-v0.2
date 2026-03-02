@@ -7,7 +7,8 @@ public class Driver : Employee
         EmployeeCategory = "DRIVER";
     }
     public string? Status { get; set; }
-    public int IdCamion { get; set; }
+    public int? IdCamion { get; set; }
     public virtual ICollection<DriverAvailability>? Availabilities { get; set; }
     public string? ImageBase64 { get; set; }
+    public virtual ICollection<DriverGeographicalEntity> DriverGeographicalEntities { get; set; } = new List<DriverGeographicalEntity>();
 }

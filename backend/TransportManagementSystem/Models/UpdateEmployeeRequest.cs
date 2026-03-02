@@ -47,4 +47,5 @@ public class UpdateEmployeeRequest
 
     // Convoyeur-specific properties (optional)
     public string? Matricule { get; set; }
+    public string? GeographicalEntities { get; set; }
 }

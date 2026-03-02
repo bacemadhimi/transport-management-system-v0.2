@@ -65,27 +65,8 @@ export class Employee implements OnInit {
     { key: 'phoneNumber', label: this.t('TABLE_PHONE') },
     { key: 'drivingLicense', label: this.t('TABLE_LICENSE_NUMBER')},
     {
-      key: 'typeTruck',
+      key: 'truckType',
       label: this.t('TYPE_VEHICULE_LABEL'),
-      format: (row: IEmployee) => {
-        if (row.typeTruck) {
-          return `${row.typeTruck.type} (${row.typeTruck.capacity} ${row.typeTruck.unit})`;
-        }
-        return '-';
-      }
-    },
-    {
-      key: 'attachment',
-      label: this.t('TABLE_ATTACHMENT'),
-      format: (row: IEmployee) => {
-        if (row.attachmentFileType) {
-          return `<span class="attachment-cell" data-employee-id="${row.id}">
-                    ✓ ${row.attachmentFileType} 
-                    <span class="view-icon">👁️</span>
-                  </span>`;
-        }
-        return '-';
-      }
     },
     {
       key: 'Action',

@@ -276,8 +276,8 @@ public class TripsController : ControllerBase
             {
                 Id = trip.Driver.Id,
                 Name = trip.Driver.Name,
-                PermisNumber =  trip.Driver.DrivingLicense,
-                Phone = trip.Driver.PhoneNumber,
+                DrivingLicense =  trip.Driver.DrivingLicense,
+                PhoneNumber = trip.Driver.PhoneNumber,
                 Status = trip.Driver.Status,
                 PhoneCountry = trip.Driver.PhoneCountry
             } : null,
@@ -997,8 +997,8 @@ public class TripsController : ControllerBase
             {
                 Id = trip.Driver.Id,
                 Name = trip.Driver.Name,
-                PermisNumber =  trip.Driver.DrivingLicense,
-                Phone =  trip.Driver.PhoneNumber,
+                DrivingLicense =  trip.Driver.DrivingLicense,
+                PhoneNumber =  trip.Driver.PhoneNumber,
                 Status = trip.Driver.Status,
                 PhoneCountry = trip.Driver.PhoneCountry
             } : null,
