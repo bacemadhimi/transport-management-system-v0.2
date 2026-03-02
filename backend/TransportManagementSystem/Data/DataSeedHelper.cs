@@ -459,39 +459,45 @@ namespace TransportManagementSystem.Data
             }
 
             // 8Seed MANY Convoyeurs
-            if (!dbContext.Convoyeurs.Any())
+            if (!dbContext.Set<Convoyeur>().Any())
             {
                 var now = DateTime.UtcNow;
-                var zones = dbContext.Zones.ToList();
-                var cities = dbContext.Citys.ToList();
                 var rnd = new Random();
 
                 var convoyeurs = new List<Convoyeur>();
 
                 for (int i = 1; i <= 15; i++)
                 {
-                    var zone = zones[rnd.Next(zones.Count)];
-                    var city = cities.Where(c => c.ZoneId == zone.Id)
-                                      .OrderBy(x => rnd.Next())
-                                      .First();
-
-                    convoyeurs.Add(new Convoyeur
+                    var convoyeur = new Convoyeur
                     {
+                        // Employee base properties
+                        IdNumber = $"CONV{1000 + i}",
                         Name = $"Convoyeur {i}",
-                        Matricule = $"CV-{1000 + i}",
-                        Phone = $"5{rnd.Next(1000000, 9999999)}",
+                        PhoneNumber = $"5{rnd.Next(1000000, 9999999)}",
                         PhoneCountry = "+216",
-                        PermisNumber = $"PC-{rnd.Next(10000, 99999)}",
+                        Email = $"convoyeur{i}@tms.demo",
+                        DrivingLicense = $"PC-{rnd.Next(10000, 99999)}",
+                        TypeTruckId = null,
+                        CreatedAt = now,
+                        UpdatedAt = now,
+                        IsEnable = true,
+                        EmployeeCategory = "CONVOYEUR", // This is the discriminator
+                        IsInternal = true,
+
+                        // Convoyeur-specific properties
+                        Matricule = $"CV-{1000 + i}",
                         Status = "ACTIVE",
-                        ZoneId = zone.Id,
-                        CityId = city.Id
-                    });
+
+                 
+                    };
+
+                    convoyeurs.Add(convoyeur);
                 }
 
-                dbContext.Convoyeurs.AddRange(convoyeurs);
+                dbContext.Set<Convoyeur>().AddRange(convoyeurs);
                 dbContext.SaveChanges();
 
-                Console.WriteLine($"✔ {convoyeurs.Count} Convoyeurs seedés !");
+                Console.WriteLine($"✔ {convoyeurs.Count} Convoyeurs seedés dans la table Employees avec EmployeeCategory='CONVOYEUR' !");
             }
             // 9️⃣ Seed Trucks (Capacity in PALETTE)
             if (!dbContext.Trucks.Any())

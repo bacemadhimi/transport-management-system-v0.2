@@ -1631,7 +1631,7 @@ private addDriverMarkers(): void {
     const status = this.getDriverStatusLabel(driver);
     const driverWithZone = this.driversWithZone.find(d => d.id === driver.id);
     const zoneName = driverWithZone?.zoneName || 'Non assigné';
-    return `${driver.name} - ${driver.permisNumber} - ${status} - ${zoneName}`;
+    return `${driver.name} - ${driver.drivingLicense} - ${status} - ${zoneName}`;
   }
 
   getSelectedTruckName(): string {

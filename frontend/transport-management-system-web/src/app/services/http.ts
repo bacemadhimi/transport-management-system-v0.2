@@ -177,13 +177,23 @@ private formatDateForApi(date: string | Date): string {
   deleteTrip(id: number) {
     return this.http.delete(environment.apiUrl + '/api/Trips/' + id);
   }
-  getTrucks() {
-    return this.http.get<ITruck[]>(environment.apiUrl + '/api/Trucks/list');
-  }
+ getTrucks(): Observable<ITruck[]> {
+  return this.http.get<ITruck[]>(`${environment.apiUrl}/api/Trucks/list`).pipe(
+    catchError(error => {
+      console.error('Error loading trucks:', error);
+      return of([]);
+    })
+  );
+}
 
-  getDrivers() {
-    return this.http.get<IDriver[]>(environment.apiUrl + '/api/Driver/ListOfDrivers');
-  }
+getDrivers(): Observable<IDriver[]> {
+  return this.http.get<IDriver[]>(`${environment.apiUrl}/api/Driver/ListOfDrivers`).pipe(
+    catchError(error => {
+      console.error('Error loading drivers:', error);
+      return of([]);
+    })
+  );
+}
  getCustomersList(filter: any) {
 
   const cleanedFilter: any = {};

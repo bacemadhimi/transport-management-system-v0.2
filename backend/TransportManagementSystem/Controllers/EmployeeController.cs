@@ -23,19 +23,19 @@ public class EmployeeController : ControllerBase
         this.employeeRepository = employeeRepository;
     }
 
-   
+
     /// Get employees with pagination and search 
     [HttpGet("PaginationAndSearch")]
     public async Task<IActionResult> GetEmployeeList([FromQuery] SearchOptions searchOption)
     {
         var pagedData = new PagedData<Employee>();
 
-      
+
         var query = dbContext.Employees
             .Include(x => x.TypeTruck)
             .Where(x => x.IsEnable == true);
 
-       
+
         if (!string.IsNullOrEmpty(searchOption.Search))
         {
             query = query.Where(x =>
@@ -44,14 +44,14 @@ public class EmployeeController : ControllerBase
             (x.Email != null && x.Email.Contains(searchOption.Search)) ||
             (x.PhoneNumber != null && x.PhoneNumber.Contains(searchOption.Search)) ||
             (x.DrivingLicense != null && x.DrivingLicense.Contains(searchOption.Search)) ||
-            (x.EmployeeCategory != null && x.EmployeeCategory.Contains(searchOption.Search)) 
+            (x.EmployeeCategory != null && x.EmployeeCategory.Contains(searchOption.Search))
         );
         }
 
-        
+
         pagedData.TotalData = await query.CountAsync();
 
-      
+
         query = query.OrderByDescending(x => x.CreatedAt);
 
         if (searchOption.PageIndex.HasValue && searchOption.PageSize.HasValue)
@@ -61,13 +61,13 @@ public class EmployeeController : ControllerBase
                 .Take(searchOption.PageSize.Value);
         }
 
-      
+
         pagedData.Data = await query.ToListAsync();
 
         return Ok(pagedData);
     }
 
-  
+
     [HttpGet("ListOfEmployees")]
     public async Task<ActionResult<IEnumerable<Employee>>> GetEmployees()
     {
@@ -80,7 +80,7 @@ public class EmployeeController : ControllerBase
         return Ok(employees);
     }
 
- 
+
     /// Get employee by ID
     [HttpGet("{id}")]
     public async Task<ActionResult<Employee>> GetEmployeeById(int id)
@@ -99,9 +99,8 @@ public class EmployeeController : ControllerBase
         return Ok(employee);
     }
 
-  
-    /// Create a new employee with optional file upload
 
+    /// Create a new employee with optional file upload
     [HttpPost]
     public async Task<ActionResult<Employee>> CreateEmployee([FromForm] CreateEmployeeRequest request)
     {
@@ -120,7 +119,7 @@ public class EmployeeController : ControllerBase
             });
         }
 
-   
+
         var idNumberExists = await dbContext.Employees
             .AnyAsync(e => e.IdNumber == request.IdNumber);
 
@@ -133,21 +132,9 @@ public class EmployeeController : ControllerBase
             });
         }
 
-    
-        var employee = new Employee
-        {
-            IdNumber = request.IdNumber,
-            Name = request.Name,
-            PhoneNumber = request.PhoneNumber,
-            Email = request.Email,
-            DrivingLicense = request.DrivingLicense,
-            TypeTruckId = request.TypeTruckId,
-            CreatedAt = DateTime.UtcNow,
-            EmployeeCategory = request.EmployeeCategory,
-            IsInternal = request.IsInternal,
-        };
+        // Create the appropriate derived type based on EmployeeCategory
+        Employee employee = CreateEmployeeByCategory(request);
 
-     
         if (request.DrivingLicenseFile != null)
         {
             var fileValidation = ValidateFile(request.DrivingLicenseFile);
@@ -160,7 +147,6 @@ public class EmployeeController : ControllerBase
                 });
             }
 
-        
             using (var memoryStream = new MemoryStream())
             {
                 await request.DrivingLicenseFile.CopyToAsync(memoryStream);
@@ -177,19 +163,82 @@ public class EmployeeController : ControllerBase
         return CreatedAtAction(nameof(GetEmployeeById), new { id = employee.Id }, employee);
     }
 
- 
+    /// Helper method to create the appropriate employee type
+    private Employee CreateEmployeeByCategory(CreateEmployeeRequest request)
+    {
+        Employee employee;
+
+        switch (request.EmployeeCategory?.ToUpper())
+        {
+            case "DRIVER":
+                employee = new Driver
+                {
+                    IdNumber = request.IdNumber,
+                    Name = request.Name,
+                    PhoneNumber = request.PhoneNumber,
+                    PhoneCountry = request.PhoneCountry ?? "+216",
+                    Email = request.Email,
+                    DrivingLicense = request.DrivingLicense,
+                    TypeTruckId = request.TypeTruckId,
+                    CreatedAt = DateTime.UtcNow,
+                    EmployeeCategory = "DRIVER",
+                    IsInternal = request.IsInternal,
+                    Status = "Disponible", // Default status for drivers
+                    ImageBase64 = null
+                };
+                break;
+
+            case "CONVOYEUR":
+                employee = new Convoyeur
+                {
+                    IdNumber = request.IdNumber,
+                    Name = request.Name,
+                    PhoneNumber = request.PhoneNumber,
+                    PhoneCountry = request.PhoneCountry ?? "+216",
+                    Email = request.Email,
+                    DrivingLicense = request.DrivingLicense,
+                    TypeTruckId = request.TypeTruckId,
+                    CreatedAt = DateTime.UtcNow,
+                    EmployeeCategory = "CONVOYEUR",
+                    IsInternal = request.IsInternal,
+                    Matricule = request.Matricule ?? string.Empty,
+                    Status = request.Status ?? "ACTIVE",
+                   
+                };
+                break;
+
+            default: // Regular employee
+                employee = new Employee
+                {
+                    IdNumber = request.IdNumber,
+                    Name = request.Name,
+                    PhoneNumber = request.PhoneNumber,
+                    PhoneCountry = request.PhoneCountry ?? "+216",
+                    Email = request.Email,
+                    DrivingLicense = request.DrivingLicense,
+                    TypeTruckId = request.TypeTruckId,
+                    CreatedAt = DateTime.UtcNow,
+                    EmployeeCategory = request.EmployeeCategory ?? "EMPLOYEE",
+                    IsInternal = request.IsInternal
+                };
+                break;
+        }
+
+        return employee;
+    }
+
     private (bool IsValid, string ErrorMessage) ValidateFile(IFormFile file)
     {
         const long maxFileSize = 5 * 1024 * 1024; // 5 MB
         var allowedExtensions = new[] { "jpg", "jpeg", "png", "pdf", "doc", "docx", "gif", "bmp" };
 
-       
+
         if (file.Length > maxFileSize)
         {
             return (false, "La taille du fichier dépasse 5 MB.");
         }
 
-    
+
         var fileExtension = Path.GetExtension(file.FileName).TrimStart('.').ToLower();
         if (!allowedExtensions.Contains(fileExtension))
         {
@@ -201,7 +250,6 @@ public class EmployeeController : ControllerBase
 
 
     /// Update an existing employee with optional file upload
-    
     [HttpPut("{id}")]
     public async Task<IActionResult> UpdateEmployee(int id, [FromForm] UpdateEmployeeRequest request)
     {
@@ -216,7 +264,21 @@ public class EmployeeController : ControllerBase
             });
         }
 
-      
+        // Check if category is changing - if so, we need to handle type conversion
+        if (existingEmployee.EmployeeCategory != request.EmployeeCategory)
+        {
+            // You might want to handle category changes carefully
+            // Option 1: Reject category changes
+            return BadRequest(new
+            {
+                message = $"Cannot change employee category from '{existingEmployee.EmployeeCategory}' to '{request.EmployeeCategory}'. Create a new employee instead.",
+                Status = 400
+            });
+
+            // Option 2: If you want to allow category changes, you'd need to delete and recreate
+            // But that's more complex and might lose related data
+        }
+
         if (existingEmployee.Email != request.Email)
         {
             var emailExists = await dbContext.Employees
@@ -232,7 +294,7 @@ public class EmployeeController : ControllerBase
             }
         }
 
-     
+
         if (existingEmployee.IdNumber != request.IdNumber)
         {
             var idNumberExists = await dbContext.Employees
@@ -248,10 +310,11 @@ public class EmployeeController : ControllerBase
             }
         }
 
-     
+        // Update common properties
         existingEmployee.IdNumber = request.IdNumber;
         existingEmployee.Name = request.Name;
         existingEmployee.PhoneNumber = request.PhoneNumber;
+        existingEmployee.PhoneCountry = request.PhoneCountry ?? existingEmployee.PhoneCountry;
         existingEmployee.Email = request.Email;
         existingEmployee.DrivingLicense = request.DrivingLicense;
         existingEmployee.TypeTruckId = request.TypeTruckId;
@@ -260,6 +323,21 @@ public class EmployeeController : ControllerBase
         existingEmployee.EmployeeCategory = request.EmployeeCategory;
         existingEmployee.IsInternal = request.IsInternal;
 
+        // Update derived type specific properties
+        if (existingEmployee is Driver driver)
+        {
+            // Update driver-specific properties
+            // You might want to add these to your UpdateEmployeeRequest
+            driver.Status = request.Status ?? driver.Status;
+            // driver.IdCamion = request.IdCamion ?? driver.IdCamion;
+        }
+        else if (existingEmployee is Convoyeur convoyeur)
+        {
+            // Update convoyeur-specific properties
+            convoyeur.Matricule = request.Matricule ?? convoyeur.Matricule;
+            convoyeur.Status = request.Status ?? convoyeur.Status;
+            
+        }
 
         if (request.DrivingLicenseFile != null)
         {
@@ -273,7 +351,7 @@ public class EmployeeController : ControllerBase
                 });
             }
 
-           
+
             using (var memoryStream = new MemoryStream())
             {
                 await request.DrivingLicenseFile.CopyToAsync(memoryStream);
@@ -294,7 +372,7 @@ public class EmployeeController : ControllerBase
         });
     }
 
-  
+
     /// Download employee's driving license attachment
     [HttpGet("{id}/download-attachment")]
     public async Task<IActionResult> DownloadAttachment(int id)
@@ -319,15 +397,15 @@ public class EmployeeController : ControllerBase
             });
         }
 
-   
+
         var fileBytes = Convert.FromBase64String(employee.DrivingLicenseAttachment);
         var fileName = $"{employee.Name}_DrivingLicense.{employee.AttachmentFileType}";
-        
-     
+
+
         return File(fileBytes, GetMimeType(employee.AttachmentFileType), fileName);
     }
 
- 
+
     private string GetMimeType(string fileExtension)
     {
         return fileExtension?.ToLower() switch
@@ -343,8 +421,7 @@ public class EmployeeController : ControllerBase
         };
     }
 
-    
-   
+
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteEmployee(int id)
     {
@@ -368,5 +445,18 @@ public class EmployeeController : ControllerBase
             message = $"Employee with ID {id} has been disabled successfully.",
             Status = 200
         });
+    }
+
+    // Add endpoint to get employees by category
+    [HttpGet("by-category/{category}")]
+    public async Task<IActionResult> GetEmployeesByCategory(string category)
+    {
+        var employees = await dbContext.Employees
+            .Include(e => e.TypeTruck)
+            .Where(e => e.EmployeeCategory == category && e.IsEnable == true)
+            .OrderBy(e => e.Name)
+            .ToListAsync();
+
+        return Ok(employees);
     }
 }
