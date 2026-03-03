@@ -69,6 +69,19 @@ export class Employee implements OnInit {
       label: this.t('TYPE_VEHICULE_LABEL'),
     },
     {
+      key: 'attachment',
+      label: this.t('TABLE_ATTACHMENT'),
+      format: (row: IEmployee) => {
+        if (row.attachmentFileType) {
+          return `<span class="attachment-cell" data-employee-id="${row.id}">
+                    ✓ ${row.attachmentFileType} 
+                    <span class="view-icon">👁️</span>
+                  </span>`;
+        }
+        return '-';
+      }
+    },
+    {
       key: 'Action',
       format: (row: IEmployee) =>
         row.isEnable
