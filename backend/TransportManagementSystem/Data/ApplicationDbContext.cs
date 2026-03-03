@@ -49,6 +49,7 @@ namespace TransportManagementSystem.Data
         public DbSet<GeographicalEntity> GeographicalEntities { get; set; }
         public DbSet<TruckGeographicalEntity> TruckGeographicalEntities { get; set; }
         public DbSet<DriverGeographicalEntity> DriverGeographicalEntities { get; set; }
+        public DbSet<CustomerGeographicalEntity> CustomerGeographicalEntities { get; set; }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);

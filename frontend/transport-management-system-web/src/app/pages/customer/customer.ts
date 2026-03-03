@@ -1,4 +1,3 @@
-import { ZoneComponent } from './../zone/zone';
 import { Component, inject, OnInit } from '@angular/core';
 import { Http } from '../../services/http';
 import { Table } from '../../components/table/table';
@@ -19,8 +18,8 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { Auth } from '../../services/auth';
 import { CommonModule } from '@angular/common';
-import { IZone } from '../../types/zone';
 import { Translation } from '../../services/Translation';
+import { IGeographicalEntity } from '../../types/general-settings';
 
 @Component({
   selector: 'app-customers',
@@ -55,25 +54,24 @@ export class Customer implements OnInit {
   searchControl = new FormControl('');
   readonly dialog = inject(MatDialog);
 
-  zones: IZone[] = []; // All zones
+  // Replace zones with geographical entities
+  geographicalEntities: IGeographicalEntity[] = [];
 
   showCols = [
     { key: 'matricule', label: 'Matricule' },
     { key: 'name', label: 'Nom' },
     { key: 'phone', label: 'Téléphone' },
     { key: 'email', label: 'Email' },
-    { key: 'adress', label: 'Adresse', format: (row: ICustomer) => row.adress || 'N/A' },
-    
+    // Remove adress column since it's not in the interface
     { key: 'contact', label: 'Contact' },
-    { key: 'zone', label: 'Zone', format: (row: ICustomer) => this.getZoneName(row.zoneId) },
-    { key: 'city', label: 'Ville' },
+    // Replace zone with geographical entity
+    { key: 'entity', label: 'Entité', format: (row: ICustomer) => this.getEntityNames(row.geographicalEntities) },
     { key: 'sourceSystem', label: 'Source' },
-    //{ key: 'Action', format: () => ['Modifier', 'Supprimer'] }
-      {key: 'Action',format: (row: ICustomer) => [this.t('EDIT'), this.t('DELETE')]}
+    { key: 'Action', format: (row: ICustomer) => [this.t('EDIT'), this.t('DELETE')] }
   ];
 
   ngOnInit() {
-    this.loadZones(); // Load all zones
+    this.loadGeographicalEntities(); // Load geographical entities instead of zones
     this.getLatestData();
 
     this.searchControl.valueChanges.pipe(debounceTime(250)).subscribe((value: string | null) => {
@@ -83,20 +81,53 @@ export class Customer implements OnInit {
     });
   }
 
-  loadZones() {
-    this.httpService.getActiveZones().subscribe({
-      next: (res) => {
-        // Assuming your API returns { success: true, message: '', data: IZone[] }
-        this.zones = res.data || [];
-      },
-      error: (err) => {
-        console.error('Failed to load zones', err);
+loadGeographicalEntities() {
+  this.httpService.getGeographicalEntities().subscribe({
+    next: (response: any) => {
+      // Handle different response formats
+      let entitiesData: IGeographicalEntity[] = [];
+      
+      if (response && typeof response === 'object') {
+        // Check if response has a data property (ApiResponse wrapper)
+        if ('data' in response && Array.isArray(response.data)) {
+          entitiesData = response.data;
+        } 
+        // Check if response is directly an array
+        else if (Array.isArray(response)) {
+          entitiesData = response;
+        }
+        // Check if response has an items property
+        else if ('items' in response && Array.isArray(response.items)) {
+          entitiesData = response.items;
+        }
       }
-    });
+      
+      this.geographicalEntities = entitiesData;
+      console.log('✅ Geographical entities loaded:', this.geographicalEntities.length);
+    },
+    error: (err) => {
+      console.error('Failed to load geographical entities', err);
+      this.geographicalEntities = []; // Set empty array on error
+    }
+  });
+}
+
+  // Replace getZoneName with getEntityNames
+  getEntityNames(geoEntities?: any[]): string {
+    if (!geoEntities || geoEntities.length === 0) return 'Non assigné';
+    
+    const entityIds = geoEntities.map(ge => ge.geographicalEntityId);
+    const entityNames = this.geographicalEntities
+      .filter(e => entityIds.includes(e.id))
+      .map(e => e.name);
+    
+    return entityNames.join(', ') || 'Non assigné';
   }
 
-  getZoneName(zoneId?: number): string {
-    return this.zones.find(z => z.id === zoneId)?.name || '';
+  // Helper method to get entity name by ID
+  getEntityName(entityId: number): string {
+    const entity = this.geographicalEntities.find(e => e.id === entityId);
+    return entity?.name || '';
   }
 
   getLatestData() {
@@ -119,37 +150,29 @@ export class Customer implements OnInit {
     ref.afterClosed().subscribe(() => this.getLatestData());
   }
 
-  // delete(customer: ICustomer) {
-  //   if (confirm(`Voulez-vous vraiment supprimer le client ${customer.name}?`)) {
-  //     this.httpService.deleteCustomer(customer.id).subscribe(() => {
-  //       alert('Client supprimé avec succès');
-  //       this.getLatestData();
-  //     });
-  //   }
-  // }
-
   delete(customer: ICustomer) {
-  const confirmMessage = this.t('CONFIRM_DELETE_CUSTOMER')
-    .replace('{{name}}', customer.name);
+    const confirmMessage = this.t('CONFIRM_DELETE_CUSTOMER')
+      .replace('{{name}}', customer.name);
 
-  if (confirm(confirmMessage)) {
-    this.httpService.deleteCustomer(customer.id).subscribe({
-      next: () => {
-        this.showSuccess(this.t('CUSTOMER_DELETED_SUCCESS'));
-        this.getLatestData();
-      },
-      error: (error) => {
-        console.error('Error deleting customer:', error);
-        this.showError(this.t('CUSTOMER_DELETE_FAILED'));
-      }
-    });
+    if (confirm(confirmMessage)) {
+      this.httpService.deleteCustomer(customer.id).subscribe({
+        next: () => {
+          this.showSuccess(this.t('CUSTOMER_DELETED_SUCCESS'));
+          this.getLatestData();
+        },
+        error: (error) => {
+          console.error('Error deleting customer:', error);
+          this.showError(this.t('CUSTOMER_DELETE_FAILED'));
+        }
+      });
+    }
   }
-}
 
   private showSuccess(message: string): void {
     alert(message);
   }
-    private showError(message: string): void {
+  
+  private showError(message: string): void {
     alert(message);
   }
   
@@ -167,31 +190,34 @@ export class Customer implements OnInit {
     this.getLatestData();
   }
 
-  // onRowClick(event: any) {
-  //   if (event.btn === 'Modifier') this.edit(event.rowData);
-  //   if (event.btn === 'Supprimer') this.delete(event.rowData);
-  // }
-
-  
   onRowClick(event: any) {
-  const editLabel = this.t('EDIT');
-  const deleteLabel = this.t('DELETE');
+    const editLabel = this.t('EDIT');
+    const deleteLabel = this.t('DELETE');
 
-  switch(event.btn) {
-    case editLabel:
-      this.edit(event.rowData);
-      break;
-    case deleteLabel:
-      this.delete(event.rowData);
-      break;
+    switch(event.btn) {
+      case editLabel:
+        this.edit(event.rowData);
+        break;
+      case deleteLabel:
+        this.delete(event.rowData);
+        break;
+    }
   }
-}
 
   exportCSV() {
     const rows = this.pagedCustomerData?.data || [];
     const csvContent = [
-      ['ID', 'Nom', 'Téléphone', 'Email', 'Adresse', 'Zone'],
-      ...rows.map(d => [d.id, d.name, d.phone, d.email, d.adress, this.getZoneName(d.zoneId)])
+      ['ID', 'Nom', 'Téléphone', 'Email', 'Contact', 'Entité(s)', 'Matricule', 'Source'],
+      ...rows.map(d => [
+        d.id, 
+        d.name, 
+        d.phone, 
+        d.email, 
+        d.contact || '', 
+        this.getEntityNames(d.geographicalEntities),
+        d.matricule,
+        d.sourceSystem
+      ])
     ]
       .map(e => e.join(','))
       .join('\n');
@@ -202,15 +228,22 @@ export class Customer implements OnInit {
     link.download = 'clients.csv';
     link.click();
   }
- onSourceChange() {
-  this.filter.pageIndex = 0; // reset pagination
-  this.getLatestData();      // reload customers with new filter
-}
+
+  onSourceChange() {
+    this.filter.pageIndex = 0; // reset pagination
+    this.getLatestData();      // reload customers with new filter
+  }
 
   exportExcel() {
     const data = (this.pagedCustomerData?.data || []).map(d => ({
-      ...d,
-      zone: this.getZoneName(d.zoneId)
+      ID: d.id,
+      Nom: d.name,
+      Téléphone: d.phone,
+      Email: d.email,
+      Contact: d.contact || '',
+      'Entité(s)': this.getEntityNames(d.geographicalEntities),
+      Matricule: d.matricule,
+      Source: d.sourceSystem
     }));
 
     const worksheet = XLSX.utils.json_to_sheet(data);
@@ -229,17 +262,16 @@ export class Customer implements OnInit {
     const rows = this.pagedCustomerData?.data || [];
 
     autoTable(doc, {
-      head: [['ID', 'Nom', 'Téléphone', 'Email', 'Adresse', 'Matricule', 'City', 'Contact', 'Zone']],
+      head: [['ID', 'Nom', 'Téléphone', 'Email', 'Contact', 'Entité(s)', 'Matricule', 'Source']],
       body: rows.map(d => [
         d.id ?? '',
         d.name ?? '',
         d.phone ?? '',
         d.email ?? '',
-        d.adress ?? '',
-        d.matricule ?? '',
-        d.city ?? '',
         d.contact ?? '',
-        this.getZoneName(d.zoneId)
+        this.getEntityNames(d.geographicalEntities),
+        d.matricule ?? '',
+        d.sourceSystem ?? ''
       ])
     });
 

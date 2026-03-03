@@ -1580,7 +1580,6 @@ public class TripsController : ControllerBase
                     CustomerId = d.Customer.Id,
                     CustomerName = d.Customer.Name,
                     CustomerPhone = d.Customer.Phone,
-                    CustomerGouvernorat = d.Customer.Gouvernorat,
 
                     // Order
                     OrderId = d.Order.Id,

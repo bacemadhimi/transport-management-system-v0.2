@@ -65,16 +65,6 @@ public class OrdersController : ControllerBase
             );
         }
 
-        if (!string.IsNullOrWhiteSpace(searchOptions.CustomerCity))
-        {
-            var city = searchOptions.CustomerCity.ToLower();
-            query = query.Where(o =>
-                o.Customer != null &&
-                o.Customer.City != null &&
-                o.Customer.City.ToLower().Contains(city)
-            );
-        }
-
         if (searchOptions.DeliveryDateStart.HasValue)
         {
             query = query.Where(o => o.DeliveryDate.HasValue &&
@@ -125,7 +115,6 @@ public class OrdersController : ControllerBase
             {  
                 "reference" => ascending ? query.OrderBy(o => o.Reference) : query.OrderByDescending(o => o.Reference),
                 "customername" => ascending ? query.OrderBy(o => o.Customer.Name) : query.OrderByDescending(o => o.Customer.Name),
-                "customercity" => ascending ? query.OrderBy(o => o.Customer.City) : query.OrderByDescending(o => o.Customer.City),
                 "weight" => ascending ? query.OrderBy(o => o.Weight) : query.OrderByDescending(o => o.Weight),
                 "deliverydate" => ascending ? query.OrderBy(o => o.DeliveryDate) : query.OrderByDescending(o => o.DeliveryDate),
                 _ => query.OrderByDescending(o => o.CreatedDate)
@@ -152,7 +141,6 @@ public class OrdersController : ControllerBase
             CustomerId = o.CustomerId,
             CustomerName = o.Customer?.Name,
             CustomerMatricule = o.Customer?.Matricule, 
-            CustomerCity = o.Customer?.City,
             DeliveryAddress = o.DeliveryAddress,
             Reference = o.Reference,
             Type = o.Type,
@@ -187,7 +175,6 @@ public class OrdersController : ControllerBase
             CustomerId = o.CustomerId,
             CustomerName = o.Customer?.Name,
             CustomerMatricule = o.Customer?.Matricule, 
-            CustomerCity = o.Customer?.City,
             Reference = o.Reference,
             Type = o.Type,
             Weight = o.Weight,
@@ -218,7 +205,6 @@ public class OrdersController : ControllerBase
             CustomerId = o.CustomerId,
             CustomerName = o.Customer?.Name,
             CustomerMatricule = o.Customer?.Matricule,
-            CustomerCity = o.Customer?.City,
             Reference = o.Reference,
             Type = o.Type,
             Weight = o.Weight,
