@@ -72,8 +72,11 @@ export interface IGeographicalEntity {
   id: number;
   name: string;
   levelId: number;
+  level?: IGeographicalLevel;
   parentId?: number;
   latitude?: number;
   longitude?: number;
   isActive: boolean;
+  createdAt?: Date;
+  updatedAt?: Date;
 }

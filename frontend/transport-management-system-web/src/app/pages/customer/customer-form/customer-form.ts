@@ -1,5 +1,5 @@
-import { Component, inject, OnInit, AfterViewInit, ViewChild, ElementRef, OnDestroy } from '@angular/core';
-import { FormBuilder, Validators, ReactiveFormsModule, FormsModule } from '@angular/forms';
+import { Component, inject, OnInit, AfterViewInit, ViewChild, ElementRef, OnDestroy, ChangeDetectorRef } from '@angular/core';
+import { FormBuilder, Validators, ReactiveFormsModule, FormsModule, FormControl } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
@@ -9,10 +9,10 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatDialogModule, MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { Http } from '../../../services/http';
 import { ICustomer } from '../../../types/customer';
-import { ICity } from '../../../types/city';
-import { IZone } from '../../../types/zone';
+import { IGeographicalEntity, IGeographicalLevel } from '../../../types/general-settings';
 import Swal from 'sweetalert2';
 import { Subscription } from 'rxjs';
 import { Translation } from '../../../services/Translation';
@@ -31,7 +31,8 @@ import { Translation } from '../../../services/Translation';
     MatSelectModule,
     MatDialogModule,
     MatIconModule,
-    MatProgressSpinnerModule
+    MatProgressSpinnerModule,
+    MatAutocompleteModule
   ],
   templateUrl: './customer-form.html',
   styleUrls: ['./customer-form.scss']
@@ -41,119 +42,346 @@ export class CustomerFormComponent implements OnInit, AfterViewInit, OnDestroy {
   httpService = inject(Http);
   dialogRef = inject(MatDialogRef<CustomerFormComponent>);
   data = inject<{ customerId?: number }>(MAT_DIALOG_DATA, { optional: true }) ?? {};
+  private cdr = inject(ChangeDetectorRef);
 
   @ViewChild('phoneInput') phoneInput!: ElementRef<HTMLInputElement>;
   private iti: any;
   
   isLoading = false;
   isSubmitting = false;
-  loadingZones = false; 
-  loadingCities =false;
-  zones: IZone[] = []; 
-  cities:ICity[]=[];
+  
+  // Geographical entities
+  loadingGeographicalEntities = false;
+  geographicalEntities: IGeographicalEntity[] = [];
+  geographicalLevels: IGeographicalLevel[] = [];
+
+  // Selected entities
+  selectedEntities: number[] = [];
+
+  // Entity hierarchies by level
+  level1Entities: IGeographicalEntity[] = [];
+  level2Entities: IGeographicalEntity[] = [];
+  level3Entities: IGeographicalEntity[] = [];
+  level4Entities: IGeographicalEntity[] = [];
+  level5Entities: IGeographicalEntity[] = [];
+
+  // Form controls for each level
+  level1Control = new FormControl<number | null>(null);
+  level2Control = new FormControl<number | null>(null);
+  level3Control = new FormControl<number | null>(null);
+  level4Control = new FormControl<number | null>(null);
+  level5Control = new FormControl<number | null>(null);
+
+  // Map for quick entity lookup
+  private entityMap: Map<number, IGeographicalEntity> = new Map();
+  private customerData: any = null;
   
   private subscriptions: Subscription[] = []; 
 
   customerForm = this.fb.group({
     matricule: ['', [Validators.maxLength(50)]],
     name: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(100)]],
-    phone: ['', [Validators.maxLength(20), this.validatePhone.bind(this)]], // optional now
+    phone: ['', [Validators.maxLength(20)]],
     email: ['', [Validators.email, Validators.maxLength(100)]],
-    adress: ['', [Validators.maxLength(200)]],
-    city: ['', [Validators.maxLength(100)]],
     contact: ['', [Validators.maxLength(100)]],
-    zoneId: this.fb.control<number | null>(null, [Validators.required]),
-    cityId: this.fb.control<number | null>(null, [Validators.required])
+    geographicalEntityIds: [[], [Validators.required, Validators.minLength(1)]]
   });
 
   ngOnInit() {
-    this.loadActiveZones(); 
-    //Test
-     const zoneChangeSub = this.customerForm.get('zoneId')!.valueChanges.subscribe(zoneId => {
-    if (zoneId) {
-      this.loadCitiesByZone(zoneId);
-    } else {
-      this.cities = [];
-      this.customerForm.get('cityId')?.setValue(null);
-    }
-  });
-  this.subscriptions.push(zoneChangeSub);
-  //
+    this.loadGeographicalEntities();
+    this.setupLevelControls();
+    
     if (this.data.customerId) {
       this.loadCustomer(this.data.customerId);
     }
   }
-  
- 
 
   ngOnDestroy() {
     this.subscriptions.forEach(sub => sub.unsubscribe());
   }
 
-  private loadActiveZones(): void {
-    this.loadingZones = true;
-    const zonesSub = this.httpService.getActiveZones().subscribe({
-      next: (response) => {
-        let zonesData: IZone[];
-        if (response && typeof response === 'object' && 'data' in response) {
-          zonesData = (response as any).data;
-        } else if (Array.isArray(response)) {
-          zonesData = response;
-        } else if (response && typeof response === 'object' && 'zones' in response) {
-          zonesData = (response as any).zones || (response as any).items || [];
-        } else {
-          zonesData = [];
-        }
-        this.zones = zonesData;
-        this.loadingZones = false;
+  private setupLevelControls() {
+    // Level 1 changes
+    this.level1Control.valueChanges.subscribe((value) => {
+      if (!value) {
+        this.level2Control.reset();
+        this.level3Control.reset();
+        this.level4Control.reset();
+        this.level5Control.reset();
+        this.loadLevel2Entities(null);
+      } else {
+        this.loadLevel2Entities(value);
+      }
+      this.updateSelectedEntities();
+    });
+
+    // Level 2 changes
+    this.level2Control.valueChanges.subscribe((value) => {
+      if (!value) {
+        this.level3Control.reset();
+        this.level4Control.reset();
+        this.level5Control.reset();
+        this.loadLevel3Entities(null);
+      } else {
+        this.loadLevel3Entities(value);
+      }
+      this.updateSelectedEntities();
+    });
+
+    // Level 3 changes
+    this.level3Control.valueChanges.subscribe((value) => {
+      if (!value) {
+        this.level4Control.reset();
+        this.level5Control.reset();
+        this.loadLevel4Entities(null);
+      } else {
+        this.loadLevel4Entities(value);
+      }
+      this.updateSelectedEntities();
+    });
+
+    // Level 4 changes
+    this.level4Control.valueChanges.subscribe((value) => {
+      if (!value) {
+        this.level5Control.reset();
+        this.loadLevel5Entities(null);
+      } else {
+        this.loadLevel5Entities(value);
+      }
+      this.updateSelectedEntities();
+    });
+
+    // Level 5 changes
+    this.level5Control.valueChanges.subscribe(() => {
+      this.updateSelectedEntities();
+    });
+  }
+
+  private loadLevel2Entities(parentId: number | null) {
+    if (!parentId) {
+      this.level2Entities = [];
+      return;
+    }
+    this.level2Entities = this.geographicalEntities.filter(e => {
+      const level = this.geographicalLevels.find(l => l.id === e.levelId);
+      return level?.levelNumber === 2 && e.parentId === parentId;
+    });
+  }
+
+  private loadLevel3Entities(parentId: number | null) {
+    if (!parentId) {
+      this.level3Entities = [];
+      return;
+    }
+    this.level3Entities = this.geographicalEntities.filter(e => {
+      const level = this.geographicalLevels.find(l => l.id === e.levelId);
+      return level?.levelNumber === 3 && e.parentId === parentId;
+    });
+  }
+
+  private loadLevel4Entities(parentId: number | null) {
+    if (!parentId) {
+      this.level4Entities = [];
+      return;
+    }
+    this.level4Entities = this.geographicalEntities.filter(e => {
+      const level = this.geographicalLevels.find(l => l.id === e.levelId);
+      return level?.levelNumber === 4 && e.parentId === parentId;
+    });
+  }
+
+  private loadLevel5Entities(parentId: number | null) {
+    if (!parentId) {
+      this.level5Entities = [];
+      return;
+    }
+    this.level5Entities = this.geographicalEntities.filter(e => {
+      const level = this.geographicalLevels.find(l => l.id === e.levelId);
+      return level?.levelNumber === 5 && e.parentId === parentId;
+    });
+  }
+
+  private updateSelectedEntities() {
+    const selected: number[] = [];
+    
+    if (this.level1Control.value) selected.push(this.level1Control.value);
+    if (this.level2Control.value) selected.push(this.level2Control.value);
+    if (this.level3Control.value) selected.push(this.level3Control.value);
+    if (this.level4Control.value) selected.push(this.level4Control.value);
+    if (this.level5Control.value) selected.push(this.level5Control.value);
+    
+    this.selectedEntities = selected;
+    
+    this.customerForm.patchValue({
+      geographicalEntityIds: this.selectedEntities as any
+    });
+    this.customerForm.get('geographicalEntityIds')?.markAsDirty();
+  }
+
+  private loadGeographicalEntities(): void {
+    this.loadingGeographicalEntities = true;
+    
+    const levelsSub = this.httpService.getGeographicalLevels().subscribe({
+      next: (levels) => {
+        this.geographicalLevels = levels.filter(l => l.isActive);
+        
+        const entitiesSub = this.httpService.getGeographicalEntities().subscribe({
+          next: (entities) => {
+            this.geographicalEntities = entities.filter(e => e.isActive);
+            this.organizeEntitiesByLevel();
+            this.loadingGeographicalEntities = false;
+            
+            if (this.customerData) {
+              this.setGeographicalSelections(this.customerData);
+            }
+            
+            this.cdr.detectChanges();
+          },
+          error: (error) => {
+            console.error('Error loading geographical entities:', error);
+            this.loadingGeographicalEntities = false;
+            Swal.fire({
+              icon: 'error',
+              title: 'Erreur',
+              text: 'Impossible de charger les localisations',
+              confirmButtonText: 'OK'
+            });
+          }
+        });
+        this.subscriptions.push(entitiesSub);
       },
       error: (error) => {
-        console.error('Error loading active zones:', error);
-        this.loadingZones = false;
+        console.error('Error loading geographical levels:', error);
+        this.loadingGeographicalEntities = false;
+        Swal.fire({
+          icon: 'error',
+          title: 'Erreur',
+          text: 'Impossible de charger les niveaux géographiques',
+          confirmButtonText: 'OK'
+        });
       }
     });
-    this.subscriptions.push(zonesSub);
+    
+    this.subscriptions.push(levelsSub);
   }
-private loadCitiesByZone(zoneId: number) {
-  this.loadingCities = true;
-  this.cities = [];
-  this.customerForm.get('cityId')?.setValue(null);
 
-  const citiesSub = this.httpService.getActiveCitiesByZone(zoneId).subscribe({
-    next: (response) => {
-      let citiesData: ICity[] = [];
-
-      if (response && typeof response === 'object' && 'data' in response) {
-        citiesData = (response as any).data;
-      } else if (Array.isArray(response)) {
-        citiesData = response;
+  private organizeEntitiesByLevel() {
+    this.entityMap.clear();
+    
+    this.geographicalEntities.forEach(e => {
+      if (e.id !== undefined && e.id !== null) {
+        this.entityMap.set(e.id, e);
       }
+    });
+    
+    const levelGroups: { [key: number]: IGeographicalEntity[] } = {};
+    
+    this.geographicalEntities.forEach(entity => {
+      if (entity.id === undefined || entity.id === null) return;
+      
+      const level = this.geographicalLevels.find(l => l.id === entity.levelId);
+      if (level) {
+        if (!levelGroups[level.levelNumber]) {
+          levelGroups[level.levelNumber] = [];
+        }
+        levelGroups[level.levelNumber].push(entity);
+      }
+    });
+    
+    this.level1Entities = levelGroups[1] || [];
+    this.level2Entities = levelGroups[2] || [];
+    this.level3Entities = levelGroups[3] || [];
+    this.level4Entities = levelGroups[4] || [];
+    this.level5Entities = levelGroups[5] || [];
+  }
 
-      this.cities = citiesData;
-      this.loadingCities = false;
-    },
-    error: (error) => {
-      console.error('Error loading cities:', error);
-      this.loadingCities = false;
+  private setGeographicalSelections(customerData: any) {
+    const geographicalEntityIds = customerData.geographicalEntities?.map((ge: any) => ge.geographicalEntityId) || [];
+    
+    this.selectedEntities = [...geographicalEntityIds];
+    
+    this.level1Control.reset();
+    this.level2Control.reset();
+    this.level3Control.reset();
+    this.level4Control.reset();
+    this.level5Control.reset();
+    
+    geographicalEntityIds.forEach((id: number) => {
+      const entity = this.geographicalEntities.find(e => e.id === id);
+      if (entity) {
+        const level = this.geographicalLevels.find(l => l.id === entity.levelId);
+        if (level) {
+          switch(level.levelNumber) {
+            case 1: this.level1Control.setValue(id); break;
+            case 2: this.level2Control.setValue(id); break;
+            case 3: this.level3Control.setValue(id); break;
+            case 4: this.level4Control.setValue(id); break;
+            case 5: this.level5Control.setValue(id); break;
+          }
+        }
+      }
+    });
+    
+    this.customerForm.patchValue({
+      geographicalEntityIds: this.selectedEntities as any
+    });
+    
+    this.cdr.detectChanges();
+  }
+
+  removeEntity(entityId: number) {
+    const entity = this.geographicalEntities.find(e => e.id === entityId);
+    if (entity) {
+      const level = this.geographicalLevels.find(l => l.id === entity.levelId);
+      if (level) {
+        switch(level.levelNumber) {
+          case 1: this.level1Control.reset(); break;
+          case 2: this.level2Control.reset(); break;
+          case 3: this.level3Control.reset(); break;
+          case 4: this.level4Control.reset(); break;
+          case 5: this.level5Control.reset(); break;
+        }
+      }
     }
+    
+    let newSelection = this.selectedEntities.filter(id => id !== entityId);
+    this.selectedEntities = newSelection;
+    
+    this.customerForm.patchValue({
+    geographicalEntityIds: this.selectedEntities as any
   });
+    this.customerForm.get('geographicalEntityIds')?.markAsDirty();
+    this.cdr.detectChanges();
+  }
 
-  this.subscriptions.push(citiesSub);
-}
+  getEntityName(entityId: number): string {
+    return this.entityMap.get(entityId)?.name || `ID: ${entityId}`;
+  }
+
+  getLevelName(levelNumber: number): string {
+    const level = this.geographicalLevels.find(l => l.levelNumber === levelNumber);
+    return level ? level.name : `Niveau ${levelNumber}`;
+  }
+
   private loadCustomer(id: number) {
     this.isLoading = true;
     this.httpService.getCustomer(id).subscribe({
-      next: (customer: ICustomer) => {
+      next: (response: any) => {
+        const customer = response.data || response;
+        
+        this.customerData = customer;
+        
         this.customerForm.patchValue({
           matricule: customer.matricule || '',
           name: customer.name,
           phone: customer.phone || '',
           email: customer.email || '',
-          adress: customer.adress || '',
-          city: customer.city || '',
-          contact: customer.contact || '',
-          zoneId: customer.zoneId || null 
+          contact: customer.contact || ''
         });
+
+        if (this.geographicalEntities.length > 0 && this.geographicalLevels.length > 0) {
+          this.setGeographicalSelections(customer);
+        }
 
         setTimeout(() => {
           if (customer.phoneCountry && this.iti) {
@@ -165,6 +393,7 @@ private loadCitiesByZone(zoneId: number) {
         }, 0);
 
         this.isLoading = false;
+        this.cdr.detectChanges();
       },
       error: () => {
         this.isLoading = false;
@@ -216,12 +445,6 @@ private loadCitiesByZone(zoneId: number) {
       });
   }
 
-  private validatePhone(control: any) {
-    if (!control.value) return null; // skip if empty
-    if (!this.iti) return null;
-    return this.iti.isValidNumber() ? null : { pattern: true };
-  }
-
   onSubmit() {
     if (this.isSubmitting) return;
 
@@ -235,19 +458,28 @@ private loadCitiesByZone(zoneId: number) {
       return;
     }
 
+    if (this.selectedEntities.length === 0) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Erreur',
+        text: 'Au moins une localisation doit être sélectionnée'
+      });
+      return;
+    }
+
     this.isSubmitting = true;
     const formValue = this.customerForm.value;
-    const selectedCity = this.cities.find(c => c.id === formValue.cityId);
-    const customerData = {
+    
+    const customerData: any = {
       matricule: formValue.matricule || '', 
       name: formValue.name!,       
       phone: phoneNumber || '',                 
       phoneCountry: this.iti ? this.iti.getSelectedCountryData().iso2 : 'tn', 
       email: formValue.email || '',     
-      adress: formValue.adress || '', 
-       city: selectedCity?.name || '',
-      contact: formValue.contact || '',  
-      zoneId: formValue.zoneId!, 
+      contact: formValue.contact || '',
+      geographicalEntities: this.selectedEntities.map(id => ({
+        geographicalEntityId: id
+      }))
     };
 
     const action = this.data.customerId
@@ -259,9 +491,7 @@ private loadCitiesByZone(zoneId: number) {
         this.isSubmitting = false;
         Swal.fire({
           icon: 'success',
-          //title: this.data.customerId ? 'Client modifié avec succès' : 'Client ajouté avec succès',
-          title: this.data.customerId? this.t('CUSTOMER_UPDATED'): this.t('CUSTOMER_ADDED'),
-
+          title: this.data.customerId ? this.t('CUSTOMER_UPDATED') : this.t('CUSTOMER_ADDED'),
           confirmButtonText: 'OK',
           allowOutsideClick: false
         }).then(() => this.dialogRef.close(true));
@@ -286,7 +516,13 @@ private loadCitiesByZone(zoneId: number) {
   getErrorMessage(controlName: string): string {
     const control = this.customerForm.get(controlName);
     if (control?.hasError('required')) {
+      if (controlName === 'geographicalEntityIds') {
+        return 'Au moins une localisation doit être sélectionnée';
+      }
       return `${this.getFieldLabel(controlName)} est obligatoire`;
+    }
+    if (control?.hasError('minlength') && controlName === 'geographicalEntityIds') {
+      return 'Au moins une localisation doit être sélectionnée';
     }
     if (control?.hasError('minlength')) {
       const requiredLength = control.errors?.['minlength'].requiredLength;
@@ -295,9 +531,6 @@ private loadCitiesByZone(zoneId: number) {
     if (control?.hasError('maxlength')) {
       const requiredLength = control.errors?.['maxlength'].requiredLength;
       return `${this.getFieldLabel(controlName)} ne peut pas dépasser ${requiredLength} caractères`;
-    }
-    if (control?.hasError('pattern')) {
-      return 'Format de téléphone invalide';
     }
     if (control?.hasError('email')) {
       return 'Veuillez entrer une adresse email valide';
@@ -310,10 +543,8 @@ private loadCitiesByZone(zoneId: number) {
       name: 'Le nom',
       phone: 'Le téléphone',
       email: 'L\'email',
-      adress: 'L\'adresse',
-      city: 'La ville',
       contact: 'Le contact',
-      zoneId: 'La zone'
+      geographicalEntityIds: 'La localisation'
     };
     return labels[controlName] || controlName;
   }
@@ -323,6 +554,6 @@ private loadCitiesByZone(zoneId: number) {
   }
     
   //Call the services to get the translations
-    private translation = inject(Translation);
-   t(key: string): string { return this.translation.t(key); }
+  private translation = inject(Translation);
+  t(key: string): string { return this.translation.t(key); }
 }

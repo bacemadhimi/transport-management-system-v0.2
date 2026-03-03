@@ -197,7 +197,7 @@ export class OrderFormComponent implements OnInit {
       weightUnit: formValue.weightUnit || this.loadingUnit,
       deliveryAddress: formValue.deliveryAddress || undefined,
       notes: formValue.notes || undefined,
-      customerCity: selectedCustomer?.gouvernorat,
+      customerCity: '',
       deliveryDate: this.formatDateLocal(formValue.deliveryDate)
     };
 
