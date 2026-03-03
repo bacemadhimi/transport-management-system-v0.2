@@ -145,11 +145,18 @@ export class TripsMapService {
     );
   }
 
-  private getDriversFromApi(): Observable<IDriver[]> {
-    return this.http.get<IDriver[]>(`${this.apiUrl}/api/Driver/ListOfDrivers`).pipe(
-      catchError(() => of([]))
-    );
-  }
+ private getDriversFromApi(): Observable<IDriver[]> {
+  return this.http.get<IDriver[]>(`${this.apiUrl}/api/Driver/ListOfDrivers`).pipe(
+    map(drivers => drivers.map(driver => ({
+      ...driver,
+      employeeCategory: "DRIVER" as const  
+    }))),
+    catchError(error => {
+      console.error('Error fetching drivers:', error);
+      return of([]);
+    })
+  );
+}
 
   private getCustomersFromApi(): Observable<ICustomer[]> {
     return this.http.get<ICustomer[]>(`${this.apiUrl}/api/customer/list`).pipe(

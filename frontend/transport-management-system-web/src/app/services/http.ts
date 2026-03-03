@@ -27,7 +27,7 @@ import { AvailabilityRequestDto, DriverAvailabilityDto, DriverOvertimeCheckDto, 
 import { ITypeTruck } from '../types/type-truck';
 import { ICategorys } from '../types/categorys';
 import { IMarque, IMarqueDto } from '../types/marque';
-import { IGeneralSettings, IGeneralSettingsDto, IOrderSettings, ITripSettings, ORDER_SETTING_KEYS, ParameterType, SearchOptions, TRIP_SETTING_KEYS } from '../types/general-settings';
+import { IGeneralSettings , IGeographicalEntity, IGeographicalLevel, SearchOptions,  } from '../types/general-settings';
 
 @Injectable({
   providedIn: 'root'
@@ -177,13 +177,23 @@ private formatDateForApi(date: string | Date): string {
   deleteTrip(id: number) {
     return this.http.delete(environment.apiUrl + '/api/Trips/' + id);
   }
-  getTrucks() {
-    return this.http.get<ITruck[]>(environment.apiUrl + '/api/Trucks/list');
-  }
+ getTrucks(): Observable<ITruck[]> {
+  return this.http.get<ITruck[]>(`${environment.apiUrl}/api/Trucks/list`).pipe(
+    catchError(error => {
+      console.error('Error loading trucks:', error);
+      return of([]);
+    })
+  );
+}
 
-  getDrivers() {
-    return this.http.get<IDriver[]>(environment.apiUrl + '/api/Driver/ListOfDrivers');
-  }
+getDrivers(): Observable<IDriver[]> {
+  return this.http.get<IDriver[]>(`${environment.apiUrl}/api/Driver/ListOfDrivers`).pipe(
+    catchError(error => {
+      console.error('Error loading drivers:', error);
+      return of([]);
+    })
+  );
+}
  getCustomersList(filter: any) {
 
   const cleanedFilter: any = {};
@@ -1433,139 +1443,84 @@ deleteMarque(id: number) {
 getMarqueTrucks() {
     return this.http.get<IMarque[]>(environment.apiUrl + '/api/MarqueTruck/list');
   }
-getGeneralSettings(searchOptions: SearchOptions) {
-  let params = new HttpParams();
-  
-  // Add parameters only if they have values
-  if (searchOptions.pageIndex !== undefined && searchOptions.pageIndex !== null) {
-    params = params.set('pageIndex', searchOptions.pageIndex.toString());
+getGeneralSettings(searchOptions: SearchOptions): Observable<PagedData<IGeneralSettings>> {
+    let params = new HttpParams();
+    
+    if (searchOptions.pageIndex !== undefined) {
+      params = params.set('pageIndex', searchOptions.pageIndex.toString());
+    }
+    if (searchOptions.pageSize !== undefined) {
+      params = params.set('pageSize', searchOptions.pageSize.toString());
+    }
+    if (searchOptions.search) {
+      params = params.set('search', searchOptions.search);
+    }
+    if (searchOptions.parameterType) {
+      params = params.set('parameterType', searchOptions.parameterType);
+    }
+    
+    return this.http.get<PagedData<IGeneralSettings>>(
+      `${environment.apiUrl}/api/GeneralSettings/PaginationAndSearch`,
+      { params }
+    );
   }
-  if (searchOptions.pageSize !== undefined && searchOptions.pageSize !== null) {
-    params = params.set('pageSize', searchOptions.pageSize.toString());
-  }
-  if (searchOptions.search && searchOptions.search.trim() !== '') {
-    params = params.set('search', searchOptions.search.trim());
-  }
-  if (searchOptions.parameterType && searchOptions.parameterType !== '') {
-    params = params.set('parameterType', searchOptions.parameterType);
-  }
-  
-  console.log('Request params:', params.toString()); 
-  
-  return this.http.get<PagedData<IGeneralSettings>>(
-    `${environment.apiUrl}/api/GeneralSettings/PaginationAndSearch`,
-    { params }
-  );
-}
 
 getGeneralSetting(id: number) {
   return this.http.get<IGeneralSettings>(`${environment.apiUrl}/api/GeneralSettings/${id}`);
 }
 
-addGeneralSettings(parameter: IGeneralSettingsDto) {
-  return this.http.post<IGeneralSettings>(`${environment.apiUrl}/api/GeneralSettings`, parameter);
-}
 
-updateGeneralSettings(id: number, parameter: IGeneralSettingsDto) {
-  return this.http.put<IGeneralSettings>(`${environment.apiUrl}/api/GeneralSettings/${id}`, parameter);
-}
 
 deleteGeneralSettings(id: number) {
   return this.http.delete(`${environment.apiUrl}/api/GeneralSettings/${id}`);
 }
-getOrderSettings(): Observable<IOrderSettings> {
-    const options: SearchOptions = {
-      pageIndex: 0,
-      pageSize: 100,
-      parameterType: ParameterType.ORDER
-    };
-    
-    return this.getGeneralSettings(options).pipe(
-      map((response: PagedData<IGeneralSettings>) => {
-        return this.mapToOrderSettings(response.data || []);
-      })
+getAllSettingsByType(parameterType: string): Observable<IGeneralSettings[]> {
+  return this.http.get<IGeneralSettings[]>(
+    `${environment.apiUrl}/api/GeneralSettings/Type/${parameterType}`
+  );
+}
+
+addGeneralSettings(parameter: Omit<IGeneralSettings, 'id'>): Observable<IGeneralSettings> {
+    return this.http.post<IGeneralSettings>(
+      `${environment.apiUrl}/api/GeneralSettings`, 
+      parameter
     );
   }
-getTripSettings(): Observable<ITripSettings> {
-    const options: SearchOptions = {
-      pageIndex: 0,
-      pageSize: 100,
-      parameterType: ParameterType.TRIP
-    };
-    
-    return this.getGeneralSettings(options).pipe(
-      map((response: PagedData<IGeneralSettings>) => {
-        return this.mapToTripSettings(response.data || []);
-      })
+  updateGeneralSettings(id: number, parameter: Partial<IGeneralSettings>): Observable<IGeneralSettings> {
+    return this.http.put<IGeneralSettings>(
+      `${environment.apiUrl}/api/GeneralSettings/${id}`, 
+      parameter
     );
   }
-  private mapToOrderSettings(settings: IGeneralSettings[]): IOrderSettings {
-    const settingsMap = new Map(settings.map(s => [s.parameterCode, s.value]));
-    
-    return {
-      allowEditOrder: this.getBooleanValue(settingsMap, ORDER_SETTING_KEYS.ALLOW_EDIT_ORDER, true),
-      allowEditDeliveryDate: this.getBooleanValue(settingsMap, ORDER_SETTING_KEYS.ALLOW_DELIVERY_DATE_EDIT, true),
-      allowLoadLateOrders: this.getBooleanValue(settingsMap, ORDER_SETTING_KEYS.ALLOW_LOAD_LATE_ORDERS, true),
-      acceptOrdersWithoutAddress: this.getBooleanValue(settingsMap, ORDER_SETTING_KEYS.ACCEPT_ORDERS_WITHOUT_ADDRESS, true),
-      planningHorizon: this.getNumberValue(settingsMap, ORDER_SETTING_KEYS.PLANNING_HORIZON, 30),
-      loadingUnit: this.getStringValue(settingsMap, ORDER_SETTING_KEYS.LOADING_UNIT, 'palette')
-    };
-  }
+  // Add these methods to your Http service
 
-  private mapToTripSettings(settings: IGeneralSettings[]): ITripSettings {
-    const settingsMap = new Map(settings.map(s => [s.parameterCode, s.value]));
-    
-    return {
-      allowEditTrips: this.getBooleanValue(settingsMap, TRIP_SETTING_KEYS.ALLOW_EDIT_TRIPS, true),
-      allowDeleteTrips: this.getBooleanValue(settingsMap, TRIP_SETTING_KEYS.ALLOW_DELETE_TRIPS, true),
-      editTimeLimit: this.getNumberValue(settingsMap, TRIP_SETTING_KEYS.EDIT_TIME_LIMIT, 60),
-      maxTripsPerDay: this.getNumberValue(settingsMap, TRIP_SETTING_KEYS.MAX_TRIPS_PER_DAY, 10),
-      tripOrder: this.getStringValue(settingsMap, TRIP_SETTING_KEYS.TRIP_ORDER, 'chronological'),
-      requireDeleteConfirmation: this.getBooleanValue(settingsMap, TRIP_SETTING_KEYS.REQUIRE_DELETE_CONFIRMATION, true),
-      notifyOnTripEdit: this.getBooleanValue(settingsMap, TRIP_SETTING_KEYS.NOTIFY_ON_TRIP_EDIT, false),
-      notifyOnTripDelete: this.getBooleanValue(settingsMap, TRIP_SETTING_KEYS.NOTIFY_ON_TRIP_DELETE, false),
-      linkDriverToTruck: this.getBooleanValue(settingsMap, TRIP_SETTING_KEYS.LINK_DRIVER_TO_TRUCK, true)
-    };
-  }
-   private orderSettingsToDto(settings: IOrderSettings): IGeneralSettingsDto[] {
-    return [
-      { parameterType: ParameterType.ORDER, parameterCode: ORDER_SETTING_KEYS.ALLOW_EDIT_ORDER, value: String(settings.allowEditOrder), description: 'Allow editing orders' },
-      { parameterType: ParameterType.ORDER, parameterCode: ORDER_SETTING_KEYS.ALLOW_DELIVERY_DATE_EDIT, value: String(settings.allowEditDeliveryDate), description: 'Allow editing delivery date' },
-      { parameterType: ParameterType.ORDER, parameterCode: ORDER_SETTING_KEYS.ALLOW_LOAD_LATE_ORDERS, value: String(settings.allowLoadLateOrders), description: 'Allow loading late orders' },
-      { parameterType: ParameterType.ORDER, parameterCode: ORDER_SETTING_KEYS.ACCEPT_ORDERS_WITHOUT_ADDRESS, value: String(settings.acceptOrdersWithoutAddress), description: 'Accept orders without address' },
-      { parameterType: ParameterType.ORDER, parameterCode: ORDER_SETTING_KEYS.PLANNING_HORIZON, value: String(settings.planningHorizon), description: 'Planning horizon in days' },
-      { parameterType: ParameterType.ORDER, parameterCode: ORDER_SETTING_KEYS.LOADING_UNIT, value: settings.loadingUnit, description: 'Default loading unit' }
-    ];
-  }
+getGeographicalLevels(): Observable<IGeographicalLevel[]> {
+  return this.http.get<IGeographicalLevel[]>(`${environment.apiUrl}/api/GeographicalLevels`);
+}
 
-  private tripSettingsToDto(settings: ITripSettings): IGeneralSettingsDto[] {
-    return [
-      { parameterType: ParameterType.TRIP, parameterCode: TRIP_SETTING_KEYS.ALLOW_EDIT_TRIPS, value: String(settings.allowEditTrips), description: 'Allow editing trips' },
-      { parameterType: ParameterType.TRIP, parameterCode: TRIP_SETTING_KEYS.ALLOW_DELETE_TRIPS, value: String(settings.allowDeleteTrips), description: 'Allow deleting trips' },
-      { parameterType: ParameterType.TRIP, parameterCode: TRIP_SETTING_KEYS.EDIT_TIME_LIMIT, value: String(settings.editTimeLimit), description: 'Edit limit in minutes' },
-      { parameterType: ParameterType.TRIP, parameterCode: TRIP_SETTING_KEYS.MAX_TRIPS_PER_DAY, value: String(settings.maxTripsPerDay), description: 'Maximum trips per day' },
-      { parameterType: ParameterType.TRIP, parameterCode: TRIP_SETTING_KEYS.TRIP_ORDER, value: settings.tripOrder, description: 'Trip ordering method' },
-      { parameterType: ParameterType.TRIP, parameterCode: TRIP_SETTING_KEYS.REQUIRE_DELETE_CONFIRMATION, value: String(settings.requireDeleteConfirmation), description: 'Require delete confirmation' },
-      { parameterType: ParameterType.TRIP, parameterCode: TRIP_SETTING_KEYS.NOTIFY_ON_TRIP_EDIT, value: String(settings.notifyOnTripEdit), description: 'Notify when trip edited' },
-      { parameterType: ParameterType.TRIP, parameterCode: TRIP_SETTING_KEYS.NOTIFY_ON_TRIP_DELETE, value: String(settings.notifyOnTripDelete), description: 'Notify when trip deleted' },
-      { parameterType: ParameterType.TRIP, parameterCode: TRIP_SETTING_KEYS.LINK_DRIVER_TO_TRUCK, value: String(settings.linkDriverToTruck), description: 'Driver must match truck' }
-    ];
-  }
+updateGeographicalLevels(levels: IGeographicalLevel[]): Observable<IGeographicalLevel[]> {
+  return this.http.put<IGeographicalLevel[]>(`${environment.apiUrl}/api/GeographicalLevels/bulk`, levels);
+}
 
-  private getBooleanValue(map: Map<string, string>, key: string, defaultValue: boolean): boolean {
-    const value = map.get(key);
-    return value ? value.toLowerCase() === 'true' : defaultValue;
-  }
+getGeographicalEntities(): Observable<IGeographicalEntity[]> {
+  return this.http.get<IGeographicalEntity[]>(`${environment.apiUrl}/api/GeographicalEntities`);
+}
 
-  private getNumberValue(map: Map<string, string>, key: string, defaultValue: number): number {
-    const value = map.get(key);
-    return value ? parseInt(value, 10) : defaultValue;
-  }
+getGeographicalEntity(id: number): Observable<IGeographicalEntity> {
+  return this.http.get<IGeographicalEntity>(`${environment.apiUrl}/api/GeographicalEntities/${id}`);
+}
 
-  private getStringValue(map: Map<string, string>, key: string, defaultValue: string): string {
-    const value = map.get(key);
-    return value || defaultValue;
-  }
+addGeographicalEntity(entity: any): Observable<IGeographicalEntity> {
+  return this.http.post<IGeographicalEntity>(`${environment.apiUrl}/api/GeographicalEntities`, entity);
+}
+
+updateGeographicalEntity(id: number, entity: any): Observable<IGeographicalEntity> {
+  return this.http.put<IGeographicalEntity>(`${environment.apiUrl}/api/GeographicalEntities/${id}`, entity);
+}
+
+deleteGeographicalEntity(id: number): Observable<void> {
+  return this.http.delete<void>(`${environment.apiUrl}/api/GeographicalEntities/${id}`);
+}
 }
 
 

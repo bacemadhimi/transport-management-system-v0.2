@@ -17,18 +17,24 @@ public class ConvoyeurController : ControllerBase
         dbContext = context;
     }
 
-    
+
     [HttpGet("ListOfConvoyeurs")]
     public async Task<ActionResult<IEnumerable<Convoyeur>>> GetConvoyeurs()
     {
-        return await dbContext.Convoyeurs.ToListAsync();
+        // Use Set<Convoyeur>() instead of Convoyeurs DbSet
+        var convoyeurs = await dbContext.Set<Convoyeur>()
+
+            .ToListAsync();
+
+        return Ok(convoyeurs);
     }
 
- 
+
     [HttpGet("{id}")]
     public async Task<ActionResult<Convoyeur>> GetConvoyeurById(int id)
     {
-        var convoyeur = await dbContext.Convoyeurs.FindAsync(id);
+        var convoyeur = await dbContext.Set<Convoyeur>()
+            .FirstOrDefaultAsync(c => c.Id == id);
 
         if (convoyeur == null)
         {
@@ -39,27 +45,64 @@ public class ConvoyeurController : ControllerBase
             });
         }
 
-        return convoyeur;
+        return Ok(convoyeur);
     }
 
-   
+
     [HttpPost]
-    public async Task<ActionResult<Convoyeur>> CreateConvoyeur(Convoyeur convoyeur)
+    public async Task<ActionResult<Convoyeur>> CreateConvoyeur([FromBody] CreateConvoyeurRequest request)
     {
         if (!ModelState.IsValid)
             return BadRequest(ModelState);
 
-        dbContext.Convoyeurs.Add(convoyeur);
+        // Check if email already exists
+        var emailExists = await dbContext.Set<Convoyeur>()
+            .AnyAsync(c => c.Email == request.Email);
+
+        if (emailExists)
+        {
+            return BadRequest(new
+            {
+                message = $"L'email '{request.Email}' est déjà utilisé par un autre convoyeur.",
+                Status = 400
+            });
+        }
+
+        // Create a new Convoyeur instance (which inherits from Employee)
+        var convoyeur = new Convoyeur
+        {
+            IdNumber = request.IdNumber ?? GenerateIdNumber(),
+            Name = request.Name,
+            PhoneNumber = request.PhoneNumber,
+            PhoneCountry = request.PhoneCountry ?? "tn",
+            Email = request.Email,
+            DrivingLicense = request.PermisNumber,
+            EmployeeCategory = "CONVOYEUR", // Discriminator
+            IsInternal = true,
+            IsEnable = true,
+            CreatedAt = DateTime.UtcNow,
+
+            // Convoyeur-specific properties
+            Matricule = request.Matricule ?? string.Empty,
+            Status = request.Status ?? "ACTIVE",
+    
+        };
+
+        dbContext.Set<Convoyeur>().Add(convoyeur);
         await dbContext.SaveChangesAsync();
+
+        if (convoyeur.Id == 0)
+            return BadRequest("Convoyeur ID was not generated. Something went wrong.");
 
         return CreatedAtAction(nameof(GetConvoyeurById), new { id = convoyeur.Id }, convoyeur);
     }
 
-   
+
     [HttpPut("{id}")]
-    public async Task<IActionResult> UpdateConvoyeur(int id, Convoyeur convoyeur)
+    public async Task<IActionResult> UpdateConvoyeur(int id, [FromBody] UpdateConvoyeurRequest request)
     {
-        var existingConvoyeur = await dbContext.Convoyeurs.FindAsync(id);
+        var existingConvoyeur = await dbContext.Set<Convoyeur>()
+            .FirstOrDefaultAsync(c => c.Id == id);
 
         if (existingConvoyeur == null)
         {
@@ -70,14 +113,35 @@ public class ConvoyeurController : ControllerBase
             });
         }
 
-        existingConvoyeur.Name = convoyeur.Name;
-        existingConvoyeur.Matricule = convoyeur.Matricule;
-        existingConvoyeur.Phone = convoyeur.Phone;
-        existingConvoyeur.Status = convoyeur.Status;
-        existingConvoyeur.PhoneCountry = convoyeur.PhoneCountry;
-        existingConvoyeur.PermisNumber = convoyeur.PermisNumber;
-        existingConvoyeur.ZoneId = convoyeur.ZoneId;
-        existingConvoyeur.CityId = convoyeur.CityId;
+        // Check email uniqueness if changed
+        if (existingConvoyeur.Email != request.Email)
+        {
+            var emailExists = await dbContext.Set<Convoyeur>()
+                .AnyAsync(c => c.Email == request.Email && c.Id != id);
+
+            if (emailExists)
+            {
+                return BadRequest(new
+                {
+                    message = $"L'email '{request.Email}' est déjà utilisé par un autre convoyeur.",
+                    Status = 400
+                });
+            }
+        }
+
+        // Update Employee base properties
+        existingConvoyeur.Name = request.Name;
+        existingConvoyeur.PhoneNumber = request.PhoneNumber;
+        existingConvoyeur.PhoneCountry = request.PhoneCountry ?? existingConvoyeur.PhoneCountry;
+        existingConvoyeur.Email = request.Email;
+        existingConvoyeur.DrivingLicense = request.PermisNumber;
+        existingConvoyeur.UpdatedAt = DateTime.UtcNow;
+        existingConvoyeur.IsEnable = request.IsEnable;
+
+        // Update Convoyeur-specific properties
+        existingConvoyeur.Matricule = request.Matricule ?? existingConvoyeur.Matricule;
+        existingConvoyeur.Status = request.Status ?? existingConvoyeur.Status;
+
 
         await dbContext.SaveChangesAsync();
 
@@ -89,11 +153,12 @@ public class ConvoyeurController : ControllerBase
         });
     }
 
-  
+
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteConvoyeur(int id)
     {
-        var convoyeur = await dbContext.Convoyeurs.FindAsync(id);
+        var convoyeur = await dbContext.Set<Convoyeur>()
+            .FirstOrDefaultAsync(c => c.Id == id);
 
         if (convoyeur == null)
         {
@@ -104,49 +169,83 @@ public class ConvoyeurController : ControllerBase
             });
         }
 
-        dbContext.Convoyeurs.Remove(convoyeur);
+        // Soft delete - just disable
+        convoyeur.IsEnable = false;
+        convoyeur.UpdatedAt = DateTime.UtcNow;
         await dbContext.SaveChangesAsync();
 
         return Ok(new
         {
-            message = "Convoyeur deleted successfully",
+            message = "Convoyeur disabled successfully",
             Status = 200
         });
     }
 
-   
+
     [HttpGet("Pagination and Search")]
     public async Task<IActionResult> GetConvoyeurList([FromQuery] SearchOptions searchOption)
     {
         var pagedData = new PagedData<Convoyeur>();
 
-        if (string.IsNullOrEmpty(searchOption.Search))
+        var query = dbContext.Set<Convoyeur>()
+            .AsQueryable();
+
+        if (!string.IsNullOrEmpty(searchOption.Search))
         {
-            pagedData.Data = await dbContext.Convoyeurs.ToListAsync();
-        }
-        else
-        {
-            pagedData.Data = await dbContext.Convoyeurs
-                .Where(x =>
-                    (x.Name != null && x.Name.Contains(searchOption.Search)) ||
-                    (x.Matricule != null && x.Matricule.Contains(searchOption.Search)) ||
-                    x.Phone.Contains(searchOption.Search) ||
-                    (x.Status != null && x.Status.Contains(searchOption.Search))
-                )
-                .ToListAsync();
+            query = query.Where(x =>
+                (x.Name != null && x.Name.Contains(searchOption.Search)) ||
+                (x.Matricule != null && x.Matricule.Contains(searchOption.Search)) ||
+                x.PhoneNumber.Contains(searchOption.Search) ||
+                (x.Status != null && x.Status.Contains(searchOption.Search))
+            );
         }
 
-        pagedData.TotalData = pagedData.Data.Count;
+        pagedData.TotalData = await query.CountAsync();
 
         if (searchOption.PageIndex.HasValue && searchOption.PageSize.HasValue)
         {
-            pagedData.Data = pagedData.Data
+            query = query
                 .Skip(searchOption.PageIndex.Value * searchOption.PageSize.Value)
-                .Take(searchOption.PageSize.Value)
-                .ToList();
+                .Take(searchOption.PageSize.Value);
         }
+
+        pagedData.Data = await query.ToListAsync();
 
         return Ok(pagedData);
     }
 
+    private string GenerateIdNumber()
+    {
+        return $"CONV{DateTime.Now.Ticks.ToString().Substring(0, 8)}";
+    }
+}
+
+// Request DTOs
+public class CreateConvoyeurRequest
+{
+    public string? IdNumber { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public string PhoneNumber { get; set; } = string.Empty;
+    public string? PhoneCountry { get; set; }
+    public string Email { get; set; } = string.Empty;
+    public string? PermisNumber { get; set; }
+    public string? Matricule { get; set; }
+    public string? Status { get; set; }
+    public int? ZoneId { get; set; }
+    public int? CityId { get; set; }
+    public bool IsEnable { get; set; } = true;
+}
+
+public class UpdateConvoyeurRequest
+{
+    public string Name { get; set; } = string.Empty;
+    public string PhoneNumber { get; set; } = string.Empty;
+    public string? PhoneCountry { get; set; }
+    public string Email { get; set; } = string.Empty;
+    public string? PermisNumber { get; set; }
+    public string? Matricule { get; set; }
+    public string? Status { get; set; }
+    public int? ZoneId { get; set; }
+    public int? CityId { get; set; }
+    public bool IsEnable { get; set; } = true;
 }

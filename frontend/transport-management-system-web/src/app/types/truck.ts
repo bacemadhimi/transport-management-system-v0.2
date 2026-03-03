@@ -1,4 +1,5 @@
 import { ITypeTruck } from "./type-truck";
+import { IGeographicalEntity } from "./general-settings";
 
 export interface ITruck {
   id: number;
@@ -16,12 +17,37 @@ export interface ITruck {
   disabled?: boolean;
   tooltip?: string;
   availabilityMessage?: string;
-  zoneId?: number;
+  // Zone replaced with geographical entities
+  geographicalEntityIds?: number[]; // IDs of associated geographical entities
+  geographicalEntities?: IGeographicalEntity[]; // Full geographical entity objects
   typeTruckId: number;
   typeTruck?: ITypeTruck;
-  marqueTruckId: number; 
+  marqueTruckId: number;  
+  zoneId?: number;
 }
 
+// Interface for truck-geographical entity association (used in API)
+export interface ITruckGeographicalEntity {
+  id?: number;
+  truckId: number;
+  geographicalEntityId: number;
+  geographicalEntity?: IGeographicalEntity;
+}
+
+// Response interface when truck includes geographical entities with details
+export interface ITruckWithGeographicalEntities extends ITruck {
+  geographicalEntitiesDetails?: {
+    id: number;
+    name: string;
+    levelName: string;
+    levelNumber: number;
+    latitude?: number;
+    longitude?: number;
+  }[];
+}
+
+// Zone interface - kept for backward compatibility but marked as deprecated
+/** @deprecated Use IGeographicalEntity instead */
 export interface IZone {
   id: number;
   name: string;
@@ -31,6 +57,7 @@ export interface IZone {
   truckCount?: number;
 }
 
+// STATUS_CONFIG remains the same
 export const STATUS_CONFIG: { [key: string]: { color: string; label: string; icon: string } } = {
   'available': { color: '#1cc88a', label: 'Disponible', icon: 'fa-check-circle' },
   'on_mission': { color: '#4e73df', label: 'En mission', icon: 'fa-truck' },
@@ -38,7 +65,8 @@ export const STATUS_CONFIG: { [key: string]: { color: string; label: string; ico
   'out_of_service': { color: '#e74a3b', label: 'Hors service', icon: 'fa-exclamation-circle' }
 };
 
-// ========== 24 ZONES DE TUNISIE ==========
+// ========== 24 ZONES DE TUNISIE (Deprecated) ==========
+/** @deprecated Use geographical entities from the database instead */
 export const TUNISIA_ZONES: IZone[] = [
   { id: 1, name: 'Tunis', latitude: 36.8065, longitude: 10.1815 },
   { id: 2, name: 'Ariana', latitude: 36.8665, longitude: 10.1647 },
@@ -65,7 +93,9 @@ export const TUNISIA_ZONES: IZone[] = [
   { id: 23, name: 'Le Kef', latitude: 36.1741, longitude: 8.7049 },
   { id: 24, name: 'Siliana', latitude: 36.0849, longitude: 9.3707 }
 ];
-// Groupes de zones par région
+
+// Groupes de zones par région (Deprecated)
+/** @deprecated Use geographical entities from the database instead */
 export const ZONES_BY_REGION = {
   'Nord-Est': ['Tunis', 'Ariana', 'Ben Arous', 'Manouba', 'Bizerte', 'Nabeul'],
   'Nord-Ouest': ['Béja', 'Jendouba', 'Kef', 'Siliana', 'Zaghouan'],
@@ -73,7 +103,10 @@ export const ZONES_BY_REGION = {
   'Centre-Ouest': ['Kairouan', 'Kasserine', 'Sidi Bouzid', 'Gafsa'],
   'Sud': ['Medenine', 'Tataouine', 'Kebili', 'Tozeur']
 };
+
+// For backward compatibility - keeps existing interfaces but marks them as deprecated
+/** @deprecated Use ITruckWithGeographicalEntities instead */
 export interface ITruckWithZone extends ITruck {
-  zoneName?: string;  // Pour l'affichage après jointure
+  zoneName?: string;
   zoneCoordinates?: { lat: number; lng: number };
 }

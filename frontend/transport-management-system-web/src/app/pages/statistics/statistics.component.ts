@@ -16,6 +16,7 @@ import {
   STATUS_CONFIG 
 } from '../../types/truck';
 import { IDriver } from '../../types/driver';
+import { IGeographicalEntity, IGeographicalLevel } from '../../types/general-settings';
 import * as L from 'leaflet';
 import { Http } from '../../services/http';
 
@@ -34,10 +35,16 @@ export class StatisticsComponent implements OnInit, AfterViewInit, OnDestroy {
 
   // ========== DONNÉES PRINCIPALES ==========
   trucks: ITruck[] = [];
-  trucksWithZone: ITruckWithZone[] = [];
+  trucksWithZone: (ITruck & { geographicalEntity?: IGeographicalEntity; zoneName?: string; zoneCoordinates?: { lat: number; lng: number } })[] = [];
+  
   drivers: IDriver[] = [];
   driversWithZone: (IDriver & { zoneName?: string; zoneCoordinates?: { lat: number; lng: number } })[] = [];
-  zones: IZone[] = TUNISIA_ZONES; // ← Maintenant ce sont les zones avec coordonnées
+  zones: IZone[] = TUNISIA_ZONES; // Keep zones for drivers
+  
+  // ========== DONNÉES GÉOGRAPHIQUES (for trucks) ==========
+  geographicalLevels: IGeographicalLevel[] = [];
+  geographicalEntities: IGeographicalEntity[] = [];
+  mappableEntities: IGeographicalEntity[] = [];
   
   // ========== DONNÉES FILTRÉES ==========
   filteredTrucks: ITruck[] = [];
@@ -45,10 +52,25 @@ export class StatisticsComponent implements OnInit, AfterViewInit, OnDestroy {
   inactiveTrucks: ITruck[] = [];
   unavailableDrivers: IDriver[] = [];
 
-  // ========== DONNÉES PAR ZONE ==========
-  trucksByZone: { [zoneName: string]: ITruckWithZone[] } = {};
+  // ========== DONNÉES PAR ZONE/ENTITÉ ==========
+  // For trucks - entity-based
+  trucksByEntity: { [entityId: number]: ITruck[] } = {};
+  
+  // For drivers - zone-based (keep old logic)
   driversByZone: { [zoneName: string]: IDriver[] } = {};
   
+  entityStatistics: {
+    entityId: number;
+    entityName: string;
+    levelName: string;
+    levelNumber: number;
+    totalTrucks: number;
+    availableTrucks: number;
+    onMissionTrucks: number;
+    maintenanceTrucks: number;
+    outOfServiceTrucks: number;
+  }[] = [];
+
   zoneStatistics: {
     zoneId: number;
     zoneName: string;
@@ -74,6 +96,7 @@ export class StatisticsComponent implements OnInit, AfterViewInit, OnDestroy {
   // ========== ÉTATS DE CHARGEMENT ==========
   loadingTrucks = false;
   loadingDrivers = false;
+  loadingGeographical = false;
   
   mapsLoading = {
     trucks: false,
@@ -90,8 +113,8 @@ export class StatisticsComponent implements OnInit, AfterViewInit, OnDestroy {
   activeZoneName: string = 'all';
   
   // ✅ FILTRES RÉGIONAUX INDÉPENDANTS
-  activeTruckRegionFilter: string = 'all';   // Pour la carte camions
-  activeDriverRegionFilter: string = 'all';  // Pour la carte chauffeurs
+  activeTruckRegionFilter: string = 'all';   // For truck map (levels)
+  activeDriverRegionFilter: string = 'all';  // For driver map (regions)
   
   showHelp = false;
   errorMessage: string = '';
@@ -105,7 +128,7 @@ export class StatisticsComponent implements OnInit, AfterViewInit, OnDestroy {
     onMission: 0,
     maintenance: 0,
     outOfService: 0,
-    activeZones: 0
+    activeEntities: 0
   };
 
   driverStats = {
@@ -115,19 +138,20 @@ export class StatisticsComponent implements OnInit, AfterViewInit, OnDestroy {
     overtime: 0,
     exceeded: 0,
     conflict: 0,
-    offDuty: 0
+    offDuty: 0,
+    activeZones: 0
   };
   
   // ========== STATISTIQUES ZONES ==========
   driverActiveZones: number = 0;
-  truckActiveZones: number = 0;
+  truckActiveEntities: number = 0;
 
   // ========== CARTES LEAFLET ==========
   private truckMap: L.Map | null = null;
   private driverMap: L.Map | null = null;
   private tunisiaCenter: L.LatLngTuple = [34.5, 9.5];
   
-  private truckZoneMarkers: L.Marker[] = [];
+  private truckEntityMarkers: L.Marker[] = [];
   private truckMarkers: L.Marker[] = [];
   private driverZoneMarkers: L.Marker[] = [];
   private driverMarkers: L.Marker[] = [];
@@ -166,8 +190,9 @@ export class StatisticsComponent implements OnInit, AfterViewInit, OnDestroy {
   ngOnInit(): void {
     this.updateLastUpdateTime();
     this.loadMarques();
+    this.loadGeographicalData(); // Load geographical data for trucks
     this.loadTrucks();
-    this.loadDrivers();
+    this.loadDrivers(); // Keep old driver loading
   }
 
   ngAfterViewInit(): void {
@@ -246,7 +271,7 @@ export class StatisticsComponent implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
-  // ========== CALCUL DES BOUNDS ==========
+  // ========== CALCUL DES BOUNDS (for drivers) ==========
   private calculateRegionBounds(): void {
     Object.keys(ZONES_BY_REGION).forEach(region => {
       const zoneNames = ZONES_BY_REGION[region as keyof typeof ZONES_BY_REGION];
@@ -261,14 +286,59 @@ export class StatisticsComponent implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
+  // ========== CHARGEMENT DES DONNÉES GÉOGRAPHIQUES (for trucks) ==========
+  private loadGeographicalData(): void {
+    this.loadingGeographical = true;
+    
+    // Load geographical levels
+    const levelsSub = this.httpService.getGeographicalLevels().subscribe({
+      next: (levels) => {
+        this.geographicalLevels = levels.filter(l => l.isActive);
+        
+        // Load geographical entities (only active and mappable for trucks)
+        const entitiesSub = this.httpService.getGeographicalEntities().subscribe({
+          next: (entities) => {
+            this.geographicalEntities = entities.filter(e => e.isActive);
+            // For trucks: filter mappable entities only
+            this.mappableEntities = this.geographicalEntities.filter(e => {
+              const level = this.geographicalLevels.find(l => l.id === e.levelId);
+              return level?.isMappable === true;
+            });
+            
+            this.loadingGeographical = false;
+            // After loading geographical data, process trucks
+            if (this.trucks.length > 0) {
+              this.processTrucksByEntity();
+            }
+          },
+          error: (error) => {
+            console.error('Error loading geographical entities:', error);
+            this.loadingGeographical = false;
+          }
+        });
+        this.subscriptions.add(entitiesSub);
+      },
+      error: (error) => {
+        console.error('Error loading geographical levels:', error);
+        this.loadingGeographical = false;
+      }
+    });
+    this.subscriptions.add(levelsSub);
+  }
+
   // ========== CHARGEMENT DES DONNÉES ==========
   loadTrucks(): void {
     this.loadingTrucks = true;
     const subscription = this.statisticsService.getTrucks().subscribe({
       next: (trucks) => {
         this.trucks = trucks;
-        this.enrichTrucksWithZoneData();
-        this.processTrucksByZone();
+        this.enrichTrucksWithGeographicalData();
+        
+        // Only process if geographical data is already loaded
+        if (this.geographicalEntities.length > 0) {
+          this.processTrucksByEntity();
+        }
+        
         this.updateTruckStats();
         this.filteredTrucks = trucks.filter(t => 
           t.status.toLowerCase() === 'disponible' || 
@@ -283,7 +353,7 @@ export class StatisticsComponent implements OnInit, AfterViewInit, OnDestroy {
         this.loadingTrucks = false;
         
         if (this.truckMap) {
-          this.addTruckZoneMarkers();
+          this.addTruckEntityMarkers();
           this.addTruckMarkers();
         }
       },
@@ -296,13 +366,14 @@ export class StatisticsComponent implements OnInit, AfterViewInit, OnDestroy {
     this.subscriptions.add(subscription);
   }
 
+  // Keep old driver loading with zones
   loadDrivers(): void {
     this.loadingDrivers = true;
     const subscription = this.statisticsService.getDrivers().subscribe({
       next: (drivers) => {
         this.drivers = drivers;
-        this.enrichDriversWithZoneData();
-        this.processDriversByZone();
+        this.enrichDriversWithZoneData(); // Keep old zone enrichment
+        this.processDriversByZone(); // Keep old zone processing
         this.updateDriverStats();
         this.filteredDrivers = drivers.filter(d => 
           d.status?.toLowerCase() === 'disponible' || 
@@ -316,7 +387,7 @@ export class StatisticsComponent implements OnInit, AfterViewInit, OnDestroy {
         this.loadingDrivers = false;
         
         if (this.driverMap) {
-          this.addDriverZoneMarkers();
+          this.addDriverZoneMarkers(); // Keep old zone markers
           this.addDriverMarkers();
         }
       },
@@ -330,28 +401,31 @@ export class StatisticsComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   // ========== ENRICHISSEMENT DES DONNÉES ==========
-  private enrichTrucksWithZoneData(): void {
+  private enrichTrucksWithGeographicalData(): void {
     this.trucksWithZone = this.trucks.map(truck => {
-      // ✅ Utiliser TUNISIA_ZONES pour avoir les coordonnées
-      const zone = TUNISIA_ZONES.find(z => z.id === truck.zoneId);
+      // Find geographical entities associated with this truck
+      // This assumes your truck object has geographicalEntities array
+      const truckEntities = (truck as any).geographicalEntities || [];
       
-      console.log(`Camion ${truck.immatriculation}: zoneId=${truck.zoneId}, zone trouvée=${zone?.name || 'NON'}`);
+      // For display purposes, use the first mappable entity
+      const firstEntity = truckEntities.length > 0 ? 
+        this.geographicalEntities.find(e => e.id === truckEntities[0]?.geographicalEntityId) : 
+        undefined;
       
       return {
         ...truck,
-        zoneName: zone?.name || 'Non assigné',
-        zoneCoordinates: zone ? { lat: zone.latitude, lng: zone.longitude } : undefined,
-        imageBase64: (truck.images && truck.images.length > 0) ? truck.images[0] : null
+        geographicalEntity: firstEntity,
+        zoneName: firstEntity?.name || 'Non assigné',
+        zoneCoordinates: firstEntity?.latitude && firstEntity?.longitude ? 
+          { lat: firstEntity.latitude, lng: firstEntity.longitude } : undefined
       };
     });
   }
 
+  // Keep old driver zone enrichment
   private enrichDriversWithZoneData(): void {
     this.driversWithZone = this.drivers.map(driver => {
-      // ✅ Utiliser TUNISIA_ZONES pour avoir les coordonnées
       const zone = TUNISIA_ZONES.find(z => z.id === driver.zoneId);
-      
-      console.log(`Chauffeur ${driver.name}: zoneId=${driver.zoneId}, zone trouvée=${zone?.name || 'NON'}`);
       
       return {
         ...driver,
@@ -360,66 +434,69 @@ export class StatisticsComponent implements OnInit, AfterViewInit, OnDestroy {
         imageBase64: driver.imageBase64 || null
       };
     });
-    
-    console.log('✅ Chauffeurs enrichis avec zones:', this.driversWithZone.map(d => ({
-      name: d.name,
-      zoneId: d.zoneId,
-      zoneName: d.zoneName,
-      coordinates: d.zoneCoordinates
-    })));
   }
 
-  // ========== TRAITEMENT PAR ZONE ==========
-  private processTrucksByZone(): void {
-    this.trucksByZone = {};
-    this.zoneStatistics = [];
+  // ========== TRAITEMENT PAR ENTITÉ (for trucks) ==========
+  private processTrucksByEntity(): void {
+    this.trucksByEntity = {};
+    this.entityStatistics = [];
     
-    
-    TUNISIA_ZONES.forEach(zone => {
-      this.trucksByZone[zone.name] = [];
-    });
-    
-    this.trucksWithZone.forEach(truck => {
-      const zoneName = truck.zoneName;
-      if (zoneName && this.trucksByZone[zoneName]) {
-        this.trucksByZone[zoneName].push(truck);
+    // Initialize with all mappable entities
+    this.mappableEntities.forEach(entity => {
+      if (entity.id) {
+        this.trucksByEntity[entity.id] = [];
       }
     });
     
-   
-    TUNISIA_ZONES.forEach(zone => {
-      const zoneTrucks = this.trucksByZone[zone.name] || [];
-      this.zoneStatistics.push({
-        zoneId: zone.id,
-        zoneName: zone.name,
-        total: zoneTrucks.length,
-        available: zoneTrucks.filter(t => 
-          t.status.toLowerCase() === 'disponible' || 
-          t.status.toLowerCase() === 'available'
+    // Group trucks by entity
+    this.trucksWithZone.forEach(truck => {
+      const truckEntities = (truck as any).geographicalEntities || [];
+      
+      truckEntities.forEach((item: any) => {
+        const entityId = item.geographicalEntityId;
+        if (entityId && this.trucksByEntity[entityId]) {
+          this.trucksByEntity[entityId].push(truck);
+        }
+      });
+    });
+    
+    // Calculate statistics for each entity
+    this.mappableEntities.forEach(entity => {
+      if (!entity.id) return;
+      
+      const entityTrucks = this.trucksByEntity[entity.id] || [];
+      const level = this.geographicalLevels.find(l => l.id === entity.levelId);
+      
+      this.entityStatistics.push({
+        entityId: entity.id,
+        entityName: entity.name,
+        levelName: level?.name || 'Niveau inconnu',
+        levelNumber: level?.levelNumber || 0,
+        totalTrucks: entityTrucks.length,
+        availableTrucks: entityTrucks.filter(t => 
+          t.status.toLowerCase() === 'disponible' || t.status.toLowerCase() === 'available'
         ).length,
-        onMission: zoneTrucks.filter(t => 
-          t.status.toLowerCase() === 'en mission' || 
-          t.status.toLowerCase() === 'on_mission'
+        onMissionTrucks: entityTrucks.filter(t => 
+          t.status.toLowerCase() === 'en mission' || t.status.toLowerCase() === 'on_mission'
         ).length,
-        maintenance: zoneTrucks.filter(t => 
+        maintenanceTrucks: entityTrucks.filter(t => 
           t.status.toLowerCase() === 'maintenance'
         ).length,
-        outOfService: zoneTrucks.filter(t => 
-          t.status.toLowerCase() === 'hors service' || 
-          t.status.toLowerCase() === 'inactive'
+        outOfServiceTrucks: entityTrucks.filter(t => 
+          t.status.toLowerCase() === 'hors service' || t.status.toLowerCase() === 'inactive'
         ).length
       });
     });
     
-    this.truckActiveZones = this.zoneStatistics.filter(z => z.total > 0).length;
-    this.truckStats.activeZones = this.truckActiveZones;
+    this.truckActiveEntities = this.entityStatistics.filter(e => e.totalTrucks > 0).length;
+    this.truckStats.activeEntities = this.truckActiveEntities;
   }
 
+  // Keep old driver zone processing
   private processDriversByZone(): void {
     this.driversByZone = {};
     this.driverZoneStatistics = [];
     
-   
     TUNISIA_ZONES.forEach(zone => {
       this.driversByZone[zone.name] = [];
     });
@@ -433,7 +510,6 @@ export class StatisticsComponent implements OnInit, AfterViewInit, OnDestroy {
         this.driversByZone['Non assigné'].push(driver);
       }
     });
-    
     
     TUNISIA_ZONES.forEach(zone => {
       const zoneDrivers = this.driversByZone[zone.name] || [];
@@ -471,6 +547,7 @@ export class StatisticsComponent implements OnInit, AfterViewInit, OnDestroy {
     });
     
     this.driverActiveZones = this.driverZoneStatistics.filter(z => z.total > 0).length;
+    this.driverStats.activeZones = this.driverActiveZones;
   }
 
   // ========== MISE À JOUR DES STATS ==========
@@ -489,7 +566,7 @@ export class StatisticsComponent implements OnInit, AfterViewInit, OnDestroy {
       outOfService: this.trucksWithZone.filter(t => 
         t.status.toLowerCase() === 'hors service' || t.status.toLowerCase() === 'inactive'
       ).length,
-      activeZones: this.truckActiveZones
+      activeEntities: this.truckActiveEntities
     };
   }
 
@@ -516,7 +593,8 @@ export class StatisticsComponent implements OnInit, AfterViewInit, OnDestroy {
       ).length,
       offDuty: this.driversWithZone.filter(d => 
         d.status === 'off_duty' || d.status === 'hors service'
-      ).length
+      ).length,
+      activeZones: this.driverActiveZones
     };
   }
 
@@ -552,7 +630,7 @@ export class StatisticsComponent implements OnInit, AfterViewInit, OnDestroy {
         setTimeout(() => {
           if (this.truckMap) {
             this.truckMap.invalidateSize();
-            this.addTruckZoneMarkers();
+            this.addTruckEntityMarkers();
             this.addTruckMarkers();
             this.mapsLoading.trucks = false;
           }
@@ -597,7 +675,7 @@ export class StatisticsComponent implements OnInit, AfterViewInit, OnDestroy {
         setTimeout(() => {
           if (this.driverMap) {
             this.driverMap.invalidateSize();
-            this.addDriverZoneMarkers();
+            this.addDriverZoneMarkers(); // Keep old zone markers
             this.addDriverMarkers();
             this.mapsLoading.drivers = false;
           }
@@ -611,59 +689,62 @@ export class StatisticsComponent implements OnInit, AfterViewInit, OnDestroy {
     }, 300);
   }
 
-  // ========== MARQUEURS ZONES CAMIONS ==========
-  private addTruckZoneMarkers(): void {
+  // ========== MARQUEURS ENTITÉS CAMIONS (new) ==========
+  private addTruckEntityMarkers(): void {
     if (!this.truckMap) return;
     
-    this.truckZoneMarkers.forEach(marker => marker.remove());
-    this.truckZoneMarkers = [];
+    this.truckEntityMarkers.forEach(marker => marker.remove());
+    this.truckEntityMarkers = [];
     
-  
-    TUNISIA_ZONES.forEach(zone => {
-      const zoneTrucks = this.trucksByZone[zone.name] || [];
-      const totalTrucks = zoneTrucks.length;
+    // Only show mappable entities on truck map
+    this.mappableEntities.forEach(entity => {
+      if (!entity.id || !entity.latitude || !entity.longitude) return;
       
-      let zoneColor = '#6c757d';
+      const entityTrucks = this.trucksByEntity[entity.id] || [];
+      const totalTrucks = entityTrucks.length;
+      const level = this.geographicalLevels.find(l => l.id === entity.levelId);
+      
+      let entityColor = '#6c757d';
       if (totalTrucks > 0) {
-        const activeTrucks = zoneTrucks.filter(t => 
+        const activeTrucks = entityTrucks.filter(t => 
           t.status.toLowerCase() === 'en mission' || 
           t.status.toLowerCase() === 'available' ||
           t.status.toLowerCase() === 'disponible'
         ).length;
-        if (activeTrucks > 5) zoneColor = '#1cc88a';
-        else if (activeTrucks > 2) zoneColor = '#4e73df';
-        else if (activeTrucks > 0) zoneColor = '#f6c23e';
-        else zoneColor = '#e74a3b';
+        if (activeTrucks > 5) entityColor = '#1cc88a';
+        else if (activeTrucks > 2) entityColor = '#4e73df';
+        else if (activeTrucks > 0) entityColor = '#f6c23e';
+        else entityColor = '#e74a3b';
       }
       
-      const zoneIcon = this.createTruckZoneIcon(zone, zoneColor, totalTrucks);
+      const entityIcon = this.createTruckEntityIcon(entity, entityColor, totalTrucks, level?.name || '');
       
-      const marker = L.marker([zone.latitude, zone.longitude], { 
-        icon: zoneIcon,
+      const marker = L.marker([entity.latitude, entity.longitude], { 
+        icon: entityIcon,
         zIndexOffset: totalTrucks > 0 ? 1000 : 500
       }).addTo(this.truckMap!);
       
-      marker.bindPopup(this.createTruckZonePopup(zone, zoneColor, zoneTrucks));
+      marker.bindPopup(this.createTruckEntityPopup(entity, entityColor, entityTrucks, level?.name || ''));
       
       marker.on('popupopen', () => {
         setTimeout(() => {
-          const btn = document.getElementById(`truck-filter-zone-btn-${zone.id}`);
+          const btn = document.getElementById(`truck-filter-entity-btn-${entity.id}`);
           if (btn) {
             btn.onclick = (e) => {
               e.preventDefault();
               e.stopPropagation();
-              this.filterByZone(zone.name);
+              this.filterByEntity(entity.id!);
               marker.closePopup();
             };
           }
         }, 100);
       });
       
-      this.truckZoneMarkers.push(marker);
+      this.truckEntityMarkers.push(marker);
     });
   }
 
-  private createTruckZoneIcon(zone: IZone, color: string, totalTrucks: number): L.DivIcon {
+  private createTruckEntityIcon(entity: IGeographicalEntity, color: string, totalTrucks: number, levelName: string): L.DivIcon {
     return L.divIcon({
       html: `
         <div style="
@@ -682,27 +763,27 @@ export class StatisticsComponent implements OnInit, AfterViewInit, OnDestroy {
           cursor: pointer;
           transition: all 0.3s ease;
         ">
-          <span style="font-size: ${totalTrucks > 0 ? '16px' : '12px'};">${zone.name.substring(0, 3)}</span>
+          <span style="font-size: ${totalTrucks > 0 ? '16px' : '12px'};">${entity.name.substring(0, 3)}</span>
           ${totalTrucks > 0 ? `<span style="font-size: 12px; margin-top: -2px;">${totalTrucks}</span>` : ''}
         </div>
       `,
-      className: 'zone-marker',
+      className: 'entity-marker',
       iconSize: totalTrucks > 0 ? [60, 60] : [36, 36],
       iconAnchor: totalTrucks > 0 ? [30, 30] : [18, 18],
       popupAnchor: [0, -30]
     });
   }
 
-  private createTruckZonePopup(zone: IZone, color: string, zoneTrucks: ITruckWithZone[]): HTMLDivElement {
-    const total = zoneTrucks.length;
-    const available = zoneTrucks.filter(t => 
+  private createTruckEntityPopup(entity: IGeographicalEntity, color: string, entityTrucks: ITruck[], levelName: string): HTMLDivElement {
+    const total = entityTrucks.length;
+    const available = entityTrucks.filter(t => 
       t.status.toLowerCase() === 'disponible' || t.status.toLowerCase() === 'available'
     ).length;
-    const onMission = zoneTrucks.filter(t => 
+    const onMission = entityTrucks.filter(t => 
       t.status.toLowerCase() === 'en mission' || t.status.toLowerCase() === 'on_mission'
     ).length;
-    const maintenance = zoneTrucks.filter(t => t.status.toLowerCase() === 'maintenance').length;
-    const outOfService = zoneTrucks.filter(t => 
+    const maintenance = entityTrucks.filter(t => t.status.toLowerCase() === 'maintenance').length;
+    const outOfService = entityTrucks.filter(t => 
       t.status.toLowerCase() === 'hors service' || t.status.toLowerCase() === 'inactive'
     ).length;
     
@@ -714,12 +795,12 @@ export class StatisticsComponent implements OnInit, AfterViewInit, OnDestroy {
     popup.innerHTML = `
       <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px;">
         <div style="background: ${color}; width: 50px; height: 50px; border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: white; font-weight: bold;">
-          <span style="font-size: 18px;">${zone.name.substring(0, 3)}</span>
+          <span style="font-size: 18px;">${entity.name.substring(0, 3)}</span>
           <span style="font-size: 12px;">${total}</span>
         </div>
         <div>
-          <div style="color: #2c3e50; font-size: 18px; font-weight: 700;">${zone.name}</div>
-          <div style="color: #6c757d; font-size: 13px;">${total} camions</div>
+          <div style="color: #2c3e50; font-size: 18px; font-weight: 700;">${entity.name}</div>
+          <div style="color: #6c757d; font-size: 13px;">${levelName} • ${total} camions</div>
         </div>
       </div>
       
@@ -747,9 +828,9 @@ export class StatisticsComponent implements OnInit, AfterViewInit, OnDestroy {
           </div>
         </div>
         
-        <button id="truck-filter-zone-btn-${zone.id}" 
+        <button id="truck-filter-entity-btn-${entity.id}" 
                 style="width: 100%; margin-top: 15px; padding: 10px; background: linear-gradient(135deg, #667eea, #764ba2); color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer;">
-          <i class="fas fa-filter"></i> Voir les camions de ${zone.name}
+          <i class="fas fa-filter"></i> Voir les camions de ${entity.name}
         </button>
       </div>
     `;
@@ -757,14 +838,13 @@ export class StatisticsComponent implements OnInit, AfterViewInit, OnDestroy {
     return popup;
   }
 
-  // ========== MARQUEURS ZONES CHAUFFEURS ==========
+  // Keep old driver zone markers
   private addDriverZoneMarkers(): void {
     if (!this.driverMap) return;
     
     this.driverZoneMarkers.forEach(marker => marker.remove());
     this.driverZoneMarkers = [];
     
-   
     TUNISIA_ZONES.forEach(zone => {
       const zoneDrivers = this.driversByZone[zone.name] || [];
       const totalDrivers = zoneDrivers.length;
@@ -907,7 +987,7 @@ export class StatisticsComponent implements OnInit, AfterViewInit, OnDestroy {
     return popup;
   }
 
-  // ========== MARQUEURS CAMIONS ==========
+  // ========== MARQUEURS CAMIONS (keep as before) ==========
   private addTruckMarkers(): void {
     if (!this.truckMap) return;
     
@@ -919,26 +999,11 @@ export class StatisticsComponent implements OnInit, AfterViewInit, OnDestroy {
       t.status.toLowerCase() !== 'hors service'
     );
     
-    console.log('🚚 DÉBOGAGE CAMIONS:');
-    
     activeTrucks.forEach(truck => {
+      const truckWithGeo = this.trucksWithZone.find(t => t.id === truck.id);
+      if (!truckWithGeo?.zoneCoordinates) return;
       
-      const zone = TUNISIA_ZONES.find(z => z.id === truck.zoneId);
-      
-      console.log({
-        camion: truck.immatriculation,
-        zoneId: truck.zoneId,
-        zoneTrouvee: zone ? zone.name : 'NON TROUVÉE',
-        zoneCoords: zone ? `${zone.latitude}, ${zone.longitude}` : 'N/A'
-      });
-      
-      if (!zone) {
-        console.warn(`⚠️ Camion ${truck.immatriculation} sans zone valide (zoneId: ${truck.zoneId})`);
-        return;
-      }
-      
-      
-      const coords = { lat: zone.latitude, lng: zone.longitude };
+      const coords = truckWithGeo.zoneCoordinates;
       
       const latOffset = (Math.random() - 0.5) * 0.03;
       const lngOffset = (Math.random() - 0.5) * 0.03;
@@ -1011,21 +1076,18 @@ export class StatisticsComponent implements OnInit, AfterViewInit, OnDestroy {
         zIndexOffset: 2000
       }).addTo(this.truckMap!);
       
-     
-      const truckWithCorrectZone = {
+      const truckWithZone = {
         ...truck,
-        zoneName: zone.name
+        zoneName: truckWithGeo.zoneName
       };
       
-      marker.bindPopup(this.createTruckPopup(truckWithCorrectZone, truckColor, formattedImage));
+      marker.bindPopup(this.createTruckPopup(truckWithZone, truckColor, formattedImage));
       
       this.truckMarkers.push(marker);
     });
-    
-    console.log(`✅ ${this.truckMarkers.length} marqueurs camions ajoutés`);
   }
 
-  private createTruckPopup(truck: ITruckWithZone, color: string, imageBase64: string | null): HTMLDivElement {
+  private createTruckPopup(truck: any, color: string, imageBase64: string | null): HTMLDivElement {
     const status = STATUS_CONFIG[truck.status] || STATUS_CONFIG['available'];
     const zoneName = truck.zoneName || 'Non assigné';
     
@@ -1101,242 +1163,223 @@ export class StatisticsComponent implements OnInit, AfterViewInit, OnDestroy {
     return popup;
   }
 
-  private addDriverMarkers(): void {
-    if (!this.driverMap) return;
+private addDriverMarkers(): void {
+  if (!this.driverMap) return;
+  
+  this.driverMarkers.forEach(marker => marker.remove());
+  this.driverMarkers = [];
+  
+  const activeDrivers = this.drivers.filter(d => 
+    d.status !== 'off_duty' && d.status !== 'hors service'
+  );
+  
+  activeDrivers.forEach(driver => {
+    const driverWithZoneData = this.driversWithZone.find(d => d.id === driver.id);
+    if (!driverWithZoneData?.zoneCoordinates) return;
     
-    this.driverMarkers.forEach(marker => marker.remove());
-    this.driverMarkers = [];
+    const coords = driverWithZoneData.zoneCoordinates;
     
-    const activeDrivers = this.drivers.filter(d => 
-      d.status !== 'off_duty' && d.status !== 'hors service'
-    );
+    const latOffset = (Math.random() - 0.5) * 0.03;
+    const lngOffset = (Math.random() - 0.5) * 0.03;
     
-    console.log('🚗 DÉBOGAGE CHAUFFEURS:');
+    const driverColor = this.getDriverStatusColor(driver);
+    const statusLabel = this.getDriverStatusLabel(driver);
     
-    activeDrivers.forEach(driver => {
+    const formattedImage = this.formatBase64Image(driver.imageBase64);
+    const hasValidImage = !!formattedImage;
     
-      const zone = TUNISIA_ZONES.find(z => z.id === driver.zoneId);
-      
-      console.log({
-        chauffeur: driver.name,
-        zoneId: driver.zoneId,
-        zoneTrouvee: zone ? zone.name : 'NON TROUVÉE',
-        zoneCoords: zone ? `${zone.latitude}, ${zone.longitude}` : 'N/A'
-      });
-      
-      if (!zone) {
-        console.warn(`⚠️ Chauffeur ${driver.name} sans zone valide (zoneId: ${driver.zoneId})`);
-        return;
-      }
-      
-      
-      const coords = { lat: zone.latitude, lng: zone.longitude };
-      
-      const latOffset = (Math.random() - 0.5) * 0.03;
-      const lngOffset = (Math.random() - 0.5) * 0.03;
-      
-      const driverColor = this.getDriverStatusColor(driver);
-      const statusLabel = this.getDriverStatusLabel(driver);
-      
-      const formattedImage = this.formatBase64Image(driver.imageBase64);
-      const hasValidImage = !!formattedImage;
-      
-      let iconHtml = '';
-      
-      if (hasValidImage) {
-        iconHtml = `
-          <div style="
-            width: 48px;
-            height: 48px;
-            border-radius: 50%;
-            border: 3px solid white;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-            overflow: hidden;
-            background: white;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            position: relative;
-          ">
-            <img src="${formattedImage}" 
-                 style="width: 100%; height: 100%; object-fit: cover;" 
-                 alt="Chauffeur ${driver.name}"
-                 title="${driver.name}"
-                 onerror="this.style.display='none'; this.parentElement.style.background='${driverColor}'; this.parentElement.innerHTML='<i class=\\'fas fa-user-tie\\' style=\\'color: white; font-size: 20px;\\'></i>';">
-            ${driver.availabilityStatus === 'conflict' || driver.requiresApproval ? `
-              <span style="position: absolute; top: -5px; right: -5px; background: #e74a3b; color: white; border-radius: 50%; width: 18px; height: 18px; font-size: 10px; display: flex; align-items: center; justify-content: center; border: 2px solid white;">
-                !
-              </span>
-            ` : ''}
-          </div>
-        `;
-      } else {
-        iconHtml = `
-          <div style="
-            background: ${driverColor};
-            width: 48px;
-            height: 48px;
-            border-radius: 50%;
-            border: 3px solid white;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 20px;
-            position: relative;
-          ">
-            <i class="fas fa-user-tie"></i>
-            ${driver.availabilityStatus === 'conflict' || driver.requiresApproval ? `
-              <span style="position: absolute; top: -5px; right: -5px; background: #e74a3b; color: white; border-radius: 50%; width: 18px; height: 18px; font-size: 10px; display: flex; align-items: center; justify-content: center; border: 2px solid white;">
-                !
-              </span>
-            ` : ''}
-          </div>
-        `;
-      }
-      
-      const driverIcon = L.divIcon({
-        html: iconHtml,
-        className: `driver-marker-${driver.status}`,
-        iconSize: [48, 48],
-        iconAnchor: [24, 24],
-        popupAnchor: [0, -24]
-      });
-      
-      const marker = L.marker([
-        coords.lat + latOffset, 
-        coords.lng + lngOffset
-      ], { 
-        icon: driverIcon,
-        zIndexOffset: 2000
-      }).addTo(this.driverMap!);
-      
-     
-      const driverWithCorrectZone = {
-        ...driver,
-        zoneName: zone.name
-      };
-      
-      marker.bindPopup(this.createDriverPopup(driverWithCorrectZone, driverColor, statusLabel, formattedImage));
-      
-      this.driverMarkers.push(marker);
+    let iconHtml = '';
+    
+    if (hasValidImage) {
+      iconHtml = `
+        <div style="
+          width: 48px;
+          height: 48px;
+          border-radius: 50%;
+          border: 3px solid white;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+          overflow: hidden;
+          background: white;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          position: relative;
+        ">
+          <img src="${formattedImage}" 
+               style="width: 100%; height: 100%; object-fit: cover;" 
+               alt="Chauffeur ${driver.name}"
+               title="${driver.name}"
+               onerror="this.style.display='none'; this.parentElement.style.background='${driverColor}'; this.parentElement.innerHTML='<i class=\\'fas fa-user-tie\\' style=\\'color: white; font-size: 20px;\\'></i>';">
+          ${driver.availabilityStatus === 'conflict' || driver.requiresApproval ? `
+            <span style="position: absolute; top: -5px; right: -5px; background: #e74a3b; color: white; border-radius: 50%; width: 18px; height: 18px; font-size: 10px; display: flex; align-items: center; justify-content: center; border: 2px solid white;">
+              !
+            </span>
+          ` : ''}
+        </div>
+      `;
+    } else {
+      iconHtml = `
+        <div style="
+          background: ${driverColor};
+          width: 48px;
+          height: 48px;
+          border-radius: 50%;
+          border: 3px solid white;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: white;
+          font-size: 20px;
+          position: relative;
+        ">
+          <i class="fas fa-user-tie"></i>
+          ${driver.availabilityStatus === 'conflict' || driver.requiresApproval ? `
+            <span style="position: absolute; top: -5px; right: -5px; background: #e74a3b; color: white; border-radius: 50%; width: 18px; height: 18px; font-size: 10px; display: flex; align-items: center; justify-content: center; border: 2px solid white;">
+              !
+            </span>
+          ` : ''}
+        </div>
+      `;
+    }
+    
+    const driverIcon = L.divIcon({
+      html: iconHtml,
+      className: `driver-marker-${driver.status}`,
+      iconSize: [48, 48],
+      iconAnchor: [24, 24],
+      popupAnchor: [0, -24]
     });
     
-    console.log(`✅ ${this.driverMarkers.length} marqueurs chauffeurs ajoutés`);
-  }
-
-private createDriverPopup(
-  driver: IDriver & { zoneName?: string }, 
-  color: string, 
-  statusLabel: string,
-  imageBase64: string | null
-): HTMLDivElement {
-  const zoneName = driver.zoneName || 'Non assigné';
-  const hours = driver.totalHours || 0;
-  
-  // ✅ Find truck by ID to get immatriculation
-  const assignedTruck = driver.idCamion ? this.trucks.find(t => t.id === driver.idCamion) : null;
-  const marqueName = assignedTruck ? this.getMarqueName(assignedTruck.marqueTruckId) : '';
-  const truckDisplay = assignedTruck 
-    ? `${assignedTruck.immatriculation} - ${marqueName}` 
-    : 'Non assigné';
-  
-  const popup = document.createElement('div');
-  popup.style.fontFamily = 'Segoe UI, sans-serif';
-  popup.style.padding = '16px';
-  popup.style.minWidth = '320px';
-  
-  const imageHtml = imageBase64 
-    ? `<img src="${imageBase64}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;" alt="Chauffeur">`
-    : `<div style="width: 100%; height: 100%; background: ${color}; display: flex; align-items: center; justify-content: center; color: white; font-size: 30px; border-radius: 50%;">
-         <i class="fas fa-user-tie"></i>
-       </div>`;
-  
-  popup.innerHTML = `
-    <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 16px;">
-      <div style="
-        width: 80px;
-        height: 80px;
-        border-radius: 50%;
-        border: 3px solid white;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-        overflow: hidden;
-        background: white;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        flex-shrink: 0;
-      ">
-        ${imageHtml}
-      </div>
-      <div style="flex: 1;">
-        <div style="color: #2c3e50; font-size: 18px; font-weight: 700; margin-bottom: 4px;">
-          ${driver.name}
-        </div>
-        <div style="color: #6c757d; font-size: 14px; margin-bottom: 8px;">
-          ${driver.permisNumber}
-        </div>
-        <div style="display: inline-block; padding: 4px 12px; background: ${color}20; border-radius: 20px; color: ${color}; font-weight: 600; font-size: 12px;">
-          ${statusLabel}
-        </div>
-      </div>
-    </div>
+    const marker = L.marker([
+      coords.lat + latOffset, 
+      coords.lng + lngOffset
+    ], { 
+      icon: driverIcon,
+      zIndexOffset: 2000
+    }).addTo(this.driverMap!);
     
-    <div style="border-top: 1px solid #e9ecef; padding-top: 12px;">
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
-        <div>
-          <span style="color: #6c757d; font-size: 11px; text-transform: uppercase; display: block; font-weight: 600;">ZONE</span>
-          <div style="color: #2c3e50; font-weight: 600; font-size: 15px; background: #f0f7ff; padding: 4px 8px; border-radius: 6px; display: inline-block;">
-            <i class="fas fa-map-pin" style="color: #667eea; margin-right: 4px;"></i>
-            ${zoneName}
+    const driverForPopup = {
+      ...driver,
+      zoneName: driverWithZoneData.zoneName
+    };
+    
+    marker.bindPopup(this.createDriverPopup(driverForPopup, driverColor, statusLabel, formattedImage));
+    
+    this.driverMarkers.push(marker);
+  });
+}
+  private createDriverPopup(
+    driver: any, 
+    color: string, 
+    statusLabel: string,
+    imageBase64: string | null
+  ): HTMLDivElement {
+    const zoneName = driver.zoneName || 'Non assigné';
+    const hours = driver.totalHours || 0;
+    
+    const assignedTruck = driver.idCamion ? this.trucks.find(t => t.id === driver.idCamion) : null;
+    const marqueName = assignedTruck ? this.getMarqueName(assignedTruck.marqueTruckId) : '';
+    const truckDisplay = assignedTruck 
+      ? `${assignedTruck.immatriculation} - ${marqueName}` 
+      : 'Non assigné';
+    
+    const popup = document.createElement('div');
+    popup.style.fontFamily = 'Segoe UI, sans-serif';
+    popup.style.padding = '16px';
+    popup.style.minWidth = '320px';
+    
+    const imageHtml = imageBase64 
+      ? `<img src="${imageBase64}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;" alt="Chauffeur">`
+      : `<div style="width: 100%; height: 100%; background: ${color}; display: flex; align-items: center; justify-content: center; color: white; font-size: 30px; border-radius: 50%;">
+           <i class="fas fa-user-tie"></i>
+         </div>`;
+    
+    popup.innerHTML = `
+      <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 16px;">
+        <div style="
+          width: 80px;
+          height: 80px;
+          border-radius: 50%;
+          border: 3px solid white;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+          overflow: hidden;
+          background: white;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+        ">
+          ${imageHtml}
+        </div>
+        <div style="flex: 1;">
+          <div style="color: #2c3e50; font-size: 18px; font-weight: 700; margin-bottom: 4px;">
+            ${driver.name}
           </div>
-        </div>
-        <div>
-          <span style="color: #6c757d; font-size: 11px; text-transform: uppercase; display: block;">TÉLÉPHONE</span>
-          <div style="color: #2c3e50; font-weight: 500; font-size: 14px;">${driver.phone || 'Non renseigné'}</div>
-        </div>
-        <div>
-          <span style="color: #6c757d; font-size: 11px; text-transform: uppercase; display: block;">EMAIL</span>
-          <div style="color: #2c3e50; font-weight: 500; font-size: 14px; word-break: break-all;">${driver.email || 'Non renseigné'}</div>
-        </div>
-        <div>
-          <span style="color: #6c757d; font-size: 11px; text-transform: uppercase; display: block;">CAMION</span>
-          <div style="color: #2c3e50; font-weight: 500; font-size: 14px;">
-            <i class="fas fa-truck" style="color: #667eea; margin-right: 4px;"></i>
-            ${truckDisplay}
+          <div style="color: #6c757d; font-size: 14px; margin-bottom: 8px;">
+            ${driver.permisNumber}
+          </div>
+          <div style="display: inline-block; padding: 4px 12px; background: ${color}20; border-radius: 20px; color: ${color}; font-weight: 600; font-size: 12px;">
+            ${statusLabel}
           </div>
         </div>
       </div>
       
-      <div style="background: #f8f9fa; border-radius: 8px; padding: 12px;">
-        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
-          <i class="fas fa-clock" style="color: ${hours > 12 ? '#e74a3b' : hours > 8 ? '#f6c23e' : '#1cc88a'};"></i>
-          <span style="color: #2c3e50; font-size: 13px;">Heures travaillées:</span>
-          <span style="font-weight: 700; color: ${hours > 12 ? '#e74a3b' : hours > 8 ? '#f6c23e' : '#1cc88a'};">${hours}h</span>
-          <span style="color: #6c757d; font-size: 11px; margin-left: auto;">
-            ${hours > 12 ? 'Dépassé' : hours > 8 ? 'Heures sup' : 'Normal'}
-          </span>
+      <div style="border-top: 1px solid #e9ecef; padding-top: 12px;">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+          <div>
+            <span style="color: #6c757d; font-size: 11px; text-transform: uppercase; display: block; font-weight: 600;">ZONE</span>
+            <div style="color: #2c3e50; font-weight: 600; font-size: 15px; background: #f0f7ff; padding: 4px 8px; border-radius: 6px; display: inline-block;">
+              <i class="fas fa-map-pin" style="color: #667eea; margin-right: 4px;"></i>
+              ${zoneName}
+            </div>
+          </div>
+          <div>
+            <span style="color: #6c757d; font-size: 11px; text-transform: uppercase; display: block;">TÉLÉPHONE</span>
+            <div style="color: #2c3e50; font-weight: 500; font-size: 14px;">${driver.phone || 'Non renseigné'}</div>
+          </div>
+          <div>
+            <span style="color: #6c757d; font-size: 11px; text-transform: uppercase; display: block;">EMAIL</span>
+            <div style="color: #2c3e50; font-weight: 500; font-size: 14px; word-break: break-all;">${driver.email || 'Non renseigné'}</div>
+          </div>
+          <div>
+            <span style="color: #6c757d; font-size: 11px; text-transform: uppercase; display: block;">CAMION</span>
+            <div style="color: #2c3e50; font-weight: 500; font-size: 14px;">
+              <i class="fas fa-truck" style="color: #667eea; margin-right: 4px;"></i>
+              ${truckDisplay}
+            </div>
+          </div>
         </div>
         
-        ${driver.requiresApproval ? `
-          <div style="margin-top: 8px; padding: 8px; background: #e74a3b10; border-radius: 6px; color: #e74a3b; font-size: 12px; display: flex; align-items: center; gap: 8px; border-left: 3px solid #e74a3b;">
-            <i class="fas fa-exclamation-triangle"></i>
-            <span>Approbation requise</span>
+        <div style="background: #f8f9fa; border-radius: 8px; padding: 12px;">
+          <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+            <i class="fas fa-clock" style="color: ${hours > 12 ? '#e74a3b' : hours > 8 ? '#f6c23e' : '#1cc88a'};"></i>
+            <span style="color: #2c3e50; font-size: 13px;">Heures travaillées:</span>
+            <span style="font-weight: 700; color: ${hours > 12 ? '#e74a3b' : hours > 8 ? '#f6c23e' : '#1cc88a'};">${hours}h</span>
+            <span style="color: #6c757d; font-size: 11px; margin-left: auto;">
+              ${hours > 12 ? 'Dépassé' : hours > 8 ? 'Heures sup' : 'Normal'}
+            </span>
           </div>
-        ` : ''}
-        
-        ${driver.availabilityMessage ? `
-          <div style="margin-top: 8px; color: #6c757d; font-size: 12px; font-style: italic; padding: 4px 0;">
-            "${driver.availabilityMessage}"
-          </div>
-        ` : ''}
+          
+          ${driver.requiresApproval ? `
+            <div style="margin-top: 8px; padding: 8px; background: #e74a3b10; border-radius: 6px; color: #e74a3b; font-size: 12px; display: flex; align-items: center; gap: 8px; border-left: 3px solid #e74a3b;">
+              <i class="fas fa-exclamation-triangle"></i>
+              <span>Approbation requise</span>
+            </div>
+          ` : ''}
+          
+          ${driver.availabilityMessage ? `
+            <div style="margin-top: 8px; color: #6c757d; font-size: 12px; font-style: italic; padding: 4px 0;">
+              "${driver.availabilityMessage}"
+            </div>
+          ` : ''}
+        </div>
       </div>
-    </div>
-  `;
-  
-  return popup;
-}
+    `;
+    
+    return popup;
+  }
+
   // ========== FORMATAGE IMAGE ==========
   private formatBase64Image(base64: string | null | undefined): string | null {
     if (!base64) return null;
@@ -1369,7 +1412,7 @@ private createDriverPopup(
 
   refreshMap(mapType: 'truck' | 'driver'): void {
     if (mapType === 'truck' && this.truckMap) {
-      this.addTruckZoneMarkers();
+      this.addTruckEntityMarkers();
       this.addTruckMarkers();
       this.truckMap.invalidateSize();
     }
@@ -1383,6 +1426,32 @@ private createDriverPopup(
     this.updateLastUpdateTime();
     this.successMessage = `Carte des ${mapType === 'truck' ? 'camions' : 'chauffeurs'} actualisée`;
     setTimeout(() => this.successMessage = '', 3000);
+  }
+
+  focusOnRegion(region: string, mapType: 'truck' | 'driver'): void {
+    if (mapType === 'truck') {
+      // For trucks, region is actually level name
+      const level = this.geographicalLevels.find(l => l.name === region);
+      if (!level || !this.truckMap) return;
+      
+      // Find all entities with this level
+      const entities = this.mappableEntities.filter(e => e.levelId === level.id && e.latitude && e.longitude);
+      if (entities.length === 0) return;
+      
+      const bounds = L.latLngBounds(
+        entities.map(e => [e.latitude!, e.longitude!] as L.LatLngTuple)
+      );
+      
+      this.truckMap.fitBounds(bounds);
+      this.activeTruckRegionFilter = region;
+    } else {
+      // For drivers, use region bounds
+      if (!this.regionBounds[region] || !this.driverMap) return;
+      this.driverMap.fitBounds(this.regionBounds[region]);
+      this.activeDriverRegionFilter = region;
+    }
+    
+    this.activeZoneName = 'all';
   }
 
   focusOnZone(zoneName: string): void {
@@ -1402,20 +1471,16 @@ private createDriverPopup(
     }
   }
 
-  focusOnRegion(region: string, mapType: 'truck' | 'driver'): void {
-    if (!this.regionBounds[region]) return;
+  focusOnEntity(entityId: number): void {
+    const entity = this.geographicalEntities.find(e => e.id === entityId);
+    if (!entity || !entity.latitude || !entity.longitude) return;
     
-    if (mapType === 'truck' && this.truckMap) {
-      this.truckMap.fitBounds(this.regionBounds[region]);
-      this.activeTruckRegionFilter = region;
+    this.activeZoneName = entity.name;
+    
+    if (this.activeZoneView === 'trucks' && this.truckMap) {
+      this.truckMap.setView([entity.latitude, entity.longitude], 10);
+      this.highlightTruckEntity(entityId);
     }
-    
-    if (mapType === 'driver' && this.driverMap) {
-      this.driverMap.fitBounds(this.regionBounds[region]);
-      this.activeDriverRegionFilter = region;
-    }
-    
-    this.activeZoneName = 'all';
   }
 
   private highlightTruckZone(zoneName: string): void {
@@ -1424,10 +1489,10 @@ private createDriverPopup(
     const zone = TUNISIA_ZONES.find(z => z.name === zoneName);
     if (!zone) return;
     
-    const zoneMarker = this.truckZoneMarkers.find(m => 
-      m.getLatLng().lat === zone.latitude && 
-      m.getLatLng().lng === zone.longitude
-    );
+    const zoneMarker = this.truckEntityMarkers.find(m => {
+      const latLng = m.getLatLng();
+      return latLng.lat === zone.latitude && latLng.lng === zone.longitude;
+    });
     
     if (zoneMarker) {
       zoneMarker.openPopup();
@@ -1440,19 +1505,39 @@ private createDriverPopup(
     const zone = TUNISIA_ZONES.find(z => z.name === zoneName);
     if (!zone) return;
     
-    const zoneMarker = this.driverZoneMarkers.find(m => 
-      m.getLatLng().lat === zone.latitude && 
-      m.getLatLng().lng === zone.longitude
-    );
+    const zoneMarker = this.driverZoneMarkers.find(m => {
+      const latLng = m.getLatLng();
+      return latLng.lat === zone.latitude && latLng.lng === zone.longitude;
+    });
     
     if (zoneMarker) {
       zoneMarker.openPopup();
     }
   }
 
+  private highlightTruckEntity(entityId: number): void {
+    if (!this.truckMap) return;
+    
+    const entityMarker = this.truckEntityMarkers.find(m => {
+      const latLng = m.getLatLng();
+      const entity = this.mappableEntities.find(e => e.latitude === latLng.lat && e.longitude === latLng.lng);
+      return entity?.id === entityId;
+    });
+    
+    if (entityMarker) {
+      entityMarker.openPopup();
+    }
+  }
+
   filterByZone(zoneName: string): void {
     this.activeZoneName = zoneName;
     this.successMessage = `Filtre appliqué: ${zoneName}`;
+    setTimeout(() => this.successMessage = '', 3000);
+  }
+
+  filterByEntity(entityId: number): void {
+    this.activeZoneName = this.getEntityName(entityId);
+    this.successMessage = `Filtre appliqué: ${this.getEntityName(entityId)}`;
     setTimeout(() => this.successMessage = '', 3000);
   }
 
@@ -1471,6 +1556,12 @@ private createDriverPopup(
   getDriverZoneStats(zoneName: string) {
     return this.driverZoneStatistics.find(z => z.zoneName === zoneName) || {
       total: 0, available: 0, onMission: 0, overtime: 0, exceeded: 0, conflict: 0, offDuty: 0
+    };
+  }
+
+  getEntityStats(entityId: number) {
+    return this.entityStatistics.find(e => e.entityId === entityId) || {
+      totalTrucks: 0, availableTrucks: 0, onMissionTrucks: 0, maintenanceTrucks: 0, outOfServiceTrucks: 0
     };
   }
 
@@ -1494,6 +1585,16 @@ private createDriverPopup(
     return '#e74a3b';
   }
 
+  getEntityColor(entityId: number): string {
+    const stats = this.getEntityStats(entityId);
+    if (stats.totalTrucks === 0) return '#6c757d';
+    const activeRatio = stats.onMissionTrucks / stats.totalTrucks;
+    if (activeRatio > 0.5) return '#1cc88a';
+    if (activeRatio > 0.2) return '#4e73df';
+    if (activeRatio > 0) return '#f6c23e';
+    return '#e74a3b';
+  }
+
   getZoneUtilizationPercentage(zoneName: string): number {
     const stats = this.getZoneStats(zoneName);
     if (stats.total === 0) return 0;
@@ -1506,28 +1607,39 @@ private createDriverPopup(
     return Math.round((stats.onMission / stats.total) * 100);
   }
 
+  getEntityUtilizationPercentage(entityId: number): number {
+    const stats = this.getEntityStats(entityId);
+    if (stats.totalTrucks === 0) return 0;
+    return Math.round((stats.onMissionTrucks / stats.totalTrucks) * 100);
+  }
+
+  getEntityName(entityId: number): string {
+    const entity = this.geographicalEntities.find(e => e.id === entityId);
+    return entity ? entity.name : 'Inconnu';
+  }
+
   // ========== UTILITAIRES ==========
-getTruckDisplay(truck: ITruck): string {
-  const status = STATUS_CONFIG[truck.status]?.label || truck.status;
-  const zone = TUNISIA_ZONES.find(z => z.id === truck.zoneId);
-  const zoneName = zone?.name || 'Non assigné';
-  const marqueName = this.getMarqueName(truck.marqueTruckId);
-  return `${truck.immatriculation} - ${marqueName} (${truck.typeTruck?.capacity}t) - ${status} - ${zoneName}`;
-}
+  getTruckDisplay(truck: ITruck): string {
+    const status = STATUS_CONFIG[truck.status]?.label || truck.status;
+    const truckWithGeo = this.trucksWithZone.find(t => t.id === truck.id);
+    const zoneName = truckWithGeo?.zoneName || 'Non assigné';
+    const marqueName = this.getMarqueName(truck.marqueTruckId);
+    return `${truck.immatriculation} - ${marqueName} (${truck.typeTruck?.capacity}t) - ${status} - ${zoneName}`;
+  }
 
   getDriverDisplay(driver: IDriver): string {
     const status = this.getDriverStatusLabel(driver);
-    const zone = TUNISIA_ZONES.find(z => z.id === driver.zoneId);
-    const zoneName = zone?.name || 'Non assigné';
-    return `${driver.name} - ${driver.permisNumber} - ${status} - ${zoneName}`;
+    const driverWithZone = this.driversWithZone.find(d => d.id === driver.id);
+    const zoneName = driverWithZone?.zoneName || 'Non assigné';
+    return `${driver.name} - ${driver.drivingLicense} - ${status} - ${zoneName}`;
   }
 
-getSelectedTruckName(): string {
-  if (!this.filter.truckId) return 'Tous les Camions';
-  const truck = this.trucks.find(t => t.id === this.filter.truckId);
-  const marqueName = truck ? this.getMarqueName(truck.marqueTruckId) : '';
-  return truck ? `${truck.immatriculation} (${marqueName})` : 'Camion Sélectionné';
-}
+  getSelectedTruckName(): string {
+    if (!this.filter.truckId) return 'Tous les Camions';
+    const truck = this.trucks.find(t => t.id === this.filter.truckId);
+    const marqueName = truck ? this.getMarqueName(truck.marqueTruckId) : '';
+    return truck ? `${truck.immatriculation} (${marqueName})` : 'Camion Sélectionné';
+  }
 
   getSelectedDriverName(): string {
     if (!this.filter.driverId) return 'Tous les Chauffeurs';
@@ -1583,26 +1695,32 @@ getSelectedTruckName(): string {
   toggleHelp(): void {
     this.showHelp = !this.showHelp;
   }
+
   marqueMap: Map<number, string> = new Map();
 
-// Add this method to load marques
-private loadMarques(): void {
-  this.httpService.getMarqueTrucks().subscribe({
-    next: (marques) => {
-      this.marqueMap.clear();
-      marques.forEach(marque => {
-        this.marqueMap.set(marque.id, marque.name);
-      });
-    },
-    error: (error) => {
-      console.error('Error loading marques:', error);
-    }
-  });
-}
+  private loadMarques(): void {
+    this.httpService.getMarqueTrucks().subscribe({
+      next: (marques) => {
+        this.marqueMap.clear();
+        marques.forEach(marque => {
+          this.marqueMap.set(marque.id, marque.name);
+        });
+      },
+      error: (error) => {
+        console.error('Error loading marques:', error);
+      }
+    });
+  }
 
-// Add this method to get marque name
-getMarqueName(marqueId?: number): string {
-  if (!marqueId) return 'N/A';
-  return this.marqueMap.get(marqueId) || 'N/A';
+  getMarqueName(marqueId?: number): string {
+    if (!marqueId) return 'N/A';
+    return this.marqueMap.get(marqueId) || 'N/A';
+  }
+  getEntityLevelName(entityId: number | undefined): string {
+  if (!entityId) return '';
+  const entity = this.geographicalEntities.find(e => e.id === entityId);
+  if (!entity) return '';
+  const level = this.geographicalLevels.find(l => l.id === entity.levelId);
+  return level ? level.name : '';
 }
 }

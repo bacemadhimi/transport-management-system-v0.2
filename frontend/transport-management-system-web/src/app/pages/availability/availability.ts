@@ -430,11 +430,9 @@ processAvailabilityData(data: any[]) {
   const processedData = data.map((driverData: any) => {
     const availability: { [date: string]: { isAvailable: boolean; isDayOff: boolean; reason?: string } } = {};
     
-    
     if (driverData.availability && typeof driverData.availability === 'object') {
       Object.keys(driverData.availability).forEach(dateKey => {
         const availData = driverData.availability[dateKey] || {};
-        
         
         const isAvailable = typeof availData.isAvailable === 'boolean' ? availData.isAvailable : true;
         const isDayOff = typeof availData.isDayOff === 'boolean' ? availData.isDayOff : false;
@@ -447,15 +445,12 @@ processAvailabilityData(data: any[]) {
       });
     }
     
-    
     this.dateColumns.forEach(dateCol => {
       const dateKey = this.formatDateForStorage(dateCol.date);
-      
       
       const isWeekend = dateCol.isWeekend === true;
       const isDayOffForAll = dateCol.isDayOffForAll === true;
       const isDayOff = isWeekend || isDayOffForAll;
-      
       
       if (!availability[dateKey]) {
         availability[dateKey] = {
@@ -464,9 +459,7 @@ processAvailabilityData(data: any[]) {
           reason: isWeekend ? 'Weekend' : 
                   (isDayOffForAll ? 'Jour férié' : '')
         };
-      }
-     
-      else if (isDayOff) {
+      } else if (isDayOff) {
         const currentAvail = availability[dateKey];
         availability[dateKey] = {
           ...currentAvail,
@@ -476,21 +469,37 @@ processAvailabilityData(data: any[]) {
       }
     });
     
-    
+    // Return complete IDriverAvailability object with all required fields
     return {
       id: driverData.driverId || driverData.id || Math.random(),
       name: driverData.driverName || driverData.name || 'N/A',
       email: driverData.email || driverData.driverEmail || '',
-      permisNumber: driverData.permisNumber || '',
-      phone: driverData.phone || '',
+      
+      // Employee base properties
+      idNumber: driverData.idNumber || '',
+      phoneNumber: driverData.phoneNumber || driverData.phone || '',
+      drivingLicense: driverData.drivingLicense || driverData.permisNumber || '',
+      typeTruckId: driverData.typeTruckId || null,
+      isEnable: driverData.isEnable === true,
+      employeeCategory: driverData.employeeCategory || 'DRIVER',
+      isInternal: driverData.isInternal !== false,
+      createdAt: driverData.createdAt ? new Date(driverData.createdAt) : undefined,
+      updatedAt: driverData.updatedAt ? new Date(driverData.updatedAt) : undefined,
+      
+      // Driver-specific properties
+      permisNumber: driverData.permisNumber || driverData.drivingLicense || '',
+      phone: driverData.phone || driverData.phoneNumber || '',
       phoneCountry: driverData.phoneCountry || 'tn',
       status: driverData.status || 'Disponible',
       idCamion: driverData.idCamion || 0,
-      isEnable: driverData.isEnable === true,
-      updatedAt: driverData.updatedAt || new Date().toISOString(),
+      zoneId: driverData.zoneId,
+      zoneName: driverData.zoneName,
+      cityId: driverData.cityId,
+      imageBase64: driverData.imageBase64 || null,
+      
+      // Availability properties
       availability: availability,
-      dayOffs: driverData.dayOffs || [],
-      imageBase64: driverData.imageBase64 || null
+      dayOffs: driverData.dayOffs || []
     };
   });
 
@@ -499,50 +508,51 @@ processAvailabilityData(data: any[]) {
     totalData: processedData.length
   };
 }
-
   loadFallbackData() {
-    
-    this.httpService.getDrivers().subscribe({
-      next: (drivers: IDriver[]) => {
-        const processedData = drivers.map(driver => ({
+  this.httpService.getDrivers().subscribe({
+    next: (drivers: IDriver[]) => {
+      const processedData = drivers.map(driver => {
+        // Create a complete IDriverAvailability object
+        const driverWithAvailability: IDriverAvailability = {
           ...driver,
           availability: this.generateDefaultAvailability(),
-          dayOffs: []
-        }));
-
-        this.pagedDriverData = {
-          data: processedData,
-          totalData: processedData.length
+          dayOffs: [],
+          imageBase64: driver.imageBase64 || null
         };
-      },
-      error: (error) => {
-        console.error('Error loading fallback data:', error);
-    
-        this.pagedDriverData = {
-          data: [],
-          totalData: 0
-        };
-      }
-    });
-  }
+        return driverWithAvailability;
+      });
 
-  generateDefaultAvailability(): { [date: string]: { isAvailable: boolean; isDayOff: boolean; reason?: string } } {
-    const availability: { [date: string]: { isAvailable: boolean; isDayOff: boolean; reason?: string } } = {};
-    
-    this.dateColumns.forEach(dateCol => {
-      const dateKey = this.formatDateForStorage(dateCol.date);
-      const isDayOff = dateCol.isWeekend || dateCol.isDayOffForAll;
-      
-      
-      availability[dateKey] = {
-        isAvailable: !isDayOff,
-        isDayOff: isDayOff || false,
-        reason: isDayOff ? (dateCol.isWeekend ? 'Weekend' : 'Jour férié') : ''
+      this.pagedDriverData = {
+        data: processedData,
+        totalData: processedData.length
       };
-    });
+    },
+    error: (error) => {
+      console.error('Error loading fallback data:', error);
+      this.pagedDriverData = {
+        data: [],
+        totalData: 0
+      };
+    }
+  });
+}
+
+generateDefaultAvailability(): { [date: string]: { isAvailable: boolean; isDayOff: boolean; reason?: string } } {
+  const availability: { [date: string]: { isAvailable: boolean; isDayOff: boolean; reason?: string } } = {};
+  
+  this.dateColumns.forEach(dateCol => {
+    const dateKey = this.formatDateForStorage(dateCol.date);
+    const isDayOff = dateCol.isWeekend || dateCol.isDayOffForAll;
     
-    return availability;
-  }
+    availability[dateKey] = {
+      isAvailable: !isDayOff,
+      isDayOff: isDayOff || false,
+      reason: isDayOff ? (dateCol.isWeekend ? 'Weekend' : 'Jour férié') : ''
+    };
+  });
+  
+  return availability;
+}
 
   getStartOfWeek(date: Date): Date {
     const day = date.getDay();
@@ -774,127 +784,126 @@ processAvailabilityData(data: any[]) {
     });
   }
 
- 
-  exportCSV() {
-    if (!this.pagedDriverData?.data?.length) {
-      this.snackBar.open('Aucune donnée à exporter', 'OK', { duration: 3000 });
-      return;
-    }
-    
-    const headers = ['Nom', 'Téléphone', ...this.dateColumns.map(d => `${d.label} ${d.dayOfWeek}`)];
-    
-    const csvContent = [
-      headers.join(','),
-      ...(this.pagedDriverData.data || []).map(driver => [
-        `"${driver.name}"`,
-        `"${driver.phone}"`,
-        `"${driver.status}"`,
-        ...this.dateColumns.map(dateCol => {
-          const status = this.getAvailabilityStatus(driver, dateCol.date);
-          switch (status) {
-            case 'available': return '"✅"';
-            case 'unavailable': return '"❌"';
-            case 'weekend': return '"🌴"';
-            case 'holiday': return '"🎉"';
-            case 'dayoff': return '"🏖️"';
-            default: return '""';
-          }
-        })
-      ].join(','))
-    ].join('\n');
-
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = `disponibilite_chauffeurs_${this.getWeekLabel(this.weeks[this.selectedWeekIndex].start, this.weeks[this.selectedWeekIndex].end)}.csv`;
-    link.click();
+exportCSV() {
+  if (!this.pagedDriverData?.data?.length) {
+    this.snackBar.open('Aucune donnée à exporter', 'OK', { duration: 3000 });
+    return;
   }
-
-  exportExcel() {
-    if (!this.pagedDriverData?.data?.length) {
-      this.snackBar.open('Aucune donnée à exporter', 'OK', { duration: 3000 });
-      return;
-    }
-    
-    const data = (this.pagedDriverData.data || []).map(driver => {
-      const row: any = {
-        'Nom': driver.name,
-        'Téléphone': driver.phone,
-        
-      };
-      
-      this.dateColumns.forEach((dateCol, index) => {
-        const status = this.getAvailabilityStatus(driver, dateCol.date);
-        row[`${dateCol.label} ${dateCol.dayOfWeek}`] = 
-          status === 'available' ? '✅' : 
-          status === 'unavailable' ? '❌' : 
-          status === 'weekend' ? '🌴' :
-          status === 'holiday' ? '🎉' :
-          status === 'dayoff' ? '🏖️' : '';
-      });
-      
-      return row;
-    });
-
-    const worksheet = XLSX.utils.json_to_sheet(data);
-    const workbook = {
-      Sheets: { 'Disponibilité': worksheet },
-      SheetNames: ['Disponibilité']
-    };
-
-    const excelBuffer = XLSX.write(workbook, {
-      bookType: 'xlsx',
-      type: 'array'
-    });
-
-    const blob = new Blob([excelBuffer], {
-      type: 'application/octet-stream'
-    });
-
-    saveAs(blob, `disponibilite_chauffeurs_${this.getWeekLabel(this.weeks[this.selectedWeekIndex].start, this.weeks[this.selectedWeekIndex].end)}.xlsx`);
-  }
-
-  exportPDF() {
-    if (!this.pagedDriverData?.data?.length) {
-      this.snackBar.open('Aucune donnée à exporter', 'OK', { duration: 3000 });
-      return;
-    }
-    
-    const doc = new jsPDF('landscape');
-    
-    const headers = ['Nom', 'Téléphone',...this.dateColumns.map(d => `${d.label} ${d.dayOfWeek}`)];
-    const body = (this.pagedDriverData.data || []).map(driver => [
-      driver.name,
-      driver.phone,
-      driver.status,
+  
+  const headers = ['Nom', 'Téléphone', 'Statut', ...this.dateColumns.map(d => `${d.label} ${d.dayOfWeek}`)];
+  
+  const csvContent = [
+    headers.join(','),
+    ...(this.pagedDriverData.data || []).map(driver => [
+      `"${driver.name || ''}"`,
+      `"${driver.phoneNumber || ''}"`,
+      `"${driver.status || ''}"`,
       ...this.dateColumns.map(dateCol => {
         const status = this.getAvailabilityStatus(driver, dateCol.date);
-        return status === 'available' ? '✅' : 
-               status === 'unavailable' ? '❌' : 
-               status === 'weekend' ? '🌴' :
-               status === 'holiday' ? '🎉' :
-               status === 'dayoff' ? '🏖️' : '';
+        const emoji = status === 'available' ? '✅' : 
+                      status === 'unavailable' ? '❌' : 
+                      status === 'weekend' ? '🌴' :
+                      status === 'holiday' ? '🎉' :
+                      status === 'dayoff' ? '🏖️' : '';
+        return `"${emoji}"`;
       })
-    ]);
+    ].join(','))
+  ].join('\n');
 
-    doc.setFontSize(10);
-    doc.text(`Disponibilité des Chauffeurs - ${this.getWeekLabel(this.weeks[this.selectedWeekIndex].start, this.weeks[this.selectedWeekIndex].end)}`, 14, 10);
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = `disponibilite_chauffeurs_${this.getWeekLabel(this.weeks[this.selectedWeekIndex].start, this.weeks[this.selectedWeekIndex].end)}.csv`;
+  link.click();
+}
 
-    autoTable(doc, {
-      startY: 15,
-      head: [headers],
-      body: body,
-      styles: { fontSize: 8, cellPadding: 2 },
-      headStyles: { fillColor: [41, 128, 185], textColor: 255 },
-      margin: { left: 14, right: 14 }
-    });
-
-   
-    doc.setFontSize(8);
-    doc.text('Légende: ✅ = Disponible, ❌ = Indisponible, 🌴 = Weekend, 🎉 = Férié, 🏖️ = Jour Off', 14, doc.internal.pageSize.height - 10);
-
-    doc.save(`disponibilite_chauffeurs_${this.getWeekLabel(this.weeks[this.selectedWeekIndex].start, this.weeks[this.selectedWeekIndex].end)}.pdf`);
+ exportExcel() {
+  if (!this.pagedDriverData?.data?.length) {
+    this.snackBar.open('Aucune donnée à exporter', 'OK', { duration: 3000 });
+    return;
   }
+  
+  const data = (this.pagedDriverData.data || []).map(driver => {
+    const row: any = {
+      'Nom': driver.name || '',
+      'Téléphone': driver.phoneNumber || '',
+      'Statut': driver.status || ''
+    };
+    
+    this.dateColumns.forEach((dateCol) => {
+      const status = this.getAvailabilityStatus(driver, dateCol.date);
+      row[`${dateCol.label} ${dateCol.dayOfWeek}`] = 
+        status === 'available' ? '✅' : 
+        status === 'unavailable' ? '❌' : 
+        status === 'weekend' ? '🌴' :
+        status === 'holiday' ? '🎉' :
+        status === 'dayoff' ? '🏖️' : '';
+    });
+    
+    return row;
+  });
+
+  const worksheet = XLSX.utils.json_to_sheet(data);
+  const workbook = {
+    Sheets: { 'Disponibilité': worksheet },
+    SheetNames: ['Disponibilité']
+  };
+
+  const excelBuffer = XLSX.write(workbook, {
+    bookType: 'xlsx',
+    type: 'array'
+  });
+
+  const blob = new Blob([excelBuffer], {
+    type: 'application/octet-stream'
+  });
+
+  saveAs(blob, `disponibilite_chauffeurs_${this.getWeekLabel(this.weeks[this.selectedWeekIndex].start, this.weeks[this.selectedWeekIndex].end)}.xlsx`);
+}
+
+ exportPDF() {
+  if (!this.pagedDriverData?.data?.length) {
+    this.snackBar.open('Aucune donnée à exporter', 'OK', { duration: 3000 });
+    return;
+  }
+  
+  const doc = new jsPDF('landscape');
+  
+  const headers = ['Nom', 'Téléphone', ...this.dateColumns.map(d => `${d.label} ${d.dayOfWeek}`)];
+  
+  // Ensure all values are strings (replace undefined with empty string)
+  const body = (this.pagedDriverData.data || []).map(driver => [
+    driver.name || '',
+    driver.phoneNumber || '',
+    driver.status || '',
+    ...this.dateColumns.map(dateCol => {
+      const status = this.getAvailabilityStatus(driver, dateCol.date);
+      const emoji = status === 'available' ? '✅' : 
+                    status === 'unavailable' ? '❌' : 
+                    status === 'weekend' ? '🌴' :
+                    status === 'holiday' ? '🎉' :
+                    status === 'dayoff' ? '🏖️' : '';
+      return emoji; // Always returns a string (empty string as fallback)
+    })
+  ]);
+
+  doc.setFontSize(10);
+  doc.text(`Disponibilité des Chauffeurs - ${this.getWeekLabel(this.weeks[this.selectedWeekIndex].start, this.weeks[this.selectedWeekIndex].end)}`, 14, 10);
+
+  autoTable(doc, {
+    startY: 15,
+    head: [headers],
+    body: body,
+    styles: { fontSize: 8, cellPadding: 2 },
+    headStyles: { fillColor: [41, 128, 185], textColor: 255 },
+    margin: { left: 14, right: 14 }
+  });
+
+  doc.setFontSize(8);
+  doc.text('Légende: ✅ = Disponible, ❌ = Indisponible, 🌴 = Weekend, 🎉 = Férié, 🏖️ = Jour Off', 14, doc.internal.pageSize.height - 10);
+
+  doc.save(`disponibilite_chauffeurs_${this.getWeekLabel(this.weeks[this.selectedWeekIndex].start, this.weeks[this.selectedWeekIndex].end)}.pdf`);
+}
   get hasPagedData(): boolean {
   return !!this.pagedDriverData?.data?.length;
 }

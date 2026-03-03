@@ -67,14 +67,8 @@ export class Employee implements OnInit {
     { key: 'isInternal', label: this.t('INTERNAL_EMPLOYEE')},
      { key: 'employeeCategory', label:this.t('CATEGORY_TABLE')},
     {
-      key: 'typeTruck',
+      key: 'truckType',
       label: this.t('TYPE_VEHICULE_LABEL'),
-      format: (row: IEmployee) => {
-        if (row.typeTruck) {
-          return `${row.typeTruck.type} (${row.typeTruck.capacity} ${row.typeTruck.unit})`;
-        }
-        return '-';
-      }
     },
     {
       key: 'attachment',
@@ -145,21 +139,24 @@ export class Employee implements OnInit {
     const ref = this.dialog.open(EmployeeForm, { 
       panelClass: 'm-auto', 
       data: { employeeId: employee.id },
-      width: '650px',  
-      maxWidth: '95vw',
+      width: '90vw',
+      maxWidth: '1200px',
+      minWidth: '400px',
+      height: 'auto',
       maxHeight: '90vh',
-      disableClose: false 
     });
     ref.afterClosed().subscribe(() => this.getLatestData());
   }
 
   openDialog() {
     const ref = this.dialog.open(EmployeeForm, { 
-      panelClass: 'm-auto', 
       data: {},
-      width: '650px',
-      maxWidth: '95vw',
-      maxHeight: '90vh'
+      panelClass: 'm-auto',
+      width: '90vw',
+      maxWidth: '1200px',
+      minWidth: '400px',
+      height: 'auto',
+      maxHeight: '90vh',
     });
     ref.afterClosed().subscribe(() => this.getLatestData());
   }

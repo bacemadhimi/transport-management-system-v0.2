@@ -705,14 +705,7 @@
             </mat-panel-title>
           </mat-expansion-panel-header>
           <mat-nav-list class="submenu-list">
-            <mat-list-item 
-              *ngIf="authService.hasRole('SuperAdmin') || authService.hasEntityAccess('MECHANIC')"
-              routerLink="/mechanics"
-              routerLinkActive="active-submenu-item"
-              class="submenu-item">
-              <mat-icon matListItemIcon class="submenu-icon">engineering</mat-icon>
-              <a matListItemTitle class="submenu-text">{{ t('MECHANICS') }}</a>
-            </mat-list-item>
+         
             <mat-list-item 
               *ngIf="authService.hasRole('SuperAdmin') || authService.hasEntityAccess('VENDOR')"
               routerLink="/vendors"

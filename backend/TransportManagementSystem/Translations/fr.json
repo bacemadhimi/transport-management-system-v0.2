@@ -449,7 +449,7 @@
   "DATE_FIRST_REGISTRATION_LABEL": "Date de première immatriculation",
   "EMPTY_WEIGHT_LABEL": "Poids à vide",
   "TABLE_ATTACHMENT": "Pièce Jointe",
-  "EDIT_EMPLOYEE": "Éditer Employé",
+  "EDIT_EMPLOYEE": "Modifier Employé",
   "ID_NUMBER_REQUIRED": "Le matricule est obligatoire",
   "EMAIL_REQUIRED": "L'email est obligatoire",
   "EMAIL_INVALID1": "Veuillez entrer un email valide",
@@ -466,6 +466,7 @@
   "RESET_DEFAULT": "Réinitialiser par défaut",
   "INTERNAL_EMPLOYEE": "Employé interne",
   "INTERNAL_EMPLOYEE_HINT": "Activez cette option si l’employé appartient à l’entreprise. Désactivez-la s’il s’agit d’un employé externe.",
+  "GEOGRAPHICAL_ENTITIES_LABEL": "Entités géographiques"
   "CATEGORY_TABLE": "Catégorie Employé",
   "EMPLOYEE_DELETE_CONFIRM": "Voulez-vous vraiment supprimer l'employé",
   "EMPLOYEE_DELETE_SUCCESS": "Employé supprimé avec succès",

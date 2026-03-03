@@ -6,7 +6,6 @@ import { Profile } from './pages/profile/profile';
 import { AuthGuard } from './services/auth.guard'; 
 import { User } from './pages/user/user';
 import { Truck } from './pages/truck/truck';
-import { Driver } from './pages/driver/driver';
 import { Employee } from './pages/employee/employee';
 import { Trip } from './pages/trip/trip';
 import { HistoricTrip } from './pages/historic-trip/historic-trip';
@@ -14,7 +13,6 @@ import { HistoricTrip } from './pages/historic-trip/historic-trip';
 import { Customer } from './pages/customer/customer';
 import { FuelVendor } from './pages/fuel-vendor/fuel-vendor';
 import { Fuel } from './pages/fuel/fuel';
-import { Mechanic } from './pages/mechanic/mechanic';
 import { Vendor } from './pages/vendor/vendor';
 
 import { Permissions } from './pages/permissions/permissions';
@@ -22,7 +20,6 @@ import { Maintenance } from './pages/maintenance/maintenance';
 import { Role } from './pages/role/role';
 import { TrajectComponent } from './pages/traject/traject';
 import { LocationComponent } from './pages/location/location';
-import { Convoyeur } from './pages/convoyeur/convoyeur';
 import { DayOff } from './pages/day-off/day-off';
 import { Overtime } from './pages/overtime/overtime';
 import { AvailabilityComponent } from './pages/availability/availability';
@@ -54,11 +51,6 @@ export const routes: Routes = [
   {
     path: "home",
     component: Home,
-    canActivate: [AuthGuard]
-  },
-  {
-    path: 'drivers',
-    component: Driver,
     canActivate: [AuthGuard]
   },
 
@@ -116,11 +108,6 @@ export const routes: Routes = [
     canActivate: [AuthGuard]  
   },
 {
-    path: "mechanics",
-    component: Mechanic,
-    canActivate: [AuthGuard]  
-  },
-{
     path: "vendors",
     component: Vendor,
     canActivate: [AuthGuard]  
@@ -147,11 +134,6 @@ export const routes: Routes = [
     component: LocationComponent,
     canActivate: [AuthGuard]
   },
-  {
-  path: 'convoyeurs',
-  component: Convoyeur,
-  canActivate: [AuthGuard]
-},
 {
     path: 'dayoff', 
     component: DayOff,
