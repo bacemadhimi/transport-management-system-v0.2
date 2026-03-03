@@ -34,12 +34,11 @@ import { MatChipsModule } from '@angular/material/chips';
 import { WeatherData } from '../../../types/weather';
 import { MatDividerModule } from '@angular/material/divider';
 import { TruncatePipe } from '../../../../truncate.pipe';
-import { IZone } from '../../../types/zone';
 import { CdkVirtualScrollViewport, ScrollingModule } from '@angular/cdk/scrolling';
 import { Translation } from '../../../services/Translation';
 import { SettingsService } from '../../../services/settings.service'; 
 import { ITripSettings } from '../../../types/general-settings';
-
+import { IGeographicalEntity } from '../../../types/general-settings';
 interface DialogData {
   tripId?: number;
 }
@@ -98,7 +97,9 @@ export class TripForm implements OnInit {
   unavailableDrivers: any[] = [];
   loadingAvailableDrivers = false;
   drivers: IDriver[] = [];
-  
+  geographicalEntities: IGeographicalEntity[] = [];
+  entityFilterControl = new FormControl(null);
+  filteredClientsByEntity: any[] = [];
   // Convoyeur properties
   convoyeurs: IConvoyeur[] = [];
   loadingConvoyeurs = false;
@@ -221,34 +222,31 @@ export class TripForm implements OnInit {
   driverAvailabilityError = false;
   dateStatsLoading = false;
   showDateStatsModal = false;
-  zoneFilterControl = new FormControl(null);
-  zones: any[] = []; 
-  filteredClientsByZone: any[] = [];
-  selectedDateStats: any = {
-    date: null,
-    totalClients: 0,
-    totalOrders: 0,
-    plannedTrips: 0,
-    availableDrivers: 0,
-    allReadyOrders: 0,
-    ordersInTrips: 0,
-    weightInTrips: 0,
-    assignedDrivers: 0,
-    availableTrucks: 0,
-    isWeekend: false,
-    dayOfWeek: '',
-    recommendations: [],
-    clients: [],
-    plannedTripsDetails: [],
-    resourceStatus: {
-      driversAvailable: 0,
-      driversNeeded: 0,
-      driversShortage: 0,
-      trucksAvailable: 0,
-      trucksNeeded: 0,
-      trucksShortage: 0
-    }
-  };
+selectedDateStats: any = {
+  date: null,
+  totalClients: 0,
+  totalOrders: 0,
+  plannedTrips: 0,
+  availableDrivers: 0,
+  allReadyOrders: 0,
+  ordersInTrips: 0,
+  weightInTrips: 0,
+  assignedDrivers: 0,
+  availableTrucks: 0,
+  isWeekend: false,
+  dayOfWeek: '',
+  recommendations: [],
+  clients: [],
+  plannedTripsDetails: [],
+  resourceStatus: {
+    driversAvailable: 0,
+    driversNeeded: 0,
+    driversShortage: 0,
+    trucksAvailable: 0,
+    trucksNeeded: 0,
+    trucksShortage: 0
+  }
+};
 
  
   loadingUnit: string = 'palette'; 
@@ -331,7 +329,7 @@ export class TripForm implements OnInit {
       this.filterClients();
     });
     
-    this.zoneFilterControl.valueChanges.subscribe(() => {
+    this.entityFilterControl.valueChanges.subscribe(() => {
       this.filterClients();
     });
 
@@ -447,11 +445,11 @@ this.tripForm.get('estimatedStartDate')?.valueChanges.subscribe(() => {
     });
   }
 
-  private loadConfiguration(): void {
-    this.loadTripSettings();
-    this.listenToSettingsChanges();
+private loadConfiguration(): void {
+  this.loadTripSettings();
+  this.listenToSettingsChanges();
 
- this.settingsService.orderSettings$.subscribe(settings => {
+  this.settingsService.orderSettings$.subscribe(settings => {
     if (settings) {
       this.loadingUnit = settings?.loadingUnit || 'palette';
       this.allowEditOrder = settings?.allowEditOrder || false;
@@ -459,90 +457,109 @@ this.tripForm.get('estimatedStartDate')?.valueChanges.subscribe(() => {
       this.acceptOrdersWithoutAddress = settings?.acceptOrdersWithoutAddress || false;
     }
   });
+  
+  // Load all data with empty state handling
+  this.loadAllCustomers().then(() => {
+    // Even if no customers, continue loading other data
+    this.loadData();
+    this.loadLocations();
+    this.loadGeographicalEntities(); 
     
-    // Load all data with empty state handling
-    this.loadAllCustomers().then(() => {
-      // Even if no customers, continue loading other data
-      this.loadData();
-      this.loadLocations();
-      this.loadZones();
-      
-      const tripIdToUse = this.tripId || this.tripId;
-      if (!tripIdToUse) {
-        this.trajectMode = 'new'; 
-        this.hasMadeTrajectChoice = true;
-      }
-      
-      // Load trucks immediately after locations are loaded
-      const startDate = this.tripForm.get('estimatedStartDate')?.value;
-      if (startDate) {
-        console.log('Loading trucks with date:', startDate);
-        this.loadTrucks();
-      } else {
-        console.log('No start date, loading all trucks');
-        this.loadAllTrucks();
-      }
-      
-      this.loadAllDrivers().then(() => {
-        this.setupDateChangeSubscription();
-      });
-      
-      this.loadAllConvoyeurs();
-      
-      if (tripIdToUse) {
-        this.isEditMode = true;
-        this.loadTrip(tripIdToUse).then(() => {
-          setTimeout(() => {
-            this.refreshDriversByDate();
-          }, 300);
-        });
-      } else {
-        this.isEditMode = false; 
-        this.loadTrajects();
-      }
-    }).catch(error => {
-      console.error('Error loading customers:', error);
-      // Continue with other data loading even if customers fail
-      this.loadData();
-      this.loadLocations();
-      this.loadZones();
-      
-      const tripIdToUse = this.tripId || this.tripId;
-      if (!tripIdToUse) {
-        this.trajectMode = 'new'; 
-        this.hasMadeTrajectChoice = true;
-      }
-      
-      // Load trucks even if customers failed
-      const startDate = this.tripForm.get('estimatedStartDate')?.value;
-      if (startDate) {
-        console.log('Loading trucks with date (after error):', startDate);
-        this.loadTrucks();
-      } else {
-        console.log('No start date, loading all trucks (after error)');
-        this.loadAllTrucks();
-      }
-      
-      this.loadAllDrivers().then(() => {
-        this.setupDateChangeSubscription();
-      });
-      
-      this.loadAllConvoyeurs();
-      
-      if (tripIdToUse) {
-        this.isEditMode = true;
-        this.loadTrip(tripIdToUse).then(() => {
-          setTimeout(() => {
-            this.refreshDriversByDate();
-          }, 300);
-        });
-      } else {
-        this.isEditMode = false; 
-        this.loadTrajects();
-      }
+    const tripIdToUse = this.tripId || this.tripId;
+    if (!tripIdToUse) {
+      this.trajectMode = 'new'; 
+      this.hasMadeTrajectChoice = true;
+    }
+    
+    // Load trucks immediately after locations are loaded
+    const startDate = this.tripForm.get('estimatedStartDate')?.value;
+    if (startDate) {
+      console.log('Loading trucks with date:', startDate);
+      this.loadTrucks();
+    } else {
+      console.log('No start date, loading all trucks');
+      this.loadAllTrucks();
+    }
+    
+    this.loadAllDrivers().then(() => {
+      this.setupDateChangeSubscription();
     });
-  }
-
+    
+    this.loadAllConvoyeurs();
+    
+    if (tripIdToUse) {
+      this.isEditMode = true;
+      this.loadTrip(tripIdToUse).then(() => {
+        setTimeout(() => {
+          this.refreshDriversByDate();
+        }, 300);
+      });
+    } else {
+      this.isEditMode = false; 
+      this.loadTrajects();
+    }
+  }).catch(error => {
+    console.error('Error loading customers:', error);
+    // Continue with other data loading even if customers fail
+    this.loadData();
+    this.loadLocations();
+    this.loadGeographicalEntities(); // Replace loadZones()
+    
+    const tripIdToUse = this.tripId || this.tripId;
+    if (!tripIdToUse) {
+      this.trajectMode = 'new'; 
+      this.hasMadeTrajectChoice = true;
+    }
+    
+    // Load trucks even if customers failed
+    const startDate = this.tripForm.get('estimatedStartDate')?.value;
+    if (startDate) {
+      console.log('Loading trucks with date (after error):', startDate);
+      this.loadTrucks();
+    } else {
+      console.log('No start date, loading all trucks (after error)');
+      this.loadAllTrucks();
+    }
+    
+    this.loadAllDrivers().then(() => {
+      this.setupDateChangeSubscription();
+    });
+    
+    this.loadAllConvoyeurs();
+    
+    if (tripIdToUse) {
+      this.isEditMode = true;
+      this.loadTrip(tripIdToUse).then(() => {
+        setTimeout(() => {
+          this.refreshDriversByDate();
+        }, 300);
+      });
+    } else {
+      this.isEditMode = false; 
+      this.loadTrajects();
+    }
+  });
+}
+private loadGeographicalEntities(): void {
+  this.http.getGeographicalEntities().subscribe({
+    next: (response) => {
+      let entitiesData: IGeographicalEntity[];
+      
+      if (response && typeof response === 'object' && 'data' in response) {
+        entitiesData = (response as any).data;
+      } else if (Array.isArray(response)) {
+        entitiesData = response;
+      } else {
+        entitiesData = [];
+      }
+      
+      this.geographicalEntities = entitiesData;
+    },
+    error: (error) => {
+      console.error('Error loading geographical entities:', error);
+    }
+  });
+}
   private loadAllConvoyeurs(): void {
     this.loadingConvoyeurs = true;
     this.http.getConvoyeurs().subscribe({
@@ -584,14 +601,6 @@ this.tripForm.get('estimatedStartDate')?.valueChanges.subscribe(() => {
         this.unavailableTrucks = [];
       }
     });
-  }
-
-  private setupZoneFilter(): void {
-    this.zoneFilterControl.valueChanges
-      .pipe(debounceTime(300))
-      .subscribe(() => {
-        this.applyZoneFilter();
-      });
   }
 
   private setupDateChangeSubscription(): void {
@@ -1231,7 +1240,7 @@ this.tripForm.get('estimatedStartDate')?.valueChanges.subscribe(() => {
     const deliveryGroup = this.fb.group({
       customerId: [deliveryData?.customerId || '', Validators.required],
       orderId: [deliveryData?.orderId || '', Validators.required],
-      deliveryAddress: [deliveryData?.deliveryAddress || '', [Validators.required, Validators.maxLength(500)]],
+      deliveryAddress: [deliveryData?.deliveryAddress || ''],
       sequence: [deliveryData?.sequence || sequence, [Validators.required, Validators.min(1)]],
       plannedTime: [plannedTime], 
       notes: [deliveryData?.notes || '']
@@ -1277,9 +1286,7 @@ this.tripForm.get('estimatedStartDate')?.valueChanges.subscribe(() => {
       deliveryGroup.get('orderId')?.setValue('');
       
       const customer = this.customers.find(c => c.id === customerId);
-      if (customer && customer.adress) {
-        deliveryGroup.get('deliveryAddress')?.setValue(customer.adress);
-      }
+      
     }
   }
 
@@ -1311,11 +1318,6 @@ this.tripForm.get('estimatedStartDate')?.valueChanges.subscribe(() => {
     return customer ? (customer.name || 'Nom non disponible') : '';
   }
 
-  getClientAddress(customerId: number): string {
-    if (!customerId) return '';
-    const customer = this.allCustomers.find(c => c.id === customerId);
-    return customer ? (customer.adress || 'Adresse non disponible') : '';
-  }
 
   getOrderReference(orderId: number): string {
     if (!orderId) return 'N/A';
@@ -1360,7 +1362,7 @@ getSelectedConvoyeurInfo(): string {
     const newDelivery = {
       customerId: order.customerId,
       orderId: order.id,
-      deliveryAddress: customer?.adress || '',
+      deliveryAddress: '',
       sequence: this.deliveries.length + 1,
       notes: `Commande rapide: ${order.reference}`,
     };
@@ -1372,12 +1374,6 @@ getSelectedConvoyeurInfo(): string {
     this.loadClientsWithPendingOrders();
     
     this.snackBar.open('Commande ajoutée au trajet', 'Fermer', { duration: 2000 });
-  }
-
-  getZoneName(zoneId: number): string {
-    if (!zoneId) return '';
-    const zone = this.zones.find(z => z.id === zoneId);
-    return zone ? zone.name : 'Zone inconnue';
   }
 
   private applyClientSearchFilter(): void {
@@ -2667,7 +2663,6 @@ getSelectedConvoyeurInfo(): string {
       return (
         customer.name.toLowerCase().includes(searchText) ||
         customer.matricule?.toLowerCase().includes(searchText) ||
-        customer.adress?.toLowerCase().includes(searchText) ||
         order.reference.toLowerCase().includes(searchText) ||
         order.type?.toLowerCase().includes(searchText)
       );
@@ -2748,7 +2743,7 @@ getSelectedConvoyeurInfo(): string {
     const deliveryCopy = this.fb.group({
       customerId: [movedDelivery.get('customerId')?.value, Validators.required],
       orderId: [movedDelivery.get('orderId')?.value, Validators.required],
-      deliveryAddress: [movedDelivery.get('deliveryAddress')?.value, [Validators.required, Validators.maxLength(500)]],
+      deliveryAddress: [movedDelivery.get('deliveryAddress')?.value],
       sequence: [movedDelivery.get('sequence')?.value, [Validators.required, Validators.min(1)]],
       plannedTime: [movedDelivery.get('plannedTime')?.value],
       notes: [movedDelivery.get('notes')?.value || '']
@@ -4222,35 +4217,25 @@ getSelectedConvoyeurInfo(): string {
   
 
 
-  getSelectedStartLocationInfo(): string {
-    const locationId = this.getStartLocationId();
-    if (!locationId) return 'Non sélectionné';
-    
-    const location = this.locations.find(l => l.id === locationId);
-    if (!location) return 'Lieu inconnu';
-    
-    let display = location.name;
-    if (location.zoneName) {
-      display += ` (Zone: ${location.zoneName})`;
-    }
-    
-    return display;
-  }
+getSelectedStartLocationInfo(): string {
+  const locationId = this.getStartLocationId();
+  if (!locationId) return 'Non sélectionné';
+  
+  const location = this.locations.find(l => l.id === locationId);
+  if (!location) return 'Lieu inconnu';
+  
+  return location.name; 
+}
 
-  getSelectedEndLocationInfo(): string {
-    const locationId = this.getEndLocationId();
-    if (!locationId) return 'Non sélectionné';
-    
-    const location = this.locations.find(l => l.id === locationId);
-    if (!location) return 'Lieu inconnu';
-    
-    let display = location.name;
-    if (location.zoneName) {
-      display += ` (Zone: ${location.zoneName})`;
-    }
-    
-    return display;
-  }
+getSelectedEndLocationInfo(): string {
+  const locationId = this.getEndLocationId();
+  if (!locationId) return 'Non sélectionné';
+  
+  const location = this.locations.find(l => l.id === locationId);
+  if (!location) return 'Lieu inconnu';
+  
+  return location.name; 
+}
 
   getStartZoneName(): string | null {
     const locationId = this.tripForm.get('startLocationId')?.value;
@@ -5205,79 +5190,94 @@ getSelectedConvoyeurInfo(): string {
     return luminance > 0.5;
   }
 
-
-
-  private loadZones(): void {
-   
+private applyCombinedFilters(): void {
+  const searchText = this.clientSearchControl.value?.toLowerCase().trim() || '';
+  const entityId = this.entityFilterControl.value;
+  
+  let filtered = [...this.allClientsWithPendingOrders];
+  
+  if (entityId) {
+    filtered = filtered.filter(client => 
+      client.geographicalEntities?.some(ge => ge.geographicalEntityId === entityId)
+    );
   }
-
-  private applyZoneFilter(): void {
-    const zoneId = this.zoneFilterControl.value;
-    
-    this.applyCombinedFilters();
+  
+  if (searchText) {
+    filtered = filtered.filter(client => {
+      return (
+        client.name.toLowerCase().includes(searchText) ||
+        client.matricule?.toLowerCase().includes(searchText) ||    
+        client.email?.toLowerCase().includes(searchText)
+      );
+    });
   }
+  
+  this.filteredClients = filtered;
+  this.showAllClients = false;
+}
 
-  private applyCombinedFilters(): void {
-    const searchText = this.clientSearchControl.value?.toLowerCase().trim() || '';
-    const zoneId = this.zoneFilterControl.value;
-    
-    let filtered = [...this.allClientsWithPendingOrders];
-    
-    if (zoneId) {
-      filtered = filtered.filter(client => client.zoneId === zoneId);
-    }
-    
-    if (searchText) {
-      filtered = filtered.filter(client => {
-        return (
-          client.name.toLowerCase().includes(searchText) ||
-          client.matricule?.toLowerCase().includes(searchText) ||
-          client.adress?.toLowerCase().includes(searchText) ||
-          client.email?.toLowerCase().includes(searchText)
-        );
-      });
-    }
-    
-    this.filteredClients = filtered;
-    
-    this.showAllClients = false;
-  }
-
-  clearZoneFilter(): void {
-    this.zoneFilterControl.setValue(null);
-  }
-
-  getClientZoneName(clientId: number): string {
-    const client = this.allClientsWithPendingOrders.find(c => c.id === clientId);
-    return client?.zoneName || '';
-  }
 
   trackByClientId(index: number, client: any): string {
     return client.id;
   }
+  private setupEntityFilter(): void {
+  this.entityFilterControl.valueChanges
+    .pipe(debounceTime(300))
+    .subscribe(() => {
+      this.applyEntityFilter();
+    });
+}
+
+private applyEntityFilter(): void {
+  const entityId = this.entityFilterControl.value;
+  this.applyCombinedFilters();
+}
+
+clearEntityFilter(): void {
+  this.entityFilterControl.setValue(null);
+}
+
+getClientEntityName(clientId: number): string {
+  const client = this.allClientsWithPendingOrders.find(c => c.id === clientId);
+  const entityId = client?.geographicalEntities?.[0]?.geographicalEntityId;
+  const entity = this.geographicalEntities.find(e => e.id === entityId);
+  return entity?.name || '';
+}
+
+filterClients(): void {
+  let filtered = this.allClientsWithPendingOrders;
   
-  filterClients(): void {
-    let filtered = this.allClientsWithPendingOrders;
-    
-    const searchTerm = this.clientSearchControl.value;
-    if (searchTerm) {
-      filtered = filtered.filter(client => 
-        client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (client.matricule && client.matricule.toLowerCase().includes(searchTerm.toLowerCase()))
-      );
-    }
-    
-    const zoneId = this.zoneFilterControl.value;
-    if (zoneId) {
-      filtered = filtered.filter(client => client.zoneId === zoneId);
-    }
-    
-    this.filteredClients = filtered;
-    
-    if (this.viewport) {
-      this.viewport.scrollToIndex(0);
-    }
+  const searchTerm = this.clientSearchControl.value;
+  if (searchTerm) {
+    filtered = filtered.filter(client => 
+      client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (client.matricule && client.matricule.toLowerCase().includes(searchTerm.toLowerCase()))
+    );
   }
+  
+  const entityId = this.entityFilterControl.value;
+  if (entityId) {
+    filtered = filtered.filter(client => 
+      client.geographicalEntities?.some(ge => ge.geographicalEntityId === entityId)
+    );
+  }
+  
+  this.filteredClients = filtered;
+  
+  if (this.viewport) {
+    this.viewport.scrollToIndex(0);
+  }
+}
+onEntityFilterChange(): void {
+  this.filterClients();
+}
+// Update clearFilters method
+clearFilters(): void {
+  this.clientSearchControl.setValue('');
+  this.entityFilterControl.setValue(null);
+  this.filterClients();
+}
+
   
   onClientSearchChange(): void {
     this.filterClients();
@@ -5287,11 +5287,7 @@ getSelectedConvoyeurInfo(): string {
     this.filterClients();
   }
   
-  clearFilters(): void {
-    this.clientSearchControl.setValue('');
-    this.zoneFilterControl.setValue(null);
-    this.filterClients();
-  }
+
 
   private checkAndRestoreDraft(): void {
     if (this.tripId || this.tripId) return;
@@ -5407,7 +5403,7 @@ getSelectedConvoyeurInfo(): string {
           const deliveryGroup = this.fb.group({
             customerId: [delivery.customerId || '', Validators.required],
             orderId: [delivery.orderId || '', Validators.required],
-            deliveryAddress: [delivery.deliveryAddress || '', [Validators.required, Validators.maxLength(500)]],
+            deliveryAddress: [delivery.deliveryAddress || ''],
             sequence: [sequence, [Validators.required, Validators.min(1)]],
             plannedTime: [delivery.plannedTime || ''],
             notes: [delivery.notes || '']
@@ -5512,7 +5508,7 @@ getSelectedConvoyeurInfo(): string {
         selectedOrders: this.selectedOrders,
         currentQuickAddStep: this.currentQuickAddStep,
         clientSearch: this.clientSearchControl.value,
-        zoneFilter: this.zoneFilterControl.value,
+        entityFilter: this.entityFilterControl.value,
         savedAt: new Date().toISOString(),
         tripReference: this.tripForm.get('tripReference')?.value || 'Nouveau voyage'
       };
@@ -5698,7 +5694,7 @@ getSelectedConvoyeurInfo(): string {
         const newDelivery = {
           customerId: customerId,
           orderId: orderId,
-          deliveryAddress: customer.adress || '',
+          deliveryAddress:  '',
           sequence: sequence++,
           notes: `Commande: ${this.getOrderReference(orderId)}`
         };
@@ -6384,7 +6380,7 @@ getSelectedConvoyeurInfo(): string {
           const deliveryGroup = this.fb.group({
             customerId: [delivery.customerId || '', Validators.required],
             orderId: [delivery.orderId || '', Validators.required],
-            deliveryAddress: [delivery.deliveryAddress || '', [Validators.required, Validators.maxLength(500)]],
+            deliveryAddress: [delivery.deliveryAddress || ''],
             sequence: [sequence, [Validators.required, Validators.min(1)]],
             plannedTime: [delivery.plannedTime || ''],
             notes: [delivery.notes || '']
@@ -6423,8 +6419,8 @@ getSelectedConvoyeurInfo(): string {
         this.clientSearchControl.setValue(draft.clientSearch);
       }
       
-      if (draft.zoneFilter) {
-        this.zoneFilterControl.setValue(draft.zoneFilter);
+      if (draft.entityFilter) {
+        this.entityFilterControl.setValue(draft.entityFilter);
       }
       
       if (draft.saveAsPredefined !== undefined) {
@@ -7054,5 +7050,13 @@ shouldShowWeatherPrompt(): boolean {
   const hasLocations = this.tripForm.get('startLocationId')?.value || this.tripForm.get('endLocationId')?.value;
   const weatherNotLoaded = !this.startLocationWeather && !this.endLocationWeather && !this.weatherLoading;
   return hasLocations && weatherNotLoaded;
+}
+/**
+ * Get entity name by ID
+ */
+getEntityName(entityId: number): string {
+  if (!entityId) return '';
+  const entity = this.geographicalEntities.find(e => e.id === entityId);
+  return entity ? entity.name : 'Entité inconnue';
 }
 }

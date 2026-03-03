@@ -41,7 +41,7 @@
                       <mat-option *ngFor="let location of activeLocations" [value]="location.id">
                         <div class="location-option">
                           <span class="location-name">{{ location.name }}</span>
-                          <span class="location-zone" *ngIf="location.zoneName">({{ location.zoneName }})</span>
+                         
                         </div>
                       </mat-option>
                     </mat-select>
@@ -855,30 +855,30 @@
                   </div>
                   
 
-                  <div class="zone-filter-container" *ngIf="zones.length > 0">
-                    <mat-form-field appearance="outline" class="zone-filter-field">
-                      <mat-select [formControl]="zoneFilterControl" placeholder="Toutes les zones">
-                        <mat-option [value]="null">Toutes les zones</mat-option>
-                        <mat-option *ngFor="let zone of zones" [value]="zone.id">
-                          {{ zone.name }}
-                        </mat-option>
-                      </mat-select>
-                      <mat-hint *ngIf="zoneFilterControl.value">
-                        Zone {{ getZoneName(zoneFilterControl.value) }}
-                      </mat-hint>
-                    </mat-form-field>
-                    
-                    <button 
-                      *ngIf="zoneFilterControl.value"
-                      mat-icon-button 
-                      type="button" 
-                      (click)="clearZoneFilter()"
-                      class="clear-zone-filter-btn"
-                      matTooltip="Effacer le filtre de zone"
-                    >
-                      <mat-icon>clear</mat-icon>
-                    </button>
-                  </div>
+<div class="entity-filter-container" *ngIf="geographicalEntities.length > 0">
+  <mat-form-field appearance="outline" class="entity-filter-field">
+    <mat-select [formControl]="entityFilterControl" placeholder="Toutes les entités">
+      <mat-option [value]="null">Toutes les entités</mat-option>
+      <mat-option *ngFor="let entity of geographicalEntities" [value]="entity.id">
+        {{ entity.name }}
+      </mat-option>
+    </mat-select>
+    <mat-hint *ngIf="entityFilterControl.value">
+      Entité {{ getEntityName(entityFilterControl.value) }}
+    </mat-hint>
+  </mat-form-field>
+  
+  <button 
+    *ngIf="entityFilterControl.value"
+    mat-icon-button 
+    type="button" 
+    (click)="clearEntityFilter()"
+    class="clear-entity-filter-btn"
+    matTooltip="Effacer le filtre d'entité"
+  >
+    <mat-icon>clear</mat-icon>
+  </button>
+</div>
                 </div>
 
                 <div class="client-virtual-scroll-container" *ngIf="filteredClients.length > 0">
@@ -916,9 +916,7 @@
                         </div>
                         
                         <div class="client-card-footer">
-                          <div class="client-address" *ngIf="client.adress">
-                            {{ client.adress | slice:0:50 }}{{ client.adress.length > 50 ? '...' : '' }}
-                          </div>
+                         
                           <button type="button" mat-icon-button 
                                   class="client-select-btn"
                                   (click)="selectClientForQuickAdd(client); $event.stopPropagation()">
@@ -947,7 +945,7 @@
                   </div>
                 </div>
 
-                <div *ngIf="filteredClients.length === 0 && (clientSearchControl.value || zoneFilterControl.value)" 
+              <div *ngIf="filteredClients.length === 0 && (clientSearchControl.value || entityFilterControl.value)" 
                     class="no-results">
                   <mat-icon class="no-results-icon">search_off</mat-icon>
                   <h4>Aucun client trouvé</h4>
@@ -958,7 +956,7 @@
                   </button>
                 </div>
 
-                <div *ngIf="filteredClients.length === 0 && !clientSearchControl.value && !zoneFilterControl.value" 
+                <div *ngIf="filteredClients.length === 0 && !clientSearchControl.value && !entityFilterControl.value" 
                     class="no-clients-empty">
                   <mat-icon class="empty-icon">person_off</mat-icon>
                   <h4>Aucun client avec des commandes en attente</h4>
@@ -1146,7 +1144,7 @@
                         <mat-icon class="customer-icon">person</mat-icon>
                         <div class="customer-details">
                           <h4 class="customer-name">{{ getClientName(group.customerId) }}</h4>
-                          <div class="customer-address">{{ getClientAddress(group.customerId) | truncate:40 }}</div>
+                       
                         </div>
                       </div>
                       
@@ -2236,12 +2234,7 @@
                           </div>
                         </div>
                         
-                        <div class="detail-item">
-                          <mat-icon class="detail-icon address-icon">location_on</mat-icon>
-                          <div class="detail-text address-preview">
-                            <strong>Adresse:</strong> {{ getClientAddress(group.customerId) | truncate:40 }}
-                          </div>
-                        </div>
+                        
                         
                         <div class="detail-item">
                           <mat-icon class="detail-icon time-icon">schedule</mat-icon>
