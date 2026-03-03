@@ -550,7 +550,7 @@
         <div class="menu-section-header">{{ t('TRAVEL_MANAGEMENT') }}</div>
         
         <mat-expansion-panel
-          *ngIf="authService.hasRole('SuperAdmin') || authService.hasEntityAccess('TRAVEL') || authService.hasEntityAccess('HISTORIQUE_TRAVEL')"
+          *ngIf="authService.hasRole('SuperAdmin') || authService.hasEntityAccess('TRAVEL')"
           class="sidebar-expansion-panel"
           [expanded]="false"
           hideToggle>
@@ -569,15 +569,7 @@
               class="submenu-item">
               <mat-icon matListItemIcon class="submenu-icon">route</mat-icon>
               <a matListItemTitle class="submenu-text">{{ t('TRAVEL') }}</a>
-            </mat-list-item>
-            <mat-list-item 
-              *ngIf="authService.hasRole('SuperAdmin') || authService.hasEntityAccess('HISTORIQUE_TRAVEL')"
-              routerLink="/historic-trips"
-              routerLinkActive="active-submenu-item"
-              class="submenu-item">
-              <mat-icon matListItemIcon class="submenu-icon">history</mat-icon>
-              <a matListItemTitle class="submenu-text">{{ t('HISTORIC_TRIPS') }}</a>
-            </mat-list-item>
+            </mat-list-item>     
             <mat-list-item 
               routerLink="/locations"
               routerLinkActive="active-submenu-item"
