@@ -474,8 +474,12 @@
   "DATE_FIRST_REGISTRATION_REQUIRED": "Date de première immatriculation requise",
   "EMPTY_WEIGHT_REQUIRED": "Le poids à vide est requis",
   "PHOTO_TRUCKv": "Ajouter des photos",
-  "DELETE_PHOTO": "Tout supprimer"
-
+  "DELETE_PHOTO": "Tout supprimer",
+  "LOCATION_ADRESS": "Nom personnalisé pour ce lieu",
+  "LOCATION_ADRESSv1": "Addresse",
+  "LOCATION_ADR_REQUIRED": "L'adresse est requise",
+  "ADRESS_HINT": "Commencez à taper pour rechercher une adresse"
+  
 
 }
 

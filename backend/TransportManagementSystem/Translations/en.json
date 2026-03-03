@@ -472,6 +472,11 @@
   "DATE_FIRST_REGISTRATION_REQUIRED": "Required first registration date",
   "EMPTY_WEIGHT_REQUIRED": "The empty weight is required",
   "PHOTO_TRUCKv": "Add photos",
-  "DELETE_PHOTO": "Delete AlL"
+  "DELETE_PHOTO": "Delete AlL",
+  "LOCATION_ADRESS": "Custom name for this place",
+  "LOCATION_ADRESSv1": "Address",
+  "LOCATION_ADR_REQUIRED": "Address is required",
+  "ADRESS_HINT": "Start typing to search for an address"
+
 
 }
