@@ -464,7 +464,7 @@
   "RESET_DEFAULT": "Reset to default",
   "INTERNAL_EMPLOYEE": "Internal Employee",
   "INTERNAL_EMPLOYEE_HINT": "Enable this option if the employee belongs to the company. Disable it if the employee is external.",
-  "GEOGRAPHICAL_ENTITIES_LABEL": "Geographical Entities"
+  "GEOGRAPHICAL_ENTITIES_LABEL": "Geographical Entities",
   "CATEGORY_TABLE": "Employee Category",
   "EMPLOYEE_DELETE_CONFIRM": "Are you sure you want to delete employee",
   "EMPLOYEE_DELETE_SUCCESS": "Employee deleted successfully",
