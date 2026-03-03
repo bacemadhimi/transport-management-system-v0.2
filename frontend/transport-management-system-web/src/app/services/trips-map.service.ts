@@ -146,7 +146,7 @@ export class TripsMapService {
   }
 
  private getDriversFromApi(): Observable<IDriver[]> {
-  return this.http.get<IDriver[]>(`${this.apiUrl}/api/Driver/ListOfDrivers`).pipe(
+  return this.http.get<IDriver[]>(`${this.apiUrl}/api/Drivers/list`).pipe(
     map(drivers => drivers.map(driver => ({
       ...driver,
       employeeCategory: "DRIVER" as const  
