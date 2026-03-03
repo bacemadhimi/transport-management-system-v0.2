@@ -553,20 +553,29 @@ namespace TransportManagementSystem.Data
                 }
                 if (!dbContext.GeneralSettings.Any(p =>
                     p.ParameterType == "EMPLOYEE_CATEGORY" &&
-                    p.ParameterCode == "DRIVER"))
-                                {
-                                    var employeeCategories = new List<GeneralSettings>
-                    {
-                        new GeneralSettings
+                    (p.ParameterCode == "DRIVER" || p.ParameterCode == "CONVOYEUR")))
+                {
+                    var employeeCategories = new List<GeneralSettings>
                         {
-                            ParameterType = "EMPLOYEE_CATEGORY",
-                            ParameterCode = "DRIVER",
-                            Description = "Driver",
-                         
-                        }
-                    };
+                            new GeneralSettings
+                            {
+                                ParameterType = "EMPLOYEE_CATEGORY",
+                                ParameterCode = "DRIVER",
+                                Description = "Driver",
+                            },
+                            new GeneralSettings
+                            {
+                                ParameterType = "EMPLOYEE_CATEGORY",
+                                ParameterCode = "CONVOYEUR",
+                                Description = "Convoyeur",
+                            }
+                        };
 
-                    dbContext.GeneralSettings.AddRange(employeeCategories);
+                                        dbContext.GeneralSettings.AddRange(employeeCategories);
+                                        dbContext.SaveChanges();
+                                    }
+
+                dbContext.GeneralSettings.AddRange(employeeCategories);
                     dbContext.SaveChanges();
 
                     Console.WriteLine("✔ Employee Category DRIVER seeded !");
