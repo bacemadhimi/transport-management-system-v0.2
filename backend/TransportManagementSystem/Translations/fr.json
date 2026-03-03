@@ -470,7 +470,11 @@
   "CATEGORY_TABLE": "Catégorie Employé",
   "EMPLOYEE_DELETE_CONFIRM": "Voulez-vous vraiment supprimer l'employé",
   "EMPLOYEE_DELETE_SUCCESS": "Employé supprimé avec succès",
-  "FIRST_REGISTRATION_DATE": "Date de première mise en circulation"
+  "FIRST_REGISTRATION_DATE": "Date de première mise en circulation",
+  "DATE_FIRST_REGISTRATION_REQUIRED": "Date de première immatriculation requise",
+  "EMPTY_WEIGHT_REQUIRED": "Le poids à vide est requis",
+  "PHOTO_TRUCKv": "Ajouter des photos",
+  "DELETE_PHOTO": "Tout supprimer"
 
 
 }
