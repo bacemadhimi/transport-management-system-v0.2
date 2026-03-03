@@ -780,39 +780,40 @@ loadEmployee(employeeId: number) {
   });
   this.subscriptions.push(sub);
 }
-  onFileSelected(event: any) {
-    const file: File = event.target.files[0];
+onFileSelected(event: any) {
+  const file: File = event.target.files[0];
 
-    if (!file) return;
+  if (!file) return;
 
-    const allowedExtensions = ['jpg', 'jpeg', 'png', 'pdf', 'doc', 'docx', 'gif', 'bmp'];
+  const allowedExtensions = ['jpg', 'jpeg', 'png', 'pdf', 'doc', 'docx', 'gif', 'bmp'];
 
-    const fileExtension = file.name.split('.').pop()?.toLowerCase();
-    if (!fileExtension || !allowedExtensions.includes(fileExtension)) {
-      this.fileError = `Invalid file type. Allowed: ${allowedExtensions.join(', ')}`;
-      this.selectedFile = null;
-      return;
-    }
-
-    const maxSize = 5 * 1024 * 1024;
-    if (file.size > maxSize) {
-      this.fileError = 'File size exceeds 5 MB limit';
-      this.selectedFile = null;
-      return;
-    }
-
-    this.selectedFile = file;
-    this.fileError = null;
-    this.originalFileName = file.name;
-
-    if (fileExtension && ['jpg', 'jpeg', 'png', 'gif', 'bmp'].includes(fileExtension)) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        this.filePreview = e.target?.result as string;
-      };
-      reader.readAsDataURL(file);
-    }
+  const fileExtension = file.name.split('.').pop()?.toLowerCase();
+  if (!fileExtension || !allowedExtensions.includes(fileExtension)) {
+    this.fileError = `Type de fichier non autorisé. Types acceptés: ${allowedExtensions.join(', ')}`;
+    this.selectedFile = null;
+    return;
   }
+
+  // Changed from 5MB to 2MB (2 * 1024 * 1024 = 2MB)
+  const maxSize = 2 * 1024 * 1024; // 2MB limit
+  if (file.size > maxSize) {
+    this.fileError = 'La taille du fichier dépasse 2 MB. Veuillez choisir un fichier plus petit.';
+    this.selectedFile = null;
+    return;
+  }
+
+  this.selectedFile = file;
+  this.fileError = null;
+  this.originalFileName = file.name;
+
+  if (fileExtension && ['jpg', 'jpeg', 'png', 'gif', 'bmp'].includes(fileExtension)) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      this.filePreview = e.target?.result as string;
+    };
+    reader.readAsDataURL(file);
+  }
+}
 
   triggerFileInput() {
     this.fileInput.nativeElement.click();

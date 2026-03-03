@@ -324,69 +324,69 @@
         </div>
       </div>
 
-      <!-- Row 6: License Attachment (full width) -->
-      <div class="form-row full-width" *ngIf="shouldShowLicenseAttachment()">
-        <div class="form-field full-width">
-          <div class="file-upload-section">
-            <label class="file-upload-label">
-              {{ t('UPLOAD_LICENSE_ATTACHMENT') }}
-              <span class="required-star" *ngIf="isLicenseAttachmentRequired()">*</span>
-            </label>
-            <p class="file-upload-info">{{ t('SUPPORTED_FILE_TYPES') || 'Type Supporté: JPG, JPEG, PNG, PDF, DOC, DOCX (Max 5 MB)' }}</p>
+<!-- Row 6: License Attachment (full width) -->
+<div class="form-row full-width" *ngIf="shouldShowLicenseAttachment()">
+  <div class="form-field full-width">
+    <div class="file-upload-section">
+      <label class="file-upload-label">
+        {{ t('UPLOAD_LICENSE_ATTACHMENT') }}
+        <span class="required-star" *ngIf="isLicenseAttachmentRequired()">*</span>
+      </label>
+      <p class="file-upload-info">{{ t('SUPPORTED_FILE_TYPES') || 'Type Supporté: JPG, JPEG, PNG, PDF, DOC, DOCX (Max 2 MB)' }}</p>
 
-            <div class="file-upload-container" (click)="triggerFileInput()" [class.has-file]="selectedFile || hasExistingFile">
-              <input
-                #fileInput
-                type="file"
-                (change)="onFileSelected($event)"
-                accept=".jpg,.jpeg,.png,.pdf,.doc,.docx,.gif,.bmp"
-                style="display: none"
-              />
+      <div class="file-upload-container" (click)="triggerFileInput()" [class.has-file]="selectedFile || hasExistingFile">
+        <input
+          #fileInput
+          type="file"
+          (change)="onFileSelected($event)"
+          accept=".jpg,.jpeg,.png,.pdf,.doc,.docx,.gif,.bmp"
+          style="display: none"
+        />
 
-              <div *ngIf="!selectedFile && !filePreview && hasExistingFile" class="file-info">
-                <svg class="file-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z"/>
-                </svg>
-                <p>{{ originalFileName || 'File already uploaded' }}</p>
-                <button type="button" mat-button color="primary" (click)="triggerFileInput(); $event.stopPropagation()">
-                  {{ t('REPLACE_FILE') || 'Replace File' }}
-                </button>
-              </div>
+        <div *ngIf="!selectedFile && !filePreview && hasExistingFile" class="file-info">
+          <svg class="file-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z"/>
+          </svg>
+          <p>{{ originalFileName || 'File already uploaded' }}</p>
+          <button type="button" mat-button color="primary" (click)="triggerFileInput(); $event.stopPropagation()">
+            {{ t('REPLACE_FILE') || 'Remplacer' }}
+          </button>
+        </div>
 
-              <div *ngIf="selectedFile && filePreview" class="file-preview">
-                <img [src]="filePreview" alt="Preview" class="preview-image" />
-                <p>{{ originalFileName }}</p>
-                <button type="button" mat-button color="warn" (click)="removeFile(); $event.stopPropagation()">
-                  {{ t('REMOVE') || 'Remove' }}
-                </button>
-              </div>
+        <div *ngIf="selectedFile && filePreview" class="file-preview">
+          <img [src]="filePreview" alt="Preview" class="preview-image" />
+          <p>{{ originalFileName }}</p>
+          <button type="button" mat-button color="warn" (click)="removeFile(); $event.stopPropagation()">
+            {{ t('REMOVE') || 'Supprimer' }}
+          </button>
+        </div>
 
-              <div *ngIf="selectedFile && !filePreview" class="file-info">
-                <svg class="file-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z"/>
-                </svg>
-                <p>{{ originalFileName }}</p>
-                <button type="button" mat-button color="warn" (click)="removeFile(); $event.stopPropagation()">
-                  {{ t('REMOVE') || 'Remove' }}
-                </button>
-              </div>
+        <div *ngIf="selectedFile && !filePreview" class="file-info">
+          <svg class="file-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z"/>
+          </svg>
+          <p>{{ originalFileName }}</p>
+          <button type="button" mat-button color="warn" (click)="removeFile(); $event.stopPropagation()">
+            {{ t('REMOVE') || 'Supprimer' }}
+          </button>
+        </div>
 
-              <div *ngIf="!selectedFile && !filePreview && !hasExistingFile" class="file-placeholder">
-                <svg class="upload-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z"/>
-                </svg>
-                <p>{{ t('UPLOAD_HINT') || 'Click to upload or drag and drop' }}</p>
-                <small>{{ t('SUPPORTED_FORMATS') || 'JPG, PNG, PDF, DOC or DOCX' }}</small>
-              </div>
-            </div>
-
-            <p *ngIf="fileError" class="error-message">{{ fileError }}</p>
-            <p *ngIf="isLicenseAttachmentRequired() && !selectedFile && !hasExistingFile && employeeForm.get('employeeCategory')?.touched" class="error-message">
-              {{ t('LICENSE_ATTACHMENT_REQUIRED') || 'Le fichier de permis est obligatoire pour les chauffeurs et mécaniciens' }}
-            </p>
-          </div>
+        <div *ngIf="!selectedFile && !filePreview && !hasExistingFile" class="file-placeholder">
+          <svg class="upload-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z"/>
+          </svg>
+          <p>{{ t('UPLOAD_HINT') || 'Cliquez pour télécharger' }}</p>
+          <small>{{ t('SUPPORTED_FORMATS') || 'JPG, PNG, PDF, DOC, DOCX (Max 2 MB)' }}</small>
         </div>
       </div>
+
+      <p *ngIf="fileError" class="error-message">{{ fileError }}</p>
+      <p *ngIf="isLicenseAttachmentRequired() && !selectedFile && !hasExistingFile && employeeForm.get('employeeCategory')?.touched" class="error-message">
+        {{ t('LICENSE_ATTACHMENT_REQUIRED') || 'Le fichier de permis est obligatoire pour les chauffeurs et mécaniciens' }}
+      </p>
+    </div>
+  </div>
+</div>
 
       <!-- Row 7: Convoyeur Info Message (full width) -->
       <div class="form-row full-width" *ngIf="employeeForm.get('employeeCategory')?.value === 'CONVOYEUR'">
