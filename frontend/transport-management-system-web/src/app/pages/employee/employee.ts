@@ -64,6 +64,8 @@ export class Employee implements OnInit {
     { key: 'email', label: this.t('Email') },
     { key: 'phoneNumber', label: this.t('TABLE_PHONE') },
     { key: 'drivingLicense', label: this.t('TABLE_LICENSE_NUMBER')},
+    { key: 'isInternal', label: this.t('INTERNAL_EMPLOYEE')},
+     { key: 'employeeCategory', label:this.t('CATEGORY_TABLE')},
     {
       key: 'truckType',
       label: this.t('TYPE_VEHICULE_LABEL'),
@@ -159,14 +161,22 @@ export class Employee implements OnInit {
     ref.afterClosed().subscribe(() => this.getLatestData());
   }
 
+  // delete(employee: IEmployee) {
+  //   if (confirm(`Voulez-vous vraiment supprimer l'employé ${employee.name}?`)) {
+  //     this.httpService.deleteEmployee(employee.id).subscribe(() => {
+  //       alert("Employé supprimé avec succès");
+  //       this.getLatestData();
+  //     });
+  //   }
+  // }
   delete(employee: IEmployee) {
-    if (confirm(`Voulez-vous vraiment supprimer l'employé ${employee.name}?`)) {
-      this.httpService.deleteEmployee(employee.id).subscribe(() => {
-        alert("Employé supprimé avec succès");
-        this.getLatestData();
-      });
-    }
+  if (confirm(`${this.t('EMPLOYEE_DELETE_CONFIRM')} ${employee.name}?`)) {
+    this.httpService.deleteEmployee(employee.id).subscribe(() => {
+      alert(this.t('EMPLOYEE_DELETE_SUCCESS'));
+      this.getLatestData();
+    });
   }
+}
 
   onRowClick(event: any) {
     console.log('Row clicked:', event);

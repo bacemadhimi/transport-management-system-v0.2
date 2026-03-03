@@ -445,7 +445,7 @@
   "EMPLOYEE_LIST": "Liste des employés",
   "SEARCH_EMPLOYEE": "Chercher employé",
   "SEARCH_EMPLOYEE_PLACEHOLDER": "Nom, email, téléphone...",
-  "ADD_EMPLOYEE": "Ajouter un employé",
+  "ADD_EMPLOYEE": "Ajouter",
   "DATE_FIRST_REGISTRATION_LABEL": "Date de première immatriculation",
   "EMPTY_WEIGHT_LABEL": "Poids à vide",
   "TABLE_ATTACHMENT": "Pièce Jointe",
@@ -467,6 +467,10 @@
   "INTERNAL_EMPLOYEE": "Employé interne",
   "INTERNAL_EMPLOYEE_HINT": "Activez cette option si l’employé appartient à l’entreprise. Désactivez-la s’il s’agit d’un employé externe.",
   "GEOGRAPHICAL_ENTITIES_LABEL": "Entités géographiques"
+  "CATEGORY_TABLE": "Catégorie Employé",
+  "EMPLOYEE_DELETE_CONFIRM": "Voulez-vous vraiment supprimer l'employé",
+  "EMPLOYEE_DELETE_SUCCESS": "Employé supprimé avec succès",
+  "FIRST_REGISTRATION_DATE": "Date de première mise en circulation"
 
 
 }
