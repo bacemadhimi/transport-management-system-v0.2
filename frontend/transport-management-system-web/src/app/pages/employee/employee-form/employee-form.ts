@@ -344,70 +344,63 @@ private loadGeographicalEntities(): void {
     // Other levels will be populated dynamically based on parent selection
   }
 
-  private setGeographicalSelections(employeeData: any) {
-    // Extract geographical entity IDs from the employee's associations
-    const geographicalEntityIds = employeeData.geographicalEntities?.map((ge: any) => ge.geographicalEntityId) || [];
-    
-    // Set selected entities
-    this.selectedEntities = [...geographicalEntityIds];
-    
-    // Reset all level controls first
-    this.level1Control.reset();
-    this.level2Control.reset();
-    this.level3Control.reset();
-    this.level4Control.reset();
-    this.level5Control.reset();
-    
-    // Set level controls based on the level of each entity
-    geographicalEntityIds.forEach((id: number) => {
-      const entity = this.geographicalEntities.find(e => e.id === id);
-      if (entity) {
-        const level = this.geographicalLevels.find(l => l.id === entity.levelId);
-        if (level) {
-          // First, set parent controls to enable the hierarchy
-          if (entity.parentId) {
-            const parent = this.geographicalEntities.find(e => e.id === entity.parentId);
-            if (parent) {
-              const parentLevel = this.geographicalLevels.find(l => l.id === parent.levelId);
-              if (parentLevel) {
-                switch(parentLevel.levelNumber) {
-                  case 1: this.level1Control.setValue(parent.id); break;
-                  case 2: this.level2Control.setValue(parent.id); break;
-                  case 3: this.level3Control.setValue(parent.id); break;
-                  case 4: this.level4Control.setValue(parent.id); break;
-                }
-              }
-            }
-          }
-          
-          // Then set the current level control
-          switch(level.levelNumber) {
-            case 1: 
-              this.level1Control.setValue(id);
-              break;
-            case 2: 
-              this.level2Control.setValue(id);
-              break;
-            case 3: 
-              this.level3Control.setValue(id);
-              break;
-            case 4: 
-              this.level4Control.setValue(id);
-              break;
-            case 5: 
-              this.level5Control.setValue(id);
-              break;
-          }
+private setGeographicalSelections(employeeData: any) {
+  // The employee data might have driverGeographicalEntities or geographicalEntities
+  const geoEntities = employeeData.driverGeographicalEntities || employeeData.geographicalEntities || [];
+  
+  // Extract geographical entity IDs
+  const geographicalEntityIds = geoEntities.map((ge: any) => 
+    ge.geographicalEntityId || ge.id
+  ).filter((id: number) => id != null);
+  
+  console.log('Setting geographical selections with IDs:', geographicalEntityIds);
+  
+  // Set selected entities
+  this.selectedEntities = [...geographicalEntityIds];
+  
+  // Reset all level controls first
+  this.level1Control.reset();
+  this.level2Control.reset();
+  this.level3Control.reset();
+  this.level4Control.reset();
+  this.level5Control.reset();
+  
+  // Set level controls based on the level of each entity
+  geographicalEntityIds.forEach((id: number) => {
+    const entity = this.geographicalEntities.find(e => e.id === id);
+    if (entity) {
+      const level = this.geographicalLevels.find(l => l.id === entity.levelId);
+      if (level) {
+        // Set the current level control
+        switch(level.levelNumber) {
+          case 1: 
+            this.level1Control.setValue(id, { emitEvent: false }); 
+            break;
+          case 2: 
+            this.level2Control.setValue(id, { emitEvent: false }); 
+            break;
+          case 3: 
+            this.level3Control.setValue(id, { emitEvent: false }); 
+            break;
+          case 4: 
+            this.level4Control.setValue(id, { emitEvent: false }); 
+            break;
+          case 5: 
+            this.level5Control.setValue(id, { emitEvent: false }); 
+            break;
         }
       }
-    });
-    
-    // Update form control
-    this.employeeForm.patchValue({
-      geographicalEntityIds: this.selectedEntities
-    });
-  }
-
+    }
+  });
+  
+  // Update form control
+  this.employeeForm.patchValue({
+    geographicalEntityIds: this.selectedEntities
+  }, { emitEvent: false });
+  
+  console.log('Selected entities after setting:', this.selectedEntities);
+  this.cdr.detectChanges();
+}
   removeEntity(entityId: number) {
     const entity = this.geographicalEntities.find(e => e.id === entityId);
     if (entity) {
@@ -721,8 +714,11 @@ private loadGeographicalEntities(): void {
 loadEmployee(employeeId: number) {
   const sub = this.httpService.getEmployee(employeeId).subscribe({
     next: (response: any) => {
-      // Handle the ApiResponse wrapper
+      // Handle the ApiResponse wrapper - the employee data is in response.data
       const employee = response.data || response;
+      
+      console.log('Employee data received:', employee);
+      console.log('Geographical entities:', employee.driverGeographicalEntities);
       
       // Store employee data for later use
       this.employeeData = employee;
@@ -744,6 +740,14 @@ loadEmployee(employeeId: number) {
 
       // Set geographical selections for drivers
       if (employee.employeeCategory === 'DRIVER') {
+        // Map driverGeographicalEntities to the format expected by setGeographicalSelections
+        if (employee.driverGeographicalEntities && employee.driverGeographicalEntities.length > 0) {
+          // Transform to the expected format
+          employee.geographicalEntities = employee.driverGeographicalEntities.map((dge: any) => ({
+            geographicalEntityId: dge.geographicalEntityId
+          }));
+        }
+        
         // If geographical entities are already loaded, set selections immediately
         if (this.geographicalEntities.length > 0 && this.geographicalLevels.length > 0) {
           this.setGeographicalSelections(employee);
@@ -764,6 +768,9 @@ loadEmployee(employeeId: number) {
           this.iti.setNumber(employee.phoneNumber);
         }, 200);
       }
+      
+      // Trigger change detection
+      this.cdr.detectChanges();
     },
     error: (error) => {
       console.error('Error loading employee:', error);
@@ -773,7 +780,6 @@ loadEmployee(employeeId: number) {
   });
   this.subscriptions.push(sub);
 }
-
   onFileSelected(event: any) {
     const file: File = event.target.files[0];
 
