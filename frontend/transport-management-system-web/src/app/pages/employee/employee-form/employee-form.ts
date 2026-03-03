@@ -1,4 +1,4 @@
-import { Component, ElementRef, inject, OnInit, ViewChild, OnDestroy, AfterViewInit } from '@angular/core';
+import { Component, ElementRef, inject, OnInit, ViewChild, OnDestroy, AfterViewInit, ChangeDetectorRef } from '@angular/core';
 import { FormBuilder, Validators, ReactiveFormsModule, FormsModule, FormGroup, FormControl } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
@@ -72,7 +72,7 @@ export class EmployeeForm implements OnInit, AfterViewInit, OnDestroy {
 
   employeeCategories: IGeneralSettings[] = [];
   loadingCategories = false;
-
+  private cdr = inject(ChangeDetectorRef);
   // Geographical entities
   loadingGeographicalEntities = false;
   geographicalEntities: IGeographicalEntity[] = [];
@@ -262,54 +262,57 @@ export class EmployeeForm implements OnInit, AfterViewInit, OnDestroy {
     this.employeeForm.get('geographicalEntityIds')?.markAsDirty();
   }
 
-  private loadGeographicalEntities(): void {
-    this.loadingGeographicalEntities = true;
-    
-    // First load levels
-    const levelsSub = this.httpService.getGeographicalLevels().subscribe({
-      next: (levels) => {
-        this.geographicalLevels = levels.filter(l => l.isActive);
-        
-        // Then load active entities
-        const entitiesSub = this.httpService.getGeographicalEntities().subscribe({
-          next: (entities) => {
-            // Filter only active entities
-            this.geographicalEntities = entities.filter(e => e.isActive);
-            this.organizeEntitiesByLevel();
-            this.loadingGeographicalEntities = false;
-            
-            // If we have employee data waiting, set the selections now
-            if (this.employeeData) {
-              this.setGeographicalSelections(this.employeeData);
-            }
-          },
-          error: (error) => {
-            console.error('Error loading geographical entities:', error);
-            this.loadingGeographicalEntities = false;
-            Swal.fire({
-              icon: 'error',
-              title: 'Erreur',
-              text: 'Impossible de charger les localisations',
-              confirmButtonText: 'OK'
-            });
+private loadGeographicalEntities(): void {
+  this.loadingGeographicalEntities = true;
+  
+  // First load levels
+  const levelsSub = this.httpService.getGeographicalLevels().subscribe({
+    next: (levels) => {
+      this.geographicalLevels = levels.filter(l => l.isActive);
+      
+      // Then load active entities
+      const entitiesSub = this.httpService.getGeographicalEntities().subscribe({
+        next: (entities) => {
+          // Filter only active entities
+          this.geographicalEntities = entities.filter(e => e.isActive);
+          this.organizeEntitiesByLevel();
+          this.loadingGeographicalEntities = false;
+          
+          // If we have employee data waiting and it's a driver, set the selections now
+          if (this.employeeData && this.employeeData.employeeCategory === 'DRIVER') {
+            this.setGeographicalSelections(this.employeeData);
           }
-        });
-        this.subscriptions.push(entitiesSub);
-      },
-      error: (error) => {
-        console.error('Error loading geographical levels:', error);
-        this.loadingGeographicalEntities = false;
-        Swal.fire({
-          icon: 'error',
-          title: 'Erreur',
-          text: 'Impossible de charger les niveaux géographiques',
-          confirmButtonText: 'OK'
-        });
-      }
-    });
-    
-    this.subscriptions.push(levelsSub);
-  }
+          
+          // Trigger change detection
+          this.cdr?.detectChanges();
+        },
+        error: (error) => {
+          console.error('Error loading geographical entities:', error);
+          this.loadingGeographicalEntities = false;
+          Swal.fire({
+            icon: 'error',
+            title: 'Erreur',
+            text: 'Impossible de charger les localisations',
+            confirmButtonText: 'OK'
+          });
+        }
+      });
+      this.subscriptions.push(entitiesSub);
+    },
+    error: (error) => {
+      console.error('Error loading geographical levels:', error);
+      this.loadingGeographicalEntities = false;
+      Swal.fire({
+        icon: 'error',
+        title: 'Erreur',
+        text: 'Impossible de charger les niveaux géographiques',
+        confirmButtonText: 'OK'
+      });
+    }
+  });
+  
+  this.subscriptions.push(levelsSub);
+}
 
   private organizeEntitiesByLevel() {
     this.entityMap.clear();
@@ -715,52 +718,61 @@ export class EmployeeForm implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
-  loadEmployee(employeeId: number) {
-    const sub = this.httpService.getEmployee(employeeId).subscribe({
-      next: (employee: any) => {
-        // Store employee data for later use
-        this.employeeData = employee;
-        
-        // Patch base form values
-        this.employeeForm.patchValue({
-          idNumber: employee.idNumber,
-          name: employee.name,
-          email: employee.email,
-          phoneNumber: employee.phoneNumber,
-          phoneCountry: employee.phoneCountry || 'tn',
-          drivingLicense: employee.drivingLicense || '',
-          typeTruckId: employee.typeTruckId || null,
-          employeeCategory: employee.employeeCategory || '',
-          isInternal: employee.isInternal || false
-        });
+loadEmployee(employeeId: number) {
+  const sub = this.httpService.getEmployee(employeeId).subscribe({
+    next: (response: any) => {
+      // Handle the ApiResponse wrapper
+      const employee = response.data || response;
+      
+      // Store employee data for later use
+      this.employeeData = employee;
+      
+      // Patch base form values
+      this.employeeForm.patchValue({
+        idNumber: employee.idNumber,
+        name: employee.name,
+        email: employee.email,
+        phoneNumber: employee.phoneNumber,
+        phoneCountry: employee.phoneCountry || 'tn',
+        drivingLicense: employee.drivingLicense || '',
+        typeTruckId: employee.typeTruckId || null,
+        employeeCategory: employee.employeeCategory || '',
+        isInternal: employee.isInternal || false
+      });
 
-        this.phoneCountry = employee.phoneCountry || 'tn';
+      this.phoneCountry = employee.phoneCountry || 'tn';
 
-        // If geographical entities are already loaded, set the selections
+      // Set geographical selections for drivers
+      if (employee.employeeCategory === 'DRIVER') {
+        // If geographical entities are already loaded, set selections immediately
         if (this.geographicalEntities.length > 0 && this.geographicalLevels.length > 0) {
           this.setGeographicalSelections(employee);
+        } else {
+          // Otherwise, store the employee data to process after loading
+          this.employeeData = employee;
         }
-
-        if (employee.attachmentFileName) {
-          this.hasExistingFile = true;
-          this.originalFileName = employee.attachmentFileName;
-        }
-
-        // Update intl-tel-input if it's already loaded
-        if (this.iti && employee.phoneNumber) {
-          setTimeout(() => {
-            this.iti.setNumber(employee.phoneNumber);
-          }, 200);
-        }
-      },
-      error: (error) => {
-        console.error('Error loading employee:', error);
-        Swal.fire('Error', 'Failed to load employee data', 'error');
-        this.dialogRef.close();
       }
-    });
-    this.subscriptions.push(sub);
-  }
+
+      if (employee.attachmentFileName) {
+        this.hasExistingFile = true;
+        this.originalFileName = employee.attachmentFileName;
+      }
+
+      // Update intl-tel-input if it's already loaded
+      if (this.iti && employee.phoneNumber) {
+        setTimeout(() => {
+          this.iti.setNumber(employee.phoneNumber);
+        }, 200);
+      }
+    },
+    error: (error) => {
+      console.error('Error loading employee:', error);
+      Swal.fire('Error', 'Failed to load employee data', 'error');
+      this.dialogRef.close();
+    }
+  });
+  this.subscriptions.push(sub);
+}
 
   onFileSelected(event: any) {
     const file: File = event.target.files[0];

@@ -115,6 +115,10 @@ public class EmployeeController : ControllerBase
         if (!ModelState.IsValid)
             return BadRequest(new ApiResponse(false, "Données invalides", ModelState));
 
+        var options = new JsonSerializerOptions
+        {
+            PropertyNameCaseInsensitive = true
+        };
         var emailExists = await dbContext.Employees
             .AnyAsync(e => e.Email == request.Email);
 
@@ -136,7 +140,7 @@ public class EmployeeController : ControllerBase
         {
             try
             {
-                var geoEntities = JsonSerializer.Deserialize<List<DriverGeographicalEntityDto>>(request.GeographicalEntities);
+                var geoEntities = JsonSerializer.Deserialize<List<DriverGeographicalEntityDto>>(request.GeographicalEntities, options);
 
                 if (geoEntities != null && geoEntities.Any())
                 {
@@ -168,7 +172,7 @@ public class EmployeeController : ControllerBase
         {
             try
             {
-                var geoEntities = JsonSerializer.Deserialize<List<DriverGeographicalEntityDto>>(request.GeographicalEntities);
+                var geoEntities = JsonSerializer.Deserialize<List<DriverGeographicalEntityDto>>(request.GeographicalEntities, options);
 
                 if (geoEntities != null && geoEntities.Any())
                 {
@@ -220,13 +224,16 @@ public class EmployeeController : ControllerBase
             new ApiResponse(true, "Employé créé avec succès", createdEmployee));
     }
 
-    /// Update an existing employee with optional file upload
     [HttpPut("{id}")]
     public async Task<IActionResult> UpdateEmployee(int id, [FromForm] UpdateEmployeeRequest request)
     {
         if (!ModelState.IsValid)
             return BadRequest(new ApiResponse(false, "Données invalides", ModelState));
 
+        var options = new JsonSerializerOptions
+        {
+            PropertyNameCaseInsensitive = true
+        };
         var existingEmployee = await dbContext.Employees
             .Include(e => e.TypeTruck)
             .Include(e => (e as Driver).DriverGeographicalEntities)
@@ -266,16 +273,17 @@ public class EmployeeController : ControllerBase
             }
         }
 
-        // Validate Geographical Entities if provided
+        // Parse and validate Geographical Entities if provided
+        List<DriverGeographicalEntityDto>? geographicalEntities = null;
         if (!string.IsNullOrEmpty(request.GeographicalEntities))
         {
             try
             {
-                var geoEntities = JsonSerializer.Deserialize<List<DriverGeographicalEntityDto>>(request.GeographicalEntities);
+                geographicalEntities = JsonSerializer.Deserialize<List<DriverGeographicalEntityDto>>(request.GeographicalEntities, options);
 
-                if (geoEntities != null && geoEntities.Any())
+                if (geographicalEntities != null && geographicalEntities.Any())
                 {
-                    var entityIds = geoEntities.Select(g => g.GeographicalEntityId).ToList();
+                    var entityIds = geographicalEntities.Select(g => g.GeographicalEntityId).ToList();
                     var validEntities = await dbContext.GeographicalEntities
                         .Where(g => entityIds.Contains(g.Id) && g.IsActive)
                         .Select(g => g.Id)
@@ -283,10 +291,8 @@ public class EmployeeController : ControllerBase
 
                     var invalidIds = entityIds.Except(validEntities).ToList();
                     if (invalidIds.Any())
-                    {
                         return BadRequest(new ApiResponse(false,
                             $"Les entités géographiques avec IDs {string.Join(", ", invalidIds)} sont invalides ou inactives"));
-                    }
                 }
             }
             catch (JsonException)
@@ -315,39 +321,22 @@ public class EmployeeController : ControllerBase
             driver.Status = request.Status ?? driver.Status;
 
             // Update geographical entities
-            if (!string.IsNullOrEmpty(request.GeographicalEntities))
+            if (geographicalEntities != null)
             {
-                try
-                {
-                    var geoEntities = JsonSerializer.Deserialize<List<DriverGeographicalEntityDto>>(request.GeographicalEntities);
-
-                    // Remove old associations
-                    if (driver.DriverGeographicalEntities != null && driver.DriverGeographicalEntities.Any())
-                    {
-                        dbContext.DriverGeographicalEntities.RemoveRange(driver.DriverGeographicalEntities);
-                    }
-
-                    // Add new associations
-                    if (geoEntities != null && geoEntities.Any())
-                    {
-                        driver.DriverGeographicalEntities = geoEntities.Select(geoDto => new DriverGeographicalEntity
-                        {
-                            DriverId = driver.Id,
-                            GeographicalEntityId = geoDto.GeographicalEntityId
-                        }).ToList();
-                    }
-                }
-                catch (JsonException)
-                {
-                    return BadRequest(new ApiResponse(false, "Format des entités géographiques invalide"));
-                }
-            }
-            else
-            {
-                // If no geographical entities provided, remove all existing
+                // Remove old associations
                 if (driver.DriverGeographicalEntities != null && driver.DriverGeographicalEntities.Any())
                 {
                     dbContext.DriverGeographicalEntities.RemoveRange(driver.DriverGeographicalEntities);
+                }
+
+                // Add new associations
+                if (geographicalEntities.Any())
+                {
+                    driver.DriverGeographicalEntities = geographicalEntities.Select(geoDto => new DriverGeographicalEntity
+                    {
+                        DriverId = driver.Id,
+                        GeographicalEntityId = geoDto.GeographicalEntityId
+                    }).ToList();
                 }
             }
         }
@@ -387,7 +376,6 @@ public class EmployeeController : ControllerBase
 
         return Ok(new ApiResponse(true, "Employé mis à jour avec succès", updatedEmployee));
     }
-
     /// Helper method to create the appropriate employee type
     private Employee CreateEmployeeByCategory(CreateEmployeeRequest request)
     {
