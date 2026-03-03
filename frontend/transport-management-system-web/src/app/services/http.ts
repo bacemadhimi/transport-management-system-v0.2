@@ -187,7 +187,7 @@ private formatDateForApi(date: string | Date): string {
 }
 
 getDrivers(): Observable<IDriver[]> {
-  return this.http.get<IDriver[]>(`${environment.apiUrl}/api/Driver/ListOfDrivers`).pipe(
+  return this.http.get<IDriver[]>(`${environment.apiUrl}/api/Drivers/list`).pipe(
     catchError(error => {
       console.error('Error loading drivers:', error);
       return of([]);

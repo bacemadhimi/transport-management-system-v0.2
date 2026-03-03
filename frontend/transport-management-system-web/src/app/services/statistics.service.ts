@@ -100,7 +100,7 @@ export class StatisticsService {
   }
 
   getDrivers(): Observable<IDriver[]> {
-    return this.http.get<IDriver[]>(environment.apiUrl + '/api/Driver/ListOfDrivers').pipe(
+    return this.http.get<IDriver[]>(environment.apiUrl + '/api/Drivers/list').pipe(
       catchError(error => {
         console.error('Error fetching drivers:', error);
         return of([]);

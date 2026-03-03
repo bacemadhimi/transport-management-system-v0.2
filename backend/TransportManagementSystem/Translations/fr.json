@@ -466,7 +466,7 @@
   "RESET_DEFAULT": "Réinitialiser par défaut",
   "INTERNAL_EMPLOYEE": "Employé interne",
   "INTERNAL_EMPLOYEE_HINT": "Activez cette option si l’employé appartient à l’entreprise. Désactivez-la s’il s’agit d’un employé externe.",
-  "GEOGRAPHICAL_ENTITIES_LABEL": "Entités géographiques"
+  "GEOGRAPHICAL_ENTITIES_LABEL": "Entités géographiques",
   "CATEGORY_TABLE": "Catégorie Employé",
   "EMPLOYEE_DELETE_CONFIRM": "Voulez-vous vraiment supprimer l'employé",
   "EMPLOYEE_DELETE_SUCCESS": "Employé supprimé avec succès",
