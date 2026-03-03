@@ -387,24 +387,51 @@ export class TripForm implements OnInit {
         this.applyClientSearchFilter();
       });
 
-    // Weather updates
-    this.tripForm.get('startLocationId')?.valueChanges.subscribe(locationId => {
-      if (locationId) {
-        this.fetchWeatherForStartLocation();
-      }
-    });
+  // In setupSubscriptions() method, update the weather subscriptions:
+
+// Weather updates - using location IDs
+this.tripForm.get('startLocationId')?.valueChanges.subscribe(locationId => {
+  console.log('📍 Start location changed to:', locationId);
+  
+  // Clear existing weather
+  this.startLocationWeather = null;
+  
+  // Fetch weather for new location
+  if (locationId) {
+    this.fetchWeatherForStartLocation();
     
-    this.tripForm.get('endLocationId')?.valueChanges.subscribe(locationId => {
-      if (locationId) {
-        this.fetchWeatherForEndLocation();
-      }
-    });
+    // Also fetch for end location if it exists
+    const endLocationId = this.tripForm.get('endLocationId')?.value;
+    if (endLocationId) {
+      setTimeout(() => this.fetchWeatherForBothLocations(), 100);
+    }
+  }
+});
+
+this.tripForm.get('endLocationId')?.valueChanges.subscribe(locationId => {
+  console.log('📍 End location changed to:', locationId);
+  
+  // Clear existing weather
+  this.endLocationWeather = null;
+  
+  // Fetch weather for new location
+  if (locationId) {
+    this.fetchWeatherForEndLocation();
     
-    this.tripForm.get('estimatedStartDate')?.valueChanges.subscribe(() => {
-      if (this.tripForm.get('estimatedStartDate')?.value) {
-        this.fetchWeatherForecast();
-      }
-    });
+    // Also fetch for start location if it exists
+    const startLocationId = this.tripForm.get('startLocationId')?.value;
+    if (startLocationId) {
+      setTimeout(() => this.fetchWeatherForBothLocations(), 100);
+    }
+  }
+});
+
+// Fetch forecast when date changes
+this.tripForm.get('estimatedStartDate')?.valueChanges.subscribe(() => {
+  if (this.tripForm.get('estimatedStartDate')?.value) {
+    this.fetchWeatherForecast();
+  }
+});
     
     // Driver availability
     this.tripForm.get('estimatedStartDate')?.valueChanges.subscribe(() => {
@@ -4190,101 +4217,10 @@ getSelectedConvoyeurInfo(): string {
     );
   }
 
-  private fetchWeatherForStartLocation(): void {
-    const locationId = this.tripForm.get('startLocationId')?.value;
-    if (!locationId) return;
-    
-    const zoneName = this.getZoneNameForLocation(locationId);
-    if (!zoneName) {
-      console.warn('No zone found for start location');
-      this.startLocationWeather = null;
-      return;
-    }
-    
-    this.weatherLoading = true;
-    this.http.getWeatherByCity(zoneName).subscribe({
-      next: (weather) => {
-        if (weather) {
-          const locationInfo = this.getSelectedStartLocationInfo();
-          this.startLocationWeather = {
-            ...weather,
-            location: locationInfo 
-          };
-        } else {
-          this.startLocationWeather = null;
-        }
-        this.weatherLoading = false;
-      },
-      error: (error) => {
-        console.error('Error fetching weather for start zone:', error);
-        this.startLocationWeather = null;
-        this.weatherLoading = false;
-      }
-    });
-  }
 
-  private fetchWeatherForEndLocation(): void {
-    const locationId = this.tripForm.get('endLocationId')?.value;
-    if (!locationId) return;
-    
-    const zoneName = this.getZoneNameForLocation(locationId);
-    if (!zoneName) {
-      console.warn('No zone found for end location');
-      this.endLocationWeather = null;
-      return;
-    }
-    
-    this.http.getWeatherByCity(zoneName).subscribe({
-      next: (weather) => {
-        if (weather) {
-          const locationInfo = this.getSelectedEndLocationInfo();
-          this.endLocationWeather = {
-            ...weather,
-            location: locationInfo
-          };
-        } else {
-          this.endLocationWeather = null;
-        }
-      },
-      error: (error) => {
-        console.error('Error fetching weather for end zone:', error);
-        this.endLocationWeather = null;
-      }
-    });
-  }
+
   
-  fetchWeatherForBothLocations(): void {
-    const startLocationId = this.tripForm.get('startLocationId')?.value;
-    const endLocationId = this.tripForm.get('endLocationId')?.value;
-    
-    if (!startLocationId || !endLocationId) return;
-    
-    const startZoneName = this.getZoneNameForLocation(startLocationId);
-    const endZoneName = this.getZoneNameForLocation(endLocationId);
-    
-    if (startZoneName && endZoneName) {
-      this.weatherLoading = true;
-      this.http.getWeatherForLocations(startZoneName, endZoneName).subscribe({
-        next: ({ start, end }) => {
-          this.startLocationWeather = start;
-          this.endLocationWeather = end;
-          this.weatherLoading = false;
-          this.weatherError = false;
-        },
-        error: (error) => {
-          console.error('Error fetching weather for both zones:', error);
-          this.weatherLoading = false;
-          this.weatherError = true;
 
-          this.fetchWeatherForStartLocation();
-          this.fetchWeatherForEndLocation();
-        }
-      });
-    } else {
-      this.fetchWeatherForStartLocation();
-      this.fetchWeatherForEndLocation();
-    }
-  }
 
   getSelectedStartLocationInfo(): string {
     const locationId = this.getStartLocationId();
@@ -4354,69 +4290,10 @@ getSelectedConvoyeurInfo(): string {
     return this.http.getWeatherIconClass(iconCode);
   }
   
-  shouldShowWeather(): boolean {
-    return !!(this.startLocationWeather || this.endLocationWeather) || this.weatherLoading;
-  }
 
-  shouldShowWeatherWarning(): boolean {
-    if (!this.startLocationWeather && !this.endLocationWeather) {
-      return false;
-    }
+ 
 
-    const weatherConditionsToCheck = [];
-    if (this.startLocationWeather) weatherConditionsToCheck.push(this.startLocationWeather);
-    if (this.endLocationWeather) weatherConditionsToCheck.push(this.endLocationWeather);
-
-    const warningThresholds = {
-      heavyRain: 10, 
-      strongWind: 40, 
-      extremeTemperature: { min: -10, max: 35 }, 
-      heavySnow: 5,
-    };
-
-    return weatherConditionsToCheck.some(weather => {
-      if (weather.precipitation && weather.precipitation > warningThresholds.heavyRain) {
-        return true;
-      }
-
-      if (weather.wind_speed > warningThresholds.strongWind) {
-        return true;
-      }
-
-      if (
-        weather.temperature < warningThresholds.extremeTemperature.min ||
-        weather.temperature > warningThresholds.extremeTemperature.max
-      ) {
-        return true;
-      }
-
-      const severeKeywords = [
-        'orage', 'thunderstorm',
-        'tempête', 'storm',
-        'forte pluie', 'heavy rain',
-        'neige', 'snow',
-        'grêle', 'hail',
-        'brouillard', 'fog'
-      ];
-      
-      const hasSevereCondition = severeKeywords.some(keyword => 
-        weather.description.toLowerCase().includes(keyword.toLowerCase())
-      );
-      
-      return hasSevereCondition;
-    });
-  }
-
-  refreshWeather(): void {
-    this.weatherLoading = true;
-    
-    this.startLocationWeather = null;
-    this.endLocationWeather = null;
-    this.startLocationForecast = [];
-    this.endLocationForecast = [];
-    
-    this.fetchWeatherForBothLocations();
-  }
+ 
 
   toggleWeatherForecast(): void {
     this.showWeatherForecast = !this.showWeatherForecast;
@@ -4426,32 +4303,7 @@ getSelectedConvoyeurInfo(): string {
     }
   }
 
-  fetchWeatherForecast(): void {
-    const startLocationId = this.tripForm.get('startLocationId')?.value;
-    const endLocationId = this.tripForm.get('endLocationId')?.value;
-    
-    if (!startLocationId || !endLocationId) return;
-    
-    const startZoneName = this.getZoneNameForLocation(startLocationId);
-    const endZoneName = this.getZoneNameForLocation(endLocationId);
-    
-    if (startZoneName && endZoneName) {
-      forkJoin({
-        startForecast: this.http.getWeatherForecast(startZoneName),
-        endForecast: this.http.getWeatherForecast(endZoneName)
-      }).subscribe({
-        next: ({ startForecast, endForecast }) => {
-          this.startLocationForecast = startForecast || [];
-          this.endLocationForecast = endForecast || [];
-        },
-        error: (error) => {
-          console.error('Error fetching forecasts:', error);
-          this.startLocationForecast = [];
-          this.endLocationForecast = [];
-        }
-      });
-    }
-  }
+  
 
   private fetchForecasts(): void {
     const startZoneName = this.getStartZoneName();
@@ -4635,11 +4487,6 @@ getSelectedConvoyeurInfo(): string {
     }
   }
 
-  shouldShowWeatherPrompt(): boolean {
-    const hasLocations = this.tripForm.get('startLocationId')?.value || this.tripForm.get('endLocationId')?.value;
-    const weatherNotLoaded = !this.startLocationWeather && !this.endLocationWeather && !this.weatherLoading;
-    return hasLocations && weatherNotLoaded;
-  }
 
   getFormattedDay(date: Date): string {
     if (!date) return 'JJ';
@@ -5358,65 +5205,10 @@ getSelectedConvoyeurInfo(): string {
     return luminance > 0.5;
   }
 
-  getWeatherWarningMessage(): string {
-    if (!this.startLocationWeather && !this.endLocationWeather) {
-      return 'Données météo indisponibles';
-    }
-    
-    const warnings = [];
-    
-    if (this.startLocationWeather) {
-      if (this.startLocationWeather.temperature < 0) {
-        warnings.push('gel au départ');
-      }
-      if (this.startLocationWeather.wind_speed > 50) {
-        warnings.push('vent fort au départ');
-      }
-      if (this.startLocationWeather.precipitation && this.startLocationWeather.precipitation > 10) {
-        warnings.push('fortes précipitations au départ');
-      }
-    }
-    
-    if (this.endLocationWeather) {
-      if (this.endLocationWeather.temperature < 0) {
-        warnings.push('gel à l\'arrivée');
-      }
-      if (this.endLocationWeather.wind_speed > 50) {
-        warnings.push('vent fort à l\'arrivée');
-      }
-      if (this.endLocationWeather.precipitation && this.endLocationWeather.precipitation > 10) {
-        warnings.push('fortes précipitations à l\'arrivée');
-      }
-    }
-    
-    if (warnings.length === 0) {
-      return 'Conditions favorables pour le trajet';
-    }
-    
-    return 'Conditions difficiles: ' + warnings.join(', ');
-  }
+
 
   private loadZones(): void {
-    this.http.getActiveZones().subscribe({
-      next: (response) => {
-        let zonesData: IZone[];
-        
-        if (response && typeof response === 'object' && 'data' in response) {
-          zonesData = (response as any).data;
-        } else if (Array.isArray(response)) {
-          zonesData = response;
-        } else if (response && typeof response === 'object' && 'zones' in response) {
-          zonesData = (response as any).zones || (response as any).items || [];
-        } else {
-          zonesData = [];
-        }
-        
-        this.zones = zonesData;
-      },
-      error: (error) => {
-        console.error('Error loading active zones:', error);
-      }
-    });
+   
   }
 
   private applyZoneFilter(): void {
@@ -6973,5 +6765,294 @@ getMarqueName(marqueId?: number): string {
   console.log(marqueId)
   if (!marqueId) return 'N/A';
   return this.marqueMap.get(marqueId) || 'N/A';
+}
+// ========== WEATHER METHODS ==========
+
+/**
+ * Fetch weather for start location using location ID
+ */
+private fetchWeatherForStartLocation(): void {
+  const locationId = this.tripForm.get('startLocationId')?.value;
+  if (!locationId) {
+    console.log('No start location selected, clearing weather');
+    this.startLocationWeather = null;
+    return;
+  }
+  
+  this.weatherLoading = true;
+  
+  this.http.getWeatherByLocation(locationId).subscribe({
+    next: (weather) => {
+      console.log('Start location weather received:', weather);
+      if (weather) {
+        this.startLocationWeather = this.mapWeatherData(weather, this.getSelectedStartLocationInfo());
+      } else {
+        this.startLocationWeather = null;
+      }
+      this.weatherLoading = false;
+    },
+    error: (error) => {
+      console.error('Error fetching weather for start location:', error);
+      this.startLocationWeather = null;
+      this.weatherLoading = false;
+    }
+  });
+}
+
+/**
+ * Fetch weather for end location using location ID
+ */
+private fetchWeatherForEndLocation(): void {
+  const locationId = this.tripForm.get('endLocationId')?.value;
+  if (!locationId) {
+    console.log('No end location selected, clearing weather');
+    this.endLocationWeather = null;
+    return;
+  }
+  
+  this.http.getWeatherByLocation(locationId).subscribe({
+    next: (weather) => {
+      console.log('End location weather received:', weather);
+      if (weather) {
+        this.endLocationWeather = this.mapWeatherData(weather, this.getSelectedEndLocationInfo());
+      } else {
+        this.endLocationWeather = null;
+      }
+    },
+    error: (error) => {
+      console.error('Error fetching weather for end location:', error);
+      this.endLocationWeather = null;
+    }
+  });
+}
+
+/**
+ * Fetch weather for both locations in one call
+ */
+fetchWeatherForBothLocations(): void {
+  const startLocationId = this.tripForm.get('startLocationId')?.value;
+  const endLocationId = this.tripForm.get('endLocationId')?.value;
+  
+  console.log('Fetching weather for both locations:', { startLocationId, endLocationId });
+  
+  if (!startLocationId || !endLocationId) {
+    console.log('Missing locations, cannot fetch both');
+    return;
+  }
+  
+  this.weatherLoading = true;
+  this.startLocationWeather = null;
+  this.endLocationWeather = null;
+  
+  this.http.getWeatherForTrip(startLocationId, endLocationId).subscribe({
+    next: (result) => {
+      console.log('Weather for both locations received:', result);
+      
+      if (result.start) {
+        this.startLocationWeather = this.mapWeatherData(result.start, this.getSelectedStartLocationInfo());
+      }
+      
+      if (result.end) {
+        this.endLocationWeather = this.mapWeatherData(result.end, this.getSelectedEndLocationInfo());
+      }
+      
+      this.weatherLoading = false;
+    },
+    error: (error) => {
+      console.error('Error fetching weather for both locations:', error);
+      this.weatherLoading = false;
+      
+      // Fallback to individual calls
+      this.fetchWeatherForStartLocation();
+      this.fetchWeatherForEndLocation();
+    }
+  });
+}
+
+/**
+ * Fetch weather forecast for a location
+ */
+fetchWeatherForecast(): void {
+  const startLocationId = this.tripForm.get('startLocationId')?.value;
+  const endLocationId = this.tripForm.get('endLocationId')?.value;
+  
+  if (!startLocationId || !endLocationId) return;
+  
+  this.startLocationForecast = [];
+  this.endLocationForecast = [];
+  
+  // Fetch forecasts for both locations
+  forkJoin({
+    startForecast: this.http.getWeatherForecastByLocation(startLocationId).pipe(catchError(() => of([]))),
+    endForecast: this.http.getWeatherForecastByLocation(endLocationId).pipe(catchError(() => of([])))
+  }).subscribe({
+    next: ({ startForecast, endForecast }) => {
+      this.startLocationForecast = Array.isArray(startForecast) ? startForecast : [];
+      this.endLocationForecast = Array.isArray(endForecast) ? endForecast : [];
+    },
+    error: (error) => {
+      console.error('Error fetching forecasts:', error);
+    }
+  });
+}
+
+/**
+ * Map weather data from API to WeatherData interface
+ */
+private mapWeatherData(weather: any, locationInfo: string): WeatherData {
+  // Handle OpenWeatherMap format (from coordinates/city endpoint)
+  if (weather.main) {
+    return {
+      temperature: weather.main.temp,
+      feels_like: weather.main.feels_like,
+      humidity: weather.main.humidity,
+      description: weather.weather?.[0]?.description || '',
+      icon: weather.weather?.[0]?.icon 
+        ? `https://openweathermap.org/img/wn/${weather.weather[0].icon}@2x.png`
+        : '',
+      wind_speed: weather.wind?.speed || 0,
+      precipitation: weather.rain?.precipitation || weather.rain?.['1h'] || 0,
+      location: locationInfo
+    };
+  } 
+  // Handle custom API format (from your backend)
+  else {
+    return {
+      temperature: weather.temperature || 0,
+      feels_like: weather.feels_like || 0,
+      humidity: weather.humidity || 0,
+      description: weather.description || '',
+      icon: weather.icon || '',
+      wind_speed: weather.wind_speed || 0,
+      precipitation: weather.precipitation || 0,
+      location: locationInfo
+    };
+  }
+}
+
+/**
+ * Refresh weather data
+ */
+refreshWeather(): void {
+  this.weatherLoading = true;
+  
+  this.startLocationWeather = null;
+  this.endLocationWeather = null;
+  this.startLocationForecast = [];
+  this.endLocationForecast = [];
+  
+  this.fetchWeatherForBothLocations();
+  
+  setTimeout(() => {
+    this.fetchWeatherForecast();
+  }, 500);
+}
+
+/**
+ * Get weather warning message based on conditions
+ */
+getWeatherWarningMessage(): string {
+  if (!this.startLocationWeather && !this.endLocationWeather) {
+    return 'Données météo indisponibles';
+  }
+  
+  const warnings = [];
+  
+  if (this.startLocationWeather) {
+    if (this.startLocationWeather.temperature < 0) {
+      warnings.push('gel au départ');
+    }
+    if (this.startLocationWeather.wind_speed > 50) {
+      warnings.push('vent fort au départ');
+    }
+    if (this.startLocationWeather.precipitation && this.startLocationWeather.precipitation > 10) {
+      warnings.push('fortes précipitations au départ');
+    }
+  }
+  
+  if (this.endLocationWeather) {
+    if (this.endLocationWeather.temperature < 0) {
+      warnings.push('gel à l\'arrivée');
+    }
+    if (this.endLocationWeather.wind_speed > 50) {
+      warnings.push('vent fort à l\'arrivée');
+    }
+    if (this.endLocationWeather.precipitation && this.endLocationWeather.precipitation > 10) {
+      warnings.push('fortes précipitations à l\'arrivée');
+    }
+  }
+  
+  if (warnings.length === 0) {
+    return 'Conditions favorables pour le trajet';
+  }
+  
+  return 'Conditions difficiles: ' + warnings.join(', ');
+}
+
+/**
+ * Check if weather should be shown
+ */
+shouldShowWeather(): boolean {
+  return !!(this.startLocationWeather || this.endLocationWeather) || this.weatherLoading;
+}
+
+/**
+ * Check if weather warning should be shown
+ */
+shouldShowWeatherWarning(): boolean {
+  if (!this.startLocationWeather && !this.endLocationWeather) {
+    return false;
+  }
+
+  const weatherConditionsToCheck = [];
+  if (this.startLocationWeather) weatherConditionsToCheck.push(this.startLocationWeather);
+  if (this.endLocationWeather) weatherConditionsToCheck.push(this.endLocationWeather);
+
+  const warningThresholds = {
+    heavyRain: 10, 
+    strongWind: 40, 
+    extremeTemperature: { min: -10, max: 35 }, 
+  };
+
+  return weatherConditionsToCheck.some(weather => {
+    if (weather.precipitation && weather.precipitation > warningThresholds.heavyRain) {
+      return true;
+    }
+
+    if (weather.wind_speed > warningThresholds.strongWind) {
+      return true;
+    }
+
+    if (
+      weather.temperature < warningThresholds.extremeTemperature.min ||
+      weather.temperature > warningThresholds.extremeTemperature.max
+    ) {
+      return true;
+    }
+
+    const severeKeywords = [
+      'orage', 'thunderstorm',
+      'tempête', 'storm',
+      'forte pluie', 'heavy rain',
+      'neige', 'snow',
+      'grêle', 'hail',
+      'brouillard', 'fog'
+    ];
+    
+    const hasSevereCondition = severeKeywords.some(keyword => 
+      weather.description.toLowerCase().includes(keyword.toLowerCase())
+    );
+    
+    return hasSevereCondition;
+  });
+}
+
+/**
+ * Check if weather prompt should be shown
+ */
+shouldShowWeatherPrompt(): boolean {
+  const hasLocations = this.tripForm.get('startLocationId')?.value || this.tripForm.get('endLocationId')?.value;
+  const weatherNotLoaded = !this.startLocationWeather && !this.endLocationWeather && !this.weatherLoading;
+  return hasLocations && weatherNotLoaded;
 }
 }

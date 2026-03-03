@@ -1109,28 +1109,6 @@ getActiveCitiesByZone(zoneId: number): Observable<ApiResponse<ICity[]>> {
 getActiveCities(): Observable<ApiResponse<ICity[]>> {
   return this.http.get<ApiResponse<ICity[]>>(`${environment.apiUrl}/api/cities/zone/activeOnly=true`);
 }
-
-
-  getWeatherByCity(city: string): Observable<WeatherData | null> {
-    const url = `${environment.apiUrl}/api/weather?q=${city},TN`;
-    return this.http.get<any>(url).pipe(
-      map(res => ({
-        location: city,
-        temperature: Math.round(res.main.temp),
-        feels_like: Math.round(res.main.feels_like),
-        description: res.weather[0].description,
-        icon: `https://openweathermap.org/img/wn/${res.weather[0].icon}@2x.png`,
-        humidity: res.main.humidity,
-        wind_speed: Math.round(res.wind.speed * 3.6),
-        precipitation: res.rain?.['1h'] || res.snow?.['1h'] || 0
-      })),
-      catchError(err => {
-        console.error('Weather error:', err);
-        return of(null);
-      })
-    );
-  }
-
   getWeatherByCoords(lat: number, lon: number, location: string): Observable<WeatherData | null> {
     const url = `${environment.apiUrl}/api/weather/coords?lat=${lat}&lon=${lon}`;
     return this.http.get<any>(url).pipe(
@@ -1151,33 +1129,6 @@ getActiveCities(): Observable<ApiResponse<ICity[]>> {
     );
   }
 
-  getWeatherForecast(city: string): Observable<DailyForecast[] | null> {
-    const url = `${environment.apiUrl}/api/weather/forecast?q=${city},TN`;
-    return this.http.get<any>(url).pipe(
-      map(res => {
-        if (!res?.list) return null;
-        return res.list.map((item: any) => ({
-          date: new Date(item.dt * 1000).toISOString().split('T')[0],
-          day: ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'][new Date(item.dt * 1000).getDay()],
-          temperature_min: Math.round(item.main.temp_min),
-          temperature_max: Math.round(item.main.temp_max),
-          description: item.weather[0].description,
-          icon: `https://openweathermap.org/img/wn/${item.weather[0].icon}@2x.png`,
-          precipitation_chance: item.pop ?? 0
-        }));
-      }),
-      catchError(err => {
-        console.error('Forecast error:', err);
-        return of(null);
-      })
-    );
-  }
-    getWeatherForLocations(start: string, end: string) {
-    return forkJoin({
-      start: this.getWeatherByCity(start),
-      end: this.getWeatherByCity(end)
-    });
-  }
   getWeatherIconClass(iconCode: string): string {
     const iconMap: { [key: string]: string } = {
       '01d': 'wb_sunny', // clear sky day
@@ -1520,6 +1471,30 @@ updateGeographicalEntity(id: number, entity: any): Observable<IGeographicalEntit
 
 deleteGeographicalEntity(id: number): Observable<void> {
   return this.http.delete<void>(`${environment.apiUrl}/api/GeographicalEntities/${id}`);
+}
+
+/**
+ * Get weather by location ID
+ */
+getWeatherByLocation(locationId: number): Observable<any> {
+  return this.http.get(`${environment.apiUrl}/api/Weather/location/${locationId}`);
+}
+
+/**
+ * Get weather forecast by location ID
+ */
+getWeatherForecastByLocation(locationId: number): Observable<any> {
+  return this.http.get(`${environment.apiUrl}/api/Weather/location/${locationId}/forecast`);
+}
+
+/**
+ * Get weather for both start and end locations in one call
+ */
+getWeatherForTrip(startLocationId: number, endLocationId: number): Observable<any> {
+  return this.http.get(`${environment.apiUrl}/api/Weather/trip?startLocationId=${startLocationId}&endLocationId=${endLocationId}`);
+}
+getWeatherForecast(cityName: string): Observable<any> {
+  return this.http.get(`${environment.apiUrl}/api/Weather/forecast?q=${encodeURIComponent(cityName)}`);
 }
 }
 
