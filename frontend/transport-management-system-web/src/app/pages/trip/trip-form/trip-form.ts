@@ -5,6 +5,7 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { CreateDeliveryDto, CreateTripDto, DeliveryStatusOptions, TripStatus, UpdateTripDto } from '../../../types/trip';
 import { ITruck } from '../../../types/truck';
 import { IDriver } from '../../../types/driver';
+import { IConvoyeur } from '../../../types/convoyeur';
 import { ICustomer } from '../../../types/customer';
 import { IOrder, OrderStatus } from '../../../types/order';
 import { Http } from '../../../services/http';
@@ -29,7 +30,6 @@ import { CdkDragDrop, CdkDrag, CdkDragHandle, CdkDropList, moveItemInArray } fro
 import { animate, style, transition, trigger } from '@angular/animations';
 import Swal from 'sweetalert2';
 import { ILocation } from '../../../types/location';
-import { IConvoyeur } from '../../../types/convoyeur';
 import { MatChipsModule } from '@angular/material/chips';
 import { WeatherData } from '../../../types/weather';
 import { MatDividerModule } from '@angular/material/divider';
@@ -92,11 +92,23 @@ export class TripForm implements OnInit {
   @ViewChild(CdkVirtualScrollViewport) viewport!: CdkVirtualScrollViewport;
   tripForm!: FormGroup;
   deliveries: FormArray;
+  
+  // Driver properties
   availableDrivers: IDriver[] = [];
   unavailableDrivers: any[] = [];
   loadingAvailableDrivers = false;
-  trucks: ITruck[] = [];
   drivers: IDriver[] = [];
+  
+  // Convoyeur properties
+  convoyeurs: IConvoyeur[] = [];
+  loadingConvoyeurs = false;
+  
+  // Truck properties
+  trucks: ITruck[] = [];
+  availableTrucks: ITruck[] = [];
+  unavailableTrucks: any[] = [];
+  loadingAvailableTrucks = false;
+  
   customers: ICustomer[] = [];
   allOrders: IOrder[] = [];
   ordersForQuickAdd: IOrder[] = [];
@@ -105,8 +117,7 @@ export class TripForm implements OnInit {
   isDragging = false;
   previousOrder: number[] = [];
   dragDisabled = false;
-  convoyeurs: IConvoyeur[] = [];
-  loadingConvoyeurs = false;
+  
   trajects: ITraject[] = [];
   selectedTraject: ITraject | null = null;
   selectedTrajectControl = new FormControl<number | null>(null);
@@ -239,9 +250,6 @@ export class TripForm implements OnInit {
     }
   };
 
-  availableTrucks: ITruck[] = [];
-  unavailableTrucks: any[] = [];
-  loadingAvailableTrucks = false;
  
   loadingUnit: string = 'palette'; 
   allowEditOrder: boolean = false;
@@ -452,6 +460,8 @@ export class TripForm implements OnInit {
         this.setupDateChangeSubscription();
       });
       
+      this.loadAllConvoyeurs();
+      
       if (tripIdToUse) {
         this.isEditMode = true;
         this.loadTrip(tripIdToUse).then(() => {
@@ -490,6 +500,8 @@ export class TripForm implements OnInit {
         this.setupDateChangeSubscription();
       });
       
+      this.loadAllConvoyeurs();
+      
       if (tripIdToUse) {
         this.isEditMode = true;
         this.loadTrip(tripIdToUse).then(() => {
@@ -500,6 +512,20 @@ export class TripForm implements OnInit {
       } else {
         this.isEditMode = false; 
         this.loadTrajects();
+      }
+    });
+  }
+
+  private loadAllConvoyeurs(): void {
+    this.loadingConvoyeurs = true;
+    this.http.getConvoyeurs().subscribe({
+      next: (convoyeurs) => {
+        this.convoyeurs = convoyeurs;
+        this.loadingConvoyeurs = false;
+      },
+      error: (error) => {
+        console.error('Error loading convoyeurs:', error);
+        this.loadingConvoyeurs = false;
       }
     });
   }
@@ -893,9 +919,9 @@ export class TripForm implements OnInit {
         
           const truckId = trip.truckId && trip.truckId !== 0 ? trip.truckId : trip.truck?.id ?? null;
           const driverId = trip.driverId && trip.driverId !== 0 ? trip.driverId : trip.driver?.id ?? null;
+          const convoyeurId = trip.convoyeurId && trip.convoyeurId !== 0 ? trip.convoyeurId : trip.convoyeur?.id ?? null;
           const startLocationId = trip.startLocationId || trip.startLocation?.id || null;
           const endLocationId = trip.endLocationId || trip.endLocation?.id || null;
-          const convoyeurId = trip.convoyeurId && trip.convoyeurId !== 0 ? trip.convoyeurId : trip.convoyeur?.id ?? null;
           const trajectId = trip.trajectId || null;
         
           this.tripForm.patchValue({
@@ -903,12 +929,12 @@ export class TripForm implements OnInit {
             estimatedEndDate: endDate,
             truckId: truckId,
             driverId: driverId,
+            convoyeurId: convoyeurId,
             estimatedDistance: trip.estimatedDistance || 0,
             estimatedDuration: trip.estimatedDuration || 0,
             tripStatus: trip.tripStatus || TripStatus.Planned,
             startLocationId: startLocationId,
             endLocationId: endLocationId,
-            convoyeurId: convoyeurId,
             trajectId: trajectId
           }, { emitEvent: false });
    
@@ -1292,6 +1318,15 @@ getSelectedTruckInfo(): string {
   const marqueName = this.getMarqueName(truck.marqueTruckId);
   return `${truck.immatriculation} - ${marqueName}`;
 }
+
+getSelectedConvoyeurInfo(): string {
+  const convoyeurId = this.tripForm.get('convoyeurId')?.value;
+  if (!convoyeurId) return 'Non sélectionné';
+  
+  const convoyeur = this.convoyeurs.find(c => c.id === convoyeurId);
+  return convoyeur ? `${convoyeur.name} (${convoyeur.matricule})` : 'Convoyeur inconnu';
+}
+
   quickAddOrder(order: IOrder): void {
     const customer = this.customers.find(c => c.id === order.customerId);
     
@@ -2191,9 +2226,9 @@ getSelectedTruckInfo(): string {
       estimatedEndDate: this.formatDateWithTime(formValue.estimatedEndDate, '18:00:00'),
       truckId: parseInt(formValue.truckId),
       driverId: parseInt(formValue.driverId),
-      deliveries: deliveries,
-      trajectId: trajectId,
       convoyeurId: formValue.convoyeurId ? parseInt(formValue.convoyeurId) : null,
+      deliveries: deliveries,
+      trajectId: trajectId
     };
     
     this.http.createTrip(createTripData).subscribe({
@@ -2247,9 +2282,9 @@ getSelectedTruckInfo(): string {
       estimatedEndDate: this.formatDateWithTime(formValue.estimatedEndDate, '18:00:00'),
       truckId: parseInt(formValue.truckId),
       driverId: parseInt(formValue.driverId),
+      convoyeurId: formValue.convoyeurId ? parseInt(formValue.convoyeurId) : null,
       tripStatus: formValue.tripStatus,
       deliveries: deliveries,
-      convoyeurId: formValue.convoyeurId ? parseInt(formValue.convoyeurId) : null,
       trajectId: trajectId
     };
     
@@ -2558,7 +2593,7 @@ getSelectedTruckInfo(): string {
     if (!driverId) return 'Non sélectionné';
     
     const driver = this.drivers.find(d => d.id === driverId);
-    return driver ? `${driver.name} (${driver.permisNumber})` : 'Chauffeur inconnu';
+    return driver ? `${driver.name} (${driver.drivingLicense})` : 'Chauffeur inconnu';
   }
 
   calculateAverageSpeed(): string {
@@ -3274,6 +3309,7 @@ getSelectedTruckInfo(): string {
             <li>Livraisons préparées: <strong>${completedDeliveries}/${totalDeliveries}</strong></li>
             <li>Statut du camion: <strong>Chargé</strong></li>
             <li>Chauffeur: <strong>${this.getSelectedDriverInfo()}</strong></li>
+            <li>Convoyeur: <strong>${this.getSelectedConvoyeurInfo()}</strong></li>
           </ul>
           ${completedDeliveries < totalDeliveries ? 
             `<p style="color: #ef4444; margin-top: 1rem;">
@@ -3919,7 +3955,7 @@ getSelectedTruckInfo(): string {
     if (!driverId) return '';
     
     const driver = this.drivers.find(d => d.id === driverId);
-    return driver?.permisNumber || '';
+    return driver?.drivingLicense || '';
   }
 
   isDriverInList(driverId: number): boolean {
@@ -3935,7 +3971,8 @@ getSelectedTruckInfo(): string {
 
   getDriverNameById(id: number | null): string {
     if (!id) return '';
-    const driver = this.availableDrivers.find(d => d.id === id);
+    const driver = this.availableDrivers.find(d => d.id === id) || 
+                   this.drivers.find(d => d.id === id);
     return driver ? driver.name : '';
   }
 
@@ -4040,6 +4077,7 @@ getSelectedTruckInfo(): string {
           <ul>
             <li>Camion: <strong>${this.getSelectedTruckInfo()}</strong></li>
             <li>Chauffeur: <strong>${this.getSelectedDriverInfo()}</strong></li>
+            <li>Convoyeur: <strong>${this.getSelectedConvoyeurInfo()}</strong></li>
             <li>Date de début: <strong>${this.formatDateForDisplay(this.tripForm.get('estimatedStartDate')?.value)}</strong></li>
           </ul>
           <p>Voulez-vous accepter ce voyage ?</p>
@@ -4067,6 +4105,8 @@ getSelectedTruckInfo(): string {
             <li>Capacité du camion: <strong>${capacity} tonne</strong></li>
             <li>Utilisation: <strong>${percentage.toFixed(1)}%</strong></li>
             <li>Nombre de livraisons: <strong>${this.deliveries.length}</strong></li>
+            <li>Chauffeur: <strong>${this.getSelectedDriverInfo()}</strong></li>
+            <li>Convoyeur: <strong>${this.getSelectedConvoyeurInfo()}</strong></li>
           </ul>
           <p>Démarrer le processus de chargement ?</p>
         </div>

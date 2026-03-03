@@ -1,18 +1,18 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { Driver } from './driver';
+import { GeographicalEntityForm } from './geographical-entity-form';
 
-describe('Driver', () => {
-  let component: Driver;
-  let fixture: ComponentFixture<Driver>;
+describe('GeographicalEntityForm', () => {
+  let component: GeographicalEntityForm;
+  let fixture: ComponentFixture<GeographicalEntityForm>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [Driver]
+      imports: [GeographicalEntityForm]
     })
     .compileComponents();
 
-    fixture = TestBed.createComponent(Driver);
+    fixture = TestBed.createComponent(GeographicalEntityForm);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });

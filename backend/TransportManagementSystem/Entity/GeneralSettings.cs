@@ -19,6 +19,4 @@ public class GeneralSettings
     [MaxLength(200)]
     public string? Description { get; set; }
 
-    [MaxLength(200)]
-    public string? Value { get; set; }
 }

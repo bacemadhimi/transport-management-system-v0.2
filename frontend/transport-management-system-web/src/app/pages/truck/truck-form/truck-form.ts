@@ -1,5 +1,5 @@
 import { Component, ElementRef, inject, OnInit, ViewChild, OnDestroy } from '@angular/core';
-import { FormBuilder, Validators, ReactiveFormsModule, FormsModule } from '@angular/forms';
+import { FormBuilder, Validators, ReactiveFormsModule, FormsModule, FormControl } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
@@ -8,8 +8,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatDialogModule, MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { Http } from '../../../services/http';
 import { ITruck } from '../../../types/truck';
-import { IZone } from '../../../types/zone';
-import { IMarque } from '../../../types/marque'; // Import IMarque
+import { IMarque } from '../../../types/marque';
 import { MatSelectModule } from '@angular/material/select';
 import { MatNativeDateModule } from '@angular/material/core';
 import { MatDatepickerModule } from '@angular/material/datepicker';
@@ -21,6 +20,7 @@ import { Translation } from '../../../services/Translation';
 import { Subscription } from 'rxjs';
 import { SettingsService } from '../../../services/settings.service'; 
 import { ITypeTruck } from '../../../types/type-truck';
+import { IGeographicalEntity, IGeographicalLevel } from '../../../types/general-settings';
 
 @Component({
   selector: 'app-truck-form',
@@ -52,7 +52,6 @@ export class TruckForm implements OnInit, OnDestroy {
   data = inject<{ truckId?: number }>(MAT_DIALOG_DATA, { optional: true }) ?? {};
   @ViewChild('fileInput') fileInput!: ElementRef;
   
-
   images: string[] = []; 
   imagePreviews: string[] = []; 
   fileError: string | null = null;
@@ -60,49 +59,138 @@ export class TruckForm implements OnInit, OnDestroy {
   selectedFiles: File[] = [];
   maxImages = 10; 
   
-
-  loadingZones = false;
+  loadingGeographicalEntities = false;
   loadingTypeTrucks = false;
   loadingMarques = false; 
-  zones: IZone[] = [];
+  geographicalEntities: IGeographicalEntity[] = [];
+  geographicalLevels: IGeographicalLevel[] = [];
   typeTrucks: ITypeTruck[] = [];
   marques: IMarque[] = []; 
   isSubmitting = false;
   selectedCapacityUnitLabel: string = '';
   private subscriptions: Subscription[] = [];
 
+  // Selected entities
+  selectedEntities: number[] = [];
+
+  // Entity hierarchies by level
+  level1Entities: IGeographicalEntity[] = [];
+  level2Entities: IGeographicalEntity[] = [];
+  level3Entities: IGeographicalEntity[] = [];
+  level4Entities: IGeographicalEntity[] = [];
+  level5Entities: IGeographicalEntity[] = [];
+
+  // Form controls for each level
+  level1Control = new FormControl<number | null>(null);
+  level2Control = new FormControl<number | null>(null);
+  level3Control = new FormControl<number | null>(null);
+  level4Control = new FormControl<number | null>(null);
+  level5Control = new FormControl<number | null>(null);
+
+  // Map for quick entity lookup
+  private entityMap: Map<number, IGeographicalEntity> = new Map();
+
   capacityUnits: { value: string; label: string }[] = [];
 
   truckForm = this.fb.group({
     immatriculation: this.fb.control<string>('', [Validators.required, Validators.minLength(2)]),
-   
     marqueTruckId: this.fb.control<number | null>(null, Validators.required),
     technicalVisitDate: this.fb.control<Date | null>(null, Validators.required),
     dateOfFirstRegistration: this.fb.control<Date | null>(null, Validators.required),
     emptyWeight: this.fb.control<number | null>(null, [Validators.required, Validators.min(1)]),
     status: this.fb.control<string>('Disponible'),
     color: this.fb.control<string>('#ffffff', Validators.required),
-    zoneId: this.fb.control<number | null>(null, [Validators.required]),
+    geographicalEntityIds: this.fb.control<number[]>([], [Validators.required, Validators.minLength(1)]),
     typeTruckId: this.fb.control<number | null>(null, [Validators.required]),
   });
 
   statuses = ['Disponible', 'En mission', 'Maintenance', 'Hors service'];
 
   ngOnInit() {
-    this.loadActiveZones();
+    this.loadGeographicalEntities();
     this.loadTypeTrucks();
     this.loadMarques(); 
+    this.setupLevelControls();
 
     if (this.data.truckId) {
       this.loadTruck(this.data.truckId);
     }
+
+    // Subscribe to form value changes to keep selectedEntities in sync
+    this.truckForm.get('geographicalEntityIds')?.valueChanges.subscribe(ids => {
+      if (ids) {
+        this.selectedEntities = ids;
+      }
+    });
   }
 
   ngOnDestroy() {
     this.subscriptions.forEach(sub => sub.unsubscribe());
   }
 
- 
+  private setupLevelControls() {
+    // Level 1 changes
+    this.level1Control.valueChanges.subscribe((value) => {
+      if (!value) {
+        this.level2Control.reset();
+        this.level3Control.reset();
+        this.level4Control.reset();
+        this.level5Control.reset();
+      }
+      this.updateSelectedEntities();
+    });
+
+    // Level 2 changes
+    this.level2Control.valueChanges.subscribe((value) => {
+      if (!value) {
+        this.level3Control.reset();
+        this.level4Control.reset();
+        this.level5Control.reset();
+      }
+      this.updateSelectedEntities();
+    });
+
+    // Level 3 changes
+    this.level3Control.valueChanges.subscribe((value) => {
+      if (!value) {
+        this.level4Control.reset();
+        this.level5Control.reset();
+      }
+      this.updateSelectedEntities();
+    });
+
+    // Level 4 changes
+    this.level4Control.valueChanges.subscribe((value) => {
+      if (!value) {
+        this.level5Control.reset();
+      }
+      this.updateSelectedEntities();
+    });
+
+    // Level 5 changes
+    this.level5Control.valueChanges.subscribe(() => {
+      this.updateSelectedEntities();
+    });
+  }
+
+  private updateSelectedEntities() {
+    const selected: number[] = [];
+    
+    if (this.level1Control.value) selected.push(this.level1Control.value);
+    if (this.level2Control.value) selected.push(this.level2Control.value);
+    if (this.level3Control.value) selected.push(this.level3Control.value);
+    if (this.level4Control.value) selected.push(this.level4Control.value);
+    if (this.level5Control.value) selected.push(this.level5Control.value);
+    
+    this.selectedEntities = selected;
+    
+    // Update form control
+    this.truckForm.patchValue({
+      geographicalEntityIds: this.selectedEntities
+    });
+    this.truckForm.get('geographicalEntityIds')?.markAsDirty();
+  }
+
   private loadMarques(): void {
     this.loadingMarques = true;
     
@@ -136,39 +224,37 @@ export class TruckForm implements OnInit, OnDestroy {
     this.subscriptions.push(marquesSub);
   }
 
-  private loadActiveZones(): void {
-    this.loadingZones = true;
+  private organizeEntitiesByLevel() {
+    this.entityMap.clear();
     
-    const zonesSub = this.httpService.getActiveZones().subscribe({
-      next: (response) => {
-        let zonesData: IZone[];
-        
-        if (response && typeof response === 'object' && 'data' in response) {
-          zonesData = (response as any).data;
-        } else if (Array.isArray(response)) {
-          zonesData = response;
-        } else if (response && typeof response === 'object' && 'zones' in response) {
-          zonesData = (response as any).zones || (response as any).items || [];
-        } else {
-          zonesData = [];
-        }
-        
-        this.zones = zonesData;
-        this.loadingZones = false;
-      },
-      error: (error) => {
-        console.error('Error loading active zones:', error);
-        this.loadingZones = false;
-        Swal.fire({
-          icon: 'error',
-          title: 'Erreur',
-          text: 'Impossible de charger les zones',
-          confirmButtonText: 'OK'
-        });
+    // Only add entities with valid IDs to the map
+    this.geographicalEntities.forEach(e => {
+      if (e.id !== undefined && e.id !== null) {
+        this.entityMap.set(e.id, e);
       }
     });
     
-    this.subscriptions.push(zonesSub);
+    // Group by level number
+    const levelGroups: { [key: number]: IGeographicalEntity[] } = {};
+    
+    this.geographicalEntities.forEach(entity => {
+      if (entity.id === undefined || entity.id === null) return; // Skip entities without ID
+      
+      const level = this.geographicalLevels.find(l => l.id === entity.levelId);
+      if (level) {
+        if (!levelGroups[level.levelNumber]) {
+          levelGroups[level.levelNumber] = [];
+        }
+        levelGroups[level.levelNumber].push(entity);
+      }
+    });
+    
+    // Assign to level arrays
+    this.level1Entities = levelGroups[1] || [];
+    this.level2Entities = levelGroups[2] || [];
+    this.level3Entities = levelGroups[3] || [];
+    this.level4Entities = levelGroups[4] || [];
+    this.level5Entities = levelGroups[5] || [];
   }
 
   private loadTypeTrucks(): void {
@@ -204,6 +290,7 @@ export class TruckForm implements OnInit, OnDestroy {
     this.subscriptions.push(typeTrucksSub);
   }
 
+ // Update the loadTruck method to wait for entities to load
 private loadTruck(id: number) {
   const truckSub = this.httpService.getTruck(id).subscribe({
     next: (response: any) => {
@@ -220,6 +307,14 @@ private loadTruck(id: number) {
         ? new Date(truckData.dateOfFirstRegistration)
         : null;
 
+      // Store truck data for later use
+      this.truckData = truckData;
+      
+      // If geographical entities are already loaded, set the selections
+      if (this.geographicalEntities.length > 0 && this.geographicalLevels.length > 0) {
+        this.setGeographicalSelections(truckData);
+      }
+      
       this.truckForm.patchValue({
         immatriculation: truckData.immatriculation,
         marqueTruckId: truckData.marqueTruckId || null,
@@ -228,11 +323,10 @@ private loadTruck(id: number) {
         emptyWeight: truckData.emptyWeight || null,
         status: truckData.status,
         color: truckData.color || '#ffffff',
-        zoneId: truckData.zoneId || null,
         typeTruckId: truckData.typeTruckId || null, 
       });
       
-     
+      
       if (truckData.images && Array.isArray(truckData.images) && truckData.images.length > 0) {
         this.images = [...truckData.images];
         this.originalImages = [...truckData.images];
@@ -256,6 +350,146 @@ private loadTruck(id: number) {
   this.subscriptions.push(truckSub);
 }
 
+// Add a property to store truck data
+private truckData: any = null;
+
+// Update loadGeographicalEntities to set selections after loading
+private loadGeographicalEntities(): void {
+  this.loadingGeographicalEntities = true;
+  
+  // First load levels
+  const levelsSub = this.httpService.getGeographicalLevels().subscribe({
+    next: (levels) => {
+      this.geographicalLevels = levels.filter(l => l.isActive);
+      
+      // Then load active entities
+      const entitiesSub = this.httpService.getGeographicalEntities().subscribe({
+        next: (entities) => {
+          // Filter only active entities
+          this.geographicalEntities = entities.filter(e => e.isActive);
+          this.organizeEntitiesByLevel();
+          this.loadingGeographicalEntities = false;
+          
+          // If we have truck data waiting, set the selections now
+          if (this.truckData) {
+            this.setGeographicalSelections(this.truckData);
+          }
+        },
+        error: (error) => {
+          console.error('Error loading geographical entities:', error);
+          this.loadingGeographicalEntities = false;
+          Swal.fire({
+            icon: 'error',
+            title: 'Erreur',
+            text: 'Impossible de charger les localisations',
+            confirmButtonText: 'OK'
+          });
+        }
+      });
+      this.subscriptions.push(entitiesSub);
+    },
+    error: (error) => {
+      console.error('Error loading geographical levels:', error);
+      this.loadingGeographicalEntities = false;
+      Swal.fire({
+        icon: 'error',
+        title: 'Erreur',
+        text: 'Impossible de charger les niveaux géographiques',
+        confirmButtonText: 'OK'
+      });
+    }
+  });
+  
+  this.subscriptions.push(levelsSub);
+}
+
+// New method to set geographical selections
+private setGeographicalSelections(truckData: any) {
+  // Extract geographical entity IDs from the truck's associations
+  const geographicalEntityIds = truckData.geographicalEntities?.map((ge: any) => ge.geographicalEntityId) || [];
+  
+  // Set selected entities
+  this.selectedEntities = [...geographicalEntityIds];
+  
+  // Reset all level controls first
+  this.level1Control.reset();
+  this.level2Control.reset();
+  this.level3Control.reset();
+  this.level4Control.reset();
+  this.level5Control.reset();
+  
+  // Set level controls based on the level of each entity
+  geographicalEntityIds.forEach((id: number) => {
+    const entity = this.geographicalEntities.find(e => e.id === id);
+    if (entity) {
+      const level = this.geographicalLevels.find(l => l.id === entity.levelId);
+      if (level) {
+        switch(level.levelNumber) {
+          case 1: 
+            this.level1Control.setValue(id);
+            break;
+          case 2: 
+            this.level2Control.setValue(id);
+            break;
+          case 3: 
+            this.level3Control.setValue(id);
+            break;
+          case 4: 
+            this.level4Control.setValue(id);
+            break;
+          case 5: 
+            this.level5Control.setValue(id);
+            break;
+        }
+      }
+    }
+  });
+  
+  // Update form control
+  this.truckForm.patchValue({
+    geographicalEntityIds: this.selectedEntities
+  });
+}
+
+// Remove the old selection code from loadTruck
+
+  // Remove entity from selection (for chips)
+  removeEntity(entityId: number) {
+    const entity = this.geographicalEntities.find(e => e.id === entityId);
+    if (entity) {
+      const level = this.geographicalLevels.find(l => l.id === entity.levelId);
+      if (level) {
+        switch(level.levelNumber) {
+          case 1: this.level1Control.reset(); break;
+          case 2: this.level2Control.reset(); break;
+          case 3: this.level3Control.reset(); break;
+          case 4: this.level4Control.reset(); break;
+          case 5: this.level5Control.reset(); break;
+        }
+      }
+    }
+    
+    let newSelection = this.selectedEntities.filter(id => id !== entityId);
+    this.selectedEntities = newSelection;
+    
+    // Update form control
+    this.truckForm.patchValue({
+      geographicalEntityIds: this.selectedEntities
+    });
+    this.truckForm.get('geographicalEntityIds')?.markAsDirty();
+  }
+
+  // Check if entity is selected
+  isEntitySelected(entityId: number | undefined): boolean {
+    if (!entityId) return false;
+    return this.selectedEntities.includes(entityId);
+  }
+
+  // Get entity name by ID
+  getEntityName(entityId: number): string {
+    return this.entityMap.get(entityId)?.name || `ID: ${entityId}`;
+  }
+
   getErrorMessage(controlName: string): string {
     const control = this.truckForm.get(controlName);
     
@@ -272,20 +506,23 @@ private loadTruck(id: number) {
       return 'La valeur doit être supérieure à 0';
     }
     
+    if (controlName === 'geographicalEntityIds' && control?.hasError('minlength')) {
+      return 'Au moins une localisation doit être sélectionnée';
+    }
+    
     return '';
   }
 
   private getFieldLabel(controlName: string): string {
     const labels: { [key: string]: string } = {
       immatriculation: 'L\'immatriculation',
-     
       marqueTruckId: 'La marque',
       technicalVisitDate: 'La date de visite technique',
       dateOfFirstRegistration: 'La date de première immatriculation',
       emptyWeight: 'Le poids à vide',
       status: 'Le statut',
       color: 'La couleur',
-      zoneId: 'La zone',
+      geographicalEntityIds: 'La localisation',
       typeTruckId: 'Le type de véhicule'
     };
     return labels[controlName] || controlName;
@@ -305,7 +542,9 @@ private loadTruck(id: number) {
   }
 
   onSubmit() {
-    if (!this.truckForm.valid || this.isSubmitting || this.loadingZones || this.loadingTypeTrucks || this.loadingMarques) return;
+    if (!this.truckForm.valid || this.isSubmitting || this.loadingGeographicalEntities || this.loadingTypeTrucks || this.loadingMarques) {
+      return;
+    }
 
     this.isSubmitting = true;
 
@@ -325,18 +564,26 @@ private loadTruck(id: number) {
           .padStart(2, '0')}-${selectedFirstRegDate.getDate().toString().padStart(2, '0')}`
       : null;
 
+    // Create geographical entities array
+    const geographicalEntities = (this.truckForm.value.geographicalEntityIds || []).map(id => ({
+      geographicalEntityId: id
+    }));
+
     const value: any = {
       id: this.data.truckId || 0,
       immatriculation: this.truckForm.value.immatriculation!,
-     
       marqueTruckId: this.truckForm.value.marqueTruckId!,
       technicalVisitDate: technicalVisitDate,
-      dateOfFirstRegistration: dateOfFirstRegistration,       emptyWeight: this.truckForm.value.emptyWeight!,      status: this.truckForm.value.status!,
+      dateOfFirstRegistration: dateOfFirstRegistration,
+      emptyWeight: this.truckForm.value.emptyWeight!,
+      status: this.truckForm.value.status!,
       color: this.truckForm.value.color!,
       images: this.images.length > 0 ? this.images : null,
-      zoneId: this.truckForm.value.zoneId!,
+      geographicalEntities: geographicalEntities,
       typeTruckId: this.truckForm.value.typeTruckId!,
     };
+
+    console.log('Submitting truck data:', value);
 
     if (this.data.truckId) {
       this.httpService.updateTruck(this.data.truckId, value).subscribe({
@@ -476,4 +723,9 @@ private loadTruck(id: number) {
       confirmButtonText: 'OK'
     });
   }
+
+getLevelName(levelNumber: number): string {
+  const level = this.geographicalLevels.find(l => l.levelNumber === levelNumber);
+  return level ? level.name : `Niveau ${levelNumber}`;
+}
 }

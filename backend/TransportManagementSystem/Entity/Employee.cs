@@ -15,7 +15,7 @@ public class Employee
     [Required]
     [StringLength(100)]
     public string Name { get; set; } = string.Empty;
-
+    public string PhoneCountry { get; set; } = string.Empty;
     [Required]
     [StringLength(20)]
     public string PhoneNumber { get; set; } = string.Empty;
@@ -52,4 +52,5 @@ public class Employee
     public string? EmployeeCategory { get; set; }
 
     public bool IsInternal { get; set; } = true;
+    public virtual ICollection<DriverGeographicalEntity>? DriverGeographicalEntities { get; set; }
 }

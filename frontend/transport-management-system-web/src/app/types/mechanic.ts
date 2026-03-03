@@ -1,7 +1,5 @@
-export interface IMechanic {
-  id: number;
-  name: string;
-  email: string;
-  phone: string;
-  createdDate: string;
+import { IEmployee } from "./employee";
+
+export interface IMechanic extends IEmployee {
+  employeeCategory: "MECHANIC"; // Fixed category
 }
