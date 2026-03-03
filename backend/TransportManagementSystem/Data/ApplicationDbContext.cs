@@ -39,8 +39,6 @@ namespace TransportManagementSystem.Data
         public DbSet<SyncHistoryDetail> SyncHistoryDetails { get; set; }
         public DbSet<TruckAvailability> TruckAvailabilities { get; set; }
         public DbSet<Translation> Translations { get; set; }
-        public DbSet<Zone> Zones { get; set; }
-        public DbSet<City> Citys { get; set; }
         public DbSet<TypeTruck> TypeTrucks { get; set; }
         public DbSet<Employee> Employees { get; set; }
         //public DbSet<Category> Categories { get; set; }
@@ -162,21 +160,6 @@ namespace TransportManagementSystem.Data
                .WithMany(c => c.Orders)
                .HasForeignKey(o => o.CustomerId)
                .OnDelete(DeleteBehavior.Restrict);
-
-          
-            modelBuilder.Entity<Location>()
-                .HasOne(l => l.Zone)
-                .WithMany(z => z.Locations) 
-                .HasForeignKey(l => l.ZoneId)
-                .IsRequired()
-                .OnDelete(DeleteBehavior.Restrict);
-
-            modelBuilder.Entity<Customer>()
-                  .HasOne(c => c.Zone)
-                  .WithMany(z => z.Customers)
-                  .HasForeignKey(c => c.ZoneId)
-                  .IsRequired(false)  
-                  .OnDelete(DeleteBehavior.Restrict);
 
             modelBuilder.Entity<Truck>(entity =>
             {

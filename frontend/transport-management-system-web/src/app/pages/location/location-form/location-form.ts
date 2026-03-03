@@ -1,7 +1,6 @@
-import { Component, inject, Inject, OnInit } from '@angular/core';
+import { Component, inject, Inject, OnInit, OnDestroy, AfterViewInit, ChangeDetectorRef } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
-import { MatSnackBar } from '@angular/material/snack-bar';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule } from '@angular/forms';
 import { MatDialogModule } from '@angular/material/dialog';
@@ -12,20 +11,35 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { MatSelectModule } from '@angular/material/select';
+import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { Http } from '../../../services/http';
 import { ILocation, ICreateLocationDto, IUpdateLocationDto } from '../../../types/location';
-import { IZone } from '../../../types/zone';
 import Swal from 'sweetalert2';
 import { Translation } from '../../../services/Translation';
+import { debounceTime, distinctUntilChanged, switchMap, catchError } from 'rxjs/operators';
+import { from, of, Subscription } from 'rxjs';
+import * as L from 'leaflet';
 
 interface DialogData {
   locationId?: number;
 }
 
-interface IZoneOption {
-  id: number;
-  name: string;
+interface NominatimResult {
+  place_id: number;
+  lat: string;
+  lon: string;
+  display_name: string;
+  address: {
+    road?: string;
+    neighbourhood?: string;
+    suburb?: string;
+    city?: string;
+    town?: string;
+    village?: string;
+    state?: string;
+    country?: string;
+    postcode?: string;
+  };
 }
 
 @Component({
@@ -42,105 +56,246 @@ interface IZoneOption {
     MatIconModule,
     MatSlideToggleModule,
     MatProgressSpinnerModule,
-    MatSelectModule
+    MatAutocompleteModule
   ],
   templateUrl: './location-form.html',
   styleUrls: ['./location-form.scss']
 })
-export class LocationFormComponent implements OnInit {
+export class LocationFormComponent implements OnInit, OnDestroy {
   locationForm!: FormGroup;
   loading = false;
   isSubmitting = false;
-  zones: IZoneOption[] = [];
-  loadingZones = false;
+  
+  // Address autocomplete
+  addressSuggestions: NominatimResult[] = [];
+  searchingAddress = false;
+  addressSearchTerm = '';
+  private searchSubscription?: Subscription;
+  
+  // Map
+  private map: L.Map | null = null;
+  private marker: L.Marker | null = null;
 
   constructor(
     private fb: FormBuilder,
-    private http: Http,
+    private http: Http, 
+    private cdr: ChangeDetectorRef, 
     private dialogRef: MatDialogRef<LocationFormComponent>,
-    private snackBar: MatSnackBar,
     @Inject(MAT_DIALOG_DATA) public data: DialogData
   ) {}
 
   ngOnInit(): void {
     this.initForm();
-    this.loadActiveZones();
+    this.setupAddressAutocomplete();
     
     if (this.data.locationId) {
       this.loadLocation(this.data.locationId);
     }
   }
 
+  ngOnDestroy(): void {
+    if (this.searchSubscription) {
+      this.searchSubscription.unsubscribe();
+    }
+    if (this.map) {
+      this.map.remove();
+    }
+  }
+
   private initForm(): void {
     this.locationForm = this.fb.group({
-      name: ['', [Validators.required, Validators.maxLength(100)]],
-      zoneId: ['', [Validators.required]],
+      address: ['', [Validators.required]],
+      latitude: [null],
+      longitude: [null],
+      name: ['', [Validators.maxLength(100)]], // Name is now optional
       isActive: [true]
     });
-  }
 
-  private loadActiveZones(): void {
-    this.loadingZones = true;
-
-    this.http.getActiveZones().subscribe({
-      next: (response) => {
-        this.zones = response.data.map((zone: IZone) => ({
-          id: zone.id,
-          name: zone.name
-        }));
-        this.loadingZones = false;
-      },
-      error: (error) => {
-        console.error('Error loading active zones:', error);
-        this.snackBar.open(
-          'Erreur lors du chargement des zones actives',
-          'Fermer',
-          { duration: 3000 }
-        );
-        this.loadingZones = false;
-        
-        
-        
+    // Auto-fill name from address when address is selected
+    this.locationForm.get('address')?.valueChanges.subscribe(value => {
+      // Only auto-fill if name is empty
+      if (!this.locationForm.get('name')?.value && value && !this.addressSuggestions.length) {
+        // This is a manual entry, not a selection from dropdown
+        this.locationForm.get('name')?.setValue(value.substring(0, 100));
       }
     });
   }
 
-
-
-  private loadLocation(locationId: number): void {
-    this.loading = true;
-
-    this.http.getLocation(locationId).subscribe({
-      next: (response) => {
-        this.locationForm.patchValue({
-          name: response.data.name,
-          zoneId: response.data.zoneId,
-          isActive: response.data.isActive
-        });
-        this.loading = false;
-      },
-      error: (error) => {
-        console.error('Error loading location:', error);
-        this.snackBar.open(
-          'Erreur lors du chargement du lieu',
-          'Fermer',
-          { duration: 3000 }
+ private setupAddressAutocomplete(): void {
+  this.searchSubscription = this.locationForm.get('address')!.valueChanges
+    .pipe(
+      debounceTime(500),
+      distinctUntilChanged(),
+      switchMap(value => {
+        if (!value || value.length < 3) {
+          this.addressSuggestions = [];
+          return of([]);
+        }
+        this.searchingAddress = true;
+        this.addressSearchTerm = value;
+        
+        // Convert Promise to Observable using from
+        return from(this.searchAddress(value)).pipe(
+          catchError(error => {
+            console.error('Error searching address:', error);
+            this.searchingAddress = false;
+            return of([]);
+          })
         );
-        this.loading = false;
-        this.dialogRef.close();
+      })
+    )
+    .subscribe(results => {
+      this.addressSuggestions = results;
+      this.searchingAddress = false;
+    });
+}
+
+  private searchAddress(query: string): Promise<NominatimResult[]> {
+    const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&addressdetails=1&limit=5&countrycodes=tn`;
+    
+    return fetch(url, {
+      headers: {
+        'Accept': 'application/json',
+        'User-Agent': 'TransportManagementSystem/1.0'
       }
+    })
+    .then(response => response.json())
+    .catch(error => {
+      console.error('Error searching address:', error);
+      return [];
     });
   }
 
+  onAddressInput(): void {
+    // Triggered on input, handled by valueChanges
+  }
+
+onAddressSelected(event: any): void {
+  const selectedAddress = this.addressSuggestions.find(
+    s => s.display_name === event.option.value
+  );
+  if (!selectedAddress) return;
+
+  const lat = parseFloat(selectedAddress.lat);
+  const lng = parseFloat(selectedAddress.lon);
+
+  this.locationForm.patchValue({
+    latitude: lat,
+    longitude: lng
+  });
+
+  this.cdr.detectChanges();
+
+  setTimeout(() => {
+    if (!this.map) {
+      this.initMap(); // initialize now that div exists
+    }
+    this.updateMapLocation(lat, lng);
+  }, 0);
+}
+
+  private initMap(): void {
+  const mapElement = document.getElementById('locationMap');
+  if (!mapElement) return;
+
+  this.configureLeafletIcons();
+
+  this.map = L.map('locationMap', {
+    center: [36.8065, 10.1815],
+    zoom: 13
+  });
+
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap',
+    maxZoom: 19
+  }).addTo(this.map);
+}
+
+  private configureLeafletIcons(): void {
+    try {
+      delete (L.Icon.Default.prototype as any)._getIconUrl;
+      L.Icon.Default.mergeOptions({
+        iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png',
+        iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png',
+        shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
+        iconSize: [25, 41],
+        iconAnchor: [12, 41],
+        popupAnchor: [1, -34],
+        shadowSize: [41, 41]
+      });
+    } catch (error) {
+      console.warn('Error configuring Leaflet icons:', error);
+    }
+  }
+
+  private updateMapLocation(lat: number, lng: number): void {
+    if (!this.map) return;
+
+    if (this.marker) {
+      this.marker.remove();
+    }
+
+    this.map.setView([lat, lng], 15);
+    this.marker = L.marker([lat, lng]).addTo(this.map);
+    
+    // Add a popup with coordinates
+    this.marker.bindPopup(`
+      <div style="font-family: 'Segoe UI', sans-serif; padding: 4px;">
+        <strong>Coordonnées:</strong><br/>
+        Lat: ${lat.toFixed(6)}<br/>
+        Lng: ${lng.toFixed(6)}
+      </div>
+    `).openPopup();
+  }
+
+private loadLocation(locationId: number): void {
+  this.loading = true;
+
+  this.http.getLocation(locationId).subscribe({
+    next: (response) => {
+      const location = response.data;
+
+      this.locationForm.patchValue({
+        address: location.address || location.name,
+        latitude: location.latitude,
+        longitude: location.longitude,
+        name: location.name,
+        isActive: location.isActive
+      });
+
+      this.loading = false;
+
+      if (location.latitude && location.longitude) {
+        this.cdr.detectChanges();
+
+        setTimeout(() => {
+          if (!this.map) {
+            this.initMap();
+          }
+          this.updateMapLocation(location.latitude, location.longitude);
+        }, 0);
+      }
+    },
+    error: (error) => {
+      console.error('Error loading location:', error);
+      this.loading = false;
+    }
+  });
+}
   onSubmit(): void {
     if (this.locationForm.invalid || this.isSubmitting) return;
 
     this.isSubmitting = true;
     const formValue = this.locationForm.value;
     
+    // If name is empty, use address as name
+    const locationName = formValue.name?.trim() || formValue.address?.trim().substring(0, 100);
+    
     const locationData = {
-      name: formValue.name.trim(),
-      zoneId: formValue.zoneId,
+      name: locationName,
+      address: formValue.address.trim(),
+      latitude: formValue.latitude,
+      longitude: formValue.longitude,
       isActive: formValue.isActive
     };
     
@@ -153,8 +308,10 @@ export class LocationFormComponent implements OnInit {
 
   private createLocation(formValue: any): void {
     const locationData: ICreateLocationDto = {
-      name: formValue.name.trim(),
-      zoneId: formValue.zoneId,
+      name: formValue.name,
+      address: formValue.address,
+      latitude: formValue.latitude,
+      longitude: formValue.longitude,
       isActive: formValue.isActive
     };
 
@@ -163,21 +320,13 @@ export class LocationFormComponent implements OnInit {
         this.isSubmitting = false;
         Swal.fire({
           icon: 'success',
-          //title: 'ville créé avec succès',
           title: this.t('CITY_CREATED_SUCCESS'),
           confirmButtonText: 'OK',
-          allowOutsideClick: false,
-          customClass: {
-            popup: 'swal2-popup-custom',
-            title: 'swal2-title-custom',
-            icon: 'swal2-icon-custom',
-            confirmButton: 'swal2-confirm-custom'
-          }
+          allowOutsideClick: false
         }).then(() => this.dialogRef.close(location));
       },
       error: (error) => {
         console.error('Create location error:', error);
-        //const errorMessage = error.error?.message || 'Erreur lors de la création du lieu';
         const errorMessage = error.error?.message || this.t('CITY_CREATION_FAILED');
         Swal.fire({
           icon: 'error',
@@ -192,8 +341,10 @@ export class LocationFormComponent implements OnInit {
 
   private updateLocation(formValue: any): void {
     const locationData: IUpdateLocationDto = {
-      name: formValue.name.trim(),
-      zoneId: formValue.zoneId,
+      name: formValue.name,
+      address: formValue.address,
+      latitude: formValue.latitude,
+      longitude: formValue.longitude,
       isActive: formValue.isActive
     };
 
@@ -202,22 +353,14 @@ export class LocationFormComponent implements OnInit {
         this.isSubmitting = false;
         Swal.fire({
           icon: 'success',
-         // title: 'Lieu modifié avec succès',
-           title: this.t('LOCATION_UPDATED_SUCCESS'),
+          title: this.t('LOCATION_UPDATED_SUCCESS'),
           confirmButtonText: 'OK',
-          allowOutsideClick: false,
-          customClass: {
-            popup: 'swal2-popup-custom',
-            title: 'swal2-title-custom',
-            icon: 'swal2-icon-custom',
-            confirmButton: 'swal2-confirm-custom'
-          }
+          allowOutsideClick: false
         }).then(() => this.dialogRef.close(location));
       },
       error: (error) => {
         console.error('Update location error:', error);
         const errorMessage = error.error?.message || this.t('LOCATION_UPDATE_FAILED');
-        //const errorMessage = error.error?.message || 'Erreur lors de la modification du lieu';
         Swal.fire({
           icon: 'error',
           title: 'Erreur',
@@ -233,11 +376,14 @@ export class LocationFormComponent implements OnInit {
     const control = this.locationForm.get(controlName);
     
     if (control?.hasError('required')) {
-      return 'Ce champ est obligatoire';
+      if (controlName === 'address') {
+        return this.t('ADDRESS_REQUIRED') || 'L\'adresse est requise';
+      }
+      return this.t('FIELD_REQUIRED') || 'Ce champ est obligatoire';
     }
     
     if (control?.hasError('maxlength')) {
-      return 'Le nom ne peut pas dépasser 100 caractères';
+      return this.t('MAX_LENGTH_EXCEEDED') || 'Le nom ne peut pas dépasser 100 caractères';
     }
     
     return '';
@@ -250,6 +396,7 @@ export class LocationFormComponent implements OnInit {
   onCancel(): void {
     this.dialogRef.close();
   }
-   private translation = inject(Translation);
-   t(key: string): string { return this.translation.t(key); }
+
+  private translation = inject(Translation);
+  t(key: string): string { return this.translation.t(key); }
 }

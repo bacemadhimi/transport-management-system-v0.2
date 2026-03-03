@@ -74,7 +74,6 @@ builder.Services.AddScoped<IRepository<UserRight>, Repository<UserRight>>();
 builder.Services.AddScoped<IRepository<UserGroup2Right>, Repository<UserGroup2Right>>();
 builder.Services.AddScoped<IRepository<UserGroup2User>, Repository<UserGroup2User>>();
 builder.Services.AddScoped<IRepository<Location>, Repository<Location>>();
-builder.Services.AddScoped<IRepository<City>, Repository<City>>();
 builder.Services.AddScoped<IRepository<TypeTruck>, Repository<TypeTruck>>();
 builder.Services.AddScoped<IRepository<Employee>, Repository<Employee>>();
 builder.Services.AddScoped<IRepository<GeneralSettings>, Repository<GeneralSettings>>();
@@ -91,7 +90,6 @@ builder.Services.AddScoped<IRepository<GeographicalLevel>, Repository<Geographic
 
 builder.Services.AddSingleton<IConfiguration>(builder.Configuration);
 builder.Services.AddScoped<IRepository<MarqueTruck>, Repository<MarqueTruck>>();
-builder.Services.AddScoped<IRepository<Zone>, Repository<Zone>>();
 builder.Services.AddScoped<IStatisticsService, StatisticsService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddScoped<INotificationRepository, NotificationRepository>();
