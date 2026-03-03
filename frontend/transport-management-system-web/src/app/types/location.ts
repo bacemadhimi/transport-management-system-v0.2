@@ -4,20 +4,26 @@ export interface ILocation {
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
-  zoneId: number;
-  zoneName?: string;
+  address:string;
+  zoneName?:string;
+  longitude:number;
+  latitude:number;
 }
 
 export interface ICreateLocationDto {
   name: string;
   isActive?: boolean;
-  zoneId:number;
+  address:string;
+  longitude:number;
+  latitude:number;
 }
 
 export interface IUpdateLocationDto {
   name?: string;
   isActive?: boolean;
-  zoneId:number;
+  address:string;
+  longitude:number;
+  latitude:number;
 }
 
 export interface ApiResponse<T> {

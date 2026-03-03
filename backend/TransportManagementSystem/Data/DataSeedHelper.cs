@@ -322,143 +322,7 @@ namespace TransportManagementSystem.Data
                 Console.WriteLine($"Erreur lors du seeding : {ex.Message}");
                 throw;
             }
-            var tunisianZones = new List<string>
-{"Tunis","Ariana","Ben Arous","Manouba","Bizerte","Nabeul","Zaghouan","Sousse","Monastir", "Mahdia", "Sfax", "Kairouan","Kasserine","Sidi Bouzid",
-    "Gabès",
-    "Médenine",
-    "Tataouine",
-    "Gafsa",
-    "Tozeur",
-    "Kébili",
-    "Béja",
-    "Jendouba",
-    "Le Kef",
-    "Siliana"
-};
-
-            //  Seed Zones (Tunisie)
-            if (!dbContext.Zones.Any())
-            {
-                var now = DateTime.UtcNow;
-
-                var zones = tunisianZones.Select(name => new Zone
-                {
-                    Name = name,
-                    IsActive = true,
-                    CreatedAt = now,
-                    UpdatedAt = now
-                }).ToList();
-
-                dbContext.Zones.AddRange(zones);
-                dbContext.SaveChanges();
-
-                Console.WriteLine("Zones de Tunisie seedées avec succès !");
-            }
-    
-            if (!dbContext.Citys.Any())
-            {
-                var now = DateTime.UtcNow;
-
-                var zoneCities = new Dictionary<string, List<string>>
-    {
-        { "Tunis", new List<string> { "Tunis", "Carthage", "La Marsa", "Le Bardo", "Sidi Bou Saïd", "El Menzah", "Bab Saadoun" } },
-        { "Ariana", new List<string> { "Ariana Ville", "Raoued", "Kalaat el-Andalous", "La Soukra", "Mnihla", "Ettadhamen" } },
-        { "Ben Arous", new List<string> { "Ben Arous", "Ezzahra", "Rades", "Mégrine", "Fouchana", "Hammam Chott", "Bou Mhel" } },
-        { "Manouba", new List<string> { "Manouba", "Oued Ellil", "Douar Hicher", "Den Den", "Tebourba", "Mornaguia" } },
-        { "Bizerte", new List<string> { "Bizerte", "Menzel Bourguiba", "Ras Jebel", "Ghar El Melh", "Mateur", "Sejnane" } },
-        { "Nabeul", new List<string> { "Nabeul", "Hammamet", "Kelibia", "Korba", "Béni Khalled", "Takelsa", "El Haouaria" } },
-        { "Zaghouan", new List<string> { "Zaghouan", "Bir Mcherga", "Nadhour", "El Fahs", "Zriba" } },
-        { "Sousse", new List<string> { "Sousse", "Hergla", "Akouda", "Kondar", "Sousse Riadh", "Enfidha" } },
-        { "Monastir", new List<string> { "Monastir", "Ksar Hellal", "Ouerdanine", "Bekalta", "Teboulba" } },
-        { "Mahdia", new List<string> { "Mahdia", "Chorbane", "El Jem", "Ksour Essef", "Chebba" } },
-        { "Sfax", new List<string> { "Sfax", "Sakiet Eddaier", "Agareb", "Thyna", "Kerkennah", "El Amra" } },
-        { "Kairouan", new List<string> { "Kairouan", "Sbikha", "Chebika", "Oueslatia", "Haffouz" } },
-        { "Kasserine", new List<string> { "Kasserine", "Foussana", "Thala", "Sbeitla", "Sbiba", "Majel Bel Abbès" } },
-        { "Sidi Bouzid", new List<string> { "Sidi Bouzid", "Cebbala", "Meknassy", "Jilma", "Regueb" } },
-        { "Gabès", new List<string> { "Gabès", "Ghannouch", "Mareth", "Matmata", "El Hamma" } },
-        { "Médenine", new List<string> { "Médenine", "Beni Khedache", "Djerba", "Houmt Souk", "Ajim", "Midoun" } },
-        { "Tataouine", new List<string> { "Tataouine", "Dhiba", "Bir Lahmar", "Ghomrassen", "Remada" } },
-        { "Gafsa", new List<string> { "Gafsa", "El Ksar", "Redeyef", "Metlaoui", "Moularès" } },
-        { "Tozeur", new List<string> { "Tozeur", "Degache", "Tamerza", "Nefta" } },
-        { "Kébili", new List<string> { "Kébili", "Douz", "El Golaa", "Souk Lahad" } },
-        { "Béja", new List<string> { "Béja", "Testour", "Nefza", "Goubellat" } },
-        { "Jendouba", new List<string> { "Jendouba", "Fernana", "Aïn Draham", "Ghardimaou" } },
-        { "Le Kef", new List<string> { "Le Kef", "El Ksour", "Nebeur", "Kalaat Khasba" } },
-        { "Siliana", new List<string> { "Siliana", "Bargou", "Bou Arada", "Kesra" } },
-    };
-
-                var zones = dbContext.Zones.ToList();
-                var cities = new List<City>();
-
-                foreach (var kvp in zoneCities)
-                {
-                    var zoneName = kvp.Key;
-                    var cityNames = kvp.Value;
-
-                    var zone = zones.FirstOrDefault(z => z.Name == zoneName);
-                    if (zone == null)
-                    {
-                        Console.WriteLine($"Zone {zoneName} non trouvée !");
-                        continue;
-                    }
-
-                    cities.AddRange(cityNames.Select(cityName => new City
-                    {
-                        Name = cityName,
-                        ZoneId = zone.Id,
-                        IsActive = true,
-                        CreatedAt = now,
-                        UpdatedAt = now
-                    }));
-                }
-
-                dbContext.Citys.AddRange(cities);
-                dbContext.SaveChanges();
-
-                Console.WriteLine("Toutes les villes de Tunisie seedées et associées à leurs zones !");
-            }
-            // Seed MANY Locations (Zone only)
-            if (!dbContext.Locations.Any())
-            {
-                var now = DateTime.UtcNow;
-                var zones = dbContext.Zones.ToList();
-
-                var locations = new List<Location>();
-
-                var locationNames = new[]
-                {
-        "Entrepôt",
-        "Dépôt",
-        "Plateforme",
-        "Centre Logistique",
-        "Hub"
-    };
-
-                int index = 1;
-
-                foreach (var zone in zones)
-                {
-                    // 4 à 6 locations par zone
-                    for (int i = 0; i < 5; i++)
-                    {
-                        locations.Add(new Location
-                        {
-                            Name = $"{locationNames[i % locationNames.Length]} {zone.Name} {index++}",
-                            ZoneId = zone.Id,
-                            IsActive = true,
-                            CreatedAt = now,
-                            UpdatedAt = now
-                        });
-                    }
-                }
-
-                dbContext.Locations.AddRange(locations);
-                dbContext.SaveChanges();
-
-                Console.WriteLine($"✔ {locations.Count} Locations seedées (par zone) !");
-            }
-
-            // 8Seed MANY Convoyeurs
+          
             if (!dbContext.Set<Convoyeur>().Any())
             {
                 var now = DateTime.UtcNow;
@@ -504,7 +368,6 @@ namespace TransportManagementSystem.Data
             {
                 var now = DateTime.UtcNow;
                 var rnd = new Random();
-                var zones = dbContext.Zones.ToList();
                 var MarqueTruckIds = new[] { "Volvo", "Scania", "MAN", "Mercedes", "DAF", "Iveco", "Renault" };
                 var colors = new[]
                                   {
@@ -570,11 +433,7 @@ namespace TransportManagementSystem.Data
                                 Description = "Convoyeur",
                             }
                         };
-
-                                        dbContext.GeneralSettings.AddRange(employeeCategories);
-                                        dbContext.SaveChanges();
-                                    }
-
+                                    
                 dbContext.GeneralSettings.AddRange(employeeCategories);
                     dbContext.SaveChanges();
 
@@ -635,7 +494,7 @@ namespace TransportManagementSystem.Data
                     var typeVehicules = dbContext.TypeTrucks.ToList();
                     var brands = dbContext.MarqueTrucks.ToList();
 
-					if (!typeVehicules.Any() || !brands.Any() || !zones.Any())
+					if (!typeVehicules.Any() || !brands.Any())
                     {
                         Console.WriteLine("⚠ Cannot seed trucks. Missing TypeTruck, MarqueTruck or Zone data.");
                         return;
@@ -648,7 +507,7 @@ namespace TransportManagementSystem.Data
                         int codeGouv = 100 + rnd.Next(0, 80);
                         int numero = 1000 + i;
 
-                        var zone = zones[rnd.Next(zones.Count)];
+                      
                         var selectedType = typeVehicules[rnd.Next(typeVehicules.Count)];
                         var selectedBrand = brands[rnd.Next(brands.Count)];
 
