@@ -20,13 +20,13 @@
         [readonly]="isSubmitting"
         maxlength="100"
       />
-      <mat-hint>{{ t('LOCATION_NAME_HINT') || 'Nom personnalisé pour ce lieu' }}</mat-hint>
+      <mat-hint>{{ t('LOCATION_ADRESS')}}</mat-hint>
       <mat-hint align="end">{{ locationForm.get('name')?.value?.length || 0 }}/100 {{ t('CHARACTERS') }}</mat-hint>
     </mat-form-field>
 
     <!-- Address Autocomplete Field (second) -->
     <mat-form-field class="w-full mt-4 address-field">
-      <mat-label>{{ t('ADDRESS_LABEL') || 'Adresse' }}</mat-label>
+      <mat-label>{{ t('LOCATION_ADRESSv1')}}</mat-label>
       <input 
         matInput 
         formControlName="address" 
@@ -60,7 +60,7 @@
       <mat-error *ngIf="locationForm.get('address')?.invalid && locationForm.get('address')?.touched">
         {{ getErrorMessage('address') }}
       </mat-error>
-      <mat-hint>{{ t('ADDRESS_HINT') || 'Commencez à taper pour rechercher une adresse' }}</mat-hint>
+      <mat-hint>{{ t('ADRESS_HINT') }}</mat-hint>
     </mat-form-field>
 
     <!-- Hidden fields for coordinates -->
@@ -108,7 +108,7 @@
           <h5 class="font-medium text-red-700">{{ t('FORM_ERRORS_TITLE') }}</h5>
           <ul class="text-red-600 text-sm list-disc ml-4 mt-1">
             <li *ngIf="locationForm.get('address')?.hasError('required')">
-              {{ t('ADDRESS_REQUIRED') || 'L\'adresse est requise' }}
+              {{ t('LOCATION_ADR_REQUIRED')}}
             </li>
           </ul>
         </div>
