@@ -449,7 +449,7 @@
   "DATE_FIRST_REGISTRATION_LABEL": "Date de première immatriculation",
   "EMPTY_WEIGHT_LABEL": "Poids à vide",
   "TABLE_ATTACHMENT": "Pièce Jointe",
-  "EDIT_EMPLOYEE": "Éditer Employé",
+  "EDIT_EMPLOYEE": "Modifier Employé",
   "ID_NUMBER_REQUIRED": "Le matricule est obligatoire",
   "EMAIL_REQUIRED": "L'email est obligatoire",
   "EMAIL_INVALID1": "Veuillez entrer un email valide",
