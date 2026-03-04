@@ -474,7 +474,7 @@
   "ADDRESS_REQUIRED": "L'adresse est obligatoire",
   "ADDRESS_HINT": "Saisir l'adresse de livraison complète",
   "ADDRESS_LABEL": "Adresse",
-  "LOCATION_NAME_HINT": "Enter the terminal name"
+  "LOCATION_NAME_HINT": "Enter the terminal name",
   "DATE_FIRST_REGISTRATION_REQUIRED": "Date de première immatriculation requise",
   "EMPTY_WEIGHT_REQUIRED": "Le poids à vide est requis",
   "PHOTO_TRUCKv": "Ajouter des photos",
