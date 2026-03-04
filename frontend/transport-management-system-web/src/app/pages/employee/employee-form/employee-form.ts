@@ -280,6 +280,11 @@ private loadGeographicalEntities(): void {
           // If we have employee data waiting and it's a driver, set the selections now
           if (this.employeeData && this.employeeData.employeeCategory === 'DRIVER') {
             this.setGeographicalSelections(this.employeeData);
+          } else if (this.employeeData && this.employeeData.employeeCategory !== 'DRIVER') {
+            // For non-drivers, ensure geo control is valid
+            const geoControl = this.employeeForm.get('geographicalEntityIds');
+            geoControl?.clearValidators();
+            geoControl?.updateValueAndValidity({ emitEvent: false });
           }
           
           // Trigger change detection
@@ -358,11 +363,11 @@ private setGeographicalSelections(employeeData: any) {
   this.selectedEntities = [...geographicalEntityIds];
   
   // Reset all level controls first
-  this.level1Control.reset();
-  this.level2Control.reset();
-  this.level3Control.reset();
-  this.level4Control.reset();
-  this.level5Control.reset();
+  this.level1Control.reset(undefined, { emitEvent: false });
+  this.level2Control.reset(undefined, { emitEvent: false });
+  this.level3Control.reset(undefined, { emitEvent: false });
+  this.level4Control.reset(undefined, { emitEvent: false });
+  this.level5Control.reset(undefined, { emitEvent: false });
   
   // Set level controls based on the level of each entity
   geographicalEntityIds.forEach((id: number) => {
@@ -392,12 +397,21 @@ private setGeographicalSelections(employeeData: any) {
     }
   });
   
-  // Update form control
+  // Update form control with the selected entities
   this.employeeForm.patchValue({
     geographicalEntityIds: this.selectedEntities
   }, { emitEvent: false });
   
+  // IMPORTANT: Mark the control as touched and dirty to update validation state
+  const geoControl = this.employeeForm.get('geographicalEntityIds');
+  if (geoControl) {
+    geoControl.markAsTouched({ emitEvent: false });
+    geoControl.markAsDirty({ emitEvent: false });
+    geoControl.updateValueAndValidity({ emitEvent: false });
+  }
+  
   console.log('Selected entities after setting:', this.selectedEntities);
+  console.log('Geo control valid:', geoControl?.valid);
   this.cdr.detectChanges();
 }
   removeEntity(entityId: number) {
@@ -742,9 +756,18 @@ loadEmployee(employeeId: number) {
         typeTruckId: employee.typeTruckId || null,
         employeeCategory: employee.employeeCategory || '',
         isInternal: employee.isInternal || false
-      });
+      }, { emitEvent: false });
 
       this.phoneCountry = employee.phoneCountry || 'tn';
+
+      // Force validation update for base fields
+      Object.keys(this.employeeForm.controls).forEach(key => {
+        const control = this.employeeForm.get(key);
+        if (control && key !== 'geographicalEntityIds') {
+          control.markAsTouched({ emitEvent: false });
+          control.updateValueAndValidity({ emitEvent: false });
+        }
+      });
 
       // Set geographical selections for drivers
       if (employee.employeeCategory === 'DRIVER') {
@@ -763,6 +786,12 @@ loadEmployee(employeeId: number) {
           // Otherwise, store the employee data to process after loading
           this.employeeData = employee;
         }
+      } else {
+        // For non-drivers, clear geographical validation and mark as valid
+        const geoControl = this.employeeForm.get('geographicalEntityIds');
+        geoControl?.clearValidators();
+        geoControl?.setValue([]);
+        geoControl?.updateValueAndValidity({ emitEvent: false });
       }
 
       if (employee.attachmentFileName) {
@@ -776,6 +805,10 @@ loadEmployee(employeeId: number) {
           this.iti.setNumber(employee.phoneNumber);
         }, 200);
       }
+      
+      // Check overall form validity
+      console.log('Form valid after loading:', this.employeeForm.valid);
+      console.log('Form errors:', this.employeeForm.errors);
       
       // Trigger change detection
       this.cdr.detectChanges();
@@ -1043,4 +1076,26 @@ updateEmployee() {
     
     return '';
   }
+  isEditMode(): boolean {
+  return !!this.data.employeeId;
+}
+isSubmitButtonDisabled(): boolean {
+  // If submitting or loading, disable
+  if (this.isSubmitting || this.loadingGeographicalEntities) {
+    return true;
+  }
+  
+  const category = this.employeeForm.get('employeeCategory')?.value;
+  
+  // For drivers in edit mode, check if at least one geographical entity is selected
+  if (category === 'DRIVER') {
+    // In edit mode, if no entities are selected, disable the button
+    if (this.selectedEntities.length === 0) {
+      return true;
+    }
+  }
+  
+  // For all cases, check if the form is invalid
+  return this.employeeForm.invalid;
+}
 }
