@@ -1,10 +1,10 @@
-import { Component, inject, OnInit } from '@angular/core';
+﻿import { Component, inject, OnInit } from '@angular/core';
 import { Http } from '../../services/http';
-import { SettingsService } from '../../services/settings.service'; 
+import { SettingsService } from '../../services/settings.service';
 import { Table } from '../../components/table/table';
 import { ITruck } from '../../types/truck';
 import { MatButtonModule } from '@angular/material/button';
-import { CommonModule } from '@angular/common'; 
+import { CommonModule } from '@angular/common';
 import { FormBuilder, FormControl, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { MatDialog } from '@angular/material/dialog';
 import { TruckForm } from './truck-form/truck-form';
@@ -42,12 +42,12 @@ import { IMarque } from '../../types/marque';
   styleUrls: ['./truck.scss']
 })
 export class Truck implements OnInit {
-  constructor(public auth: Auth) {}  
-  
- 
+  constructor(public auth: Auth) {}
+
+
   settingsService = inject(SettingsService);
-  
-  loadingUnit: string = 'palette'; 
+
+  loadingUnit: string = 'palette';
   capacityUnits: { value: string; label: string }[] = [];
   marques: IMarque[] = [];
   marqueMap: Map<number, string> = new Map();
@@ -66,7 +66,7 @@ export class Truck implements OnInit {
 
     return permittedActions;
   }
-    
+
   httpService = inject(Http);
   authService = inject(Auth);
   pagedTruckData!: PagedData<ITruck>;
@@ -100,7 +100,7 @@ get showCols() {
       label: 'Type de véhicule',
       format: (row: ITruck) => {
         if (!row.typeTruck) return 'N/A';
-        
+
         return this.sanitizer.bypassSecurityTrustHtml(`
           <span style="
             display: inline-block;
@@ -120,18 +120,18 @@ get showCols() {
       label: this.t('CAPACITY_LABEL'),
       format: (row: ITruck) => {
         if (!row.typeTruck) return 'N/A';
-        
+
         const capacity = row.typeTruck.capacity || 'N/A';
         const unit = row.typeTruck.unit || 'tonnes';
         const unitLabel = this.getCapacityUnitLabel(unit);
-        
+
         return this.sanitizer.bypassSecurityTrustHtml(`
           <span style="display:flex; align-items:center; gap:8px;">
             <strong>${capacity} ${unitLabel}</strong>
-            <img 
-              src="${this.getLoadingUnitImage(unit)}" 
-              width="50" 
-              height="50" 
+            <img
+              src="${this.getLoadingUnitImage(unit)}"
+              width="50"
+              height="50"
               style="object-fit:contain"
               onerror="this.style.display='none'"
             />
@@ -236,7 +236,7 @@ get showCols() {
 
   ngOnInit() {
     this.loadMarques();
-    this.loadSettings(); 
+    this.loadSettings();
     this.getLatestData();
 
     console.log('loadingUnit: ' + this.loadingUnit);
@@ -258,11 +258,11 @@ get showCols() {
       },
       error: (err) => {
         console.error('Error loading settings:', err);
-        this.loadingUnit = 'palette'; 
+        this.loadingUnit = 'palette';
       }
     });
 
-  
+
     this.settingsService.orderSettings$.subscribe(settings => {
       if (settings) {
         this.loadingUnit = settings.loadingUnit || 'palette';
@@ -275,7 +275,7 @@ get showCols() {
     this.httpService.getMarqueTrucks().subscribe({
       next: (response) => {
         let marquesData: IMarque[];
-        
+
         if (response && typeof response === 'object' && 'data' in response) {
           marquesData = (response as any).data;
         } else if (Array.isArray(response)) {
@@ -283,14 +283,14 @@ get showCols() {
         } else {
           marquesData = [];
         }
-        
+
         this.marques = marquesData;
-        
+
         this.marqueMap.clear();
         this.marques.forEach(marque => {
           this.marqueMap.set(marque.id, marque.name);
         });
-        
+
         console.log('Marques loaded:', this.marques);
       },
       error: (error) => {
@@ -306,9 +306,9 @@ get showCols() {
 
  getLoadingUnitImage(unit: string): string {
   if (!unit) return '/palette.jpg';
-  
+
   const unitLower = unit.toLowerCase();
-  
+
   switch (unitLower) {
     case 'palettes':
     case 'palette':
@@ -333,9 +333,9 @@ private getCapacityUnitLabel(unit: string): string {
   console.log('Unit from truck type:', unit);
   console.log(unit)
   if (!unit) return 'Tonnes';
-  
+
   const unitLower = unit.toLowerCase();
-  
+
   switch(unitLower) {
     case 'palettes':
     case 'palette':
@@ -357,10 +357,10 @@ private getCapacityUnitLabel(unit: string): string {
     this.httpService.getTrucksList(this.filter).subscribe(result => {
       this.pagedTruckData = result;
       this.totalData = result.totalData;
-      
+
       if (result.data && result.data.length > 0) {
         console.log('Sample truck data:', result.data[0]);
- 
+
         console.log('Truck typeTruck:', result.data[0].typeTruck);
       }
     });
@@ -383,7 +383,7 @@ private getCapacityUnitLabel(unit: string): string {
 
     ref.afterClosed().subscribe(() => this.getLatestData());
   }
-   
+
   delete(truck: ITruck) {
     if (confirm(`${this.t('TRUCK_DELETE_CONFIRM')} ${truck.immatriculation}?`)) {
       this.httpService.deleteTruck(truck.id).subscribe(() => {
@@ -515,7 +515,7 @@ private getCapacityUnitLabel(unit: string): string {
 
     doc.setFontSize(10);
     doc.text(`Liste des Camions - ${new Date().toLocaleDateString('fr-FR')}`, 14, 10);
-    
+
     doc.save('camions.pdf');
   }
 
@@ -530,8 +530,8 @@ private getCapacityUnitLabel(unit: string): string {
     const remainingCount = images.length - 3;
 
     const imagesHtml = displayImages.map(base64 => `
-      <img 
-        src="data:image/jpeg;base64,${base64}" 
+      <img
+        src="data:image/jpeg;base64,${base64}"
         style="width:50px;height:40px;object-fit:cover;border-radius:4px;margin-right:4px;border:1px solid #ddd"
         onerror="this.style.display='none'"
       />
@@ -569,8 +569,8 @@ private getCapacityUnitLabel(unit: string): string {
     }
 
     return this.sanitizer.bypassSecurityTrustHtml(`
-      <img 
-        src="data:image/jpeg;base64,${base64}" 
+      <img
+        src="data:image/jpeg;base64,${base64}"
         style="width:60px;height:40px;object-fit:cover;border-radius:4px"
         onerror="this.style.display='none'"
       />

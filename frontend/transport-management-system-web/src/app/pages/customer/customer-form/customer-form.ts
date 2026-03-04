@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, AfterViewInit, ViewChild, ElementRef, OnDestroy, ChangeDetectorRef } from '@angular/core';
+﻿import { Component, inject, OnInit, AfterViewInit, ViewChild, ElementRef, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { FormBuilder, Validators, ReactiveFormsModule, FormsModule, FormControl } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
@@ -46,37 +46,37 @@ export class CustomerFormComponent implements OnInit, AfterViewInit, OnDestroy {
 
   @ViewChild('phoneInput') phoneInput!: ElementRef<HTMLInputElement>;
   private iti: any;
-  
+
   isLoading = false;
   isSubmitting = false;
-  
-  // Geographical entities
+
+
   loadingGeographicalEntities = false;
   geographicalEntities: IGeographicalEntity[] = [];
   geographicalLevels: IGeographicalLevel[] = [];
 
-  // Selected entities
+
   selectedEntities: number[] = [];
 
-  // Entity hierarchies by level
+
   level1Entities: IGeographicalEntity[] = [];
   level2Entities: IGeographicalEntity[] = [];
   level3Entities: IGeographicalEntity[] = [];
   level4Entities: IGeographicalEntity[] = [];
   level5Entities: IGeographicalEntity[] = [];
 
-  // Form controls for each level
+
   level1Control = new FormControl<number | null>(null);
   level2Control = new FormControl<number | null>(null);
   level3Control = new FormControl<number | null>(null);
   level4Control = new FormControl<number | null>(null);
   level5Control = new FormControl<number | null>(null);
 
-  // Map for quick entity lookup
+
   private entityMap: Map<number, IGeographicalEntity> = new Map();
   private customerData: any = null;
-  
-  private subscriptions: Subscription[] = []; 
+
+  private subscriptions: Subscription[] = [];
 
   customerForm = this.fb.group({
     matricule: ['', [Validators.maxLength(50)]],
@@ -90,7 +90,7 @@ export class CustomerFormComponent implements OnInit, AfterViewInit, OnDestroy {
   ngOnInit() {
     this.loadGeographicalEntities();
     this.setupLevelControls();
-    
+
     if (this.data.customerId) {
       this.loadCustomer(this.data.customerId);
     }
@@ -101,7 +101,7 @@ export class CustomerFormComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private setupLevelControls() {
-    // Level 1 changes
+
     this.level1Control.valueChanges.subscribe((value) => {
       if (!value) {
         this.level2Control.reset();
@@ -115,7 +115,7 @@ export class CustomerFormComponent implements OnInit, AfterViewInit, OnDestroy {
       this.updateSelectedEntities();
     });
 
-    // Level 2 changes
+
     this.level2Control.valueChanges.subscribe((value) => {
       if (!value) {
         this.level3Control.reset();
@@ -128,7 +128,7 @@ export class CustomerFormComponent implements OnInit, AfterViewInit, OnDestroy {
       this.updateSelectedEntities();
     });
 
-    // Level 3 changes
+
     this.level3Control.valueChanges.subscribe((value) => {
       if (!value) {
         this.level4Control.reset();
@@ -140,7 +140,7 @@ export class CustomerFormComponent implements OnInit, AfterViewInit, OnDestroy {
       this.updateSelectedEntities();
     });
 
-    // Level 4 changes
+
     this.level4Control.valueChanges.subscribe((value) => {
       if (!value) {
         this.level5Control.reset();
@@ -151,7 +151,7 @@ export class CustomerFormComponent implements OnInit, AfterViewInit, OnDestroy {
       this.updateSelectedEntities();
     });
 
-    // Level 5 changes
+
     this.level5Control.valueChanges.subscribe(() => {
       this.updateSelectedEntities();
     });
@@ -203,15 +203,15 @@ export class CustomerFormComponent implements OnInit, AfterViewInit, OnDestroy {
 
   private updateSelectedEntities() {
     const selected: number[] = [];
-    
+
     if (this.level1Control.value) selected.push(this.level1Control.value);
     if (this.level2Control.value) selected.push(this.level2Control.value);
     if (this.level3Control.value) selected.push(this.level3Control.value);
     if (this.level4Control.value) selected.push(this.level4Control.value);
     if (this.level5Control.value) selected.push(this.level5Control.value);
-    
+
     this.selectedEntities = selected;
-    
+
     this.customerForm.patchValue({
       geographicalEntityIds: this.selectedEntities as any
     });
@@ -220,21 +220,21 @@ export class CustomerFormComponent implements OnInit, AfterViewInit, OnDestroy {
 
   private loadGeographicalEntities(): void {
     this.loadingGeographicalEntities = true;
-    
+
     const levelsSub = this.httpService.getGeographicalLevels().subscribe({
       next: (levels) => {
         this.geographicalLevels = levels.filter(l => l.isActive);
-        
+
         const entitiesSub = this.httpService.getGeographicalEntities().subscribe({
           next: (entities) => {
             this.geographicalEntities = entities.filter(e => e.isActive);
             this.organizeEntitiesByLevel();
             this.loadingGeographicalEntities = false;
-            
+
             if (this.customerData) {
               this.setGeographicalSelections(this.customerData);
             }
-            
+
             this.cdr.detectChanges();
           },
           error: (error) => {
@@ -261,24 +261,24 @@ export class CustomerFormComponent implements OnInit, AfterViewInit, OnDestroy {
         });
       }
     });
-    
+
     this.subscriptions.push(levelsSub);
   }
 
   private organizeEntitiesByLevel() {
     this.entityMap.clear();
-    
+
     this.geographicalEntities.forEach(e => {
       if (e.id !== undefined && e.id !== null) {
         this.entityMap.set(e.id, e);
       }
     });
-    
+
     const levelGroups: { [key: number]: IGeographicalEntity[] } = {};
-    
+
     this.geographicalEntities.forEach(entity => {
       if (entity.id === undefined || entity.id === null) return;
-      
+
       const level = this.geographicalLevels.find(l => l.id === entity.levelId);
       if (level) {
         if (!levelGroups[level.levelNumber]) {
@@ -287,7 +287,7 @@ export class CustomerFormComponent implements OnInit, AfterViewInit, OnDestroy {
         levelGroups[level.levelNumber].push(entity);
       }
     });
-    
+
     this.level1Entities = levelGroups[1] || [];
     this.level2Entities = levelGroups[2] || [];
     this.level3Entities = levelGroups[3] || [];
@@ -297,15 +297,15 @@ export class CustomerFormComponent implements OnInit, AfterViewInit, OnDestroy {
 
   private setGeographicalSelections(customerData: any) {
     const geographicalEntityIds = customerData.geographicalEntities?.map((ge: any) => ge.geographicalEntityId) || [];
-    
+
     this.selectedEntities = [...geographicalEntityIds];
-    
+
     this.level1Control.reset();
     this.level2Control.reset();
     this.level3Control.reset();
     this.level4Control.reset();
     this.level5Control.reset();
-    
+
     geographicalEntityIds.forEach((id: number) => {
       const entity = this.geographicalEntities.find(e => e.id === id);
       if (entity) {
@@ -321,11 +321,11 @@ export class CustomerFormComponent implements OnInit, AfterViewInit, OnDestroy {
         }
       }
     });
-    
+
     this.customerForm.patchValue({
       geographicalEntityIds: this.selectedEntities as any
     });
-    
+
     this.cdr.detectChanges();
   }
 
@@ -343,10 +343,10 @@ export class CustomerFormComponent implements OnInit, AfterViewInit, OnDestroy {
         }
       }
     }
-    
+
     let newSelection = this.selectedEntities.filter(id => id !== entityId);
     this.selectedEntities = newSelection;
-    
+
     this.customerForm.patchValue({
     geographicalEntityIds: this.selectedEntities as any
   });
@@ -368,9 +368,9 @@ export class CustomerFormComponent implements OnInit, AfterViewInit, OnDestroy {
     this.httpService.getCustomer(id).subscribe({
       next: (response: any) => {
         const customer = response.data || response;
-        
+
         this.customerData = customer;
-        
+
         this.customerForm.patchValue({
           matricule: customer.matricule || '',
           name: customer.name,
@@ -451,9 +451,9 @@ export class CustomerFormComponent implements OnInit, AfterViewInit, OnDestroy {
     const phoneNumber = this.iti ? this.iti.getNumber() : '';
 
     if (!this.customerForm.valid) {
-      Swal.fire({ 
-        icon: 'error', 
-        title: 'Veuillez remplir tous les champs obligatoires correctement' 
+      Swal.fire({
+        icon: 'error',
+        title: 'Veuillez remplir tous les champs obligatoires correctement'
       });
       return;
     }
@@ -469,13 +469,13 @@ export class CustomerFormComponent implements OnInit, AfterViewInit, OnDestroy {
 
     this.isSubmitting = true;
     const formValue = this.customerForm.value;
-    
+
     const customerData: any = {
-      matricule: formValue.matricule || '', 
-      name: formValue.name!,       
-      phone: phoneNumber || '',                 
-      phoneCountry: this.iti ? this.iti.getSelectedCountryData().iso2 : 'tn', 
-      email: formValue.email || '',     
+      matricule: formValue.matricule || '',
+      name: formValue.name!,
+      phone: phoneNumber || '',
+      phoneCountry: this.iti ? this.iti.getSelectedCountryData().iso2 : 'tn',
+      email: formValue.email || '',
       contact: formValue.contact || '',
       geographicalEntities: this.selectedEntities.map(id => ({
         geographicalEntityId: id
@@ -496,8 +496,8 @@ export class CustomerFormComponent implements OnInit, AfterViewInit, OnDestroy {
           allowOutsideClick: false
         }).then(() => this.dialogRef.close(true));
       },
-      error: (error) => { 
-        console.error(error); 
+      error: (error) => {
+        console.error(error);
         this.isSubmitting = false;
         Swal.fire({
           icon: 'error',
@@ -552,8 +552,8 @@ export class CustomerFormComponent implements OnInit, AfterViewInit, OnDestroy {
   get isEditing(): boolean {
     return !!this.data.customerId;
   }
-    
-  //Call the services to get the translations
+
+
   private translation = inject(Translation);
   t(key: string): string { return this.translation.t(key); }
 }

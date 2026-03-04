@@ -1,4 +1,4 @@
-export interface IVendor {
+﻿export interface IVendor {
   id: number;
   name: string;
   email: string;

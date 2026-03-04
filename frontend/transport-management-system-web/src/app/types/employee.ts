@@ -1,4 +1,4 @@
-import { ITypeTruck } from './type-truck';
+﻿import { ITypeTruck } from './type-truck';
 
 export interface IEmployee {
   id: number;
@@ -9,7 +9,7 @@ export interface IEmployee {
   drivingLicense: string;
   typeTruckId?: number;
   typeTruck?: ITypeTruck;
-  drivingLicenseAttachment?: string; 
+  drivingLicenseAttachment?: string;
   attachmentFileName?: string;
   attachmentFileType?: string;
   createdAt?: Date;

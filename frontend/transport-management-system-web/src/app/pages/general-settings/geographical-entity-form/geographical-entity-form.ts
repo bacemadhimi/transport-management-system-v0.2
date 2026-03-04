@@ -1,4 +1,4 @@
-import { Component, Inject, OnInit } from '@angular/core';
+﻿import { Component, Inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -45,7 +45,7 @@ export class GeographicalEntityForm implements OnInit {
     private fb: FormBuilder,
     private httpService: Http,
     public dialogRef: MatDialogRef<GeographicalEntityForm>,
-    @Inject(MAT_DIALOG_DATA) public data: { 
+    @Inject(MAT_DIALOG_DATA) public data: {
       entityId?: number;
       levels: IGeographicalLevel[];
       entities: IGeographicalEntity[];
@@ -98,10 +98,10 @@ export class GeographicalEntityForm implements OnInit {
   onLevelChange(): void {
     const levelId = this.entityForm.get('levelId')?.value;
     const selectedLevel = this.levels.find(l => l.id === levelId);
-    
+
     this.selectedLevelIsMappable = selectedLevel?.isMappable || false;
 
-    // Update validators based on level mappability
+
     const latitudeControl = this.entityForm.get('latitude');
     const longitudeControl = this.entityForm.get('longitude');
 
@@ -112,11 +112,11 @@ export class GeographicalEntityForm implements OnInit {
       latitudeControl?.clearValidators();
       longitudeControl?.clearValidators();
     }
-    
+
     latitudeControl?.updateValueAndValidity();
     longitudeControl?.updateValueAndValidity();
 
-    // Update available parents
+
     this.updateAvailableParents();
   }
 
@@ -130,11 +130,11 @@ export class GeographicalEntityForm implements OnInit {
       return;
     }
 
-    // Parents must be from levels with lower number (higher in hierarchy)
+
     this.availableParents = this.allEntities.filter(entity => {
       const entityLevel = this.levels.find(l => l.id === entity.levelId);
-      return entityLevel && 
-             entityLevel.levelNumber < currentLevel.levelNumber && 
+      return entityLevel &&
+             entityLevel.levelNumber < currentLevel.levelNumber &&
              entity.isActive &&
              (!currentEntityId || entity.id !== currentEntityId);
     });
@@ -163,24 +163,24 @@ export class GeographicalEntityForm implements OnInit {
   this.isSubmitting = true;
   const formValue = this.entityForm.value;
 
-  // Create DTO that matches what backend expects
+
   const entityData: any = {
     name: formValue.name.trim(),
     levelId: formValue.levelId,
     isActive: formValue.isActive
   };
 
-  // Add ID for updates
+
   if (this.data.entityId) {
     entityData.id = this.data.entityId;
   }
 
-  // Add parentId only if selected
+
   if (formValue.parentId) {
     entityData.parentId = formValue.parentId;
   }
 
-  // Add coordinates if provided
+
   if (formValue.latitude !== null && formValue.latitude !== undefined) {
     entityData.latitude = Number(formValue.latitude);
   }
@@ -210,9 +210,9 @@ export class GeographicalEntityForm implements OnInit {
       this.isSubmitting = false;
       console.error('Error saving entity:', error);
       console.error('Error details:', error.error);
-      
+
       let errorMessage = 'Erreur lors de l\'enregistrement';
-      
+
       if (error.status === 400) {
         if (error.error?.message) {
           errorMessage = error.error.message;
@@ -222,7 +222,7 @@ export class GeographicalEntityForm implements OnInit {
       } else if (error.status === 409) {
         errorMessage = 'Une entité avec ce nom existe déjà pour ce niveau';
       }
-      
+
       Swal.fire({
         icon: 'error',
         title: 'Erreur',

@@ -1,4 +1,4 @@
-import { Component, inject, OnInit } from '@angular/core';
+﻿import { Component, inject, OnInit } from '@angular/core';
 import { FormBuilder, Validators, ReactiveFormsModule, FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
@@ -22,7 +22,7 @@ import Swal from 'sweetalert2';
     MatFormFieldModule,
     MatButtonModule,
     MatDialogModule
-    // Removed MatSelectModule since we're not using select anymore
+
   ],
   templateUrl: './type-truck-form.html',
   styleUrls: ['./type-truck-form.scss']

@@ -1,7 +1,7 @@
-import { Component, inject, OnInit } from '@angular/core';
+﻿import { Component, inject, OnInit } from '@angular/core';
 import { Http } from '../../services/http';
 import { Table } from '../../components/table/table';
-import { ILocation } from '../../types/location'; 
+import { ILocation } from '../../types/location';
 import { MatButtonModule } from '@angular/material/button';
 import { FormControl, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { MatDialog } from '@angular/material/dialog';
@@ -43,11 +43,11 @@ import { Translation } from '../../services/Translation';
   styleUrls: ['./location.scss']
 })
 export class LocationComponent implements OnInit {
-      constructor(public auth: Auth) {}  
-    
+      constructor(public auth: Auth) {}
+
       getActions(row: any, actions: string[]) {
         const permittedActions: string[] = [];
-    
+
         for (const a of actions) {
           if (a === 'Modifier' && this.auth.hasPermission('LOCATION_EDIT')) {
             permittedActions.push(a);
@@ -56,10 +56,10 @@ export class LocationComponent implements OnInit {
             permittedActions.push(a);
           }
         }
-    
+
         return permittedActions;
       }
-      
+
   private sanitizer = inject(DomSanitizer);
   httpService = inject(Http);
   pagedLocationData!: PagedData<ILocation>;
@@ -73,12 +73,12 @@ export class LocationComponent implements OnInit {
   readonly dialog = inject(MatDialog);
 
   showCols = [
-   
-    { 
+
+    {
       key: 'name',
       label: 'Nom de la location'
     },
-    { 
+    {
       key: 'status',
       label: 'Statut',
       format: (row: ILocation): SafeHtml => {
@@ -108,7 +108,7 @@ export class LocationComponent implements OnInit {
       },
       html: true
     },
-    { 
+    {
       key: 'dates',
       label: 'Dates',
       format: (row: ILocation): SafeHtml => {
@@ -139,7 +139,7 @@ export class LocationComponent implements OnInit {
     },
     {
       key: 'Action',
-      //format: (row: ILocation) => ["Modifier", "Supprimer"]
+
        format: (row: ILocation) => [this.t('EDIT'), this.t('DELETE')]
     }
   ];
@@ -188,20 +188,20 @@ export class LocationComponent implements OnInit {
     });
   }
 
-  // delete(location: ILocation) {
-  //   if (confirm(`Voulez-vous vraiment supprimer la ville "${location.name}" ?`)) {
-  //     this.httpService.deleteLocation(location.id).subscribe({
-  //       next: () => {
-  //         this.showSuccess('Location supprimée avec succès');
-  //         this.getLatestData();
-  //       },
-  //       error: (error) => {
-  //         console.error('Error deleting location:', error);
-  //         this.showError('Erreur lors de la suppression de la location');
-  //       }
-  //     });
-  //   }
-  // }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
    delete(location: ILocation) {
   const confirmMessage = this.t('CONFIRM_DELETE_LOCATION').replace('{{name}}', location.name);
@@ -223,10 +223,10 @@ export class LocationComponent implements OnInit {
 
   openDialog(): void {
     const ref = this.dialog.open(LocationFormComponent, {
-      width: '500px', 
-      maxWidth: '95vw', 
-      maxHeight: '90vh', 
-      panelClass: ['dialog-overlay'], 
+      width: '500px',
+      maxWidth: '95vw',
+      maxHeight: '90vh',
+      panelClass: ['dialog-overlay'],
       data: {}
     });
 
@@ -242,16 +242,16 @@ export class LocationComponent implements OnInit {
     this.getLatestData();
   }
 
-  // onRowClick(event: any) {
-  //   switch(event.btn) {
-  //     case "Modifier":
-  //       this.edit(event.rowData);
-  //       break;
-  //     case "Supprimer":
-  //       this.delete(event.rowData);
-  //       break;
-  //   }
-  // }
+
+
+
+
+
+
+
+
+
+
 
   onRowClick(event: any) {
   const editLabel = this.t('EDIT');

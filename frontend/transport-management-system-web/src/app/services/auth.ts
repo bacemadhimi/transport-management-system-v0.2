@@ -1,4 +1,4 @@
-import { HttpClient } from '@angular/common/http';
+﻿import { HttpClient } from '@angular/common/http';
 import { inject, Injectable, signal, NgZone } from '@angular/core';
 import { environment } from '../../environments/environment.development';
 import { IAuthToken } from '../types/auth';
@@ -14,19 +14,19 @@ export class Auth {
   router = inject(Router);
   private ngZone = inject(NgZone);
   private jwtHelper = new JwtHelperService();
-  
-  // Timer for auto logout
+
+
   private logoutTimer: any;
   private tokenCheckInterval: any;
 
-  // ----------- Auth & Token ----------------
+
   login(email: string, password: string) {
     return this.http.post<IAuthToken>(`${environment.apiUrl}/api/Auth/login`, { email, password })
       .pipe(
         tap((authToken) => {
           this.saveToken(authToken);
           this.setLogoutTimer(authToken.token);
-          this.startTokenCheck(); // Start checking token expiration
+          this.startTokenCheck();
         })
       );
   }
@@ -38,54 +38,54 @@ export class Auth {
 
   logout() {
     console.log('Logging out - token expired');
-    
-    // Clear all timers
+
+
     if (this.logoutTimer) {
       clearTimeout(this.logoutTimer);
       this.logoutTimer = null;
     }
-    
+
     if (this.tokenCheckInterval) {
       clearInterval(this.tokenCheckInterval);
       this.tokenCheckInterval = null;
     }
-    
+
     localStorage.removeItem('authLila');
     localStorage.removeItem('token');
     this.user.set(null);
-    
-    // Force redirect to login
+
+
     this.ngZone.run(() => {
       this.router.navigateByUrl('/login', { replaceUrl: true });
     });
   }
 
-  // Start periodic token check (every second for real-time)
+
   private startTokenCheck() {
-    // Clear any existing interval
+
     if (this.tokenCheckInterval) {
       clearInterval(this.tokenCheckInterval);
     }
-    
-    // Check token every second for real-time expiration
+
+
     this.ngZone.runOutsideAngular(() => {
       this.tokenCheckInterval = setInterval(() => {
         this.ngZone.run(() => {
           this.checkTokenExpiration();
         });
-      }, 1000); // Check every 1 second
+      }, 1000);
     });
   }
 
   private checkTokenExpiration() {
     const token = localStorage.getItem('token');
     const currentUrl = this.router.url;
-    
-    // Don't check on login page
+
+
     if (currentUrl.includes('/login')) {
       return;
     }
-    
+
     if (token) {
       try {
         if (this.jwtHelper.isTokenExpired(token)) {
@@ -97,33 +97,33 @@ export class Auth {
         this.logout();
       }
     } else if (!currentUrl.includes('/login')) {
-      // No token but not on login page
+
       this.logout();
     }
   }
 
-  // Set timer to auto logout when token expires
+
   private setLogoutTimer(token: string) {
-    // Clear any existing timer
+
     if (this.logoutTimer) {
       clearTimeout(this.logoutTimer);
     }
-    
+
     const expirationDate = this.jwtHelper.getTokenExpirationDate(token);
     if (!expirationDate) return;
-    
+
     const expiresIn = expirationDate.getTime() - new Date().getTime();
-    
+
     console.log(`Token expires in ${Math.floor(expiresIn / 1000)} seconds`);
-    
-    // Set timer to logout when token expires
+
+
     this.logoutTimer = setTimeout(() => {
       console.log('Token expiration timer triggered');
       this.logout();
     }, expiresIn);
   }
 
-  // Check token on app initialization
+
   checkTokenOnInit() {
     const token = localStorage.getItem('token');
     if (token) {
@@ -135,7 +135,7 @@ export class Auth {
         } else {
           console.log('Token valid on init');
           this.setLogoutTimer(token);
-          this.startTokenCheck(); // Start checking
+          this.startTokenCheck();
           return true;
         }
       } catch (error) {
@@ -150,11 +150,11 @@ export class Auth {
   get isLoggedIn(): boolean {
     const token = localStorage.getItem('token');
     if (!token) return false;
-    
+
     try {
       if (this.jwtHelper.isTokenExpired(token)) {
         console.log('Token expired in getter');
-        this.logout(); // This will redirect
+        this.logout();
         return false;
       }
       return true;
@@ -169,7 +169,7 @@ export class Auth {
     return token ? JSON.parse(token) : null;
   }
 
-  // ----------- Roles & Permissions ----------------
+
   hasRole(role: string): boolean {
     const roles = this.authDetail?.roles ?? [];
     return roles.includes(role);
@@ -187,7 +187,7 @@ export class Auth {
     return perms.some(p => p.startsWith(entity + '_'));
   }
 
-  // Helper methods for entity access
+
   hasAccueilAccess(): boolean { return this.hasEntityAccess('ACCUEIL'); }
   hasChauffeurAccess(): boolean { return this.hasEntityAccess('CHAUFFEUR'); }
   hasConvoyeurAccess(): boolean { return this.hasEntityAccess('CONVOYEUR'); }
@@ -235,15 +235,15 @@ export class Auth {
       error: () => this.user.set(null)
     });
   }
-  
+
   changePassword(data: { oldPassword: string; newPassword: string }): Observable<any> {
     return this.http.post(`${environment.apiUrl}/api/auth/change-password`, data);
   }
-  
+
   loginWithGoogle(): Observable<any> {
     return this.http.post(`${environment.apiUrl}/auth/google`, {});
   }
    getToken(): string | null {
-    return localStorage.getItem('token'); 
+    return localStorage.getItem('token');
   }
 }

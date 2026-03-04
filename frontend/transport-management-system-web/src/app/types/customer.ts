@@ -1,4 +1,4 @@
-import { IGeographicalEntity } from './general-settings';
+﻿import { IGeographicalEntity } from './general-settings';
 
 export interface ICustomer {
   id: number;
@@ -9,11 +9,11 @@ export interface ICustomer {
   matricule: string;
   contact: string;
   sourceSystem?: string;
-  
-  // Geographical entities (like trucks)
+
+
   geographicalEntities?: IGeographicalEntityWithDetails[];
-  
-  // Timestamps
+
+
   createdAt?: Date;
   updatedAt?: Date;
 }

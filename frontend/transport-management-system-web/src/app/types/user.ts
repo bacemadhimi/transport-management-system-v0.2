@@ -1,10 +1,10 @@
-export interface IUser {
+﻿export interface IUser {
   id: number;
   email: string;
   password?: string;
 
-  userGroups?: { id: number; name: string }[]; 
-  userGroupIds?: number[];                     
+  userGroups?: { id: number; name: string }[];
+  userGroupIds?: number[];
 
   profileImage?: string;
   name?: string;

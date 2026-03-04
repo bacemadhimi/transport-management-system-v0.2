@@ -402,10 +402,15 @@
       <div class="form-row full-width">
         <div class="form-field full-width">
           <div class="form-footer">
-            <button mat-flat-button color="primary" type="submit" [disabled]="employeeForm.invalid || isSubmitting || loadingGeographicalEntities" (click)="submit()">
-              <mat-spinner *ngIf="isSubmitting" diameter="20"></mat-spinner>
-              <span *ngIf="!isSubmitting">{{ t(data.employeeId ? 'SAVE_BTN' : 'ADD_BTN') || (data.employeeId ? 'Update' : 'Add') }}</span>
-            </button>
+           <button 
+            mat-flat-button 
+            color="primary" 
+            type="submit" 
+            [disabled]="isSubmitButtonDisabled()" 
+            (click)="submit()">
+            <mat-spinner *ngIf="isSubmitting" diameter="20"></mat-spinner>
+            <span *ngIf="!isSubmitting">{{ t(data.employeeId ? 'SAVE_BTN' : 'ADD_BTN') || (data.employeeId ? 'Update' : 'Add') }}</span>
+          </button>
             <button mat-button type="button" (click)="closeDialog()">{{ t('CANCEL') || 'Cancel' }}</button>
           </div>
         </div>
