@@ -1,4 +1,4 @@
-import { HttpClient, HttpParams } from '@angular/common/http';
+﻿import { HttpClient, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { environment } from '../../environments/environment.development';
 import { PagedData } from '../types/paged-data';
@@ -20,9 +20,7 @@ import { IConvoyeur } from '../types/convoyeur';
 import { IDayOff } from '../types/dayoff';
 import { ICreateOvertimeSetting, IOvertimeSetting } from '../types/overtime';
 import { IMaintenance } from '../types/maintenance';
-import { ICreateZoneDto, IUpdateZoneDto, IZone } from '../types/zone';
 import { DailyForecast, WeatherData } from '../types/weather';
-import { ApiResponses, ICreateCityDto, ICity, IUpdateCityDto } from '../types/city';
 import { AvailabilityRequestDto, DriverAvailabilityDto, DriverOvertimeCheckDto, DriverOvertimeResultDto } from '../types/driver-overtime';
 import { ITypeTruck } from '../types/type-truck';
 import { ICategorys } from '../types/categorys';
@@ -35,7 +33,7 @@ import { IGeneralSettings , IGeographicalEntity, IGeographicalLevel, SearchOptio
 export class Http {
   http = inject(HttpClient);
   constructor(){}
-  
+
   private buildParams(filter: any): HttpParams {
   let params = new HttpParams();
 
@@ -72,12 +70,12 @@ getUsersList(filter: any) {
 
  UpdateUserById(id:number, user:any){
     return this.http.put(environment.apiUrl+'/api/User/' +id, user);
-      
+
 }
   deleteUser(id: number) {
     return this.http.delete(environment.apiUrl + '/api/User/' + id);
   }
-   
+
   getTrucksList(filter: any) {
     const params = new HttpParams({ fromObject: filter });
     return this.http.get<PagedData<ITruck>>(environment.apiUrl + '/api/Trucks?' + params.toString());
@@ -108,7 +106,7 @@ getUsersList(filter: any) {
 getdisableDriver(filter: any) {
     const params = new HttpParams({ fromObject: filter });
   return this.http.get<PagedData<IDriver>>(environment.apiUrl + '/api/Driver/PaginationDisableDriver?' + params.toString());
-} 
+}
 
 getDriver(id: number) {
   return this.http.get<IDriver>(environment.apiUrl + '/api/Driver/' + id);
@@ -129,15 +127,15 @@ deleteDriver(id: number) {
 enableDriver(id: number) {
   return this.http.put(environment.apiUrl + `/api/Driver/DriverStatus?driverId=${id}`, {});
 }
- 
+
 
 disableDriver(id: number) {
   return this.http.put(environment.apiUrl + '/api/Driver/DisableDriverFromList/' + id, {});
-} 
+}
 
 getTripsList(filters: any) {
   const cleanFilters: any = {};
-  
+
   Object.keys(filters).forEach(key => {
     const value = filters[key];
     if (value !== null && value !== undefined && value !== '') {
@@ -162,12 +160,12 @@ getTripsList(filters: any) {
 
 private formatDateForApi(date: string | Date): string {
   if (!date) return '';
-  
+
   const dateObj = typeof date === 'string' ? new Date(date) : date;
   const year = dateObj.getFullYear();
   const month = String(dateObj.getMonth() + 1).padStart(2, '0');
   const day = String(dateObj.getDate()).padStart(2, '0');
-  
+
   return `${year}-${month}-${day}`;
 }
   getTrip(id: number) {
@@ -258,7 +256,7 @@ getDrivers(): Observable<IDriver[]> {
     return this.http.post<IFuelVendor>(environment.apiUrl + '/api/FuelVendor', vendor);
   }
 
-  //ADD CATEGORY
+
    addCategory(category: any) {
     return this.http.post<ICategorys>(environment.apiUrl + '/api/Category', category);
   }
@@ -266,8 +264,8 @@ getDrivers(): Observable<IDriver[]> {
   updateFuelVendor(id: number, vendor: any) {
     return this.http.put<IFuelVendor>(environment.apiUrl + '/api/FuelVendor/' + id, vendor);
   }
-  
-  //UPDATE CATEGORY
+
+
   updateCategory(id: number, category: any) {
     return this.http.put<ICategorys>(environment.apiUrl + '/api/Category/' + id, category);
   }
@@ -351,7 +349,7 @@ getDrivers(): Observable<IDriver[]> {
     return this.http.post<IVendor>(`${environment.apiUrl}/api/Vendor`, vendor);
   }
 
-  
+
   updateVendor(id: number, vendor: any) {
     return this.http.put<IVendor>(`${environment.apiUrl}/api/Vendor/${id}`, vendor);
   }
@@ -593,15 +591,15 @@ markOrdersReadyToLoad(orderIds: number[]) {
 
 getAvailableTrucks(date: string, zoneId?: number | null, excludeTripId?: number) {
   let url = `${environment.apiUrl}/api/Trucks/available?date=${date}`;
-  
+
   if (zoneId) {
     url += `&zoneId=${zoneId}`;
   }
-  
+
   if (excludeTripId) {
     url += `&excludeTripId=${excludeTripId}`;
   }
-  
+
   console.log('📡 Appel API:', url);
   return this.http.get(url);
 }
@@ -629,7 +627,7 @@ checkTruckAvailability(truckId: number, startDate: string, endDate: string) {
     .set('truckId', truckId.toString())
     .set('startDate', startDate)
     .set('endDate', endDate);
-  
+
   return this.http.get<{ available: boolean; conflictingTripId?: number }>(
     environment.apiUrl + '/api/Trips/check-truck-availability?' + params.toString()
   );
@@ -640,7 +638,7 @@ checkDriverAvailability(driverId: number, startDate: string, endDate: string) {
     .set('driverId', driverId.toString())
     .set('startDate', startDate)
     .set('endDate', endDate);
-  
+
   return this.http.get<{ available: boolean; conflictingTripId?: number }>(
     environment.apiUrl + '/api/Trips/check-driver-availability?' + params.toString()
   );
@@ -654,7 +652,7 @@ getOrdersByCustomerId(customerId: number): Observable<IOrder[]> {
       if (Array.isArray(response)) {
         return response as IOrder[];
       }
-      
+
       if (response && typeof response === 'object') {
         if (Array.isArray(response.data)) {
           return response.data as IOrder[];
@@ -663,7 +661,7 @@ getOrdersByCustomerId(customerId: number): Observable<IOrder[]> {
           return response.data as IOrder[];
         }
       }
-      
+
       return [];
     }),
     catchError(error => {
@@ -713,10 +711,6 @@ getLocationsList(filter?: any): Observable<PagedData<ILocation>> {
   return this.http.get<PagedData<ILocation>>(`${environment.apiUrl}/api/locations/PaginationAndSearch`, { params });
 }
 
-getCityList(filter?: any): Observable<PagedData<ICity>> {
-  const params = new HttpParams({ fromObject: filter || {} });
-  return this.http.get<PagedData<ICity>>(`${environment.apiUrl}/api/Cities/PaginationAndSearch`, { params });
-}
 
 getLocation(locationId: number) {
   return this.http.get<ApiResponse<ILocation>>(
@@ -724,27 +718,15 @@ getLocation(locationId: number) {
   );
 }
 
-getCity(cityId: number) {
-  return this.http.get<ApiResponses<ICity>>(
-    `${environment.apiUrl}/api/Cities/${cityId}`
-  );
-}
+
 
 
 createLocation(data: ICreateLocationDto): Observable<ILocation> {
   return this.http.post<ILocation>(`${environment.apiUrl}/api/locations`, data);
 }
 
-createCity(data: ICreateCityDto): Observable<ICity> {
-  return this.http.post<ICity>(`${environment.apiUrl}/api/Cities`, data);
-}
-
 updateLocation(id: number, data: IUpdateLocationDto): Observable<ILocation> {
   return this.http.put<ILocation>(`${environment.apiUrl}/api/locations/${id}`, data);
-}
-
-updateCity(id: number, data: IUpdateCityDto): Observable<ICity> {
-  return this.http.put<ICity>(`${environment.apiUrl}/api/Cities/${id}`, data);
 }
 
 
@@ -898,23 +880,23 @@ getOrdersList(filter: any): Observable<PagedData<IOrder>> {
   }
  private createParams(filter: any): HttpParams {
     let params = new HttpParams();
-    
+
     if (filter.pageIndex !== undefined) {
       params = params.set('pageIndex', filter.pageIndex.toString());
     }
-    
+
     if (filter.pageSize !== undefined) {
       params = params.set('pageSize', filter.pageSize.toString());
     }
-    
+
     if (filter.search) {
       params = params.set('search', filter.search);
     }
-    
+
     if (filter.status) {
       params = params.set('status', filter.status);
     }
-    
+
       if (filter.sourceSystem) {
     params = params.set('sourceSystem', filter.sourceSystem);
   }
@@ -932,7 +914,7 @@ getOrdersList(filter: any): Observable<PagedData<IOrder>> {
     return params;
   }
 
- 
+
 uploadMaintenanceFile(formData: FormData): Observable<any> {
   return this.http.post(`${environment.apiUrl}/api/maintenances/upload`, formData);
 }
@@ -947,28 +929,28 @@ getTruckVidangesHistory(truckId: number): Observable<any> {
 
 getAvailableDriversList(dateStr: string, excludeTripId?: number): Observable<any> {
   let url = `${environment.apiUrl}/api/DriverAvailability/AvailableDrivers?date=${dateStr}`;
-  
+
   if (excludeTripId) {
     url += `&excludeTripId=${excludeTripId}`;
   }
-  
+
   return this.http.get(url);
 }
 
 checkDriverAvailabilityList(driverId: number, dateStr: string, excludeTripId?: number): Observable<any> {
   let url = `${environment.apiUrl}/api/DriverAvailability/CheckDriverAvailability/${driverId}?date=${dateStr}`;
-  
+
   if (excludeTripId) {
     url += `&excludeTripId=${excludeTripId}`;
   }
-  
+
   return this.http.get(url);
 }
 
 getTrajectForTrip(tripId: number): Observable<ITraject | null> {
   return this.http.get<any>(`${environment.apiUrl}/trips/${tripId}/traject`).pipe(
     map(response => {
-      
+
       if (response && response.data !== undefined) {
         return response.data as ITraject;
       }
@@ -1061,36 +1043,13 @@ getSyncHistory() {
   }
 
 getCustomersWithReadyToLoadOrders(): Observable<ICustomer[]> {
-  
+
    return this.http.get<ICustomer[]>(`${environment.apiUrl}/api/customer/with-ready-to-load-orders`);
 }
-getZonesList(filter?: any): Observable<PagedData<IZone>> {
-  const params = new HttpParams({ fromObject: filter || {} });
-  return this.http.get<PagedData<IZone>>(
-    `${environment.apiUrl}/api/zones/PaginationAndSearch`,
-    { params }
-  );
-}
 
-getZone(zoneId: number) {
-  return this.http.get<ApiResponse<IZone>>(
-    `${environment.apiUrl}/api/zones/${zoneId}`
-  );
-}
 
-createZone(data: ICreateZoneDto): Observable<IZone> {
-  return this.http.post<IZone>(
-    `${environment.apiUrl}/api/zones`,
-    data
-  );
-}
 
-updateZone(id: number, data: IUpdateZoneDto): Observable<IZone> {
-  return this.http.put<IZone>(
-    `${environment.apiUrl}/api/zones/${id}`,
-    data
-  );
-}
+
 
 deleteZone(id: number): Observable<any> {
   return this.http.delete(
@@ -1098,17 +1057,6 @@ deleteZone(id: number): Observable<any> {
   );
 }
 
-getActiveZones(): Observable<ApiResponse<IZone[]>> {
-  return this.http.get<ApiResponse<IZone[]>>(`${environment.apiUrl}/api/zones?activeOnly=true`);
-}
-getActiveCitiesByZone(zoneId: number): Observable<ApiResponse<ICity[]>> {
-  return this.http.get<ApiResponse<ICity[]>>(`${environment.apiUrl}/api/cities/zone/${zoneId}?activeOnly=true`);
-}
-
-
-getActiveCities(): Observable<ApiResponse<ICity[]>> {
-  return this.http.get<ApiResponse<ICity[]>>(`${environment.apiUrl}/api/cities/zone/activeOnly=true`);
-}
   getWeatherByCoords(lat: number, lon: number, location: string): Observable<WeatherData | null> {
     const url = `${environment.apiUrl}/api/weather/coords?lat=${lat}&lon=${lon}`;
     return this.http.get<any>(url).pipe(
@@ -1131,40 +1079,40 @@ getActiveCities(): Observable<ApiResponse<ICity[]>> {
 
   getWeatherIconClass(iconCode: string): string {
     const iconMap: { [key: string]: string } = {
-      '01d': 'wb_sunny', // clear sky day
-      '01n': 'nights_stay', // clear sky night
-      '02d': 'partly_cloudy_day', // few clouds day
-      '02n': 'partly_cloudy_night', // few clouds night
-      '03d': 'cloud', // scattered clouds
+      '01d': 'wb_sunny',
+      '01n': 'nights_stay',
+      '02d': 'partly_cloudy_day',
+      '02n': 'partly_cloudy_night',
+      '03d': 'cloud',
       '03n': 'cloud',
-      '04d': 'cloud_queue', // broken clouds
+      '04d': 'cloud_queue',
       '04n': 'cloud_queue',
-      '09d': 'rainy', // shower rain
+      '09d': 'rainy',
       '09n': 'rainy',
-      '10d': 'rainy', // rain
+      '10d': 'rainy',
       '10n': 'rainy',
-      '11d': 'thunderstorm', // thunderstorm
+      '11d': 'thunderstorm',
       '11n': 'thunderstorm',
-      '13d': 'ac_unit', // snow
+      '13d': 'ac_unit',
       '13n': 'ac_unit',
-      '50d': 'foggy', // mist
+      '50d': 'foggy',
       '50n': 'foggy'
     };
-    
+
     return iconMap[iconCode] || 'help_outline';
   }
 
   getAvailableDriversByDateAndZone(date: string, zoneId?: number, excludeTripId?: number): Observable<any> {
   let url = `${environment.apiUrl}/api/driverAvailability/AvailableDrivers?date=${date}`;
-  
+
   if (zoneId) {
     url += `&zoneId=${zoneId}`;
   }
-  
+
   if (excludeTripId) {
     url += `&excludeTripId=${excludeTripId}`;
   }
-  
+
   return this.http.get<any>(url).pipe(
     catchError(error => {
       console.error('Error loading available drivers by date and zone:', error);
@@ -1186,28 +1134,28 @@ getDriversByZone(zoneId: number): Observable<IDriver[]> {
 getCitiesByZone(zoneId: number): Observable<any> {
 
   return this.http.get(`${environment.apiUrl}/api/cities/zone/${zoneId}`);
-  
+
 }
 getDriversAvailability(request: AvailabilityRequestDto): Observable<DriverAvailabilityDto[]> {
   return this.http.post<DriverAvailabilityDto[]>(
-    `${environment.apiUrl}/api/driverovertime/availability`, 
+    `${environment.apiUrl}/api/driverovertime/availability`,
     request
   );
 }
 
 checkDriverOvertime(data: DriverOvertimeCheckDto): Observable<DriverOvertimeResultDto> {
   return this.http.post<DriverOvertimeResultDto>(
-    `${environment.apiUrl}/api/driverovertime/check`, 
+    `${environment.apiUrl}/api/driverovertime/check`,
     data
   );
 }
 
 
 checkDriverRealTimeAvailability(
-  driverId: number, 
-  date: string, 
-  startTime: Date, 
-  tripDuration: number, 
+  driverId: number,
+  date: string,
+  startTime: Date,
+  tripDuration: number,
   excludeTripId?: number
 ): Observable<any> {
   const body = {
@@ -1221,9 +1169,9 @@ checkDriverRealTimeAvailability(
 }
 
 checkDriverAvailabilityWithTripDuration(
-  driverId: number, 
-  date: string, 
-  tripDuration: number, 
+  driverId: number,
+  date: string,
+  tripDuration: number,
   excludeTripId?: number
 ): Observable<any> {
   const body = {
@@ -1264,7 +1212,7 @@ getAvailableTrucksByZoneAndDate(zoneId: number, date: string, excludeTripId?: nu
 
         if (response && response.data) {
           const data = response.data;
-          
+
           return {
             data: {
               availableTrucks: data.availableTrucks?.filter((truck: any) => {
@@ -1287,8 +1235,8 @@ getClientName(customerId: number): Observable<string> {
   if (!customerId) return of('Non spécifié');
 
   return this.http
-    .get(`${environment.apiUrl}/api/customer/${customerId}/name`, { 
-      responseType: 'text' 
+    .get(`${environment.apiUrl}/api/customer/${customerId}/name`, {
+      responseType: 'text'
     })
     .pipe(
       tap(name => console.log('API Response:', name)),
@@ -1302,7 +1250,7 @@ getClientName(customerId: number): Observable<string> {
     return this.http.get<ICustomer[]>(environment.apiUrl + '/api/customer/list');
   }
 
-  // ===== EMPLOYEE =====
+
   getEmployeesList(filter: any) {
     const params = new HttpParams({ fromObject: filter });
     return this.http.get<PagedData<any>>(environment.apiUrl + '/api/Employee/PaginationAndSearch?' + params.toString());
@@ -1363,7 +1311,7 @@ getTrucksByDate(date: Date, locationId?: number): Observable<ITruck[]> {
   const params = new HttpParams()
     .set('date', date.toISOString())
     .set('locationId', locationId?.toString() || '');
-    
+
   return this.http.get<ITruck[]>(`${environment.apiUrl}/api/trucks/available`, { params }).pipe(
     catchError(error => {
       console.error('Error in getTrucksByDate:', error);
@@ -1371,10 +1319,10 @@ getTrucksByDate(date: Date, locationId?: number): Observable<ITruck[]> {
     })
   );
 }
-// Marque endpoints
-getMarques(filter?: any): Observable<PagedData<ICity>> {
+
+getMarques(filter?: any): Observable<PagedData<IMarque>> {
   const params = new HttpParams({ fromObject: filter || {} });
-  return this.http.get<PagedData<ICity>>(`${environment.apiUrl}/api/MarqueTruck`, { params });
+  return this.http.get<PagedData<IMarque>>(`${environment.apiUrl}/api/MarqueTruck`, { params });
 }
 getMarque(id: number) {
   return this.http.get<IMarque>(`${environment.apiUrl}/api/MarqueTruck/${id}`);
@@ -1396,7 +1344,7 @@ getMarqueTrucks() {
   }
 getGeneralSettings(searchOptions: SearchOptions): Observable<PagedData<IGeneralSettings>> {
     let params = new HttpParams();
-    
+
     if (searchOptions.pageIndex !== undefined) {
       params = params.set('pageIndex', searchOptions.pageIndex.toString());
     }
@@ -1409,7 +1357,7 @@ getGeneralSettings(searchOptions: SearchOptions): Observable<PagedData<IGeneralS
     if (searchOptions.parameterType) {
       params = params.set('parameterType', searchOptions.parameterType);
     }
-    
+
     return this.http.get<PagedData<IGeneralSettings>>(
       `${environment.apiUrl}/api/GeneralSettings/PaginationAndSearch`,
       { params }
@@ -1433,17 +1381,17 @@ getAllSettingsByType(parameterType: string): Observable<IGeneralSettings[]> {
 
 addGeneralSettings(parameter: Omit<IGeneralSettings, 'id'>): Observable<IGeneralSettings> {
     return this.http.post<IGeneralSettings>(
-      `${environment.apiUrl}/api/GeneralSettings`, 
+      `${environment.apiUrl}/api/GeneralSettings`,
       parameter
     );
   }
   updateGeneralSettings(id: number, parameter: Partial<IGeneralSettings>): Observable<IGeneralSettings> {
     return this.http.put<IGeneralSettings>(
-      `${environment.apiUrl}/api/GeneralSettings/${id}`, 
+      `${environment.apiUrl}/api/GeneralSettings/${id}`,
       parameter
     );
   }
-  // Add these methods to your Http service
+
 
 getGeographicalLevels(): Observable<IGeographicalLevel[]> {
   return this.http.get<IGeographicalLevel[]>(`${environment.apiUrl}/api/GeographicalLevels`);
@@ -1473,23 +1421,17 @@ deleteGeographicalEntity(id: number): Observable<void> {
   return this.http.delete<void>(`${environment.apiUrl}/api/GeographicalEntities/${id}`);
 }
 
-/**
- * Get weather by location ID
- */
+
 getWeatherByLocation(locationId: number): Observable<any> {
   return this.http.get(`${environment.apiUrl}/api/Weather/location/${locationId}`);
 }
 
-/**
- * Get weather forecast by location ID
- */
+
 getWeatherForecastByLocation(locationId: number): Observable<any> {
   return this.http.get(`${environment.apiUrl}/api/Weather/location/${locationId}/forecast`);
 }
 
-/**
- * Get weather for both start and end locations in one call
- */
+
 getWeatherForTrip(startLocationId: number, endLocationId: number): Observable<any> {
   return this.http.get(`${environment.apiUrl}/api/Weather/trip?startLocationId=${startLocationId}&endLocationId=${endLocationId}`);
 }
@@ -1497,6 +1439,3 @@ getWeatherForecast(cityName: string): Observable<any> {
   return this.http.get(`${environment.apiUrl}/api/Weather/forecast?q=${encodeURIComponent(cityName)}`);
 }
 }
-
-
-

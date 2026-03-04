@@ -1,5 +1,5 @@
-import { IEmployee } from "./employee";
+﻿import { IEmployee } from "./employee";
 
 export interface IMechanic extends IEmployee {
-  employeeCategory: "MECHANIC"; // Fixed category
+  employeeCategory: "MECHANIC";
 }

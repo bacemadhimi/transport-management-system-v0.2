@@ -1,4 +1,4 @@
-import {
+﻿import {
   Component,
   inject,
   OnInit,
@@ -86,7 +86,7 @@ export class UserForm implements OnInit, AfterViewInit, OnDestroy {
   isPhotoChanged = false;
   imagePreview: string | null = null;
   fileError: string | null = null;
-  originalImageBase64: string | null = null; 
+  originalImageBase64: string | null = null;
 
   userForm = this.fb.group({
     name: ['', [Validators.required, Validators.minLength(2)]],
@@ -212,10 +212,10 @@ onSubmit(): void {
 
   const phoneNumber = this.iti ? this.iti.getNumber() : this.userForm.value.phone;
 
- 
+
   let profileImage = this.userForm.value.profileImage;
-  
-  
+
+
   if (profileImage && typeof profileImage === 'string' && profileImage.startsWith('data:image/')) {
     profileImage = this.extractPureBase64(profileImage);
   }
@@ -225,7 +225,7 @@ onSubmit(): void {
     email: this.userForm.value.email,
     phone: phoneNumber,
     userGroupIds: this.userForm.value.userGroupIds,
-    profileImage: profileImage, 
+    profileImage: profileImage,
     password: this.userForm.value.password
   };
 
@@ -252,19 +252,19 @@ onSubmit(): void {
 onFileSelected(event: Event): void {
   const input = event.target as HTMLInputElement;
   if (!input.files?.length) return;
-  
+
   const file = input.files[0];
 
- 
+
   if (file.size > 2 * 1024 * 1024) {
     this.fileError = 'L\'image est trop volumineuse. Maximum 2MB.';
-    input.value = ''; 
+    input.value = '';
     return;
   }
 
   if (!file.type.match(/image\/(jpeg|jpg|png|gif)/)) {
     this.fileError = 'Format d\'image non supporté. Utilisez JPEG, PNG ou GIF.';
-    input.value = ''; 
+    input.value = '';
     return;
   }
 
@@ -275,38 +275,38 @@ onFileSelected(event: Event): void {
 
   const reader = new FileReader();
   reader.onload = () => {
- 
+
     const dataUrl = reader.result as string;
-    this.imagePreview = dataUrl; 
-    
+    this.imagePreview = dataUrl;
+
 
     const pureBase64 = this.extractPureBase64(dataUrl);
     this.userForm.patchValue({ profileImage: pureBase64 });
   };
-  
+
   reader.onerror = () => {
     this.fileError = 'Erreur lors de la lecture du fichier';
-    input.value = ''; 
+    input.value = '';
   };
-  
+
   reader.readAsDataURL(file);
 }
 
 
 private extractPureBase64(dataUrl: string): string {
   if (!dataUrl || !dataUrl.startsWith('data:image/')) return '';
-  
+
   const base64Marker = 'base64,';
   const base64Index = dataUrl.indexOf(base64Marker);
-  
+
   if (base64Index === -1) return '';
-  
+
   return dataUrl.substring(base64Index + base64Marker.length);
 }
 
- private translation = inject(Translation);  
+ private translation = inject(Translation);
   t(key: string): string { return this.translation.t(key); }
-  
+
 private loadUserData(): void {
   if (!this.data.userId) return;
   this.httpService.getUserById(this.data.userId).pipe(takeUntil(this.destroy$)).subscribe({
@@ -325,16 +325,16 @@ private loadUserData(): void {
       this.filteredAvailableRoles = [...this.availableRoles];
 
       if (user.profileImage) {
-       
+
         if (this.isPureBase64(user.profileImage)) {
-          
+
           this.imagePreview = this.createDataUrl(user.profileImage);
         } else {
-          
+
           this.imagePreview = user.profileImage;
         }
         this.hasPhoto = true;
-        this.originalImageBase64 = user.profileImage; 
+        this.originalImageBase64 = user.profileImage;
       }
     },
     error: () => Swal.fire('Erreur', 'Impossible de charger l\'utilisateur', 'error')
@@ -345,10 +345,10 @@ private loadUserData(): void {
 
 private createDataUrl(base64: string): string {
   if (!base64) return '/default-avatar.png';
-  
-  
-  let mimeType = 'image/jpeg'; 
-  
+
+
+  let mimeType = 'image/jpeg';
+
   if (base64.startsWith('iVBORw0KGg')) {
     mimeType = 'image/png';
   } else if (base64.startsWith('/9j/')) {
@@ -356,31 +356,31 @@ private createDataUrl(base64: string): string {
   } else if (base64.startsWith('R0lGOD')) {
     mimeType = 'image/gif';
   }
-  
+
   return `data:${mimeType};base64,${base64}`;
 }
 
 private isPureBase64(str: string): boolean {
   if (!str || typeof str !== 'string') return false;
-  
+
 
   const trimmed = str.replace(/\s/g, '');
-  
+
 
   if (trimmed.startsWith('data:image/')) return false;
-  
- 
+
+
   const base64Pattern = /^[A-Za-z0-9+/=]+$/;
-  
+
   if (!base64Pattern.test(trimmed)) return false;
-  
- 
+
+
   if (trimmed.length % 4 !== 0) return false;
-  
- 
+
+
   try {
     const decoded = atob(trimmed);
- 
+
     const reEncoded = btoa(decoded);
     return reEncoded === trimmed;
   } catch {
@@ -390,7 +390,7 @@ private isPureBase64(str: string): boolean {
 
 onImageError(event: any): void {
   event.target.src = '/default-avatar.png';
-  event.target.onerror = null; 
+  event.target.onerror = null;
 }
 
   onDeletePhoto(): void {

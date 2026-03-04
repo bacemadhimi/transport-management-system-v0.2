@@ -1,4 +1,4 @@
-import { Injectable, inject } from '@angular/core';
+﻿import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, map, forkJoin, catchError, of } from 'rxjs';
 import { environment } from '../../environments/environment.development';
@@ -80,9 +80,7 @@ export class TripsMapService {
   private entityById: Map<number, IGeographicalEntity> = new Map();
   private levelsByEntityId: Map<number, { name: string; number: number }> = new Map();
 
-  /**
-   * Récupère les tournées avec tous les détails
-   */
+
   getTripsWithDetails(
     status?: string,
     entityName?: string,
@@ -90,7 +88,7 @@ export class TripsMapService {
     endDate?: string
   ): Observable<ITripWithDetails[]> {
     console.log('🌐 Chargement des données...');
-    
+
     return forkJoin({
       trips: this.getTripsFromApi(status, startDate, endDate),
       trucks: this.getTrucksFromApi(),
@@ -100,12 +98,12 @@ export class TripsMapService {
     }).pipe(
       map(({ trips, trucks, drivers, customers, geographicalEntities }) => {
         console.log(`🔍 Enrichissement de ${trips.length} tournées...`);
-        
-        // Build entity map
+
+
         geographicalEntities.forEach(entity => {
           if (entity.id) {
             this.entityById.set(entity.id, entity);
-            // Store level info if available
+
             if (entity.level) {
               this.levelsByEntityId.set(entity.id, {
                 name: entity.level.name,
@@ -114,16 +112,16 @@ export class TripsMapService {
             }
           }
         });
-        
+
         let enrichedTrips = this.enrichTrips(trips, trucks, drivers, customers, geographicalEntities);
-        
-        // Filter by entity name if provided
+
+
         if (entityName && entityName !== 'all') {
-          enrichedTrips = enrichedTrips.filter(trip => 
+          enrichedTrips = enrichedTrips.filter(trip =>
             trip.deliveries?.some(d => d.entityName === entityName)
           );
         }
-        
+
         return enrichedTrips;
       }),
       catchError(error => {
@@ -139,7 +137,7 @@ export class TripsMapService {
     endDate?: string
   ): Observable<ITrip[]> {
     let params = new HttpParams();
-    
+
     if (startDate) params = params.set('startDate', startDate);
     if (endDate) params = params.set('endDate', endDate);
     if (status && status !== 'all') params = params.set('status', status);
@@ -162,7 +160,7 @@ export class TripsMapService {
     return this.http.get<IDriver[]>(`${this.apiUrl}/api/Drivers/list`).pipe(
       map(drivers => drivers.map(driver => ({
         ...driver,
-        employeeCategory: "DRIVER" as const  
+        employeeCategory: "DRIVER" as const
       }))),
       catchError(error => {
         console.error('Error fetching drivers:', error);
@@ -184,9 +182,9 @@ export class TripsMapService {
   }
 
   private enrichTrips(
-    trips: ITrip[], 
-    trucks: ITruck[], 
-    drivers: IDriver[], 
+    trips: ITrip[],
+    trucks: ITruck[],
+    drivers: IDriver[],
     customers: ICustomer[],
     geographicalEntities: IGeographicalEntity[]
   ): ITripWithDetails[] {
@@ -199,41 +197,41 @@ export class TripsMapService {
       const truck = truckMap.get(trip.truckId);
       const driver = driverMap.get(trip.driverId);
       const statusConfig = TRIP_STATUS_CONFIG[trip.tripStatus as TripStatus] || TRIP_STATUS_CONFIG[TripStatus.Planned];
-      
-      // Get start entity from truck's geographical entities (first one)
+
+
       const startEntityId = truck?.geographicalEntities?.[0]?.id;
       const startEntity = startEntityId ? entityMap.get(startEntityId) : undefined;
-      
+
       const deliveries = (trip.deliveries || []).map(delivery => {
         const customer = customerMap.get(delivery.customerId);
-        
+
         let entityName = 'Non assigné';
         let entityCoordinates = null;
         let entityId: number | undefined;
         let levelName = '';
         let levelNumber = 0;
-        
-        // Get geographical entity from customer
+
+
         if (customer?.geographicalEntities && customer.geographicalEntities.length > 0) {
           const firstEntity = customer.geographicalEntities[0];
           entityId = firstEntity.geographicalEntityId;
           const entity = entityMap.get(entityId);
           if (entity) {
             entityName = entity.name;
-            entityCoordinates = entity.latitude && entity.longitude 
-              ? { lat: entity.latitude, lng: entity.longitude } 
+            entityCoordinates = entity.latitude && entity.longitude
+              ? { lat: entity.latitude, lng: entity.longitude }
               : undefined;
-            
-            // Get level info from entity
+
+
             if (entity.level) {
               levelName = entity.level.name;
               levelNumber = entity.level.levelNumber;
             }
           }
         }
-        
+
         const deliveryStatusConfig = DELIVERY_STATUS_CONFIG[delivery.status as DeliveryStatus] || DELIVERY_STATUS_CONFIG[DeliveryStatus.Pending];
-        
+
         return {
           ...delivery,
           customer,
@@ -247,11 +245,11 @@ export class TripsMapService {
           statusIcon: deliveryStatusConfig.icon
         } as IDeliveryWithDetails;
       });
-      
-      const progress = deliveries.length > 0 
-        ? Math.round((deliveries.filter(d => d.status === DeliveryStatus.Delivered).length / deliveries.length) * 100) 
+
+      const progress = deliveries.length > 0
+        ? Math.round((deliveries.filter(d => d.status === DeliveryStatus.Delivered).length / deliveries.length) * 100)
         : 0;
-      
+
       return {
         ...trip,
         truck,
@@ -261,11 +259,11 @@ export class TripsMapService {
         endEntity: startEntity,
         startEntityName: startEntity?.name,
         endEntityName: startEntity?.name,
-        startCoordinates: startEntity?.latitude && startEntity?.longitude 
-          ? { lat: startEntity.latitude, lng: startEntity.longitude } 
+        startCoordinates: startEntity?.latitude && startEntity?.longitude
+          ? { lat: startEntity.latitude, lng: startEntity.longitude }
           : undefined,
-        endCoordinates: startEntity?.latitude && startEntity?.longitude 
-          ? { lat: startEntity.latitude, lng: startEntity.longitude } 
+        endCoordinates: startEntity?.latitude && startEntity?.longitude
+          ? { lat: startEntity.latitude, lng: startEntity.longitude }
           : undefined,
         statusColor: statusConfig.color,
         statusLabel: statusConfig.label,
@@ -274,11 +272,11 @@ export class TripsMapService {
       } as ITripWithDetails;
     });
   }
-  
+
   getEntityDeliveryStats(trips: ITripWithDetails[], geographicalEntities: IGeographicalEntity[]): IEntityDeliveryStats[] {
     const statsMap = new Map<number, IEntityDeliveryStats>();
-    
-    // Initialize stats for all geographical entities
+
+
     geographicalEntities.forEach(entity => {
       if (entity.id) {
         statsMap.set(entity.id, {
@@ -298,22 +296,22 @@ export class TripsMapService {
         });
       }
     });
-    
-    // Calculate stats from deliveries
+
+
     trips.forEach(trip => {
       trip.deliveries?.forEach(delivery => {
         if (delivery.entityId) {
           const stats = statsMap.get(delivery.entityId);
           if (stats) {
             stats.total++;
-            
+
             if (trip.tripStatus === TripStatus.Planned) {
               stats.planned++;
             }
-            
+
             switch (delivery.status) {
               case DeliveryStatus.Pending: stats.pending++; break;
-              case DeliveryStatus.EnRoute: 
+              case DeliveryStatus.EnRoute:
               case DeliveryStatus.Arrived: stats.inProgress++; break;
               case DeliveryStatus.Delivered: stats.delivered++; break;
               case DeliveryStatus.Failed: stats.failed++; break;
@@ -323,8 +321,8 @@ export class TripsMapService {
         }
       });
     });
-    
-    // Return only entities with deliveries
+
+
     return Array.from(statsMap.values()).filter(s => s.total > 0);
   }
 }

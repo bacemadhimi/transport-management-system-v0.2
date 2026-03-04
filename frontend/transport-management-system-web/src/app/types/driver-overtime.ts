@@ -1,4 +1,4 @@
-export interface DriverAvailabilityDto {
+﻿export interface DriverAvailabilityDto {
   driverId: number;
   driverName: string;
   permisNumber: string;
@@ -14,7 +14,7 @@ export interface DriverAvailabilityDto {
 }
 
 export interface AvailabilityRequestDto {
-  date: string; // format: YYYY-MM-DD
+  date: string;
   tripDuration: number;
   zoneId?: number;
   excludeTripId?: number;

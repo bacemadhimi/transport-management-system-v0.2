@@ -1,4 +1,4 @@
-export interface IWeatherInfo {
+﻿export interface IWeatherInfo {
   location: string;
   temperature: number;
   feels_like: number;

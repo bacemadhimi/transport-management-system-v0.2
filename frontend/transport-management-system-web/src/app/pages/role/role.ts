@@ -1,4 +1,4 @@
-import { Component, inject, OnInit } from '@angular/core';
+﻿import { Component, inject, OnInit } from '@angular/core';
 import { Http } from '../../services/http';
 import { Table } from '../../components/table/table';
 import { IUserGroup } from '../../types/userGroup';
@@ -38,11 +38,11 @@ import { CommonModule } from '@angular/common';
   styleUrls: ['./role.scss']
 })
 export class Role implements OnInit {
-      constructor(public auth: Auth) {}  
-    
+      constructor(public auth: Auth) {}
+
       getActions(row: any, actions: string[]) {
         const permittedActions: string[] = [];
-    
+
         for (const a of actions) {
           if (a === 'Modifier' && this.auth.hasPermission('USER_GROUP_EDIT')) {
             permittedActions.push(a);
@@ -51,19 +51,19 @@ export class Role implements OnInit {
             permittedActions.push(a);
           }
         }
-    
+
         return permittedActions;
       }
-      
+
   httpService = inject(Http);
   pagedRoleData!: PagedData<IUserGroup>;
   totalData!: number;
-  
+
   filter: any = {
     pageIndex: 0,
     pageSize: 10
   };
-  
+
   searchControl = new FormControl('');
   readonly dialog = inject(MatDialog);
 
@@ -76,19 +76,19 @@ export class Role implements OnInit {
     year: 'numeric',
     hour: '2-digit',
     minute: '2-digit',
-    hour12: false, 
+    hour12: false,
   });
 };
 
  showCols = [
   { key: 'name', label: 'Nom du Groupe' },
-  { 
-    key: 'createdAt', 
+  {
+    key: 'createdAt',
     label: 'Date de création',
     format: (row: IUserGroup) => this.formatDateTime(row.createdAt)
   },
-  { 
-    key: 'updatedAt', 
+  {
+    key: 'updatedAt',
     label: 'Date de modification',
     format: (row: IUserGroup) => this.formatDateTime(row.updatedAt)
   },
@@ -173,7 +173,7 @@ export class Role implements OnInit {
     const csvContent = [
       ['ID', 'Nom du Groupe', 'Date de création'],
       ...rows.map(r => [
-        r.id, 
+        r.id,
         r.name,
         r.createdAt ? new Date(r.createdAt).toLocaleDateString('fr-FR') : ''
       ])
@@ -223,7 +223,7 @@ export class Role implements OnInit {
     autoTable(doc, {
       head: [['ID', 'Nom du Groupe', 'Date de création']],
       body: rows.map(r => [
-        r.id, 
+        r.id,
         r.name,
         r.createdAt ? new Date(r.createdAt).toLocaleDateString('fr-FR') : ''
       ])

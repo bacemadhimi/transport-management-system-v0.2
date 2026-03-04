@@ -1,4 +1,4 @@
-import { Component, inject, OnInit } from '@angular/core';
+﻿import { Component, inject, OnInit } from '@angular/core';
 import { MatCardModule } from '@angular/material/card';
 import { CommonModule } from '@angular/common';
 import { Dashboard } from '../../services/dashboard';
@@ -26,8 +26,8 @@ interface ITodayTrip {
   selector: 'app-home',
   standalone: true,
   imports: [
-    MatCardModule, 
-    Table, 
+    MatCardModule,
+    Table,
     CommonModule,
     TripsMapComponent
   ],
@@ -63,11 +63,11 @@ export class Home implements OnInit {
   dashboardService = inject(Dashboard);
 
   ngOnInit() {
-    
+
     this.tripByTruckData = { data: [], totalData: 0 };
     this.todayTripData = { data: [], totalData: 0 };
 
-    
+
     this.dashboardService.getDashboardData().subscribe({
       next: (result) => {
         this.userCount = result.userCount || 0;
@@ -82,12 +82,12 @@ export class Home implements OnInit {
       }
     });
 
-    
+
     this.dashboardService.getTripsByTruck().subscribe({
       next: (result) => {
-        this.tripByTruckData = { 
-          data: result || [], 
-          totalData: result?.length || 0 
+        this.tripByTruckData = {
+          data: result || [],
+          totalData: result?.length || 0
         };
       },
       error: (error) => {
@@ -96,12 +96,12 @@ export class Home implements OnInit {
       }
     });
 
-    
+
     this.dashboardService.getTodayTrips().subscribe({
       next: (result) => {
-        this.todayTripData = { 
-          data: result || [], 
-          totalData: result?.length || 0 
+        this.todayTripData = {
+          data: result || [],
+          totalData: result?.length || 0
         };
       },
       error: (error) => {

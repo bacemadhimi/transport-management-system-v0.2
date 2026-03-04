@@ -1,4 +1,4 @@
-// types/general-settings.ts
+﻿
 
 export enum ParameterType {
   ORDER = 'ORDER',
@@ -35,7 +35,7 @@ export type TripOrderType = 'chronological' | 'priority' | 'geographical' | 'opt
 export interface IGeneralSettings {
   id: number;
   parameterType: string;
-  parameterCode: string;  // Format: "KEY=value"
+  parameterCode: string;
   description: string;
 }
 
@@ -59,7 +59,7 @@ export interface PagedData<T> {
   pageSize: number;
 }
 
-// Geographical Levels Types
+
 export interface IGeographicalLevel {
   id: number;
   name: string;

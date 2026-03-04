@@ -1,15 +1,15 @@
-// services/settings.service.ts
+﻿
 
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, map, BehaviorSubject, tap, catchError, of } from 'rxjs';
-import { 
-  IGeneralSettings, 
-  IGeneralSettingsDto, 
-  IOrderSettings, 
-  ITripSettings, 
+import {
+  IGeneralSettings,
+  IGeneralSettingsDto,
+  IOrderSettings,
+  ITripSettings,
   ParameterType,
-  SearchOptions, 
+  SearchOptions,
   TripOrderType
 } from '../types/general-settings';
 import { environment } from '../../environments/environment.development';
@@ -21,47 +21,47 @@ import { PagedData } from '../types/paged-data';
 export class SettingsService {
   private apiUrl = `${environment.apiUrl}/api/GeneralSettings`;
 
-  // BehaviorSubjects for caching
+
   private orderSettingsSubject = new BehaviorSubject<IOrderSettings | null>(null);
   private tripSettingsSubject = new BehaviorSubject<ITripSettings | null>(null);
-  
-  // Observables
+
+
   orderSettings$ = this.orderSettingsSubject.asObservable();
   tripSettings$ = this.tripSettingsSubject.asObservable();
 
   constructor(private http: HttpClient) {
-    // Load settings on service initialization
+
     this.loadAllSettings();
   }
 
-  // Load all settings
+
   private loadAllSettings(): void {
     this.getOrderSettings().subscribe({
       next: (settings) => this.orderSettingsSubject.next(settings),
       error: (err) => console.error('Error loading order settings:', err)
     });
-    
+
     this.getTripSettings().subscribe({
       next: (settings) => this.tripSettingsSubject.next(settings),
       error: (err) => console.error('Error loading trip settings:', err)
     });
   }
 
-  // Get settings by type (new endpoint)
+
   getSettingsByType(parameterType: ParameterType): Observable<IGeneralSettings[]> {
     return this.http.get<IGeneralSettings[]>(`${this.apiUrl}/type/${parameterType}`);
   }
 
-  // ========== CRUD Operations ==========
+
   getSettings(options: SearchOptions): Observable<PagedData<IGeneralSettings>> {
     const params: any = {
       pageIndex: options.pageIndex,
       pageSize: options.pageSize
     };
-    
+
     if (options.search) params.search = options.search;
     if (options.parameterType) params.parameterType = options.parameterType;
-    
+
     return this.http.get<PagedData<IGeneralSettings>>(this.apiUrl, { params });
   }
 
@@ -81,7 +81,7 @@ export class SettingsService {
     return this.http.delete<void>(`${this.apiUrl}/${id}`);
   }
 
-  // ========== ORDER Settings Methods ==========
+
 
   getOrderSettings(): Observable<IOrderSettings> {
     return this.getSettingsByType(ParameterType.ORDER).pipe(
@@ -95,16 +95,16 @@ export class SettingsService {
   }
 
   private mapToOrderSettings(settings: IGeneralSettings[]): IOrderSettings {
-    // Create a map from parameterCode (which contains "KEY=value")
+
     const settingsMap = new Map<string, string>();
-    
+
     settings.forEach(setting => {
       const [key, value] = this.parseParameterCode(setting.parameterCode);
       settingsMap.set(key, value);
     });
-    
+
     console.log('Order settings map:', settingsMap);
-    
+
     return {
       allowEditOrder: this.getBooleanValue(settingsMap, 'ALLOW_EDIT_ORDER', true),
       allowEditDeliveryDate: this.getBooleanValue(settingsMap, 'ALLOW_DELIVERY_DATE_EDIT', true),
@@ -115,7 +115,7 @@ export class SettingsService {
     };
   }
 
-  // ========== TRIP Settings Methods ==========
+
 
   getTripSettings(): Observable<ITripSettings> {
     return this.getSettingsByType(ParameterType.TRIP).pipe(
@@ -129,14 +129,14 @@ export class SettingsService {
   }
 
   private mapToTripSettings(settings: IGeneralSettings[]): ITripSettings {
-    // Create a map from parameterCode (which contains "KEY=value")
+
     const settingsMap = new Map<string, string>();
-    
+
     settings.forEach(setting => {
       const [key, value] = this.parseParameterCode(setting.parameterCode);
       settingsMap.set(key, value);
     });
-    
+
     return {
       allowEditTrips: this.getBooleanValue(settingsMap, 'ALLOW_EDIT_TRIPS', true),
       allowDeleteTrips: this.getBooleanValue(settingsMap, 'ALLOW_DELETE_TRIPS', true),
@@ -150,30 +150,28 @@ export class SettingsService {
     };
   }
 
-  // ========== EMPLOYEE CATEGORIES ==========
+
   getEmployeeCategories(): Observable<IGeneralSettings[]> {
     console.log('🔍 Fetching employee categories from:', `${this.apiUrl}/type/EMPLOYEE_CATEGORY`);
-    
+
     return this.http.get<IGeneralSettings[]>(`${this.apiUrl}/type/EMPLOYEE_CATEGORY`).pipe(
       tap(categories => console.log('📦 Employee categories response:', categories)),
       catchError(error => {
         console.error('❌ Error fetching employee categories:', error);
-        return of([]); 
+        return of([]);
       })
     );
   }
 
-  // ========== HELPER METHODS ==========
 
-  /**
-   * Parse parameterCode which is in format "KEY=value"
-   */
+
+
   private parseParameterCode(parameterCode: string): [string, string] {
     const parts = parameterCode.split('=');
     if (parts.length === 2) {
       return [parts[0], parts[1]];
     }
-    // Fallback for backward compatibility
+
     return [parameterCode, parameterCode];
   }
 
@@ -202,15 +200,15 @@ export class SettingsService {
     return defaultValue;
   }
 
-  // Optional: Method to refresh settings
+
   refreshSettings(): void {
     this.loadAllSettings();
   }
 
-  // Optional: Method to save order settings (if you have a bulk update endpoint)
+
   saveOrderSettings(settings: IOrderSettings): Observable<any> {
     const updates: IGeneralSettingsDto[] = Object.entries(settings).map(([key, value]) => {
-      // Convert camelCase to UPPER_CASE for the parameter code
+
       const paramCode = this.camelToUpper(key);
       return {
         parameterType: ParameterType.ORDER,
@@ -218,14 +216,14 @@ export class SettingsService {
         description: this.getDescriptionForKey(key)
       };
     });
-    
+
     return this.http.post(`${this.apiUrl}/bulk`, updates);
   }
 
-  // Optional: Method to save trip settings
+
   saveTripSettings(settings: ITripSettings): Observable<any> {
     const updates: IGeneralSettingsDto[] = Object.entries(settings).map(([key, value]) => {
-      // Convert camelCase to UPPER_CASE for the parameter code
+
       const paramCode = this.camelToUpper(key);
       return {
         parameterType: ParameterType.TRIP,
@@ -233,7 +231,7 @@ export class SettingsService {
         description: this.getDescriptionForKey(key)
       };
     });
-    
+
     return this.http.post(`${this.apiUrl}/bulk`, updates);
   }
 

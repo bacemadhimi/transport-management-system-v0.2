@@ -1,9 +1,9 @@
-// app.routes.ts
+﻿
 import { Routes } from '@angular/router';
 import { Home } from './pages/home/home';
 import { Login } from './pages/login/login';
 import { Profile } from './pages/profile/profile';
-import { AuthGuard } from './services/auth.guard'; 
+import { AuthGuard } from './services/auth.guard';
 import { User } from './pages/user/user';
 import { Truck } from './pages/truck/truck';
 import { Employee } from './pages/employee/employee';
@@ -26,9 +26,6 @@ import { AvailabilityComponent } from './pages/availability/availability';
 import { OrdersComponent } from './pages/order/order';
 import { TruckAvailabilityComponent } from './pages/truck-availability/truck-availability';
 import { SyncComponent } from './pages/sync/sync';
-import { ZoneComponent } from './pages/zone/zone';
-import { CityComponent } from './pages/city/city';
-
 import { StatisticsComponent } from './pages/statistics/statistics.component';
 import { TripCreatePageComponent } from './pages/trip-create-page.component/trip-create-page.component';
 import { TripEditPageComponent } from './pages/trip-edit-page.component/trip-edit-page.component';
@@ -80,45 +77,45 @@ export const routes: Routes = [
   {
     path: "trucks",
     component: Truck,
-    canActivate: [AuthGuard]  
+    canActivate: [AuthGuard]
   },
   {
     path: "trips",
     component: Trip,
-    canActivate: [AuthGuard]  
+    canActivate: [AuthGuard]
   },
     {
     path: "historic-trips",
     component: HistoricTrip,
-    canActivate: [AuthGuard]  
+    canActivate: [AuthGuard]
   },
   {
     path: "customers",
     component: Customer,
-    canActivate: [AuthGuard]  
+    canActivate: [AuthGuard]
   },
   {
     path: "fuel-vendors",
     component: FuelVendor,
-    canActivate: [AuthGuard]  
+    canActivate: [AuthGuard]
   },
   {
     path: "fuels",
     component: Fuel,
-    canActivate: [AuthGuard]  
+    canActivate: [AuthGuard]
   },
 {
     path: "vendors",
     component: Vendor,
-    canActivate: [AuthGuard]  
+    canActivate: [AuthGuard]
   },
 
 {
     path: "roles",
     component: Role,
-    canActivate: [AuthGuard]  
+    canActivate: [AuthGuard]
   },
- 
+
 {
   path: "permissions",
   component: Permissions,
@@ -135,7 +132,7 @@ export const routes: Routes = [
     canActivate: [AuthGuard]
   },
 {
-    path: 'dayoff', 
+    path: 'dayoff',
     component: DayOff,
     canActivate: [AuthGuard]
   },
@@ -169,21 +166,8 @@ export const routes: Routes = [
 {
   path: 'sync',
   component: SyncComponent,
-  canActivate: [AuthGuard] // si tu en as un
+  canActivate: [AuthGuard]
 },
-   {
-    path: 'zones',
-    component: ZoneComponent,
-    canActivate: [AuthGuard]
-  },
-
-  {
-    path: 'city',
-    component: CityComponent,
-    canActivate: [AuthGuard]
-  }
-  ,
-
   {
   path: 'statics',
   component: StatisticsComponent,
@@ -192,12 +176,12 @@ export const routes: Routes = [
   {
     path: 'trips/create',
     component: TripCreatePageComponent,
-     canActivate: [AuthGuard] 
+     canActivate: [AuthGuard]
   },
   {
     path: 'trips/edit/:id',
     component: TripEditPageComponent,
-     canActivate: [AuthGuard] 
+     canActivate: [AuthGuard]
   },
 {
   path: 'type-trucks',
@@ -208,7 +192,7 @@ export const routes: Routes = [
   path: 'marques',
   component: Marque,
   canActivate: [AuthGuard],
-   
+
 },
 {
     path: 'general-settings',

@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output, output, ViewChild } from '@angular/core';
+﻿import { Component, EventEmitter, Input, Output, output, ViewChild } from '@angular/core';
 import { MatTableModule } from '@angular/material/table';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
@@ -11,21 +11,21 @@ import { MatIconModule } from '@angular/material/icon';
 
 @Component({
   selector: 'app-table',
-    standalone: true, 
+    standalone: true,
   imports: [MatTableModule, MatCardModule, MatButtonModule, MatButtonModule, MatPaginator, CommonModule,MatSortModule,MatIconModule],
   templateUrl: './table.html',
-  styleUrls: ['./table.scss']  
+  styleUrls: ['./table.scss']
 })
 export class Table {
   constructor(public auth: Auth) {}
-  
+
 getActions(row: any, actions: any): string[] {
   if (!actions) return [];
   return Array.isArray(actions) ? actions : [actions];
 }
 
 
-  
+
   @Input() PagedData!: PagedData<any>;
   @Input() displayedColumns: any[] = [];
   @Output() onEdit = new EventEmitter<any>();
@@ -36,8 +36,8 @@ getActions(row: any, actions: any): string[] {
   @Input() pageSize!: number;
   @Input() showPage= true;
   @Input() showApproveButton: boolean = false;
-  @Input() sortableColumns: string[] = []; 
-  @Output() sortChange = new EventEmitter<any>(); 
+  @Input() sortableColumns: string[] = [];
+  @Output() sortChange = new EventEmitter<any>();
   @ViewChild(MatSort) sort!: MatSort;
 
 
@@ -56,12 +56,12 @@ getActions(row: any, actions: any): string[] {
     this.onPageChange.emit(event);
   }
 onButtonClick(btn: string, rowData: any, event: MouseEvent) {
-  event.stopPropagation(); 
+  event.stopPropagation();
   this.rowClick.emit({ btn, rowData });
 }
 
 onCellClick(column: string, rowData: any, event: MouseEvent) {
- 
+
   const target = event.target as HTMLElement;
   if (target.closest('.attachment-cell')) {
     event.stopPropagation();
@@ -89,18 +89,18 @@ getStatusClass(status: any): string {
 
 
 isColumnSortable(columnKey: string): boolean {
- 
+
   return this.sortableColumns.includes(columnKey);
 }
 onSortChange(sort: Sort): void {
-  console.log('Sort changed:', sort); 
+  console.log('Sort changed:', sort);
   if (sort.active && sort.direction) {
     this.sortChange.emit({
       column: { key: sort.active },
       direction: sort.direction
     });
   } else {
-    
+
     this.sortChange.emit({ column: null, direction: null });
   }
 }
@@ -109,23 +109,23 @@ getActionClass(action: string): string {
     case 'Modifier':
     case 'Edit':
     case 'edit': return 'ACTION_EDIT';
-    
+
     case 'Supprimer':
     case 'Delete':
     case 'delete': return 'ACTION_DELETE';
-    
+
     case 'Désactiver':
     case 'Disable':
     case 'disable': return 'ACTION_DISABLE';
-    
+
     case 'Activer':
     case 'Enable':
     case 'enable': return 'ACTION_ENABLE';
-    
+
     case 'Voir détails':
     case 'View details':
     case 'view': return 'ACTION_VIEW';
-    
+
     default: return '';
   }
 }
@@ -135,23 +135,23 @@ getActionIcon(action: string): string {
     case 'Modifier':
     case 'Edit':
     case 'edit': return 'edit_note';
-    
+
     case 'Supprimer':
     case 'Delete':
     case 'delete': return 'delete';
-    
+
     case 'Désactiver':
     case 'Disable':
     case 'disable': return 'block';
-    
+
     case 'Activer':
     case 'Enable':
     case 'enable': return 'check_circle';
-    
+
     case 'Voir détails':
     case 'View details':
     case 'view': return 'visibility';
-    
+
     default: return action.toLowerCase();
   }
 }

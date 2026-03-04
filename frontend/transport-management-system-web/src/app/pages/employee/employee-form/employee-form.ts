@@ -1,4 +1,4 @@
-import { Component, ElementRef, inject, OnInit, ViewChild, OnDestroy, AfterViewInit, ChangeDetectorRef } from '@angular/core';
+﻿import { Component, ElementRef, inject, OnInit, ViewChild, OnDestroy, AfterViewInit, ChangeDetectorRef } from '@angular/core';
 import { FormBuilder, Validators, ReactiveFormsModule, FormsModule, FormGroup, FormControl } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
@@ -12,14 +12,14 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { Http } from '../../../services/http';
-import { SettingsService } from '../../../services/settings.service'; 
+import { SettingsService } from '../../../services/settings.service';
 import { IEmployee } from '../../../types/employee';
 import { ITypeTruck } from '../../../types/type-truck';
 import { IGeographicalEntity, IGeographicalLevel } from '../../../types/general-settings';
 import Swal from 'sweetalert2';
 import { Translation } from '../../../services/Translation';
 import { Subscription } from 'rxjs';
-import { IGeneralSettings } from '../../../types/general-settings'; 
+import { IGeneralSettings } from '../../../types/general-settings';
 
 @Component({
   selector: 'app-employee-form',
@@ -37,7 +37,7 @@ import { IGeneralSettings } from '../../../types/general-settings';
     MatTooltipModule,
     MatIconModule,
     MatSelectModule,
-    MatCheckboxModule 
+    MatCheckboxModule
   ],
   templateUrl: './employee-form.html',
   styleUrls: ['./employee-form.scss']
@@ -50,13 +50,13 @@ export class EmployeeForm implements OnInit, AfterViewInit, OnDestroy {
   data = inject<{ employeeId?: number }>(MAT_DIALOG_DATA, { optional: true }) ?? {};
   translation = inject(Translation);
   countryPlaceholder: string = '+216 12 345 678';
-  
+
   @ViewChild('fileInput') fileInput!: ElementRef;
   @ViewChild('phoneInput') phoneInput!: ElementRef<HTMLInputElement>;
 
-  private iti: any; // intl-tel-input instance
-  private phoneCountry: string = 'tn'; // Default country
-  private employeeData: any = null; // Store employee data when editing
+  private iti: any;
+  private phoneCountry: string = 'tn';
+  private employeeData: any = null;
 
   t(key: string): string { return this.translation.t(key); }
 
@@ -73,38 +73,38 @@ export class EmployeeForm implements OnInit, AfterViewInit, OnDestroy {
   employeeCategories: IGeneralSettings[] = [];
   loadingCategories = false;
   private cdr = inject(ChangeDetectorRef);
-  // Geographical entities
+
   loadingGeographicalEntities = false;
   geographicalEntities: IGeographicalEntity[] = [];
   geographicalLevels: IGeographicalLevel[] = [];
 
-  // Selected entities
+
   selectedEntities: number[] = [];
 
-  // Entity hierarchies by level
+
   level1Entities: IGeographicalEntity[] = [];
   level2Entities: IGeographicalEntity[] = [];
   level3Entities: IGeographicalEntity[] = [];
   level4Entities: IGeographicalEntity[] = [];
   level5Entities: IGeographicalEntity[] = [];
 
-  // Form controls for each level
+
   level1Control = new FormControl<number | null>(null);
   level2Control = new FormControl<number | null>(null);
   level3Control = new FormControl<number | null>(null);
   level4Control = new FormControl<number | null>(null);
   level5Control = new FormControl<number | null>(null);
 
-  // Map for quick entity lookup
+
   private entityMap: Map<number, IGeographicalEntity> = new Map();
 
-  // Available categories (filtered to just 3)
- 
-  // Define form type
+
+
+
   employeeForm: FormGroup;
 
   constructor() {
-    // Initialize form with proper typing
+
     this.employeeForm = this.fb.group({
       idNumber: ['', [Validators.required]],
       name: ['', [Validators.required]],
@@ -115,23 +115,23 @@ export class EmployeeForm implements OnInit, AfterViewInit, OnDestroy {
       typeTruckId: [null],
       employeeCategory: ['', [Validators.required]],
       isInternal: [false],
-      geographicalEntityIds: [[], [Validators.required, Validators.minLength(1)]] // For drivers
+      geographicalEntityIds: [[], [Validators.required, Validators.minLength(1)]]
     });
   }
 
   ngOnInit() {
     this.loadTypeTrucks();
     this.loadEmployeeCategories();
-    this.loadGeographicalEntities(); // Load geographical entities
-    
-    // Subscribe to category changes
+    this.loadGeographicalEntities();
+
+
     this.employeeForm.get('employeeCategory')?.valueChanges.subscribe((category: string) => {
       this.onCategoryChange(category);
       this.updateGeographicalValidation(category);
     });
-    
+
     this.setupLevelControls();
-    
+
     if (this.data.employeeId) {
       this.loadEmployee(this.data.employeeId);
     }
@@ -142,7 +142,7 @@ export class EmployeeForm implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private setupLevelControls() {
-    // Level 1 changes
+
     this.level1Control.valueChanges.subscribe((value) => {
       if (!value) {
         this.level2Control.reset();
@@ -156,7 +156,7 @@ export class EmployeeForm implements OnInit, AfterViewInit, OnDestroy {
       this.updateSelectedEntities();
     });
 
-    // Level 2 changes
+
     this.level2Control.valueChanges.subscribe((value) => {
       if (!value) {
         this.level3Control.reset();
@@ -169,7 +169,7 @@ export class EmployeeForm implements OnInit, AfterViewInit, OnDestroy {
       this.updateSelectedEntities();
     });
 
-    // Level 3 changes
+
     this.level3Control.valueChanges.subscribe((value) => {
       if (!value) {
         this.level4Control.reset();
@@ -181,7 +181,7 @@ export class EmployeeForm implements OnInit, AfterViewInit, OnDestroy {
       this.updateSelectedEntities();
     });
 
-    // Level 4 changes
+
     this.level4Control.valueChanges.subscribe((value) => {
       if (!value) {
         this.level5Control.reset();
@@ -192,7 +192,7 @@ export class EmployeeForm implements OnInit, AfterViewInit, OnDestroy {
       this.updateSelectedEntities();
     });
 
-    // Level 5 changes
+
     this.level5Control.valueChanges.subscribe(() => {
       this.updateSelectedEntities();
     });
@@ -203,7 +203,7 @@ export class EmployeeForm implements OnInit, AfterViewInit, OnDestroy {
       this.level2Entities = [];
       return;
     }
-    // Filter entities of level 2 that have the selected level 1 as parent
+
     this.level2Entities = this.geographicalEntities.filter(e => {
       const level = this.geographicalLevels.find(l => l.id === e.levelId);
       return level?.levelNumber === 2 && e.parentId === parentId;
@@ -245,16 +245,16 @@ export class EmployeeForm implements OnInit, AfterViewInit, OnDestroy {
 
   private updateSelectedEntities() {
     const selected: number[] = [];
-    
+
     if (this.level1Control.value) selected.push(this.level1Control.value);
     if (this.level2Control.value) selected.push(this.level2Control.value);
     if (this.level3Control.value) selected.push(this.level3Control.value);
     if (this.level4Control.value) selected.push(this.level4Control.value);
     if (this.level5Control.value) selected.push(this.level5Control.value);
-    
+
     this.selectedEntities = selected;
-    
-    // Update form control
+
+
     this.employeeForm.patchValue({
       geographicalEntityIds: this.selectedEntities
     });
@@ -263,31 +263,31 @@ export class EmployeeForm implements OnInit, AfterViewInit, OnDestroy {
 
 private loadGeographicalEntities(): void {
   this.loadingGeographicalEntities = true;
-  
-  // First load levels
+
+
   const levelsSub = this.httpService.getGeographicalLevels().subscribe({
     next: (levels) => {
       this.geographicalLevels = levels.filter(l => l.isActive);
-      
-      // Then load active entities
+
+
       const entitiesSub = this.httpService.getGeographicalEntities().subscribe({
         next: (entities) => {
-          // Filter only active entities
+
           this.geographicalEntities = entities.filter(e => e.isActive);
           this.organizeEntitiesByLevel();
           this.loadingGeographicalEntities = false;
-          
-          // If we have employee data waiting and it's a driver, set the selections now
+
+
           if (this.employeeData && this.employeeData.employeeCategory === 'DRIVER') {
             this.setGeographicalSelections(this.employeeData);
           } else if (this.employeeData && this.employeeData.employeeCategory !== 'DRIVER') {
-            // For non-drivers, ensure geo control is valid
+
             const geoControl = this.employeeForm.get('geographicalEntityIds');
             geoControl?.clearValidators();
             geoControl?.updateValueAndValidity({ emitEvent: false });
           }
-          
-          // Trigger change detection
+
+
           this.cdr?.detectChanges();
         },
         error: (error) => {
@@ -314,26 +314,26 @@ private loadGeographicalEntities(): void {
       });
     }
   });
-  
+
   this.subscriptions.push(levelsSub);
 }
 
   private organizeEntitiesByLevel() {
     this.entityMap.clear();
-    
-    // Only add entities with valid IDs to the map
+
+
     this.geographicalEntities.forEach(e => {
       if (e.id !== undefined && e.id !== null) {
         this.entityMap.set(e.id, e);
       }
     });
-    
-    // Group by level number
+
+
     const levelGroups: { [key: number]: IGeographicalEntity[] } = {};
-    
+
     this.geographicalEntities.forEach(entity => {
-      if (entity.id === undefined || entity.id === null) return; // Skip entities without ID
-      
+      if (entity.id === undefined || entity.id === null) return;
+
       const level = this.geographicalLevels.find(l => l.id === entity.levelId);
       if (level) {
         if (!levelGroups[level.levelNumber]) {
@@ -342,74 +342,74 @@ private loadGeographicalEntities(): void {
         levelGroups[level.levelNumber].push(entity);
       }
     });
-    
-    // Assign to level arrays (only top-level entities for level 1)
+
+
     this.level1Entities = levelGroups[1]?.filter(e => !e.parentId) || [];
-    // Other levels will be populated dynamically based on parent selection
+
   }
 
 private setGeographicalSelections(employeeData: any) {
-  // The employee data might have driverGeographicalEntities or geographicalEntities
+
   const geoEntities = employeeData.driverGeographicalEntities || employeeData.geographicalEntities || [];
-  
-  // Extract geographical entity IDs
-  const geographicalEntityIds = geoEntities.map((ge: any) => 
+
+
+  const geographicalEntityIds = geoEntities.map((ge: any) =>
     ge.geographicalEntityId || ge.id
   ).filter((id: number) => id != null);
-  
+
   console.log('Setting geographical selections with IDs:', geographicalEntityIds);
-  
-  // Set selected entities
+
+
   this.selectedEntities = [...geographicalEntityIds];
-  
-  // Reset all level controls first
+
+
   this.level1Control.reset(undefined, { emitEvent: false });
   this.level2Control.reset(undefined, { emitEvent: false });
   this.level3Control.reset(undefined, { emitEvent: false });
   this.level4Control.reset(undefined, { emitEvent: false });
   this.level5Control.reset(undefined, { emitEvent: false });
-  
-  // Set level controls based on the level of each entity
+
+
   geographicalEntityIds.forEach((id: number) => {
     const entity = this.geographicalEntities.find(e => e.id === id);
     if (entity) {
       const level = this.geographicalLevels.find(l => l.id === entity.levelId);
       if (level) {
-        // Set the current level control
+
         switch(level.levelNumber) {
-          case 1: 
-            this.level1Control.setValue(id, { emitEvent: false }); 
+          case 1:
+            this.level1Control.setValue(id, { emitEvent: false });
             break;
-          case 2: 
-            this.level2Control.setValue(id, { emitEvent: false }); 
+          case 2:
+            this.level2Control.setValue(id, { emitEvent: false });
             break;
-          case 3: 
-            this.level3Control.setValue(id, { emitEvent: false }); 
+          case 3:
+            this.level3Control.setValue(id, { emitEvent: false });
             break;
-          case 4: 
-            this.level4Control.setValue(id, { emitEvent: false }); 
+          case 4:
+            this.level4Control.setValue(id, { emitEvent: false });
             break;
-          case 5: 
-            this.level5Control.setValue(id, { emitEvent: false }); 
+          case 5:
+            this.level5Control.setValue(id, { emitEvent: false });
             break;
         }
       }
     }
   });
-  
-  // Update form control with the selected entities
+
+
   this.employeeForm.patchValue({
     geographicalEntityIds: this.selectedEntities
   }, { emitEvent: false });
-  
-  // IMPORTANT: Mark the control as touched and dirty to update validation state
+
+
   const geoControl = this.employeeForm.get('geographicalEntityIds');
   if (geoControl) {
     geoControl.markAsTouched({ emitEvent: false });
     geoControl.markAsDirty({ emitEvent: false });
     geoControl.updateValueAndValidity({ emitEvent: false });
   }
-  
+
   console.log('Selected entities after setting:', this.selectedEntities);
   console.log('Geo control valid:', geoControl?.valid);
   this.cdr.detectChanges();
@@ -420,29 +420,29 @@ private setGeographicalSelections(employeeData: any) {
       const level = this.geographicalLevels.find(l => l.id === entity.levelId);
       if (level) {
         switch(level.levelNumber) {
-          case 1: 
-            this.level1Control.reset(); 
+          case 1:
+            this.level1Control.reset();
             break;
-          case 2: 
-            this.level2Control.reset(); 
+          case 2:
+            this.level2Control.reset();
             break;
-          case 3: 
-            this.level3Control.reset(); 
+          case 3:
+            this.level3Control.reset();
             break;
-          case 4: 
-            this.level4Control.reset(); 
+          case 4:
+            this.level4Control.reset();
             break;
-          case 5: 
-            this.level5Control.reset(); 
+          case 5:
+            this.level5Control.reset();
             break;
         }
       }
     }
-    
+
     let newSelection = this.selectedEntities.filter(id => id !== entityId);
     this.selectedEntities = newSelection;
-    
-    // Update form control
+
+
     this.employeeForm.patchValue({
       geographicalEntityIds: this.selectedEntities
     });
@@ -460,15 +460,15 @@ private setGeographicalSelections(employeeData: any) {
 
   private updateGeographicalValidation(category: string | null) {
     const geoControl = this.employeeForm.get('geographicalEntityIds');
-    
+
     if (category === 'DRIVER') {
-      // Drivers require at least one geographical entity
+
       geoControl?.setValidators([Validators.required, Validators.minLength(1)]);
     } else {
-      // Other categories don't require geographical entities
+
       geoControl?.clearValidators();
     }
-    
+
     geoControl?.updateValueAndValidity();
   }
 
@@ -489,10 +489,10 @@ private setGeographicalSelections(employeeData: any) {
       document.head.appendChild(link);
     };
 
-    // Load CSS
+
     loadCSS('https://cdn.jsdelivr.net/npm/intl-tel-input@19.1.1/build/css/intlTelInput.min.css');
 
-    // Load scripts
+
     loadScript('https://cdn.jsdelivr.net/npm/intl-tel-input@19.1.1/build/js/intlTelInput.min.js')
       .then(() => loadScript('https://cdn.jsdelivr.net/npm/intl-tel-input@19.1.1/build/js/utils.js'))
       .then(() => {
@@ -505,10 +505,10 @@ private setGeographicalSelections(employeeData: any) {
           placeholderNumberType: 'MOBILE',
         });
 
-        // Set initial placeholder
+
         this.updatePlaceholder();
 
-        // Update form when phone changes
+
         this.phoneInput.nativeElement.addEventListener('blur', () => {
           const number = this.iti.getNumber();
           const countryData = this.iti.getSelectedCountryData();
@@ -522,7 +522,7 @@ private setGeographicalSelections(employeeData: any) {
           this.updatePlaceholder();
         });
 
-        // If editing, set the number
+
         if (this.employeeForm.get('phoneNumber')?.value) {
           setTimeout(() => {
             this.iti.setNumber(this.employeeForm.get('phoneNumber')?.value || '');
@@ -535,7 +535,7 @@ private setGeographicalSelections(employeeData: any) {
 
   private updatePlaceholder() {
     if (!this.iti) return;
-    
+
     const countryData = this.iti.getSelectedCountryData();
 
     const countryPlaceholders: {[key: string]: string} = {
@@ -576,9 +576,9 @@ private setGeographicalSelections(employeeData: any) {
       'mx': '+52 1 55 1234 5678',
       'au': '+61 412 345 678'
     };
-    
+
     const countryCode = countryData.iso2;
-    this.countryPlaceholder = countryPlaceholders[countryCode] || 
+    this.countryPlaceholder = countryPlaceholders[countryCode] ||
       `+${countryData.dialCode} 123 456 789`;
   }
 
@@ -587,38 +587,38 @@ private setGeographicalSelections(employeeData: any) {
     return this.iti.isValidNumber() ? null : { pattern: true };
   }
 
-  // Category change handler
+
   onCategoryChange(category: string | null) {
-    // Update validators based on category
+
     this.updateValidatorsForCategory(category);
   }
 
   private updateValidatorsForCategory(category: string | null) {
     const drivingLicenseControl = this.employeeForm.get('drivingLicense');
     const typeTruckIdControl = this.employeeForm.get('typeTruckId');
-    
+
     if (category === 'DRIVER') {
-      // Driver: needs both driving license and truck type
+
       drivingLicenseControl?.setValidators([Validators.required]);
       typeTruckIdControl?.setValidators([Validators.required]);
     } else if (category === 'MECHANIC') {
-      // Mechanic: needs driving license
+
       drivingLicenseControl?.setValidators([Validators.required]);
       typeTruckIdControl?.clearValidators();
     } else if (category === 'CONVOYEUR') {
-      // Convoyeur: neither is required
+
       drivingLicenseControl?.clearValidators();
       typeTruckIdControl?.clearValidators();
     } else {
       drivingLicenseControl?.clearValidators();
       typeTruckIdControl?.clearValidators();
     }
-    
+
     drivingLicenseControl?.updateValueAndValidity();
     typeTruckIdControl?.updateValueAndValidity();
   }
 
-  // Helper methods for template
+
   shouldShowDrivingLicense(): boolean {
     const category = this.employeeForm.get('employeeCategory')?.value;
     return ['DRIVER', 'MECHANIC'].includes(category || '');
@@ -655,8 +655,8 @@ private setGeographicalSelections(employeeData: any) {
   }
 getCategoryLabel(categoryCode: string): string {
   if (!categoryCode) return '';
-  
-  
+
+
   let cleanCode = categoryCode;
   if (cleanCode.includes('=')) {
     cleanCode = cleanCode.split('=')[0];
@@ -670,17 +670,17 @@ getCategoryLabel(categoryCode: string): string {
     'ADMIN': 'Administrateur',
     'MANAGER': 'Gestionnaire'
   };
-  
+
   return categoryMap[cleanCode] || cleanCode.charAt(0).toUpperCase() + cleanCode.slice(1).toLowerCase();
 }
 
 private loadEmployeeCategories(): void {
   this.loadingCategories = true;
-  
+
   const categoriesSub = this.settingsService.getEmployeeCategories().subscribe({
     next: (categories) => {
-      // Remove the filter - show all categories
-      this.employeeCategories = categories; // ← Just assign all categories directly
+
+      this.employeeCategories = categories;
       this.loadingCategories = false;
       console.log('✅ All employee categories loaded:', this.employeeCategories);
     },
@@ -689,17 +689,17 @@ private loadEmployeeCategories(): void {
       this.loadingCategories = false;
     }
   });
-  
+
   this.subscriptions.push(categoriesSub);
 }
 
   private loadTypeTrucks(): void {
     this.loadingTypeTrucks = true;
-    
+
     const typeTrucksSub = this.httpService.getTypeTrucksList({ pageIndex: 0, pageSize: 100 }).subscribe({
       next: (response) => {
         let typeTrucksData: ITypeTruck[];
-        
+
         if (response && typeof response === 'object' && 'data' in response) {
           typeTrucksData = (response as any).data;
         } else if (Array.isArray(response)) {
@@ -707,7 +707,7 @@ private loadEmployeeCategories(): void {
         } else {
           typeTrucksData = [];
         }
-        
+
         this.typeTrucks = typeTrucksData;
         this.loadingTypeTrucks = false;
       },
@@ -722,7 +722,7 @@ private loadEmployeeCategories(): void {
         });
       }
     });
-    
+
     this.subscriptions.push(typeTrucksSub);
   }
 
@@ -736,16 +736,16 @@ private loadEmployeeCategories(): void {
 loadEmployee(employeeId: number) {
   const sub = this.httpService.getEmployee(employeeId).subscribe({
     next: (response: any) => {
-      // Handle the ApiResponse wrapper - the employee data is in response.data
+
       const employee = response.data || response;
-      
+
       console.log('Employee data received:', employee);
       console.log('Geographical entities:', employee.driverGeographicalEntities);
-      
-      // Store employee data for later use
+
+
       this.employeeData = employee;
-      
-      // Patch base form values
+
+
       this.employeeForm.patchValue({
         idNumber: employee.idNumber,
         name: employee.name,
@@ -760,7 +760,7 @@ loadEmployee(employeeId: number) {
 
       this.phoneCountry = employee.phoneCountry || 'tn';
 
-      // Force validation update for base fields
+
       Object.keys(this.employeeForm.controls).forEach(key => {
         const control = this.employeeForm.get(key);
         if (control && key !== 'geographicalEntityIds') {
@@ -769,25 +769,25 @@ loadEmployee(employeeId: number) {
         }
       });
 
-      // Set geographical selections for drivers
+
       if (employee.employeeCategory === 'DRIVER') {
-        // Map driverGeographicalEntities to the format expected by setGeographicalSelections
+
         if (employee.driverGeographicalEntities && employee.driverGeographicalEntities.length > 0) {
-          // Transform to the expected format
+
           employee.geographicalEntities = employee.driverGeographicalEntities.map((dge: any) => ({
             geographicalEntityId: dge.geographicalEntityId
           }));
         }
-        
-        // If geographical entities are already loaded, set selections immediately
+
+
         if (this.geographicalEntities.length > 0 && this.geographicalLevels.length > 0) {
           this.setGeographicalSelections(employee);
         } else {
-          // Otherwise, store the employee data to process after loading
+
           this.employeeData = employee;
         }
       } else {
-        // For non-drivers, clear geographical validation and mark as valid
+
         const geoControl = this.employeeForm.get('geographicalEntityIds');
         geoControl?.clearValidators();
         geoControl?.setValue([]);
@@ -799,18 +799,18 @@ loadEmployee(employeeId: number) {
         this.originalFileName = employee.attachmentFileName;
       }
 
-      // Update intl-tel-input if it's already loaded
+
       if (this.iti && employee.phoneNumber) {
         setTimeout(() => {
           this.iti.setNumber(employee.phoneNumber);
         }, 200);
       }
-      
-      // Check overall form validity
+
+
       console.log('Form valid after loading:', this.employeeForm.valid);
       console.log('Form errors:', this.employeeForm.errors);
-      
-      // Trigger change detection
+
+
       this.cdr.detectChanges();
     },
     error: (error) => {
@@ -835,8 +835,8 @@ onFileSelected(event: any) {
     return;
   }
 
-  // Changed from 5MB to 2MB (2 * 1024 * 1024 = 2MB)
-  const maxSize = 2 * 1024 * 1024; // 2MB limit
+
+  const maxSize = 2 * 1024 * 1024;
   if (file.size > maxSize) {
     this.fileError = 'La taille du fichier dépasse 2 MB. Veuillez choisir un fichier plus petit.';
     this.selectedFile = null;
@@ -871,14 +871,14 @@ onFileSelected(event: any) {
   }
 
   submit() {
-    // Check if category is selected
+
     if (!this.employeeForm.get('employeeCategory')?.value) {
       Swal.fire('Error', 'Please select an employee category', 'error');
       return;
     }
 
     if (this.employeeForm.invalid) {
-      // Mark all fields as touched to show validation errors
+
       Object.keys(this.employeeForm.controls).forEach(key => {
         this.employeeForm.get(key)?.markAsTouched();
       });
@@ -886,14 +886,14 @@ onFileSelected(event: any) {
       return;
     }
 
-    // Check file attachment requirement for drivers and mechanics
+
     const category = this.employeeForm.get('employeeCategory')?.value;
     if ((category === 'DRIVER' || category === 'MECHANIC') && !this.selectedFile && !this.hasExistingFile) {
       Swal.fire('Error', 'License attachment is required for drivers and mechanics', 'error');
       return;
     }
 
-    // Get the full international number from intl-tel-input
+
     if (this.iti) {
       const number = this.iti.getNumber();
       const countryData = this.iti.getSelectedCountryData();
@@ -914,18 +914,18 @@ onFileSelected(event: any) {
 
  createEmployee() {
   const formData = new FormData();
-  
-  // Get form values with safe access
+
+
   const formValues = this.employeeForm.value;
-  
-  // Base fields
+
+
   formData.append('idNumber', formValues.idNumber || '');
   formData.append('name', formValues.name || '');
   formData.append('email', formValues.email || '');
   formData.append('phoneNumber', formValues.phoneNumber || '');
   formData.append('phoneCountry', formValues.phoneCountry || 'tn');
   formData.append('drivingLicense', formValues.drivingLicense || '');
-  
+
   const employeeCategory = formValues.employeeCategory;
   if (employeeCategory) {
     formData.append('employeeCategory', employeeCategory);
@@ -933,32 +933,32 @@ onFileSelected(event: any) {
 
   const isInternal = formValues.isInternal;
   formData.append('isInternal', isInternal ? 'true' : 'false');
-  
+
   const typeTruckId = formValues.typeTruckId;
   if (typeTruckId && employeeCategory === 'DRIVER') {
     formData.append('typeTruckId', typeTruckId.toString());
   }
 
-  // Add geographical entities for drivers - IMPORTANT: Send as JSON string
+
   if (employeeCategory === 'DRIVER' && this.selectedEntities.length > 0) {
-    // Create an array of objects with geographicalEntityId
+
     const geographicalEntities = this.selectedEntities.map(id => ({
       geographicalEntityId: id
     }));
-    
-    // Send as JSON string - this is crucial!
+
+
     formData.append('geographicalEntities', JSON.stringify(geographicalEntities));
-    
+
     console.log('Sending geographical entities:', geographicalEntities);
     console.log('JSON string:', JSON.stringify(geographicalEntities));
   }
 
-  // File attachment
+
   if (this.selectedFile) {
     formData.append('drivingLicenseFile', this.selectedFile, this.selectedFile.name);
   }
 
-  // Log the FormData contents for debugging
+
   for (let pair of (formData as any).entries()) {
     console.log(pair[0] + ': ' + pair[1]);
   }
@@ -986,11 +986,11 @@ updateEmployee() {
   }
 
   const formData = new FormData();
-  
-  // Get form values with safe access
+
+
   const formValues = this.employeeForm.value;
-  
-  // Base fields
+
+
   formData.append('idNumber', formValues.idNumber || '');
   formData.append('name', formValues.name || '');
   formData.append('email', formValues.email || '');
@@ -998,7 +998,7 @@ updateEmployee() {
   formData.append('phoneCountry', formValues.phoneCountry || 'tn');
   formData.append('drivingLicense', formValues.drivingLicense || '');
   formData.append('isEnable', 'true');
-  
+
   const employeeCategory = formValues.employeeCategory;
   if (employeeCategory) {
     formData.append('employeeCategory', employeeCategory);
@@ -1006,27 +1006,27 @@ updateEmployee() {
 
   const isInternal = formValues.isInternal;
   formData.append('isInternal', isInternal ? 'true' : 'false');
-   
+
   const typeTruckId = formValues.typeTruckId;
   if (typeTruckId && employeeCategory === 'DRIVER') {
     formData.append('typeTruckId', typeTruckId.toString());
   }
 
-  // Add geographical entities for drivers - IMPORTANT: Send as JSON string
+
   if (employeeCategory === 'DRIVER') {
     if (this.selectedEntities.length > 0) {
-      // Create an array of objects with geographicalEntityId
+
       const geographicalEntities = this.selectedEntities.map(id => ({
         geographicalEntityId: id
       }));
-      
-      // Send as JSON string
+
+
       formData.append('geographicalEntities', JSON.stringify(geographicalEntities));
-      
+
       console.log('Sending geographical entities:', geographicalEntities);
       console.log('JSON string:', JSON.stringify(geographicalEntities));
     } else {
-      // If no entities selected, send empty array to clear existing ones
+
       formData.append('geographicalEntities', JSON.stringify([]));
     }
   }
@@ -1035,7 +1035,7 @@ updateEmployee() {
     formData.append('drivingLicenseFile', this.selectedFile, this.selectedFile.name);
   }
 
-  // Log the FormData contents for debugging
+
   for (let pair of (formData as any).entries()) {
     console.log(pair[0] + ': ' + pair[1]);
   }
@@ -1062,40 +1062,40 @@ updateEmployee() {
 
   getErrorMessage(controlName: string): string {
     const control = this.employeeForm.get(controlName);
-    
+
     if (control?.hasError('required')) {
       if (controlName === 'geographicalEntityIds') {
         return 'Au moins une localisation doit être sélectionnée';
       }
       return `${controlName} est obligatoire`;
     }
-    
+
     if (control?.hasError('minlength') && controlName === 'geographicalEntityIds') {
       return 'Au moins une localisation doit être sélectionnée';
     }
-    
+
     return '';
   }
   isEditMode(): boolean {
   return !!this.data.employeeId;
 }
 isSubmitButtonDisabled(): boolean {
-  // If submitting or loading, disable
+
   if (this.isSubmitting || this.loadingGeographicalEntities) {
     return true;
   }
-  
+
   const category = this.employeeForm.get('employeeCategory')?.value;
-  
-  // For drivers in edit mode, check if at least one geographical entity is selected
+
+
   if (category === 'DRIVER') {
-    // In edit mode, if no entities are selected, disable the button
+
     if (this.selectedEntities.length === 0) {
       return true;
     }
   }
-  
-  // For all cases, check if the form is invalid
+
+
   return this.employeeForm.invalid;
 }
 }
