@@ -611,28 +611,32 @@ removeCompanyLogo() {
     this.saveSettings(updates, 'Paramètres de voyage enregistrés avec succès');
   }
 
-  saveSettings(updates: IGeneralSettings[], successMessage: string) {
-    const updatePromises = updates.map(setting => {
-      if (setting.id > 0) {
-        return this.httpService.updateGeneralSettings(setting.id, setting).toPromise();
-      } else {
-        return this.httpService.addGeneralSettings(setting).toPromise();
-      }
-    });
+saveSettings(updates: IGeneralSettings[], successMessage: string) {
+  const updatePromises = updates.map(setting => {
+    // For new records, don't include id field or set it to undefined
+    if (!setting.id || setting.id === 0) {
+      // Create a new object without the id field
+      const { id, ...newSetting } = setting;
+      return this.httpService.addGeneralSettings(newSetting).toPromise();
+    } else {
+      // For existing records, update with the full object including id
+      return this.httpService.updateGeneralSettings(setting.id, setting).toPromise();
+    }
+  });
 
-    Promise.all(updatePromises)
-      .then(() => {
-        this.showSuccess(successMessage);
-        this.loadAllSettings();
-      })
-      .catch((error) => {
-        console.error('Error saving settings:', error);
-        this.showError('Erreur lors de l\'enregistrement');
-      })
-      .finally(() => {
-        this.isSaving = false;
-      });
-  }
+  Promise.all(updatePromises)
+    .then(() => {
+      this.showSuccess(successMessage);
+      this.loadAllSettings();
+    })
+    .catch((error) => {
+      console.error('Error saving settings:', error);
+      this.showError('Erreur lors de l\'enregistrement');
+    })
+    .finally(() => {
+      this.isSaving = false;
+    });
+}
 
   saveGeographicalLevels() {
     if (this.geographicalLevelsForm.invalid) {

@@ -151,7 +151,7 @@ export class GeographicalEntityForm implements OnInit {
     return `https://www.google.com/maps?q=${lat},${lng}`;
   }
 
- onSubmit(): void {
+onSubmit(): void {
   if (this.entityForm.invalid) {
     Object.keys(this.entityForm.controls).forEach(key => {
       const control = this.entityForm.get(key);
@@ -163,23 +163,19 @@ export class GeographicalEntityForm implements OnInit {
   this.isSubmitting = true;
   const formValue = this.entityForm.value;
 
-
   const entityData: any = {
     name: formValue.name.trim(),
     levelId: formValue.levelId,
     isActive: formValue.isActive
   };
 
-
   if (this.data.entityId) {
     entityData.id = this.data.entityId;
   }
 
-
   if (formValue.parentId) {
     entityData.parentId = formValue.parentId;
   }
-
 
   if (formValue.latitude !== null && formValue.latitude !== undefined) {
     entityData.latitude = Number(formValue.latitude);
@@ -198,13 +194,8 @@ export class GeographicalEntityForm implements OnInit {
     next: (response) => {
       console.log('Entity saved successfully:', response);
       this.isSubmitting = false;
-      Swal.fire({
-        icon: 'success',
-        title: 'Succès',
-        text: this.data.entityId ? 'Entité modifiée avec succès' : 'Entité ajoutée avec succès',
-        timer: 2000,
-        showConfirmButton: false
-      }).then(() => this.dialogRef.close(true));
+      // Just close the dialog - let the parent show the success message
+      this.dialogRef.close(true);
     },
     error: (error) => {
       this.isSubmitting = false;
