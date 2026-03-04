@@ -120,7 +120,7 @@ export class GeneralSettingsForm implements OnInit {
     });
   }
 
- onSubmit() {
+onSubmit() {
   if (this.parameterForm.invalid || this.isSubmitting) {
     this.markFormGroupTouched(this.parameterForm);
     return;
@@ -131,14 +131,14 @@ export class GeneralSettingsForm implements OnInit {
   const formValue = this.parameterForm.value;
   const fullParameterCode = `${formValue.parameterCode!.trim().toUpperCase()}=true`;
 
-  // Create DTO
+  
   const parameterDto: any = {
     parameterType: this.parameterType,
     parameterCode: fullParameterCode,
     description: formValue.description!.trim()
   };
 
-  // If editing, include the ID
+
   if (this.data.parameterId) {
     parameterDto.id = this.data.parameterId;
   }
@@ -153,13 +153,8 @@ export class GeneralSettingsForm implements OnInit {
     next: (response) => {
       console.log('Save successful:', response);
       this.isSubmitting = false;
-      Swal.fire({
-        icon: 'success',
-        title: this.data.parameterId ? 'Catégorie modifiée' : 'Catégorie ajoutée',
-        text: this.data.parameterId ? 'La catégorie a été modifiée avec succès' : 'La catégorie a été ajoutée avec succès',
-        timer: 2000,
-        showConfirmButton: false
-      }).then(() => this.dialogRef.close(true));
+   
+      this.dialogRef.close(true);
     },
     error: (error) => {
       this.isSubmitting = false;
