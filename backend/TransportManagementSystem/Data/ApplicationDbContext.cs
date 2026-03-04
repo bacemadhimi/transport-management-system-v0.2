@@ -216,8 +216,8 @@ namespace TransportManagementSystem.Data
                 .IsUnique();
             modelBuilder.Entity<Employee>(entity =>
             {
-             
-                entity.HasDiscriminator<string>("EmployeeCategory")
+
+                entity.HasDiscriminator<string>("EmployeeDiscriminator")
                     .HasValue<Employee>("EMPLOYEE")
                     .HasValue<Driver>("DRIVER")
                     .HasValue<Convoyeur>("CONVOYEUR")

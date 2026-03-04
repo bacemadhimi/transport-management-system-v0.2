@@ -37,12 +37,14 @@ export interface IGeneralSettings {
   parameterType: string;
   parameterCode: string;
   description: string;
+  logoBase64?: string;
 }
 
 export interface IGeneralSettingsDto {
   parameterType: string;
   parameterCode: string;
   description: string;
+  logoBase64?: string;
 }
 
 export interface SearchOptions {

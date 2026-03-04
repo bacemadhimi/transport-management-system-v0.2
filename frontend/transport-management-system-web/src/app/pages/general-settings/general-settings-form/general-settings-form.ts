@@ -120,88 +120,85 @@ export class GeneralSettingsForm implements OnInit {
     });
   }
 
-  onSubmit() {
-    if (this.parameterForm.invalid || this.isSubmitting) {
-      this.markFormGroupTouched(this.parameterForm);
-      return;
-    }
+onSubmit() {
+  if (this.parameterForm.invalid || this.isSubmitting) {
+    this.markFormGroupTouched(this.parameterForm);
+    return;
+  }
 
-    this.isSubmitting = true;
+  this.isSubmitting = true;
 
-    const formValue = this.parameterForm.value;
+  const formValue = this.parameterForm.value;
+  const fullParameterCode = `${formValue.parameterCode!.trim().toUpperCase()}=true`;
+
+  
+  const parameterDto: any = {
+    parameterType: this.parameterType,
+    parameterCode: fullParameterCode,
+    description: formValue.description!.trim()
+  };
 
 
+  if (this.data.parameterId) {
+    parameterDto.id = this.data.parameterId;
+  }
 
-    const fullParameterCode = `${formValue.parameterCode!.trim().toUpperCase()}=true`;
+  console.log('Submitting DTO:', parameterDto);
 
+  const request = this.data.parameterId
+    ? this.httpService.updateGeneralSettings(this.data.parameterId, parameterDto)
+    : this.httpService.addGeneralSettings(parameterDto);
 
-    const parameterDto: IGeneralSettingsDto = {
-      parameterType: this.parameterType,
-      parameterCode: fullParameterCode,
-      description: formValue.description!.trim()
-    };
+  request.subscribe({
+    next: (response) => {
+      console.log('Save successful:', response);
+      this.isSubmitting = false;
+   
+      this.dialogRef.close(true);
+    },
+    error: (error) => {
+      this.isSubmitting = false;
+      console.error('Error saving parameter:');
+      console.error('Status:', error.status);
+      console.error('URL:', error.url);
+      console.error('Error object:', error);
+      console.error('Error response:', error.error);
 
-    console.log('Submitting DTO:', parameterDto);
+      let errorMessage = 'Une erreur est survenue lors de l\'enregistrement';
 
-    const request = this.data.parameterId
-      ? this.httpService.updateGeneralSettings(this.data.parameterId, parameterDto)
-      : this.httpService.addGeneralSettings(parameterDto);
+      if (error.status === 400) {
+        if (error.error?.message) {
+          errorMessage = error.error.message;
+        } else if (error.error?.title) {
+          errorMessage = error.error.title;
+        } else if (error.error?.errors) {
+          const errors = error.error.errors;
+          console.log('Validation errors:', errors);
 
-    request.subscribe({
-      next: (response) => {
-        console.log('Save successful:', response);
-        this.isSubmitting = false;
-        Swal.fire({
-          icon: 'success',
-          title: this.data.parameterId ? 'Catégorie modifiée' : 'Catégorie ajoutée',
-          text: this.data.parameterId ? 'La catégorie a été modifiée avec succès' : 'La catégorie a été ajoutée avec succès',
-          timer: 2000,
-          showConfirmButton: false
-        }).then(() => this.dialogRef.close(true));
-      },
-      error: (error) => {
-        this.isSubmitting = false;
-        console.error('Error saving parameter:');
-        console.error('Status:', error.status);
-        console.error('URL:', error.url);
-        console.error('Error object:', error);
-        console.error('Error response:', error.error);
-
-        let errorMessage = 'Une erreur est survenue lors de l\'enregistrement';
-
-        if (error.status === 400) {
-          if (error.error?.message) {
-            errorMessage = error.error.message;
-          } else if (error.error?.title) {
-            errorMessage = error.error.title;
-          } else if (error.error?.errors) {
-            const errors = error.error.errors;
-            console.log('Validation errors:', errors);
-
-            if (errors.parameterCode) {
-              errorMessage = `Code: ${errors.parameterCode.join(', ')}`;
-            } else if (errors.description) {
-              errorMessage = `Description: ${errors.description.join(', ')}`;
-            } else {
-              const firstKey = Object.keys(errors)[0];
-              if (firstKey) {
-                errorMessage = errors[firstKey][0];
-              }
+          if (errors.parameterCode) {
+            errorMessage = `Code: ${errors.parameterCode.join(', ')}`;
+          } else if (errors.description) {
+            errorMessage = `Description: ${errors.description.join(', ')}`;
+          } else {
+            const firstKey = Object.keys(errors)[0];
+            if (firstKey) {
+              errorMessage = errors[firstKey][0];
             }
           }
-        } else if (error.status === 409 || (error.status === 400 && error.error?.message?.includes('existe déjà'))) {
-          errorMessage = 'Ce code de catégorie existe déjà';
         }
-
-        Swal.fire({
-          icon: 'error',
-          title: 'Erreur',
-          text: errorMessage,
-          confirmButtonText: 'OK'
-        });
+      } else if (error.status === 409 || (error.status === 400 && error.error?.message?.includes('existe déjà'))) {
+        errorMessage = 'Ce code de catégorie existe déjà';
       }
-    });
-  }
+
+      Swal.fire({
+        icon: 'error',
+        title: 'Erreur',
+        text: errorMessage,
+        confirmButtonText: 'OK'
+      });
+    }
+  });
+}
 
   onCancel() {
     this.dialogRef.close();

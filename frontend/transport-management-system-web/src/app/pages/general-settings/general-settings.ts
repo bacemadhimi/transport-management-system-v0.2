@@ -1,6 +1,6 @@
-﻿import { Component, inject, OnInit } from '@angular/core';
+﻿import { Component, inject, OnInit, ViewChild, ElementRef } from '@angular/core';
 import { Http } from '../../services/http';
-import { IGeneralSettings, ParameterType, IGeographicalLevel, IGeographicalEntity } from '../../types/general-settings';
+import { IGeneralSettings, IGeographicalLevel, IGeographicalEntity } from '../../types/general-settings';
 import { MatButtonModule } from '@angular/material/button';
 import { FormsModule, ReactiveFormsModule, FormGroup, FormBuilder, Validators, FormArray, FormControl } from '@angular/forms';
 import { MatDialog } from '@angular/material/dialog';
@@ -15,6 +15,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatTableModule } from '@angular/material/table';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatDividerModule } from '@angular/material/divider';
 import { Auth } from '../../services/auth';
 import { CommonModule } from '@angular/common';
 import Swal from 'sweetalert2';
@@ -35,7 +36,8 @@ import Swal from 'sweetalert2';
     MatIconModule,
     MatProgressSpinnerModule,
     MatTableModule,
-    MatTooltipModule
+    MatTooltipModule,
+    MatDividerModule
   ],
   templateUrl: './general-settings.html',
   styleUrls: ['./general-settings.scss']
@@ -46,12 +48,12 @@ export class GeneralSettings implements OnInit {
   httpService = inject(Http);
   readonly dialog = inject(MatDialog);
 
-
+  // Form Groups
   orderSettingsForm!: FormGroup;
   tripSettingsForm!: FormGroup;
   geographicalLevelsForm!: FormGroup;
 
-
+  // Data Arrays
   orderSettings: IGeneralSettings[] = [];
   tripSettings: IGeneralSettings[] = [];
   employeeCategories: IGeneralSettings[] = [];
@@ -59,25 +61,35 @@ export class GeneralSettings implements OnInit {
   geographicalEntities: IGeographicalEntity[] = [];
   filteredEntities: IGeographicalEntity[] = [];
 
-
+  // Loading States
   isLoading = false;
   isSaving = false;
   loadingCategories = false;
   loadingEntities = false;
   isSavingGeographical = false;
+  isSavingLogo = false;
 
-
+  // Filters
   entityLevelFilter = new FormControl('all');
 
-
+  // Options
   loadingUnitOptions = ['palette', 'kg', 'tonne', 'm³'];
   tripOrderOptions = ['chronologique', 'priorité', 'géographique', 'optimisé'];
 
+  // For max capacity field visibility
+  showMaxCapacityField = false;
 
+  // Table Columns
   employeeColumns: string[] = ['code', 'description', 'value', 'actions'];
   entityColumns: string[] = ['name', 'level', 'parent', 'coordinates', 'status', 'actions'];
 
+  // Logo upload properties
+  @ViewChild('companyFileInput') companyFileInput!: ElementRef;
+  companyLogoPreview: string | null = null;
+  companyFileError: string | null = null;
+  hasCompanyLogo = false;
 
+  // Control Maps
   private orderControlMap: { [key: string]: string } = {
     'ALLOW_EDIT_ORDER': 'ALLOW_EDIT_ORDER',
     'ALLOW_DELIVERY_DATE_EDIT': 'ALLOW_DELIVERY_DATE_EDIT',
@@ -96,13 +108,14 @@ export class GeneralSettings implements OnInit {
     'REQUIRE_DELETE_CONFIRMATION': 'REQUIRE_DELETE_CONFIRMATION',
     'NOTIFY_ON_TRIP_EDIT': 'NOTIFY_ON_TRIP_EDIT',
     'NOTIFY_ON_TRIP_DELETE': 'NOTIFY_ON_TRIP_DELETE',
-    'LINK_DRIVER_TO_TRUCK': 'LINK_DRIVER_TO_TRUCK'
+    'LINK_DRIVER_TO_TRUCK': 'LINK_DRIVER_TO_TRUCK',
+    'ALLOW_EXCEED_MAX_CAPACITY': 'ALLOW_EXCEED_MAX_CAPACITY',
+    'MAX_CAPACITY_PERCENTAGE': 'MAX_CAPACITY_PERCENTAGE'
   };
 
   ngOnInit() {
     this.initForms();
     this.loadAllSettings();
-
 
     this.entityLevelFilter.valueChanges.subscribe(levelId => {
       this.filterEntities(levelId);
@@ -110,7 +123,7 @@ export class GeneralSettings implements OnInit {
   }
 
   initForms() {
-
+   
     this.orderSettingsForm = this.fb.group({
       ALLOW_EDIT_ORDER: [false],
       ALLOW_DELIVERY_DATE_EDIT: [false],
@@ -120,7 +133,7 @@ export class GeneralSettings implements OnInit {
       PLANNING_HORIZON: [30, [Validators.min(1), Validators.max(365)]]
     });
 
-
+   
     this.tripSettingsForm = this.fb.group({
       ALLOW_EDIT_TRIPS: [false],
       ALLOW_DELETE_TRIPS: [false],
@@ -130,18 +143,39 @@ export class GeneralSettings implements OnInit {
       REQUIRE_DELETE_CONFIRMATION: [true],
       NOTIFY_ON_TRIP_EDIT: [false],
       NOTIFY_ON_TRIP_DELETE: [false],
-      LINK_DRIVER_TO_TRUCK: [false]
+      LINK_DRIVER_TO_TRUCK: [false],
+      ALLOW_EXCEED_MAX_CAPACITY: [false],
+      MAX_CAPACITY_PERCENTAGE: [{ value: 100, disabled: true }, [Validators.min(1), Validators.max(200)]]
     });
 
-
+   
     this.geographicalLevelsForm = this.fb.group({
       levels: this.fb.array([])
     });
+
+
+    this.tripSettingsForm.get('ALLOW_EXCEED_MAX_CAPACITY')?.valueChanges.subscribe(value => {
+      this.onAllowExceedChange(value);
+    });
   }
 
+onAllowExceedChange(allowExceed: boolean) {
+  console.log('onAllowExceedChange called with:', allowExceed);
+  const maxCapacityControl = this.tripSettingsForm.get('MAX_CAPACITY_PERCENTAGE');
+  
+  if (allowExceed) {
+    maxCapacityControl?.enable();
+    this.showMaxCapacityField = true;
+    console.log('Enabled percentage field');
+  } else {
+    maxCapacityControl?.disable();
+    this.showMaxCapacityField = false;
+    console.log('Disabled percentage field');
+  }
+  maxCapacityControl?.updateValueAndValidity();
+}
   loadAllSettings() {
     this.isLoading = true;
-
 
     this.httpService.getAllSettingsByType('ORDER').subscribe({
       next: (settings) => {
@@ -154,7 +188,6 @@ export class GeneralSettings implements OnInit {
       }
     });
 
-
     this.httpService.getAllSettingsByType('TRIP').subscribe({
       next: (settings) => {
         this.tripSettings = settings;
@@ -166,11 +199,32 @@ export class GeneralSettings implements OnInit {
       }
     });
 
+    // Load company logo
+    this.loadCompanyLogo();
 
     this.loadEmployeeCategories();
-
-
     this.loadGeographicalLevels();
+  }
+
+  loadCompanyLogo() {
+    this.httpService.getAllSettingsByType('COMPANY').subscribe({
+      next: (settings) => {
+        const companyRecord = settings.find(s => 
+          s.parameterCode === 'COMPANY_LOGO'
+        );
+        
+        if (companyRecord?.logoBase64) {
+          this.companyLogoPreview = companyRecord.logoBase64;
+          this.hasCompanyLogo = true;
+        } else {
+          this.companyLogoPreview = null;
+          this.hasCompanyLogo = false;
+        }
+      },
+      error: (error) => {
+        console.error('Error loading company logo:', error);
+      }
+    });
   }
 
   loadEmployeeCategories(): void {
@@ -248,20 +302,44 @@ export class GeneralSettings implements OnInit {
     this.orderSettingsForm.patchValue(formValues);
   }
 
-  populateTripForm(settings: IGeneralSettings[]) {
-    const formValues: any = {};
+populateTripForm(settings: IGeneralSettings[]) {
+  const formValues: any = {};
 
-    settings.forEach(setting => {
-      const [key, value] = this.parseParameterCode(setting.parameterCode);
-      const controlName = this.tripControlMap[key];
+  settings.forEach(setting => {
+    const [key, value] = this.parseParameterCode(setting.parameterCode);
+    
 
-      if (controlName && this.tripSettingsForm.contains(controlName)) {
-        formValues[controlName] = this.parseSettingValue(value);
-      }
-    });
+    switch(key) {
+      case 'ALLOW_EXCEED_MAX_CAPACITY':
+        formValues.ALLOW_EXCEED_MAX_CAPACITY = this.parseSettingValue(value);
+        console.log('Loaded ALLOW_EXCEED_MAX_CAPACITY:', value, '->', formValues.ALLOW_EXCEED_MAX_CAPACITY);
+        break;
+        
+      case 'MAX_CAPACITY_PERCENTAGE':
+        formValues.MAX_CAPACITY_PERCENTAGE = this.parseSettingValue(value);
+        console.log('Loaded MAX_CAPACITY_PERCENTAGE:', value, '->', formValues.MAX_CAPACITY_PERCENTAGE);
+        break;
+        
+      default:
+       
+        const controlName = this.tripControlMap[key];
+        if (controlName && this.tripSettingsForm.contains(controlName)) {
+          formValues[controlName] = this.parseSettingValue(value);
+        }
+        break;
+    }
+  });
 
-    this.tripSettingsForm.patchValue(formValues);
+  console.log('Final form values:', formValues);
+  this.tripSettingsForm.patchValue(formValues);
+  
+
+  const allowExceed = formValues['ALLOW_EXCEED_MAX_CAPACITY'];
+  if (allowExceed !== undefined) {
+    console.log('Setting allowExceed to:', allowExceed);
+    setTimeout(() => this.onAllowExceedChange(allowExceed));
   }
+}
 
   populateGeographicalLevelsForm(levels: IGeographicalLevel[]) {
     const levelsArray = this.geographicalLevelsForm.get('levels') as FormArray;
@@ -296,15 +374,15 @@ export class GeneralSettings implements OnInit {
     return parts.length === 2 ? parts[1] : '';
   }
 
-  parseSettingValue(value: string): any {
-    if (value.toLowerCase() === 'true') return true;
-    if (value.toLowerCase() === 'false') return false;
-
-    const num = Number(value);
-    if (!isNaN(num)) return num;
-
-    return value;
-  }
+parseSettingValue(value: string): any {
+  if (value.toLowerCase() === 'true') return true;
+  if (value.toLowerCase() === 'false') return false;
+  
+  const num = Number(value);
+  if (!isNaN(num)) return num;
+  
+  return value;
+}
 
   formatSettingValue(value: any): string {
     if (typeof value === 'boolean') return value ? 'true' : 'false';
@@ -312,6 +390,162 @@ export class GeneralSettings implements OnInit {
     return value;
   }
 
+  // Logo upload methods
+  onCompanyFileSelected(event: any) {
+    const file: File = event.target.files[0];
+
+    if (!file) return;
+
+    const allowedExtensions = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'svg'];
+    const fileExtension = file.name.split('.').pop()?.toLowerCase();
+    
+    if (!fileExtension || !allowedExtensions.includes(fileExtension)) {
+      this.companyFileError = `Type de fichier non autorisé. Types acceptés: ${allowedExtensions.join(', ')}`;
+      return;
+    }
+
+    const maxSize = 1024 * 1024; // 1MB
+    if (file.size > maxSize) {
+      this.companyFileError = 'La taille du fichier dépasse 1 MB. Veuillez choisir un fichier plus petit.';
+      return;
+    }
+
+    this.companyFileError = null;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      this.companyLogoPreview = e.target?.result as string;
+      this.hasCompanyLogo = true;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  triggerCompanyFileInput() {
+    this.companyFileInput.nativeElement.click();
+  }
+
+removeCompanyLogo() {
+  if (this.hasCompanyLogo) {
+    Swal.fire({
+      title: 'Êtes-vous sûr?',
+      text: 'Voulez-vous vraiment supprimer le logo de l\'entreprise?',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#3085d6',
+      confirmButtonText: 'Oui, supprimer!',
+      cancelButtonText: 'Annuler'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        this.isSavingLogo = true;
+        
+        this.httpService.getAllSettingsByType('COMPANY').subscribe({
+          next: (settings) => {
+            const companyRecord = settings.find(s => 
+              s.parameterCode === 'COMPANY_LOGO'
+            );
+            
+            if (companyRecord) {
+        
+              const updateDto: any = {
+                id: companyRecord.id, 
+                parameterType: 'COMPANY',
+                parameterCode: 'COMPANY_LOGO',
+                description: 'Company logo',
+                logoBase64: null
+              };
+              
+              this.httpService.updateGeneralSettings(companyRecord.id, updateDto).subscribe({
+                next: () => {
+                  this.isSavingLogo = false;
+                  this.companyLogoPreview = null;
+                  this.hasCompanyLogo = false;
+                  this.companyFileError = null;
+                  if (this.companyFileInput) {
+                    this.companyFileInput.nativeElement.value = '';
+                  }
+                  Swal.fire({
+                    icon: 'success',
+                    title: 'Succès',
+                    text: 'Logo supprimé avec succès',
+                    timer: 2000,
+                    showConfirmButton: false
+                  });
+                },
+                error: (error) => {
+                  this.isSavingLogo = false;
+                  this.handleError(error);
+                }
+              });
+            } else {
+              this.isSavingLogo = false;
+              this.showWarning('Aucun logo à supprimer');
+            }
+          },
+          error: (error) => {
+            this.isSavingLogo = false;
+            this.handleError(error);
+          }
+        });
+      }
+    });
+  } else {
+    // Just clear the preview if it's a new upload (not saved yet)
+    this.companyLogoPreview = null;
+    this.companyFileError = null;
+    this.hasCompanyLogo = false;
+    
+    if (this.companyFileInput) {
+      this.companyFileInput.nativeElement.value = '';
+    }
+  }
+}
+  saveCompanyLogo() {
+    if (!this.companyLogoPreview) {
+      this.showWarning('Veuillez sélectionner un logo à enregistrer');
+      return;
+    }
+
+    this.isSavingLogo = true;
+
+    this.httpService.getAllSettingsByType('COMPANY').subscribe({
+      next: (settings) => {
+        // Find existing company record
+        let companyRecord = settings.find(s => 
+          s.parameterCode === 'COMPANY_LOGO'
+        );
+
+        const companyDto: any = {
+          parameterType: 'COMPANY',
+          parameterCode: 'COMPANY_LOGO',
+          description: 'Company logo',
+          logoBase64: this.companyLogoPreview
+        };
+
+        const request = companyRecord
+          ? this.httpService.updateGeneralSettings(companyRecord.id, companyDto)
+          : this.httpService.addGeneralSettings(companyDto);
+
+        request.subscribe({
+          next: () => {
+            this.isSavingLogo = false;
+            this.showSuccess('Logo enregistré avec succès');
+            this.loadCompanyLogo();
+          },
+          error: (error) => {
+            this.isSavingLogo = false;
+            this.handleError(error);
+          }
+        });
+      },
+      error: (error) => {
+        this.isSavingLogo = false;
+        this.handleError(error);
+      }
+    });
+  }
+
+  // Save methods
   saveOrderSettings() {
     if (this.orderSettingsForm.invalid) {
       this.showError('Veuillez corriger les erreurs dans le formulaire');
@@ -396,28 +630,32 @@ export class GeneralSettings implements OnInit {
     this.saveSettings(updates, 'Paramètres de voyage enregistrés avec succès');
   }
 
-  saveSettings(updates: IGeneralSettings[], successMessage: string) {
-    const updatePromises = updates.map(setting => {
-      if (setting.id > 0) {
-        return this.httpService.updateGeneralSettings(setting.id, setting).toPromise();
-      } else {
-        return this.httpService.addGeneralSettings(setting).toPromise();
-      }
-    });
+saveSettings(updates: IGeneralSettings[], successMessage: string) {
+  const updatePromises = updates.map(setting => {
+    // For new records, don't include id field or set it to undefined
+    if (!setting.id || setting.id === 0) {
+      // Create a new object without the id field
+      const { id, ...newSetting } = setting;
+      return this.httpService.addGeneralSettings(newSetting).toPromise();
+    } else {
+      // For existing records, update with the full object including id
+      return this.httpService.updateGeneralSettings(setting.id, setting).toPromise();
+    }
+  });
 
-    Promise.all(updatePromises)
-      .then(() => {
-        this.showSuccess(successMessage);
-        this.loadAllSettings();
-      })
-      .catch((error) => {
-        console.error('Error saving settings:', error);
-        this.showError('Erreur lors de l\'enregistrement');
-      })
-      .finally(() => {
-        this.isSaving = false;
-      });
-  }
+  Promise.all(updatePromises)
+    .then(() => {
+      this.showSuccess(successMessage);
+      this.loadAllSettings();
+    })
+    .catch((error) => {
+      console.error('Error saving settings:', error);
+      this.showError('Erreur lors de l\'enregistrement');
+    })
+    .finally(() => {
+      this.isSaving = false;
+    });
+}
 
   saveGeographicalLevels() {
     if (this.geographicalLevelsForm.invalid) {
@@ -459,13 +697,14 @@ export class GeneralSettings implements OnInit {
       'REQUIRE_DELETE_CONFIRMATION': 'Require delete confirmation',
       'NOTIFY_ON_TRIP_EDIT': 'Notify when trip edited',
       'NOTIFY_ON_TRIP_DELETE': 'Notify when trip deleted',
-      'LINK_DRIVER_TO_TRUCK': 'Driver must match truck'
+      'LINK_DRIVER_TO_TRUCK': 'Driver must match truck',
+      'ALLOW_EXCEED_MAX_CAPACITY': 'Allow exceeding max capacity',
+      'MAX_CAPACITY_PERCENTAGE': 'Maximum capacity percentage'
     };
     return descriptions[key] || key;
   }
 
-
-
+  // Dialog methods
   openAddParameterDialog(): void {
     const dialogRef = this.dialog.open(GeneralSettingsForm, {
       width: '600px',
@@ -525,8 +764,6 @@ export class GeneralSettings implements OnInit {
       }
     });
   }
-
-
 
   openAddEntityDialog(): void {
     if (this.geographicalLevels.length === 0) {
@@ -600,8 +837,7 @@ export class GeneralSettings implements OnInit {
     });
   }
 
-
-
+  // Helper methods
   getLevelName(levelId: number): string {
     const level = this.geographicalLevels.find(l => l.id === levelId);
     return level ? `${level.name} (Niv. ${level.levelNumber})` : 'Inconnu';
@@ -611,8 +847,6 @@ export class GeneralSettings implements OnInit {
     const entity = this.geographicalEntities.find(e => e.id === entityId);
     return entity ? entity.name : 'Inconnu';
   }
-
-
 
   addGeographicalLevel() {
     const levelsArray = this.geographicalLevelsForm.get('levels') as FormArray;
@@ -653,8 +887,7 @@ export class GeneralSettings implements OnInit {
     });
   }
 
-
-
+  // Alert methods
   showSuccess(message: string) {
     Swal.fire({
       icon: 'success',
@@ -681,6 +914,24 @@ export class GeneralSettings implements OnInit {
       text: message,
       confirmButtonText: 'OK'
     });
+  }
+
+  handleError(error: any) {
+    console.error('Error:', error);
+    let errorMessage = 'Une erreur est survenue';
+    
+    if (error.error?.errors) {
+      const firstKey = Object.keys(error.error.errors)[0];
+      if (firstKey) {
+        errorMessage = error.error.errors[firstKey][0];
+      }
+    } else if (error.error?.message) {
+      errorMessage = error.error.message;
+    } else if (error.message) {
+      errorMessage = error.message;
+    }
+    
+    this.showError(errorMessage);
   }
 
   get geographicalLevelsArray(): FormArray {
