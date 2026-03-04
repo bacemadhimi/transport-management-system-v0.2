@@ -127,12 +127,12 @@ loadCompanyLogo() {
       if (companyRecord?.logoBase64) {
         this.companyLogo = companyRecord.logoBase64;
       } else {
-        this.companyLogo = 'logo.jpg';
+        this.companyLogo = null;
       }
     },
     error: (error) => {
       console.error('Error loading company logo:', error);
-      this.companyLogo = 'logo.jpg';
+      this.companyLogo = null;
     }
   });
 }

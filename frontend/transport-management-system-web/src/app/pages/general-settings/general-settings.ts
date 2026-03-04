@@ -405,7 +405,73 @@ export class GeneralSettings implements OnInit {
     this.companyFileInput.nativeElement.click();
   }
 
-  removeCompanyLogo() {
+removeCompanyLogo() {
+  if (this.hasCompanyLogo) {
+    Swal.fire({
+      title: 'Êtes-vous sûr?',
+      text: 'Voulez-vous vraiment supprimer le logo de l\'entreprise?',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#3085d6',
+      confirmButtonText: 'Oui, supprimer!',
+      cancelButtonText: 'Annuler'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        this.isSavingLogo = true;
+        
+        this.httpService.getAllSettingsByType('COMPANY').subscribe({
+          next: (settings) => {
+            const companyRecord = settings.find(s => 
+              s.parameterCode === 'COMPANY_LOGO'
+            );
+            
+            if (companyRecord) {
+        
+              const updateDto: any = {
+                id: companyRecord.id, 
+                parameterType: 'COMPANY',
+                parameterCode: 'COMPANY_LOGO',
+                description: 'Company logo',
+                logoBase64: null
+              };
+              
+              this.httpService.updateGeneralSettings(companyRecord.id, updateDto).subscribe({
+                next: () => {
+                  this.isSavingLogo = false;
+                  this.companyLogoPreview = null;
+                  this.hasCompanyLogo = false;
+                  this.companyFileError = null;
+                  if (this.companyFileInput) {
+                    this.companyFileInput.nativeElement.value = '';
+                  }
+                  Swal.fire({
+                    icon: 'success',
+                    title: 'Succès',
+                    text: 'Logo supprimé avec succès',
+                    timer: 2000,
+                    showConfirmButton: false
+                  });
+                },
+                error: (error) => {
+                  this.isSavingLogo = false;
+                  this.handleError(error);
+                }
+              });
+            } else {
+              this.isSavingLogo = false;
+              this.showWarning('Aucun logo à supprimer');
+            }
+          },
+          error: (error) => {
+            this.isSavingLogo = false;
+            this.handleError(error);
+          }
+        });
+      }
+    });
+  } else {
+    // Just clear the preview if it's a new upload (not saved yet)
     this.companyLogoPreview = null;
     this.companyFileError = null;
     this.hasCompanyLogo = false;
@@ -414,8 +480,7 @@ export class GeneralSettings implements OnInit {
       this.companyFileInput.nativeElement.value = '';
     }
   }
-
-  // Save company logo only
+}
   saveCompanyLogo() {
     if (!this.companyLogoPreview) {
       this.showWarning('Veuillez sélectionner un logo à enregistrer');
