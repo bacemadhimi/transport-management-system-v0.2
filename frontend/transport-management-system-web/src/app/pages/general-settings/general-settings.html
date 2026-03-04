@@ -193,65 +193,7 @@
 
     <!-- Right Column -->
     <div class="right-column space-y-6">
-      <!-- Company Logo Card -->
-      <mat-card class="settings-card">
-        <mat-card-header>
-          <mat-icon class="card-icon">business</mat-icon>
-          <div class="card-header-text">
-            <mat-card-title>Logo de l'entreprise</mat-card-title>
-            <mat-card-subtitle>
-              Téléchargez le logo de votre entreprise
-            </mat-card-subtitle>
-          </div>
-        </mat-card-header>
-
-        <mat-card-content>
-          <!-- Logo Upload Section Only -->
-          <div class="company-logo-section">
-            <p class="upload-info">Format supporté: JPG, JPEG, PNG, GIF, BMP, SVG (Max 1 MB)</p>
-
-            <div class="logo-upload-container" (click)="triggerCompanyFileInput()" [class.has-logo]="companyLogoPreview">
-              <input
-                #companyFileInput
-                type="file"
-                (change)="onCompanyFileSelected($event)"
-                accept=".jpg,.jpeg,.png,.gif,.bmp,.svg"
-                style="display: none"
-              />
-
-              <div *ngIf="companyLogoPreview" class="logo-preview">
-                <img [src]="companyLogoPreview" alt="Company logo" class="preview-image" />
-                <div class="logo-actions">
-                  <button type="button" mat-icon-button color="warn" (click)="removeCompanyLogo(); $event.stopPropagation()" matTooltip="Supprimer">
-                    <mat-icon>delete</mat-icon>
-                  </button>
-                </div>
-              </div>
-
-              <div *ngIf="!companyLogoPreview" class="logo-placeholder">
-                <mat-icon class="upload-icon">cloud_upload</mat-icon>
-                <p>Cliquez pour télécharger un logo</p>
-                <small>JPG, PNG, GIF, SVG (Max 1 MB)</small>
-              </div>
-            </div>
-
-            <p *ngIf="companyFileError" class="error-message">{{ companyFileError }}</p>
-          </div>
-        </mat-card-content>
-
-        <mat-card-actions align="end">
-          <button mat-raised-button (click)="saveCompanyLogo()" [disabled]="isSavingLogo || !companyLogoPreview" class="theme-primary-btn">
-            <mat-icon>save</mat-icon>
-            Enregistrer le logo
-          </button>
-          <button mat-raised-button *ngIf="hasCompanyLogo" (click)="removeCompanyLogo()" color="warn" class="ml-2">
-            <mat-icon>delete</mat-icon>
-            Supprimer
-          </button>
-        </mat-card-actions>
-      </mat-card>
-
-      <!-- Trip Settings Card with capacity fields -->
+            <!-- Trip Settings Card with capacity fields -->
       <mat-card class="settings-card">
         <mat-card-header>
           <mat-icon class="card-icon">directions_bus</mat-icon>
@@ -388,6 +330,64 @@
           </button>
         </mat-card-actions>
       </mat-card>
+      <!-- Company Logo Card -->
+      <mat-card class="settings-card">
+        <mat-card-header>
+          <mat-icon class="card-icon">business</mat-icon>
+          <div class="card-header-text">
+            <mat-card-title>Logo de l'entreprise</mat-card-title>
+            <mat-card-subtitle>
+              Téléchargez le logo de votre entreprise
+            </mat-card-subtitle>
+          </div>
+        </mat-card-header>
+
+        <mat-card-content>
+          <!-- Logo Upload Section Only -->
+          <div class="company-logo-section">
+            <p class="upload-info">Format supporté: JPG, JPEG, PNG, GIF, BMP, SVG (Max 1 MB)</p>
+
+            <div class="logo-upload-container" (click)="triggerCompanyFileInput()" [class.has-logo]="companyLogoPreview">
+              <input
+                #companyFileInput
+                type="file"
+                (change)="onCompanyFileSelected($event)"
+                accept=".jpg,.jpeg,.png,.gif,.bmp,.svg"
+                style="display: none"
+              />
+
+              <div *ngIf="companyLogoPreview" class="logo-preview">
+                <img [src]="companyLogoPreview" alt="Company logo" class="preview-image" />
+                <div class="logo-actions">
+                  <button type="button" mat-icon-button color="warn" (click)="removeCompanyLogo(); $event.stopPropagation()" matTooltip="Supprimer">
+                    <mat-icon>delete</mat-icon>
+                  </button>
+                </div>
+              </div>
+
+              <div *ngIf="!companyLogoPreview" class="logo-placeholder">
+                <mat-icon class="upload-icon">cloud_upload</mat-icon>
+                <p>Cliquez pour télécharger un logo</p>
+                <small>JPG, PNG, GIF, SVG (Max 1 MB)</small>
+              </div>
+            </div>
+
+            <p *ngIf="companyFileError" class="error-message">{{ companyFileError }}</p>
+          </div>
+        </mat-card-content>
+
+        <mat-card-actions align="end">
+          <button mat-raised-button (click)="saveCompanyLogo()" [disabled]="isSavingLogo || !companyLogoPreview" class="theme-primary-btn">
+            <mat-icon>save</mat-icon>
+            Enregistrer le logo
+          </button>
+          <button mat-raised-button *ngIf="hasCompanyLogo" (click)="removeCompanyLogo()" color="warn" class="ml-2">
+            <mat-icon>delete</mat-icon>
+            Supprimer
+          </button>
+        </mat-card-actions>
+      </mat-card>
+
 
       <!-- Geographical Levels Card -->
       <mat-card class="settings-card">
