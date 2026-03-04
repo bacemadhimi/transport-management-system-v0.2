@@ -123,7 +123,7 @@ export class GeneralSettings implements OnInit {
   }
 
   initForms() {
-    // Order Settings Form
+   
     this.orderSettingsForm = this.fb.group({
       ALLOW_EDIT_ORDER: [false],
       ALLOW_DELIVERY_DATE_EDIT: [false],
@@ -133,7 +133,7 @@ export class GeneralSettings implements OnInit {
       PLANNING_HORIZON: [30, [Validators.min(1), Validators.max(365)]]
     });
 
-    // Trip Settings Form with capacity fields
+   
     this.tripSettingsForm = this.fb.group({
       ALLOW_EDIT_TRIPS: [false],
       ALLOW_DELETE_TRIPS: [false],
@@ -148,34 +148,32 @@ export class GeneralSettings implements OnInit {
       MAX_CAPACITY_PERCENTAGE: [{ value: 100, disabled: true }, [Validators.min(1), Validators.max(200)]]
     });
 
-    // Geographical Levels Form
+   
     this.geographicalLevelsForm = this.fb.group({
       levels: this.fb.array([])
     });
 
-    // Listen for changes to ALLOW_EXCEED_MAX_CAPACITY
+
     this.tripSettingsForm.get('ALLOW_EXCEED_MAX_CAPACITY')?.valueChanges.subscribe(value => {
       this.onAllowExceedChange(value);
     });
   }
 
-  onAllowExceedChange(allowExceed: boolean) {
-    const maxCapacityControl = this.tripSettingsForm.get('MAX_CAPACITY_PERCENTAGE');
-    
-    if (allowExceed) {
-      maxCapacityControl?.enable();
-      this.showMaxCapacityField = true;
-      if (!maxCapacityControl?.value || maxCapacityControl?.value === 100) {
-        maxCapacityControl?.setValue(110);
-      }
-    } else {
-      maxCapacityControl?.disable();
-      maxCapacityControl?.setValue(100);
-      this.showMaxCapacityField = false;
-    }
-    maxCapacityControl?.updateValueAndValidity();
+onAllowExceedChange(allowExceed: boolean) {
+  console.log('onAllowExceedChange called with:', allowExceed);
+  const maxCapacityControl = this.tripSettingsForm.get('MAX_CAPACITY_PERCENTAGE');
+  
+  if (allowExceed) {
+    maxCapacityControl?.enable();
+    this.showMaxCapacityField = true;
+    console.log('Enabled percentage field');
+  } else {
+    maxCapacityControl?.disable();
+    this.showMaxCapacityField = false;
+    console.log('Disabled percentage field');
   }
-
+  maxCapacityControl?.updateValueAndValidity();
+}
   loadAllSettings() {
     this.isLoading = true;
 
@@ -304,25 +302,44 @@ export class GeneralSettings implements OnInit {
     this.orderSettingsForm.patchValue(formValues);
   }
 
-  populateTripForm(settings: IGeneralSettings[]) {
-    const formValues: any = {};
+populateTripForm(settings: IGeneralSettings[]) {
+  const formValues: any = {};
 
-    settings.forEach(setting => {
-      const [key, value] = this.parseParameterCode(setting.parameterCode);
-      const controlName = this.tripControlMap[key];
-
-      if (controlName && this.tripSettingsForm.contains(controlName)) {
-        formValues[controlName] = this.parseSettingValue(value);
-      }
-    });
-
-    this.tripSettingsForm.patchValue(formValues);
+  settings.forEach(setting => {
+    const [key, value] = this.parseParameterCode(setting.parameterCode);
     
-    const allowExceed = formValues['ALLOW_EXCEED_MAX_CAPACITY'];
-    if (allowExceed !== undefined) {
-      setTimeout(() => this.onAllowExceedChange(allowExceed));
+
+    switch(key) {
+      case 'ALLOW_EXCEED_MAX_CAPACITY':
+        formValues.ALLOW_EXCEED_MAX_CAPACITY = this.parseSettingValue(value);
+        console.log('Loaded ALLOW_EXCEED_MAX_CAPACITY:', value, '->', formValues.ALLOW_EXCEED_MAX_CAPACITY);
+        break;
+        
+      case 'MAX_CAPACITY_PERCENTAGE':
+        formValues.MAX_CAPACITY_PERCENTAGE = this.parseSettingValue(value);
+        console.log('Loaded MAX_CAPACITY_PERCENTAGE:', value, '->', formValues.MAX_CAPACITY_PERCENTAGE);
+        break;
+        
+      default:
+       
+        const controlName = this.tripControlMap[key];
+        if (controlName && this.tripSettingsForm.contains(controlName)) {
+          formValues[controlName] = this.parseSettingValue(value);
+        }
+        break;
     }
+  });
+
+  console.log('Final form values:', formValues);
+  this.tripSettingsForm.patchValue(formValues);
+  
+
+  const allowExceed = formValues['ALLOW_EXCEED_MAX_CAPACITY'];
+  if (allowExceed !== undefined) {
+    console.log('Setting allowExceed to:', allowExceed);
+    setTimeout(() => this.onAllowExceedChange(allowExceed));
   }
+}
 
   populateGeographicalLevelsForm(levels: IGeographicalLevel[]) {
     const levelsArray = this.geographicalLevelsForm.get('levels') as FormArray;
@@ -357,13 +374,15 @@ export class GeneralSettings implements OnInit {
     return parts.length === 2 ? parts[1] : '';
   }
 
-  parseSettingValue(value: string): any {
-    if (value.toLowerCase() === 'true') return true;
-    if (value.toLowerCase() === 'false') return false;
-    const num = Number(value);
-    if (!isNaN(num)) return num;
-    return value;
-  }
+parseSettingValue(value: string): any {
+  if (value.toLowerCase() === 'true') return true;
+  if (value.toLowerCase() === 'false') return false;
+  
+  const num = Number(value);
+  if (!isNaN(num)) return num;
+  
+  return value;
+}
 
   formatSettingValue(value: any): string {
     if (typeof value === 'boolean') return value ? 'true' : 'false';
