@@ -1,14 +1,15 @@
 <header>
   <mat-toolbar class="bg-blue-600! flex justify-between relative shadow-md">
  
-    <!-- Logo -->
-    <div class="flex items-center">
-      <img *ngIf="authService.isLoggedIn"
-           src="logo.jpg"
-           alt="{{ t('APP_TITLE') }}"
-           class="w-10 h-10 rounded-full bg-white p-1 shadow-sm object-cover cursor-pointer ml-2"
-           (click)="drawer.toggle()">
-    </div>
+      <!-- Logo -->
+      <div class="flex items-center">
+        <img *ngIf="authService.isLoggedIn"
+            [src]="companyLogo || 'logo.jpg'"
+            alt="{{ t('APP_TITLE') }}"
+            class="w-10 h-10 rounded-full bg-white p-1 shadow-sm object-cover cursor-pointer ml-2"
+            (click)="drawer.toggle()"
+            onerror="this.src='logo.jpg'">
+      </div>
  
     <!-- Right side -->
     <div *ngIf="authService.isLoggedIn" class="flex gap-4 items-center relative">
