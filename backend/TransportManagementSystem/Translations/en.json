@@ -469,6 +469,11 @@
   "EMPLOYEE_DELETE_CONFIRM": "Are you sure you want to delete employee",
   "EMPLOYEE_DELETE_SUCCESS": "Employee deleted successfully",
   "FIRST_REGISTRATION_DATE": "Date of first registration",
+  "ADDRESS_REQUIRED": "Address is required",
+  "ADDRESS_HINT": "Enter the full delivery address",
+  "ADDRESS_LABEL": "Address",
+  "LOCATION_NAME_HINT": "Saisir le nom du terminus",
+
   "DATE_FIRST_REGISTRATION_REQUIRED": "Required first registration date",
   "EMPTY_WEIGHT_REQUIRED": "The empty weight is required",
   "PHOTO_TRUCKv": "Add photos",
