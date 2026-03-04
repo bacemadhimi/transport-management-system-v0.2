@@ -1,4 +1,4 @@
-import { Component, inject, OnInit } from '@angular/core';
+﻿import { Component, inject, OnInit } from '@angular/core';
 import { FormBuilder, Validators, ReactiveFormsModule, FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
@@ -38,7 +38,7 @@ export class MarqueForm implements OnInit {
 
   isSubmitting = false;
 
-  // Form with only name field - matching your DTO
+
   marqueForm = this.fb.group({
     name: this.fb.control<string>('', [Validators.required, Validators.minLength(2)]),
   });
@@ -77,12 +77,12 @@ export class MarqueForm implements OnInit {
 
     this.isSubmitting = true;
 
-    // Create DTO matching backend expectation
+
     const marqueDto: IMarqueDto = {
       name: this.marqueForm.value.name!.trim()
     };
 
-    // Add id for update if needed
+
     if (this.data.marqueId) {
       marqueDto.id = this.data.marqueId;
     }
@@ -112,27 +112,27 @@ export class MarqueForm implements OnInit {
         console.error('URL:', error.url);
         console.error('Error object:', error);
         console.error('Error response:', error.error);
-        
+
         let errorMessage = 'Une erreur est survenue lors de l\'enregistrement';
-        
+
         if (error.status === 400) {
           if (error.error?.message) {
             errorMessage = error.error.message;
           } else if (error.error?.title) {
             errorMessage = error.error.title;
           } else if (error.error?.errors) {
-            // Check if the error is about 'name' or 'model'
+
             const errors = error.error.errors;
             console.log('Validation errors:', errors);
-            
+
             if (errors.name) {
               errorMessage = `Name: ${errors.name.join(', ')}`;
             } else if (errors.model) {
-              // If model error appears, log it but use a generic message
+
               console.warn('Unexpected "model" validation error - check backend DTO');
               errorMessage = 'Erreur de validation. Vérifiez que vous utilisez le bon endpoint.';
             } else {
-              // Get first validation error
+
               const firstKey = Object.keys(errors)[0];
               if (firstKey) {
                 errorMessage = errors[firstKey][0];
@@ -142,7 +142,7 @@ export class MarqueForm implements OnInit {
         } else if (error.status === 409 || error.status === 400 && error.error?.message?.includes('existe déjà')) {
           errorMessage = 'Cette marque existe déjà';
         }
-        
+
         Swal.fire({
           icon: 'error',
           title: 'Erreur',

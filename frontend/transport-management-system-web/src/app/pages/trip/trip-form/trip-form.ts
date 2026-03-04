@@ -1,4 +1,4 @@
-import { Component, EventEmitter, HostListener, Inject, Input, OnInit, Output, Optional, ViewChild, inject } from '@angular/core';
+﻿import { Component, EventEmitter, HostListener, Inject, Input, OnInit, Output, Optional, ViewChild, inject } from '@angular/core';
 import { AbstractControl, FormArray, FormBuilder, FormControl, FormGroup, FormsModule, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialog, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
@@ -36,7 +36,7 @@ import { MatDividerModule } from '@angular/material/divider';
 import { TruncatePipe } from '../../../../truncate.pipe';
 import { CdkVirtualScrollViewport, ScrollingModule } from '@angular/cdk/scrolling';
 import { Translation } from '../../../services/Translation';
-import { SettingsService } from '../../../services/settings.service'; 
+import { SettingsService } from '../../../services/settings.service';
 import { ITripSettings } from '../../../types/general-settings';
 import { IGeographicalEntity } from '../../../types/general-settings';
 interface DialogData {
@@ -48,7 +48,7 @@ interface DialogData {
   standalone: true,
   templateUrl: './trip-form.html',
   styleUrls: ['./trip-form.scss'],
-  imports: [ 
+  imports: [
     CommonModule,
     ReactiveFormsModule,
     FormsModule,
@@ -74,12 +74,12 @@ interface DialogData {
     MatDividerModule,
     TruncatePipe,
     ScrollingModule
-  ], 
+  ],
   providers: [DatePipe],
   animations: [
     trigger('sequenceUpdate', [
       transition('* => updated', [
-        animate('0.5s ease', style({ 
+        animate('0.5s ease', style({
           transform: 'scale(1.1)',
           color: '#f59e0b'
         }))
@@ -91,8 +91,8 @@ export class TripForm implements OnInit {
   @ViewChild(CdkVirtualScrollViewport) viewport!: CdkVirtualScrollViewport;
   tripForm!: FormGroup;
   deliveries: FormArray;
-  
-  // Driver properties
+
+
   availableDrivers: IDriver[] = [];
   unavailableDrivers: any[] = [];
   loadingAvailableDrivers = false;
@@ -100,16 +100,16 @@ export class TripForm implements OnInit {
   geographicalEntities: IGeographicalEntity[] = [];
   entityFilterControl = new FormControl(null);
   filteredClientsByEntity: any[] = [];
-  // Convoyeur properties
+
   convoyeurs: IConvoyeur[] = [];
   loadingConvoyeurs = false;
-  
-  // Truck properties
+
+
   trucks: ITruck[] = [];
   availableTrucks: ITruck[] = [];
   unavailableTrucks: any[] = [];
   loadingAvailableTrucks = false;
-  
+
   customers: ICustomer[] = [];
   allOrders: IOrder[] = [];
   ordersForQuickAdd: IOrder[] = [];
@@ -118,12 +118,12 @@ export class TripForm implements OnInit {
   isDragging = false;
   previousOrder: number[] = [];
   dragDisabled = false;
-  
+
   trajects: ITraject[] = [];
   selectedTraject: ITraject | null = null;
   selectedTrajectControl = new FormControl<number | null>(null);
   trajectMode: 'predefined' | 'new' | null = null;
-  saveAsPredefined = false; 
+  saveAsPredefined = false;
   trajectName = '';
   loadingTrajects = false;
   hasMadeTrajectChoice = false;
@@ -134,10 +134,10 @@ export class TripForm implements OnInit {
   savingTrajectChanges = false;
   hasUnsavedTrajectChanges = false;
   debounceTimer: any;
-  clientsToShowCount = 20; 
+  clientsToShowCount = 20;
   showAllClients = false;
-  maxInitialClients = 20; 
-  itemSize = 120; 
+  maxInitialClients = 20;
+  itemSize = 120;
   minBufferPx = 200;
   maxBufferPx = 400;
   saveAsTrajectControl = new FormControl(false);
@@ -149,7 +149,7 @@ export class TripForm implements OnInit {
   showWeatherForecast = false;
   startLocationForecast: any[] = [];
   endLocationForecast: any[] = [];
-  isEditMode = false; 
+  isEditMode = false;
   today = new Date();
   private availabilityCheckTimeout: any;
   private readonly DRAFT_KEY = 'trip_draft_v1';
@@ -161,15 +161,15 @@ export class TripForm implements OnInit {
   @ViewChild('rightViewport') rightViewport!: CdkVirtualScrollViewport;
   driverTruckMap: Map<number, number> = new Map();
 
-  //Call the services for translation lauguage
+
   private translation = inject(Translation);
   t(key: string): string { return this.translation.t(key); }
-  //
-  leftSectionItems: any[] = []; 
-  rightSectionItems: any[] = []; 
-  leftItemSize = 100; 
-  rightItemSize = 150; 
-  
+
+  leftSectionItems: any[] = [];
+  rightSectionItems: any[] = [];
+  leftItemSize = 100;
+  rightItemSize = 150;
+
   tripStatuses = [
     { value: 'Planned', label: 'Planifié' },
     { value: 'Accepted', label: 'Accepté' },
@@ -178,21 +178,21 @@ export class TripForm implements OnInit {
     { value: 'Receipt', label: 'Réception' },
     { value: 'Cancelled', label: 'Annulé' }
   ];
-  
+
   @ViewChild('deliveriesViewport') deliveriesViewport!: CdkVirtualScrollViewport;
   @ViewChild('capacityViewport') capacityViewport!: CdkVirtualScrollViewport;
   @ViewChild('timelineViewport') timelineViewport!: CdkVirtualScrollViewport;
 
   trajectCustomers: any[] = [];
   showTrajectOrderSelection = false;
-  selectedTrajectOrders: Map<number, number[]> = new Map(); 
-  deliveryItemSize = 100; 
-  capacityItemSize = 120; 
-  timelineItemSize = 150; 
+  selectedTrajectOrders: Map<number, number[]> = new Map();
+  deliveryItemSize = 100;
+  capacityItemSize = 120;
+  timelineItemSize = 150;
 
   virtualLoading = false;
   deliveryStatuses = DeliveryStatusOptions;
-  public Math = Math; 
+  public Math = Math;
   allCustomers: ICustomer[] = [];
   loading = false;
   loadingTrucks = false;
@@ -248,12 +248,12 @@ selectedDateStats: any = {
   }
 };
 
- 
-  loadingUnit: string = 'palette'; 
+
+  loadingUnit: string = 'palette';
   allowEditOrder: boolean = false;
   allowLoadLateOrders: boolean = false;
   acceptOrdersWithoutAddress: boolean = false;
-  
+
   @Input() tripId?: number;
   @Input() mode: 'create' | 'edit' = 'create';
   @Output() success = new EventEmitter<void>();
@@ -290,8 +290,8 @@ selectedDateStats: any = {
     private snackBar: MatSnackBar,
     private datePipe: DatePipe,
     private dialog: MatDialog,
-    private settingsService: SettingsService, 
-    @Optional() private dialogRef?: MatDialogRef<TripForm>, 
+    private settingsService: SettingsService,
+    @Optional() private dialogRef?: MatDialogRef<TripForm>,
     @Optional() @Inject(MAT_DIALOG_DATA) public data?: DialogData
   ) {
     this.deliveries = this.fb.array([]);
@@ -302,21 +302,21 @@ selectedDateStats: any = {
     this.initForm();
     this.loadMarques();
     this.availabilityCheckTimeout = null;
-    
-    // Handle empty customers case gracefully
+
+
     this.filteredClients = this.allClientsWithPendingOrders || [];
-    
+
     this.setupSubscriptions();
     this.loadConfiguration();
-    
+
     setTimeout(() => {
       this.captureInitialState();
     }, 100);
-    
+
     setTimeout(() => {
       this.checkAndRestoreDraft();
     }, 500);
-    
+
     this.setupAutoSave();
     this.initializeSections();
     this.markFormAsTouched();
@@ -324,21 +324,21 @@ selectedDateStats: any = {
   }
 
   private setupSubscriptions(): void {
-    // Client search with null check
+
     this.clientSearchControl.valueChanges.subscribe(() => {
       this.filterClients();
     });
-    
+
     this.entityFilterControl.valueChanges.subscribe(() => {
       this.filterClients();
     });
 
     const tripIdToUse = this.tripId || this.tripId;
     console.log('Trip ID:', this.tripId);
-    
+
     this.isEditMode = !!(this.mode === 'edit' && tripIdToUse);
-    
-    // Start location changes
+
+
     this.tripForm.get('startLocationId')?.valueChanges.subscribe(() => {
       this.checkForSimilarTrajects();
       const date = this.tripForm.get('estimatedStartDate')?.value;
@@ -347,33 +347,33 @@ selectedDateStats: any = {
         this.loadTrucks();
       }
     });
-    
-    // End location changes
+
+
     this.tripForm.get('endLocationId')?.valueChanges.subscribe(() => {
       this.checkForSimilarTrajects();
     });
-    
-    // Deliveries changes
+
+
     this.deliveries.valueChanges.subscribe(() => {
       this.checkForSimilarTrajects();
     });
-    
-    // Driver changes
+
+
     this.tripForm.get('driverId')?.valueChanges.subscribe((driverId: number | null) => {
       if (driverId) {
         this.checkSelectedDriverAvailability(driverId);
         this.autoSelectTruckForDriver(driverId);
       }
     });
-    
-    // Arrival equals departure
+
+
     this.arrivalEqualsDepartureChangeSub = this.arrivalEqualsDeparture.valueChanges.subscribe(
       (checked: boolean | null) => {
         this.onArrivalEqualsDepartureChange(checked ?? false);
       }
     );
-    
-    // Search filters
+
+
     this.searchControl.valueChanges
       .pipe(debounceTime(300))
       .subscribe(() => {
@@ -385,20 +385,20 @@ selectedDateStats: any = {
         this.applyClientSearchFilter();
       });
 
-  // In setupSubscriptions() method, update the weather subscriptions:
 
-// Weather updates - using location IDs
+
+
 this.tripForm.get('startLocationId')?.valueChanges.subscribe(locationId => {
   console.log('📍 Start location changed to:', locationId);
-  
-  // Clear existing weather
+
+
   this.startLocationWeather = null;
-  
-  // Fetch weather for new location
+
+
   if (locationId) {
     this.fetchWeatherForStartLocation();
-    
-    // Also fetch for end location if it exists
+
+
     const endLocationId = this.tripForm.get('endLocationId')?.value;
     if (endLocationId) {
       setTimeout(() => this.fetchWeatherForBothLocations(), 100);
@@ -408,15 +408,15 @@ this.tripForm.get('startLocationId')?.valueChanges.subscribe(locationId => {
 
 this.tripForm.get('endLocationId')?.valueChanges.subscribe(locationId => {
   console.log('📍 End location changed to:', locationId);
-  
-  // Clear existing weather
+
+
   this.endLocationWeather = null;
-  
-  // Fetch weather for new location
+
+
   if (locationId) {
     this.fetchWeatherForEndLocation();
-    
-    // Also fetch for start location if it exists
+
+
     const startLocationId = this.tripForm.get('startLocationId')?.value;
     if (startLocationId) {
       setTimeout(() => this.fetchWeatherForBothLocations(), 100);
@@ -424,22 +424,22 @@ this.tripForm.get('endLocationId')?.valueChanges.subscribe(locationId => {
   }
 });
 
-// Fetch forecast when date changes
+
 this.tripForm.get('estimatedStartDate')?.valueChanges.subscribe(() => {
   if (this.tripForm.get('estimatedStartDate')?.value) {
     this.fetchWeatherForecast();
   }
 });
-    
-    // Driver availability
+
+
     this.tripForm.get('estimatedStartDate')?.valueChanges.subscribe(() => {
       this.checkDriverAvailabilityOnChange();
     });
-    
+
     this.tripForm.get('estimatedDuration')?.valueChanges.subscribe(() => {
       this.checkDriverAvailabilityOnChange();
     });
-    
+
     this.tripForm.get('driverId')?.valueChanges.subscribe(() => {
       this.checkDriverAvailabilityOnChange();
     });
@@ -457,21 +457,21 @@ private loadConfiguration(): void {
       this.acceptOrdersWithoutAddress = settings?.acceptOrdersWithoutAddress || false;
     }
   });
-  
-  // Load all data with empty state handling
+
+
   this.loadAllCustomers().then(() => {
-    // Even if no customers, continue loading other data
+
     this.loadData();
     this.loadLocations();
-    this.loadGeographicalEntities(); 
-    
+    this.loadGeographicalEntities();
+
     const tripIdToUse = this.tripId || this.tripId;
     if (!tripIdToUse) {
-      this.trajectMode = 'new'; 
+      this.trajectMode = 'new';
       this.hasMadeTrajectChoice = true;
     }
-    
-    // Load trucks immediately after locations are loaded
+
+
     const startDate = this.tripForm.get('estimatedStartDate')?.value;
     if (startDate) {
       console.log('Loading trucks with date:', startDate);
@@ -480,13 +480,13 @@ private loadConfiguration(): void {
       console.log('No start date, loading all trucks');
       this.loadAllTrucks();
     }
-    
+
     this.loadAllDrivers().then(() => {
       this.setupDateChangeSubscription();
     });
-    
+
     this.loadAllConvoyeurs();
-    
+
     if (tripIdToUse) {
       this.isEditMode = true;
       this.loadTrip(tripIdToUse).then(() => {
@@ -495,23 +495,23 @@ private loadConfiguration(): void {
         }, 300);
       });
     } else {
-      this.isEditMode = false; 
+      this.isEditMode = false;
       this.loadTrajects();
     }
   }).catch(error => {
     console.error('Error loading customers:', error);
-    // Continue with other data loading even if customers fail
+
     this.loadData();
     this.loadLocations();
-    this.loadGeographicalEntities(); // Replace loadZones()
-    
+    this.loadGeographicalEntities();
+
     const tripIdToUse = this.tripId || this.tripId;
     if (!tripIdToUse) {
-      this.trajectMode = 'new'; 
+      this.trajectMode = 'new';
       this.hasMadeTrajectChoice = true;
     }
-    
-    // Load trucks even if customers failed
+
+
     const startDate = this.tripForm.get('estimatedStartDate')?.value;
     if (startDate) {
       console.log('Loading trucks with date (after error):', startDate);
@@ -520,13 +520,13 @@ private loadConfiguration(): void {
       console.log('No start date, loading all trucks (after error)');
       this.loadAllTrucks();
     }
-    
+
     this.loadAllDrivers().then(() => {
       this.setupDateChangeSubscription();
     });
-    
+
     this.loadAllConvoyeurs();
-    
+
     if (tripIdToUse) {
       this.isEditMode = true;
       this.loadTrip(tripIdToUse).then(() => {
@@ -535,7 +535,7 @@ private loadConfiguration(): void {
         }, 300);
       });
     } else {
-      this.isEditMode = false; 
+      this.isEditMode = false;
       this.loadTrajects();
     }
   });
@@ -544,7 +544,7 @@ private loadGeographicalEntities(): void {
   this.http.getGeographicalEntities().subscribe({
     next: (response) => {
       let entitiesData: IGeographicalEntity[];
-      
+
       if (response && typeof response === 'object' && 'data' in response) {
         entitiesData = (response as any).data;
       } else if (Array.isArray(response)) {
@@ -552,7 +552,7 @@ private loadGeographicalEntities(): void {
       } else {
         entitiesData = [];
       }
-      
+
       this.geographicalEntities = entitiesData;
     },
     error: (error) => {
@@ -576,22 +576,22 @@ private loadGeographicalEntities(): void {
 
   private loadTrucks(): void {
     const startDate = this.tripForm.get('estimatedStartDate')?.value;
-    
+
     console.log('Loading trucks with params:', { startDate });
-    
+
     if (!startDate) {
       console.log('No start date, loading all trucks');
       this.loadAllTrucks();
       return;
     }
-    
+
     const excludeTripId = this.tripId;
     const dateStr = this.formatDateForAPI(startDate);
-    
+
     this.http.getAvailableTrucksByDate(dateStr, excludeTripId).subscribe({
       next: (response: any) => {
         console.log('Trucks loaded by date:', response);
-        
+
         this.processTruckResponse(response, startDate);
       },
       error: (error) => {
@@ -620,7 +620,7 @@ private loadGeographicalEntities(): void {
 
   private markFormAsTouched(): void {
     this.markFormGroupTouched(this.tripForm);
-    
+
     this.deliveries.controls.forEach(control => {
       if (control instanceof FormGroup) {
         this.markFormGroupTouched(control);
@@ -630,11 +630,11 @@ private loadGeographicalEntities(): void {
 
   private formatDateForAPI(date: Date): string {
     if (!date) return '';
-    
+
     const year = date.getFullYear();
     const month = (date.getMonth() + 1).toString().padStart(2, '0');
     const day = date.getDate().toString().padStart(2, '0');
-    
+
     return `${year}-${month}-${day}`;
   }
 
@@ -650,13 +650,13 @@ private loadGeographicalEntities(): void {
       deliveries: this.deliveries,
       startLocationId: [null, Validators.required],
       endLocationId: [null, Validators.required],
-      convoyeurId: [null], 
+      convoyeurId: [null],
       trajectId: [null]
     });
-    
+
     const startDateControl = this.tripForm.get('estimatedStartDate');
     const endDateControl = this.tripForm.get('estimatedEndDate');
-  
+
     if (startDateControl && endDateControl) {
       startDateControl.valueChanges.subscribe(() => {
         endDateControl.updateValueAndValidity();
@@ -695,7 +695,7 @@ private loadGeographicalEntities(): void {
 
   private loadAllTrucks(): void {
     this.loadingAvailableTrucks = true;
-    
+
     this.http.getTrucks().subscribe({
       next: (trucks: ITruck[]) => {
         this.trucks = trucks
@@ -707,10 +707,10 @@ private loadGeographicalEntities(): void {
             tooltip: 'Tous les camions (aucune date sélectionnée)',
             isAvailable: true
           }));
-        
+
         this.availableTrucks = [...this.trucks];
         this.unavailableTrucks = [];
-        
+
         this.loadingAvailableTrucks = false;
       },
       error: (error) => {
@@ -724,23 +724,23 @@ private loadGeographicalEntities(): void {
   private processTruckResponse(response: any, date: Date): void {
     console.log('🔄 Processing truck response...');
     console.log('Raw response:', response);
-    
+
     this.availableTrucks = [];
     this.unavailableTrucks = [];
     this.trucks = [];
-    
+
     if (!response || !response.data) {
       console.warn('❌ No data in response');
       return;
     }
-    
+
     const data = response.data;
     const currentTruckId = this.tripForm.get('truckId')?.value;
-    
-    // Process available trucks
+
+
     if (data.availableTrucks && Array.isArray(data.availableTrucks)) {
       console.log(`✅ Processing ${data.availableTrucks.length} available trucks`);
-      
+
       this.availableTrucks = data.availableTrucks.map((apiTruck: any) => {
         const typeTruckData = apiTruck.typeTruck || null;
         return {
@@ -758,7 +758,7 @@ private loadGeographicalEntities(): void {
           tooltip: `Disponible le ${this.formatDateForDisplay(date)}`,
           isAvailable: true,
           availabilityDate: date,
-          zoneId: apiTruck.ZoneId || apiTruck.zoneId || apiTruck.Zone?.id || null, 
+          zoneId: apiTruck.ZoneId || apiTruck.zoneId || apiTruck.Zone?.id || null,
           typeTruck: typeTruckData ? {
             id: typeTruckData.Id || typeTruckData.id,
             type: typeTruckData.type || '',
@@ -768,11 +768,11 @@ private loadGeographicalEntities(): void {
         };
       });
     }
-    
-    // Process unavailable trucks
+
+
     if (data.unavailableTrucks && Array.isArray(data.unavailableTrucks)) {
       console.log(`⚠️ Processing ${data.unavailableTrucks.length} unavailable trucks`);
-      
+
       this.unavailableTrucks = data.unavailableTrucks.map((truck: any) => {
         return {
           id: truck.Id || truck.id,
@@ -791,14 +791,14 @@ private loadGeographicalEntities(): void {
         };
       });
     }
-    
-    // IMPORTANT: Si nous sommes en mode édition, forcer l'ajout du camion actuel
+
+
     if (this.tripId && currentTruckId) {
       this.forceAddCurrentTruck(currentTruckId, date);
     }
-    
+
     this.trucks = [...this.availableTrucks, ...this.unavailableTrucks];
-    
+
     console.log('📊 Final state:', {
       availableCount: this.availableTrucks.length,
       unavailableCount: this.unavailableTrucks.length,
@@ -809,22 +809,20 @@ private loadGeographicalEntities(): void {
     });
   }
 
-  /**
-   * Force l'ajout du camion actuel dans la liste des camions disponibles
-   */
+
   private forceAddCurrentTruck(truckId: number, date: Date): void {
-    // Vérifier si le camion est déjà dans la liste
+
     const alreadyInAvailable = this.availableTrucks.some(t => t.id === truckId);
     const alreadyInUnavailable = this.unavailableTrucks.some(t => t.id === truckId);
-    
+
     if (alreadyInAvailable || alreadyInUnavailable) {
-      // S'il est dans unavailable, le déplacer vers available
+
       if (alreadyInUnavailable) {
         const truckIndex = this.unavailableTrucks.findIndex(t => t.id === truckId);
         if (truckIndex !== -1) {
           const truck = this.unavailableTrucks[truckIndex];
           this.unavailableTrucks.splice(truckIndex, 1);
-          
+
           this.availableTrucks.push({
             ...truck,
             disabled: false,
@@ -837,8 +835,8 @@ private loadGeographicalEntities(): void {
       }
       return;
     }
-    
-    // Si le camion n'est pas dans la réponse, le récupérer depuis l'API
+
+
     this.loadingAvailableTrucks = true;
     this.http.getTruck(truckId).subscribe({
       next: (truck: ITruck) => {
@@ -851,11 +849,11 @@ private loadGeographicalEntities(): void {
           isCurrentTripTruck: true,
           availabilityDate: date
         };
-        
+
         this.availableTrucks.push(currentTruck);
         this.trucks = [...this.availableTrucks, ...this.unavailableTrucks];
         this.loadingAvailableTrucks = false;
-        
+
         console.log('✅ Camion actuel ajouté manuellement:', currentTruck);
       },
       error: (error) => {
@@ -867,14 +865,14 @@ private loadGeographicalEntities(): void {
 
   private loadCustomers(): void {
     this.loadingCustomers = true;
-    
+
     this.http.getCustomersWithReadyToLoadOrders().subscribe({
       next: (customers) => {
         this.customers = customers;
         this.allClientsWithPendingOrders = customers;
         this.filteredClients = [...this.allClientsWithPendingOrders];
         this.loadingCustomers = false;
-        
+
         console.log(`Loaded ${customers.length} customers with ReadyToLoad orders`);
       },
       error: (error) => {
@@ -891,15 +889,15 @@ private loadGeographicalEntities(): void {
       next: (response: any) => {
         const orders = response.data ?? response.orders ?? response;
         this.allOrders = Array.isArray(orders) ? orders : [];
-        
+
         this.ordersForQuickAdd = this.allOrders.filter(order =>
           order.status?.toLowerCase() === OrderStatus.ReadyToLoad?.toLowerCase()
         );
-        
+
         this.filteredOrders = [...this.ordersForQuickAdd];
-        
+
         this.loadClientsWithPendingOrders();
-        
+
         this.loadingOrders = false;
       },
       error: (error) => {
@@ -912,17 +910,17 @@ private loadGeographicalEntities(): void {
 
   private loadClientsWithPendingOrders(): void {
     const clientIdsWithPendingOrders = new Set<number>();
-    
+
     this.ordersForQuickAdd.forEach(order => {
       if (order.customerId) {
         clientIdsWithPendingOrders.add(order.customerId);
       }
     });
-    
-    this.allClientsWithPendingOrders = this.customers.filter(customer => 
+
+    this.allClientsWithPendingOrders = this.customers.filter(customer =>
       clientIdsWithPendingOrders.has(customer.id)
     );
-    
+
     this.filteredClients = [...this.allClientsWithPendingOrders];
   }
 
@@ -932,7 +930,7 @@ private loadGeographicalEntities(): void {
       this.http.getTrip(tripId).subscribe({
         next: (response: any) => {
           const trip = response.data || response;
-          
+
           if (!trip) {
             console.error('No trip data found in response');
             this.snackBar.open('Aucune donnée de voyage trouvée', 'Fermer', { duration: 3000 });
@@ -952,14 +950,14 @@ private loadGeographicalEntities(): void {
 
           const startDate = toLocalDate(trip.estimatedStartDate);
           const endDate = toLocalDate(trip.estimatedEndDate);
-        
+
           const truckId = trip.truckId && trip.truckId !== 0 ? trip.truckId : trip.truck?.id ?? null;
           const driverId = trip.driverId && trip.driverId !== 0 ? trip.driverId : trip.driver?.id ?? null;
           const convoyeurId = trip.convoyeurId && trip.convoyeurId !== 0 ? trip.convoyeurId : trip.convoyeur?.id ?? null;
           const startLocationId = trip.startLocationId || trip.startLocation?.id || null;
           const endLocationId = trip.endLocationId || trip.endLocation?.id || null;
           const trajectId = trip.trajectId || null;
-        
+
           this.tripForm.patchValue({
             estimatedStartDate: startDate,
             estimatedEndDate: endDate,
@@ -973,20 +971,20 @@ private loadGeographicalEntities(): void {
             endLocationId: endLocationId,
             trajectId: trajectId
           }, { emitEvent: false });
-   
+
           this.deliveries.clear();
-          
+
           if (trip.deliveries && trip.deliveries.length > 0) {
             this.trajectMode = 'new';
             this.hasMadeTrajectChoice = true;
             this.loadDeliveriesFromTrip(trip.deliveries || []);
-            if (trajectId) 
+            if (trajectId)
               this.checkAndDisplayTrajectStatus(trajectId);
           } else {
             this.trajectMode = 'new';
             this.hasMadeTrajectChoice = true;
           }
-          
+
           this.loading = false;
           resolve();
         },
@@ -1007,22 +1005,22 @@ private loadGeographicalEntities(): void {
           if (traject) {
             this.selectedTraject = traject;
             this.selectedTrajectControl.setValue(traject.id, { emitEvent: false });
-            
+
             this.trajectMode = 'predefined';
             this.hasMadeTrajectChoice = true;
-            
+
             if (traject.startLocationId) {
               this.tripForm.get('startLocationId')?.setValue(traject.startLocationId, { emitEvent: true });
               this.tripForm.get('startLocationId')?.markAsTouched();
               this.tripForm.get('startLocationId')?.updateValueAndValidity();
             }
-            
+
             if (traject.endLocationId) {
               this.tripForm.get('endLocationId')?.setValue(traject.endLocationId, { emitEvent: true });
               this.tripForm.get('endLocationId')?.markAsTouched();
               this.tripForm.get('endLocationId')?.updateValueAndValidity();
             }
-            
+
             if (!traject.isPredefined) {
               this.saveAsPredefined = false;
               this.showSaveAsPredefinedOption = true;
@@ -1030,7 +1028,7 @@ private loadGeographicalEntities(): void {
               this.saveAsPredefined = true;
               this.showSaveAsPredefinedOption = false;
             }
-            
+
             this.loadTrajectCustomersForOrderSelection(traject);
           } else {
             this.trajectMode = 'new';
@@ -1038,7 +1036,7 @@ private loadGeographicalEntities(): void {
           }
         },
         error: (error) => {
-          console.error('Error loading traject:', error);      
+          console.error('Error loading traject:', error);
           this.trajectMode = 'new';
           this.hasMadeTrajectChoice = true;
         }
@@ -1053,30 +1051,30 @@ private loadGeographicalEntities(): void {
       this.showDeliveriesSection = false;
       return;
     }
-  
-    const sortedDeliveries = [...deliveries].sort((a, b) => 
+
+    const sortedDeliveries = [...deliveries].sort((a, b) =>
       (a.sequence || 0) - (b.sequence || 0)
     );
-    
+
     sortedDeliveries.forEach(delivery => {
       const deliveryData = {
         customerId: delivery.customerId || '',
-        orderId: delivery.orderId || '', 
+        orderId: delivery.orderId || '',
         deliveryAddress: delivery.deliveryAddress || '',
         sequence: delivery.sequence || 0,
         plannedTime: delivery.plannedTime,
         notes: delivery.notes || ''
       };
-      
+
       this.addDelivery(deliveryData);
     });
-    
+
     this.showDeliveriesSection = true;
   }
 
   onTrajectModeChange(): void {
     this.hasMadeTrajectChoice = true;
-    
+
     if (this.trajectMode === 'predefined') {
       this.deliveries.clear();
       this.clearTrajectSelection();
@@ -1084,11 +1082,11 @@ private loadGeographicalEntities(): void {
         this.loadTrajects();
       }
       this.saveAsPredefined = false;
-      
+
     } else if (this.trajectMode === 'new') {
       this.clearTrajectSelection();
     }
-    
+
     this.showDeliveriesSection = false;
   }
 
@@ -1096,7 +1094,7 @@ private loadGeographicalEntities(): void {
     const pointsCount = traject.points.length;
     const estimatedDistance = pointsCount * 15;
     const estimatedDuration = pointsCount * 0.75;
-    
+
     this.tripForm.patchValue({
       estimatedDistance: estimatedDistance.toFixed(1),
       estimatedDuration: estimatedDuration.toFixed(1)
@@ -1111,7 +1109,7 @@ private loadGeographicalEntities(): void {
         return;
       }
     }
-    
+
     this.selectedTraject = null;
     this.selectedTrajectControl.setValue(null);
     this.deliveries.clear();
@@ -1126,14 +1124,14 @@ private loadGeographicalEntities(): void {
     if (!this.selectedTraject || !this.selectedTraject.points) {
       return 0;
     }
-    
+
     const distance = this.selectedTraject.points.length * 15;
     return Math.round(distance);
   }
 
   onSaveAsPredefinedChange(checked: boolean): void {
     this.saveAsPredefined = checked;
-    
+
     if (this.tripId && this.selectedTraject && checked) {
       Swal.fire({
         title: 'Enregistrer comme traject standard',
@@ -1151,22 +1149,22 @@ private loadGeographicalEntities(): void {
         }
       });
     }
-    
+
     if (checked && this.trajectMode === 'new' && (!this.trajectName || this.trajectName.trim() === '')) {
       const startLocationName = this.getSelectedStartLocationInfo();
       const endLocationName = this.getSelectedEndLocationInfo();
-      
-      if (startLocationName !== 'Non sélectionné' && 
+
+      if (startLocationName !== 'Non sélectionné' &&
           endLocationName !== 'Non sélectionné' &&
-          startLocationName !== 'Lieu inconnu' && 
+          startLocationName !== 'Lieu inconnu' &&
           endLocationName !== 'Lieu inconnu') {
-        
+
         this.trajectName = `${startLocationName} - ${endLocationName}`;
-        
+
       } else if (this.deliveries.length > 0) {
         const firstClient = this.getClientName(this.deliveryControls[0]?.get('customerId')?.value);
         const lastClient = this.getClientName(this.deliveryControls[this.deliveries.length - 1]?.get('customerId')?.value);
-        
+
         if (firstClient && lastClient && firstClient !== lastClient) {
           this.trajectName = `${firstClient} - ${lastClient}`;
         } else if (this.deliveries.length > 0) {
@@ -1180,7 +1178,7 @@ private loadGeographicalEntities(): void {
     if (!this.selectedTraject) return;
 
     this.savingTrajectChanges = true;
-    
+
     const trajectData: any = {
       name: this.selectedTraject.name,
       points: this.selectedTraject.points.map(point => ({
@@ -1190,21 +1188,21 @@ private loadGeographicalEntities(): void {
       })),
       startLocationId: this.tripForm.get('startLocationId')?.value,
       endLocationId: this.tripForm.get('endLocationId')?.value,
-      isPredefined: true 
+      isPredefined: true
     };
-    
+
     this.http.updateTraject(this.selectedTraject.id, trajectData).subscribe({
       next: (result) => {
         this.savingTrajectChanges = false;
         this.selectedTraject = result;
         this.saveAsPredefined = true;
         this.showSaveAsPredefinedOption = false;
-        
+
         const index = this.trajects.findIndex(t => t.id === result.id);
         if (index !== -1) {
           this.trajects[index] = result;
         }
-        
+
         this.snackBar.open('Traject enregistré comme standard avec succès', 'Fermer', { duration: 3000 });
       },
       error: (error) => {
@@ -1223,7 +1221,7 @@ private loadGeographicalEntities(): void {
     console.log(deliveryData)
     const sequence = this.deliveries.length + 1;
     let plannedTime = deliveryData?.plannedTime || '';
-   
+
     if (plannedTime && typeof plannedTime === 'string') {
       if (plannedTime.includes('T')) {
         const date = new Date(plannedTime);
@@ -1242,7 +1240,7 @@ private loadGeographicalEntities(): void {
       orderId: [deliveryData?.orderId || '', Validators.required],
       deliveryAddress: [deliveryData?.deliveryAddress || ''],
       sequence: [deliveryData?.sequence || sequence, [Validators.required, Validators.min(1)]],
-      plannedTime: [plannedTime], 
+      plannedTime: [plannedTime],
       notes: [deliveryData?.notes || '']
     });
 
@@ -1256,12 +1254,12 @@ private loadGeographicalEntities(): void {
 
   removeDelivery(index: number): void {
     const removedOrderId = this.deliveryControls[index].get('orderId')?.value;
-    
+
     this.deliveries.removeAt(index);
     this.dropdownFilters.client.splice(index, 1);
     this.dropdownFilters.order.splice(index, 1);
     this.updateDeliverySequences();
-    
+
     if (removedOrderId) {
       const order = this.allOrders.find(o => o.id === removedOrderId);
       if (order && order.status?.toLowerCase() === OrderStatus.ReadyToLoad?.toLowerCase()) {
@@ -1272,7 +1270,7 @@ private loadGeographicalEntities(): void {
         }
       }
     }
-    
+
     if (this.deliveries.length === 0) {
       this.showDeliveriesSection = false;
     }
@@ -1281,19 +1279,19 @@ private loadGeographicalEntities(): void {
   onCustomerChange(index: number): void {
     const deliveryGroup = this.deliveryControls[index];
     const customerId = deliveryGroup.get('customerId')?.value;
-    
+
     if (customerId) {
       deliveryGroup.get('orderId')?.setValue('');
-      
+
       const customer = this.customers.find(c => c.id === customerId);
-      
+
     }
   }
 
   getCustomerOrders(index: number): IOrder[] {
     const deliveryGroup = this.deliveryControls[index];
     const customerId = deliveryGroup.get('customerId')?.value;
-    
+
     if (!customerId) {
       const orderId = deliveryGroup.get('orderId')?.value;
       if (orderId) {
@@ -1305,9 +1303,9 @@ private loadGeographicalEntities(): void {
       }
       return [];
     }
-    
-    return this.allOrders.filter(order => 
-      order.customerId === parseInt(customerId) && 
+
+    return this.allOrders.filter(order =>
+      order.customerId === parseInt(customerId) &&
       (order.status?.toLowerCase() === OrderStatus.ReadyToLoad?.toLowerCase())
     );
   }
@@ -1340,10 +1338,10 @@ private loadGeographicalEntities(): void {
 getSelectedTruckInfo(): string {
   const truckId = this.tripForm.get('truckId')?.value;
   if (!truckId) return 'Non sélectionné';
-  
+
   const truck = this.trucks.find(t => t.id === truckId);
   if (!truck) return 'Camion inconnu';
-  
+
   const marqueName = this.getMarqueName(truck.marqueTruckId);
   return `${truck.immatriculation} - ${marqueName}`;
 }
@@ -1351,14 +1349,14 @@ getSelectedTruckInfo(): string {
 getSelectedConvoyeurInfo(): string {
   const convoyeurId = this.tripForm.get('convoyeurId')?.value;
   if (!convoyeurId) return 'Non sélectionné';
-  
+
   const convoyeur = this.convoyeurs.find(c => c.id === convoyeurId);
   return convoyeur ? `${convoyeur.name} (${convoyeur.matricule})` : 'Convoyeur inconnu';
 }
 
   quickAddOrder(order: IOrder): void {
     const customer = this.customers.find(c => c.id === order.customerId);
-    
+
     const newDelivery = {
       customerId: order.customerId,
       orderId: order.id,
@@ -1366,13 +1364,13 @@ getSelectedConvoyeurInfo(): string {
       sequence: this.deliveries.length + 1,
       notes: `Commande rapide: ${order.reference}`,
     };
-    
+
     this.addDelivery(newDelivery);
-    
+
     this.ordersForQuickAdd = this.ordersForQuickAdd.filter(o => o.id !== order.id);
     this.filteredOrders = this.filteredOrders.filter(o => o.id !== order.id);
     this.loadClientsWithPendingOrders();
-    
+
     this.snackBar.open('Commande ajoutée au trajet', 'Fermer', { duration: 2000 });
   }
 
@@ -1386,7 +1384,7 @@ getSelectedConvoyeurInfo(): string {
   }
 
   getClientPendingOrdersCount(clientId: number): number {
-    return this.ordersForQuickAdd.filter(order => 
+    return this.ordersForQuickAdd.filter(order =>
       order.customerId === clientId
     ).length;
   }
@@ -1399,10 +1397,10 @@ getSelectedConvoyeurInfo(): string {
 
   async selectClientForQuickAdd(client: ICustomer): Promise<void> {
     this.selectedClient = client;
-    
+
     const clientOrders = this.getClientPendingOrders(client.id);
     const alreadyAddedCount = this.getAlreadyAddedOrdersCount(client.id);
-    
+
     if (alreadyAddedCount > 0) {
       const confirmed = await this.showAlreadyAddedAlert(client.name, alreadyAddedCount, clientOrders.length);
       if (!confirmed) {
@@ -1410,32 +1408,32 @@ getSelectedConvoyeurInfo(): string {
         return;
       }
     }
-    
+
     this.currentQuickAddStep = 2;
     this.selectedOrders = [];
-    
+
     this.selectAllOrders();
   }
 
   getClientPendingOrders(clientId: number): IOrder[] {
-    return this.ordersForQuickAdd.filter(order => 
+    return this.ordersForQuickAdd.filter(order =>
       order.customerId === clientId
     );
   }
 
   getAlreadyAddedOrdersCount(clientId: number): number {
-    return this.deliveryControls.filter(delivery => 
+    return this.deliveryControls.filter(delivery =>
       delivery.get('customerId')?.value === clientId
     ).length;
   }
 
   private async showAlreadyAddedAlert(
-    clientName: string, 
-    alreadyAdded: number, 
+    clientName: string,
+    alreadyAdded: number,
     totalOrders: number
   ): Promise<boolean> {
     const remaining = totalOrders - alreadyAdded;
-    
+
     return new Promise((resolve) => {
       Swal.fire({
         title: 'Commandes déjà ajoutées',
@@ -1506,7 +1504,7 @@ getSelectedConvoyeurInfo(): string {
     if (this.selectedOrdersCount === 0 || !this.selectedClient) return;
 
     const selectedWeight = this.calculateSelectedWeight();
-    
+
     const capacityCheck = await this.checkCapacityBeforeAddingOrders(selectedWeight);
     if (!capacityCheck) {
       return;
@@ -1558,7 +1556,7 @@ getSelectedConvoyeurInfo(): string {
     const currentWeight = this.calculateTotalWeight();
     const totalAfterAddition = currentWeight + selectedWeight;
     const percentageAfter = truck ? (totalAfterAddition / (truck.typeTruck?.capacity || 1)) * 100 : 0;
-    
+
     const result = await Swal.fire({
       title: 'Sélection partielle',
       html: `
@@ -1592,7 +1590,7 @@ getSelectedConvoyeurInfo(): string {
       denyButtonColor: percentageAfter >= 90 ? '#f59e0b' : '#10b981',
       cancelButtonColor: '#6b7280'
     });
-    
+
     if (result.isConfirmed) {
       return 'selectAll';
     } else if (result.isDenied) {
@@ -1606,7 +1604,7 @@ getSelectedConvoyeurInfo(): string {
     this.currentQuickAddStep = 1;
     this.selectedClient = null;
     this.selectedOrders = [];
-    
+
     if (!this.showDeliveriesSection) {
       this.showDeliveriesSection = true;
     }
@@ -1614,7 +1612,7 @@ getSelectedConvoyeurInfo(): string {
 
   previewOrder(order: IOrder): void {
     const customer = this.customers.find(c => c.id === order.customerId);
-    
+
     Swal.fire({
       title: order.reference,
       html: `
@@ -1643,7 +1641,7 @@ getSelectedConvoyeurInfo(): string {
 
   async onSubmit(): Promise<void> {
     this.submitted = true;
- 
+
     if (this.trajectMode === 'predefined' && this.selectedTraject) {
       if (!this.selectedTraject.startLocationId && !this.tripForm.get('startLocationId')?.value) {
         Swal.fire({
@@ -1654,7 +1652,7 @@ getSelectedConvoyeurInfo(): string {
         });
         return;
       }
-      
+
       if (!this.selectedTraject.endLocationId && !this.tripForm.get('endLocationId')?.value) {
         Swal.fire({
           icon: 'warning',
@@ -1665,11 +1663,11 @@ getSelectedConvoyeurInfo(): string {
         return;
       }
     }
-    
+
     if (this.tripForm.get('endLocationId')?.disabled) {
       this.tripForm.get('endLocationId')?.enable();
     }
-    
+
     if (!this.tripForm.get('startLocationId')?.value || !this.tripForm.get('endLocationId')?.value) {
       Swal.fire({
         icon: 'warning',
@@ -1681,11 +1679,11 @@ getSelectedConvoyeurInfo(): string {
       this.tripForm.get('endLocationId')?.markAsTouched();
       return;
     }
-    
+
     if (this.tripForm.invalid || this.deliveries.length === 0) {
       this.markFormGroupTouched(this.tripForm);
       this.deliveryControls.forEach(group => this.markFormGroupTouched(group));
-      
+
       if (this.deliveries.length === 0) {
         Swal.fire({
           icon: 'warning',
@@ -1696,7 +1694,7 @@ getSelectedConvoyeurInfo(): string {
       }
       return;
     }
-    
+
     if (this.trajectMode === 'new' && !this.saveAsPredefined) {
       const result = await Swal.fire({
         icon: 'warning',
@@ -1709,7 +1707,7 @@ getSelectedConvoyeurInfo(): string {
                 <h4 style="margin: 0; color: #1f2937;">Vous n'avez pas défini ce trajet comme standard</h4>
               </div>
             </div>
-            
+
             <div style="background-color: #fef3c7; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
               <p style="margin: 0 0 10px 0; color: #92400e; font-weight: 500;">Conséquences :</p>
               <ul style="margin: 0; padding-left: 20px; color: #92400e;">
@@ -1718,7 +1716,7 @@ getSelectedConvoyeurInfo(): string {
                 <li>Il sera associé uniquement à ce voyage</li>
               </ul>
             </div>
-            
+
             <p style="color: #4b5563; margin-bottom: 20px; font-size: 14px;">
               Voulez-vous quand même continuer sans enregistrer ce trajet comme standard ?
             </p>
@@ -1743,11 +1741,11 @@ getSelectedConvoyeurInfo(): string {
 
       if (result.isDismissed) {
         this.saveAsPredefined = true;
-        
+
         if (!this.trajectName || this.trajectName.trim() === '') {
           this.generateDefaultTrajectName();
         }
-        
+
         setTimeout(() => {
           const trajectNameInput = document.querySelector('input[placeholder*="Ex: Paris-Lyon-Marseille"]') as HTMLInputElement;
           if (trajectNameInput) {
@@ -1755,15 +1753,15 @@ getSelectedConvoyeurInfo(): string {
             trajectNameInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
           }
         }, 100);
-        
-        return; 
+
+        return;
       }
     }
-    
-    //if (!this.validateCapacity()) {
-    //  return;
-    //}
-    
+
+
+
+
+
     if (this.saveAsPredefined && !this.trajectName.trim()) {
       Swal.fire({
         icon: 'warning',
@@ -1773,10 +1771,10 @@ getSelectedConvoyeurInfo(): string {
       });
       return;
     }
-    
+
     const formValue = this.tripForm.value;
     const deliveries = this.prepareDeliveries(formValue.estimatedStartDate);
-    
+
     try {
       const trajectId = await this.handleTrajectCreation();
       if (this.tripId) {
@@ -1792,14 +1790,14 @@ getSelectedConvoyeurInfo(): string {
         this.createTrip(formValue, deliveries, null);
       }
     }
-    
+
     const startDate = this.estimatedStartDateControl?.value;
     const endDate = this.estimatedEndDateControl?.value;
-  
+
     if (startDate && endDate) {
       const start = new Date(startDate);
       const end = new Date(endDate);
-      
+
       if (end < start) {
         Swal.fire({
           icon: 'error',
@@ -1818,16 +1816,16 @@ getSelectedConvoyeurInfo(): string {
       if (existingTrajectId) {
         return existingTrajectId;
       }
-      
+
       if (this.trajectMode === 'predefined' && this.selectedTraject?.id) {
         return this.selectedTraject.id;
       }
-      
+
       if (!this.deliveries || this.deliveries.length === 0) {
         console.warn('No deliveries to create traject from');
         return null;
       }
-      
+
       let trajectName = '';
       if (this.trajectName && this.trajectName.trim() !== '') {
         trajectName = this.trajectName.trim();
@@ -1837,15 +1835,15 @@ getSelectedConvoyeurInfo(): string {
         const dateStr = new Date().toISOString().slice(0, 10);
         trajectName = `Trajet ${dateStr} ${startLocation} → ${endLocation}`;
       }
-      
+
       const trajectId = await this.createTrajectFromDeliveries(trajectName, this.saveAsPredefined);
-      
+
       if (this.tripForm) {
         this.tripForm.patchValue({ trajectId: trajectId });
       }
-      
+
       return trajectId;
-      
+
     } catch (error) {
       console.error('Failed to create traject:', error);
       return null;
@@ -1859,21 +1857,21 @@ getSelectedConvoyeurInfo(): string {
         const customerId = group.get('customerId')?.value;
         const clientName = customerId ? this.getClientName(customerId) : undefined;
         const orderId = group.get('orderId')?.value;
-        
+
         const point: any = {
           location: address || `Point ${index + 1}`,
           order: index + 1
         };
-        
+
         if (customerId) {
           point.clientId = parseInt(customerId);
           point.clientName = clientName;
         }
-        
+
         if (orderId) {
           point.order = parseInt(orderId);
         }
-        
+
         return point;
       });
 
@@ -1904,21 +1902,21 @@ getSelectedConvoyeurInfo(): string {
     if (!this.saveAsPredefined || this.trajectMode !== 'new') {
       return;
     }
-    
+
     const startLocationId = this.tripForm.get('startLocationId')?.value;
     const endLocationId = this.tripForm.get('endLocationId')?.value;
-    
+
     if (!startLocationId || !endLocationId) {
       return;
     }
-    
+
     this.http.getAllTrajects().subscribe({
       next: (trajects: ITraject[]) => {
-        const similarTrajects = trajects.filter(traject => 
-          traject.startLocationId === startLocationId && 
+        const similarTrajects = trajects.filter(traject =>
+          traject.startLocationId === startLocationId &&
           traject.endLocationId === endLocationId
         );
-        
+
         if (similarTrajects.length > 0) {
           Swal.fire({
             title: 'Trajects similaires trouvés',
@@ -1926,7 +1924,7 @@ getSelectedConvoyeurInfo(): string {
               <div style="text-align: left; max-height: 300px; overflow-y: auto;">
                 <p>Des trajects avec les mêmes lieux de départ/arrivée existent déjà :</p>
                 <ul style="margin-left: 20px;">
-                  ${similarTrajects.map(t => 
+                  ${similarTrajects.map(t =>
                     `<li><strong>${t.name}</strong> (${t.points.length} points)</li>`
                   ).join('')}
                 </ul>
@@ -1956,8 +1954,8 @@ getSelectedConvoyeurInfo(): string {
   }
 
   checkForSimilarTrajects(): void {
-    if (this.deliveries.length > 0 && 
-        this.tripForm.get('startLocationId')?.value && 
+    if (this.deliveries.length > 0 &&
+        this.tripForm.get('startLocationId')?.value &&
         this.tripForm.get('endLocationId')?.value) {
       this.suggestExistingTraject();
     }
@@ -1967,7 +1965,7 @@ getSelectedConvoyeurInfo(): string {
     const percentage = Number(this.calculateCapacityPercentage().toFixed(2));
     const truckId = this.tripForm.get('truckId')?.value;
     const truck = truckId ? this.trucks.find(t => t.id === truckId) : null;
-    
+
     const unit = this.loadingUnit;
     const unitLabel = this.loadingUnit;
 
@@ -2004,24 +2002,24 @@ getSelectedConvoyeurInfo(): string {
 
   private async validateCapacity(): Promise<boolean> {
     const percentage = Number(this.calculateCapacityPercentage().toFixed(2));
-    const totalWeight = this.calculateTotalWeight();  
-    const capacity = this.getSelectedTruckCapacity(); 
-    
+    const totalWeight = this.calculateTotalWeight();
+    const capacity = this.getSelectedTruckCapacity();
+
     const truckId = this.tripForm.get('truckId')?.value;
     const truck = truckId ? this.trucks.find(t => t.id === truckId) : null;
-    
+
     const unit = this.loadingUnit;
     const unitLabelPlural = this.loadingUnit;
-    
-    const totalWeightNumber = totalWeight; 
+
+    const totalWeightNumber = totalWeight;
     const capacityNumber = capacity;
-    
-    // Always allow continuation, just show warning with Yes/No options
+
+
     if (percentage >= 100) {
       const truckName = truck ? `${truck.immatriculation} - ${this.getMarqueName(truck.marqueTruckId)}` : 'Camion sélectionné';
       const excess = totalWeightNumber - capacityNumber;
       const excessPercentage = percentage - 100;
-      
+
       const result = await Swal.fire({
         icon: 'warning',
         title: '⚠️ DÉPASSEMENT DE CAPACITÉ !',
@@ -2051,14 +2049,14 @@ getSelectedConvoyeurInfo(): string {
         reverseButtons: true,
         allowOutsideClick: false
       });
-      
+
       return result.isConfirmed;
-    } 
-    
+    }
+
     if (percentage >= 90) {
       const remainingCapacity = capacityNumber - totalWeightNumber;
       const remainingPercentage = 100 - percentage;
-      
+
       const result = await Swal.fire({
         icon: 'warning',
         title: 'Capacité presque pleine',
@@ -2083,16 +2081,16 @@ getSelectedConvoyeurInfo(): string {
         confirmButtonColor: '#f59e0b',
         cancelButtonColor: '#6b7280'
       });
-      
+
       return result.isConfirmed;
     }
-    
+
     return true;
   }
 
   private async checkCapacityBeforeAddingOrders(selectedWeight: number): Promise<boolean> {
     const truckId = this.tripForm.get('truckId')?.value;
-    
+
     if (!truckId) {
       await Swal.fire({
         icon: 'warning',
@@ -2102,25 +2100,25 @@ getSelectedConvoyeurInfo(): string {
       });
       return false;
     }
-    
+
     const truck = this.trucks.find(t => t.id === truckId);
     if (!truck) {
       return false;
     }
-    
+
     const currentWeight = this.calculateTotalWeight();
     const additionalWeight = selectedWeight;
     const totalWeightAfterAddition = currentWeight + additionalWeight;
     const capacity = truck.typeTruck?.capacity || 0;
     const percentageAfterAddition = (totalWeightAfterAddition / capacity) * 100;
-    
+
     const unit = this.loadingUnit;
     const unitLabelPlural = this.loadingUnit;
-    
+
     if (percentageAfterAddition > 100) {
       const overage = totalWeightAfterAddition - capacity;
       const overagePercentage = percentageAfterAddition - 100;
-      
+
       const result = await Swal.fire({
         icon: 'warning',
         title: 'DÉPASSEMENT DE CAPACITÉ',
@@ -2148,14 +2146,14 @@ getSelectedConvoyeurInfo(): string {
         confirmButtonColor: '#ef4444',
         cancelButtonColor: '#6b7280'
       });
-      
+
       return result.isConfirmed;
     }
-    
+
     if (percentageAfterAddition >= 90) {
       const remainingCapacity = capacity - totalWeightAfterAddition;
       const remainingPercentage = 100 - percentageAfterAddition;
-      
+
       const result = await Swal.fire({
         icon: 'warning',
         title: 'Capacité presque pleine',
@@ -2182,32 +2180,32 @@ getSelectedConvoyeurInfo(): string {
         confirmButtonColor: '#f59e0b',
         cancelButtonColor: '#6b7280'
       });
-      
+
       return result.isConfirmed;
     }
-    
+
     return true;
   }
 
   private showCapacitySummaryAfterAddition(addedWeight: number): void {
     const truckId = this.tripForm.get('truckId')?.value;
     if (!truckId) return;
-    
+
     const truck = this.trucks.find(t => t.id === truckId);
     if (!truck) return;
-    
+
     const currentWeight = this.calculateTotalWeight();
     const capacity = truck.typeTruck?.capacity || 0;
     const percentage = (currentWeight / capacity) * 100;
     const remainingCapacity = capacity - currentWeight;
-    
+
     const unit = this.loadingUnit;
     const unitLabelPlural = this.loadingUnit;
-    
+
     let message = '';
     let icon: 'success' | 'warning' | 'error' | 'info' = 'success';
     let duration = 5000;
-    
+
     if (percentage >= 100) {
       message = `Capacité dépassée de ${(currentWeight - capacity).toFixed(2)} ${unitLabelPlural}!`;
       icon = 'error';
@@ -2222,7 +2220,7 @@ getSelectedConvoyeurInfo(): string {
       message = `Capacité utilisée: ${percentage.toFixed(1)}%. Reste ${remainingCapacity.toFixed(2)} ${unitLabelPlural}.`;
       icon = 'success';
     }
-    
+
     if (percentage >= 90) {
       Swal.fire({
         icon: icon,
@@ -2253,17 +2251,17 @@ getSelectedConvoyeurInfo(): string {
       deliveries: deliveries,
       trajectId: trajectId
     };
-    
+
     this.http.createTrip(createTripData).subscribe({
       next: (response: any) => {
         this.loading = false;
         this.clearDraft();
-        
+
         let message = 'Voyage créé avec succès';
         if (trajectId) {
           message += ' et traject enregistré';
         }
-        
+
         Swal.fire({
           icon: 'success',
           title: 'Succès',
@@ -2279,14 +2277,14 @@ getSelectedConvoyeurInfo(): string {
           console.log('Draft cleared after successful submission');
         }
         console.error('Create trip error:', error);
-        
+
         let errorMessage = 'Erreur lors de la création du voyage';
         if (error?.error?.message) {
           errorMessage = error.error.message;
         } else if (error?.message) {
           errorMessage = error.message;
         }
-        
+
         Swal.fire({
           icon: 'error',
           title: 'Erreur',
@@ -2310,7 +2308,7 @@ getSelectedConvoyeurInfo(): string {
       deliveries: deliveries,
       trajectId: trajectId
     };
-    
+
     this.loading = true;
     this.http.updateTrip(this.tripId!, updateTripData).subscribe({
       next: (response: any) => {
@@ -2318,7 +2316,7 @@ getSelectedConvoyeurInfo(): string {
         this.clearDraft();
         if (response && (response.message || response.Status === 200)) {
           const successMessage = response.message || 'Voyage modifié avec succès';
-          
+
           Swal.fire({
             icon: 'success',
             title: 'Succès',
@@ -2352,9 +2350,9 @@ getSelectedConvoyeurInfo(): string {
         this.loading = false;
         console.error('Update error:', error);
         console.error('Full error object:', JSON.stringify(error, null, 2));
-        
+
         let errorMessage = 'Erreur lors de la modification du voyage';
-        
+
         if (error?.error?.message) {
           errorMessage = error.error.message;
         } else if (error?.error?.errors) {
@@ -2380,7 +2378,7 @@ getSelectedConvoyeurInfo(): string {
         } else if (error?.status === 409) {
           errorMessage = 'Impossible de modifier un trajet en cours ou terminé';
         }
-        
+
         Swal.fire({
           icon: 'error',
           title: 'Erreur',
@@ -2394,11 +2392,11 @@ getSelectedConvoyeurInfo(): string {
   private prepareDeliveries(baseDate: any): any[] {
     return this.deliveryControls.map((group, index) => {
       const delivery = group.value;
-      
-      const plannedTime = delivery.plannedTime ? 
-        this.formatTimeToDateTime(baseDate, delivery.plannedTime) : 
+
+      const plannedTime = delivery.plannedTime ?
+        this.formatTimeToDateTime(baseDate, delivery.plannedTime) :
         null;
-      
+
       return {
         customerId: parseInt(delivery.customerId),
         orderId: parseInt(delivery.orderId),
@@ -2412,9 +2410,9 @@ getSelectedConvoyeurInfo(): string {
 
   private formatDateWithTime(date: any, defaultTime: string): string {
     if (!date) return '';
-    
+
     let dateObj: Date;
-    
+
     if (date instanceof Date) {
       dateObj = new Date(date);
     } else if (typeof date === 'string') {
@@ -2422,9 +2420,9 @@ getSelectedConvoyeurInfo(): string {
     } else {
       return '';
     }
-    
+
     const hasTime = dateObj.getHours() !== 0 || dateObj.getMinutes() !== 0 || dateObj.getSeconds() !== 0;
-    
+
     if (!hasTime) {
       const [hours, minutes, seconds] = defaultTime.split(':');
       dateObj.setHours(
@@ -2434,15 +2432,15 @@ getSelectedConvoyeurInfo(): string {
         0
       );
     }
-    
+
     return dateObj.toISOString();
   }
 
   private formatTimeToDateTime(baseDate: any, timeString: string): string | null {
     if (!baseDate || !timeString) return null;
-    
+
     let dateObj: Date;
-    
+
     if (baseDate instanceof Date) {
       dateObj = new Date(baseDate);
     } else if (typeof baseDate === 'string') {
@@ -2451,7 +2449,7 @@ getSelectedConvoyeurInfo(): string {
       console.error('Invalid baseDate type:', typeof baseDate, baseDate);
       return null;
     }
-    
+
     let timeParts;
     if (timeString.includes(':')) {
       timeParts = timeString.split(':');
@@ -2465,14 +2463,14 @@ getSelectedConvoyeurInfo(): string {
       console.error('Invalid time format:', timeString);
       return null;
     }
-    
+
     const hours = timeParts[0] ? parseInt(timeParts[0]) : 0;
     const minutes = timeParts[1] ? parseInt(timeParts[1]) : 0;
-    
+
     dateObj.setHours(hours, minutes, 0, 0);
-    
+
     const result = dateObj.toISOString();
-    
+
     return result;
   }
 
@@ -2509,9 +2507,9 @@ getSelectedConvoyeurInfo(): string {
     if (this.hasDraft() && !this.tripId && !this.tripId) {
       const draft = this.loadDraft();
       const deliveryCount = draft?.deliveries?.length || 0;
-      const dateStr = draft?.formData?.estimatedStartDate ? 
+      const dateStr = draft?.formData?.estimatedStartDate ?
         new Date(draft.formData.estimatedStartDate).toLocaleDateString() : 'Date non définie';
-      
+
       Swal.fire({
         title: 'Brouillon non sauvegardé',
         html: `
@@ -2525,7 +2523,7 @@ getSelectedConvoyeurInfo(): string {
                 </p>
               </div>
             </div>
-            
+
             <div style="background-color: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
               <h5 style="margin: 0 0 10px 0; color: #374151;">Détails du brouillon</h5>
               <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;">
@@ -2547,7 +2545,7 @@ getSelectedConvoyeurInfo(): string {
                 </div>
               </div>
             </div>
-            
+
             <p style="color: #4b5563; margin-bottom: 20px; font-size: 14px;">
               Que souhaitez-vous faire avec ce brouillon ?
             </p>
@@ -2580,14 +2578,14 @@ getSelectedConvoyeurInfo(): string {
       }).then((result) => {
         if (result.isConfirmed) {
           this.saveDraft();
-          this.snackBar.open('✅ Brouillon sauvegardé avec succès', 'Fermer', { 
+          this.snackBar.open('✅ Brouillon sauvegardé avec succès', 'Fermer', {
             duration: 3000,
             panelClass: ['success-snackbar']
           });
           this.closeDialogOrCancel();
         } else if (result.isDenied) {
           this.clearDraft();
-          this.snackBar.open('🗑️ Brouillon effacé', 'Fermer', { 
+          this.snackBar.open('🗑️ Brouillon effacé', 'Fermer', {
             duration: 2000,
             panelClass: ['warn-snackbar']
           });
@@ -2614,7 +2612,7 @@ getSelectedConvoyeurInfo(): string {
   getSelectedDriverInfo(): string {
     const driverId = this.tripForm.get('driverId')?.value;
     if (!driverId) return 'Non sélectionné';
-    
+
     const driver = this.drivers.find(d => d.id === driverId);
     return driver ? `${driver.name} (${driver.drivingLicense})` : 'Chauffeur inconnu';
   }
@@ -2622,9 +2620,9 @@ getSelectedConvoyeurInfo(): string {
   calculateAverageSpeed(): string {
     const distance = this.tripForm.get('estimatedDistance')?.value;
     const duration = this.tripForm.get('estimatedDuration')?.value;
-    
+
     if (!distance || !duration || duration === 0) return '0';
-    
+
     const speed = parseFloat(distance) / parseFloat(duration);
     return speed.toFixed(1);
   }
@@ -2650,7 +2648,7 @@ getSelectedConvoyeurInfo(): string {
 
   applySearchFilter(): void {
     const searchText = this.searchControl.value?.toLowerCase().trim() || '';
-    
+
     if (!searchText) {
       this.filteredOrders = [...this.ordersForQuickAdd];
       return;
@@ -2684,7 +2682,7 @@ getSelectedConvoyeurInfo(): string {
         onTrajectCreated: (traject: ITraject) => {
           this.trajects.push(traject);
           this.trajects.sort((a, b) => a.name.localeCompare(b.name));
-          
+
           this.selectedTrajectControl.setValue(traject.id);
           this.onTrajectSelected(traject.id);
         }
@@ -2700,7 +2698,7 @@ getSelectedConvoyeurInfo(): string {
 
   drop(event: CdkDragDrop<string[]>): void {
     this.isDragging = false;
-    
+
     if (Array.isArray(event.item.data)) {
       const groupIndices = event.item.data as number[];
       this.dropGroupElements(groupIndices, event.currentIndex);
@@ -2713,18 +2711,18 @@ getSelectedConvoyeurInfo(): string {
     if (groupIndices.length === 0 || targetIndex < 0) return;
 
     const groupForms = groupIndices.map(index => this.deliveries.at(index));
-    
+
     groupIndices.sort((a, b) => b - a).forEach(index => {
       this.deliveries.removeAt(index);
     });
-    
+
     const insertIndex = Math.min(targetIndex, this.deliveries.length);
     groupForms.reverse().forEach(form => {
       this.deliveries.insert(insertIndex, form);
     });
-    
+
     this.updateDeliverySequences();
-    
+
     this.snackBar.open(
       `Groupe client déplacé à la position ${insertIndex + 1}`,
       'Fermer',
@@ -2739,7 +2737,7 @@ getSelectedConvoyeurInfo(): string {
 
     const deliveryArray = this.deliveries;
     const movedDelivery = deliveryArray.at(event.previousIndex);
-    
+
     const deliveryCopy = this.fb.group({
       customerId: [movedDelivery.get('customerId')?.value, Validators.required],
       orderId: [movedDelivery.get('orderId')?.value, Validators.required],
@@ -2753,12 +2751,12 @@ getSelectedConvoyeurInfo(): string {
     deliveryArray.insert(event.currentIndex, deliveryCopy);
 
     this.updateDeliverySequences();
-    
+
     const fromPosition = event.previousIndex + 1;
     const toPosition = event.currentIndex + 1;
     const direction = event.previousIndex < event.currentIndex ? 'vers le bas' : 'vers le haut';
     const message = `Livraison ${fromPosition} déplacée ${direction} à la position ${toPosition}`;
-    
+
     this.snackBar.open(message, 'Fermer', { duration: 2000 });
   }
 
@@ -2793,25 +2791,25 @@ getSelectedConvoyeurInfo(): string {
   updateDeliverySequences(): void {
     const sequenceUpdates: { index: number, oldValue: number, newValue: number }[] = [];
     const hasPlannedTimes = this.deliveryControls.some(group => group.get('plannedTime')?.value);
-    
+
     this.deliveryControls.forEach((group, index) => {
       const oldValue = group.get('sequence')?.value;
       const newValue = index + 1;
-      
+
       if (oldValue !== newValue) {
         sequenceUpdates.push({ index, oldValue, newValue });
         group.get('sequence')?.setValue(newValue, { emitEvent: false });
-        
+
         if (hasPlannedTimes) {
           this.updatePlannedTimeForDelivery(group, index);
         }
       }
     });
-    
+
     if (sequenceUpdates.length > 0) {
       console.log('Sequence updates:', sequenceUpdates);
     }
-    
+
     this.updateEstimatedValuesAfterReorder();
   }
 
@@ -2820,15 +2818,15 @@ getSelectedConvoyeurInfo(): string {
     if (plannedTimeControl && plannedTimeControl.value) {
       const currentTime = plannedTimeControl.value;
       const [hours, minutes] = currentTime.split(':').map(Number);
-      
+
       const minutesToAdd = index * 45;
       const newDate = new Date();
       newDate.setHours(hours, minutes + minutesToAdd, 0, 0);
-      
+
       const newHours = newDate.getHours().toString().padStart(2, '0');
       const newMinutes = newDate.getMinutes().toString().padStart(2, '0');
       const newTime = `${newHours}:${newMinutes}`;
-      
+
       if (currentTime !== newTime) {
         plannedTimeControl.setValue(newTime, { emitEvent: false });
       }
@@ -2839,24 +2837,24 @@ getSelectedConvoyeurInfo(): string {
     const baseDurationPerDelivery = 0.75;
     const travelTimeBetween = 0.25;
     const totalDeliveries = this.deliveries.length;
-    
+
     if (totalDeliveries === 0) return;
-    
-    const totalDuration = (baseDurationPerDelivery * totalDeliveries) + 
+
+    const totalDuration = (baseDurationPerDelivery * totalDeliveries) +
                          (travelTimeBetween * Math.max(0, totalDeliveries - 1));
-    
+
     const distancePerDelivery = 15;
     const distanceBetween = 5;
-    const totalDistance = (distancePerDelivery * totalDeliveries) + 
+    const totalDistance = (distancePerDelivery * totalDeliveries) +
                          (distanceBetween * Math.max(0, totalDeliveries - 1));
-    
+
     const currentDuration = parseFloat(this.tripForm.get('estimatedDuration')?.value || '0');
     const currentDistance = parseFloat(this.tripForm.get('estimatedDistance')?.value || '0');
-    
+
     if (Math.abs(currentDuration - totalDuration) > 0.1) {
       this.tripForm.get('estimatedDuration')?.setValue(totalDuration.toFixed(1), { emitEvent: true });
     }
-    
+
     if (Math.abs(currentDistance - totalDistance) > 0.1) {
       this.tripForm.get('estimatedDistance')?.setValue(totalDistance.toFixed(1), { emitEvent: true });
     }
@@ -2865,7 +2863,7 @@ getSelectedConvoyeurInfo(): string {
   startTrajectNameEdit(): void {
     this.isEditingTrajectName = true;
     this.editingTrajectName = this.selectedTraject?.name || '';
-    
+
     setTimeout(() => {
       const input = document.querySelector('.traject-name-edit input') as HTMLInputElement;
       if (input) {
@@ -2889,18 +2887,18 @@ getSelectedConvoyeurInfo(): string {
 
     try {
       this.savingTrajectChanges = true;
-      
+
       this.selectedTraject.name = newName;
-      
+
       const index = this.trajects.findIndex(t => t.id === this.selectedTraject!.id);
       if (index !== -1) {
         this.trajects[index].name = newName;
       }
-      
+
       await this.saveTrajectChanges();
-      
+
       this.snackBar.open('Nom du traject mis à jour', 'Fermer', { duration: 2000 });
-      
+
     } catch (error) {
       console.error('Erreur lors de la mise à jour du nom:', error);
       this.snackBar.open('Erreur lors de la mise à jour du nom', 'Fermer', { duration: 3000 });
@@ -2918,7 +2916,7 @@ getSelectedConvoyeurInfo(): string {
   startPointEdit(index: number, address: string | undefined): void {
     this.isEditingPoint = index;
     this.editingPointAddress = address ?? '';
-    
+
     setTimeout(() => {
       const textarea = document.querySelector('.point-address-edit textarea') as HTMLTextAreaElement;
       if (textarea) {
@@ -2930,7 +2928,7 @@ getSelectedConvoyeurInfo(): string {
 
   async savePointAddress(index: number): Promise<void> {
     if (this.isEditingPoint === null || !this.selectedTraject) return;
-    
+
     const newAddress = this.editingPointAddress.trim();
     if (!newAddress || newAddress === this.selectedTraject.points[index].location) {
       this.cancelPointEdit();
@@ -2939,13 +2937,13 @@ getSelectedConvoyeurInfo(): string {
 
     try {
       this.savingTrajectChanges = true;
-      
+
       this.selectedTraject.points[index].location = newAddress;
-      
+
       this.debouncedSaveTrajectChanges();
-      
+
       this.snackBar.open('Adresse mise à jour', 'Fermer', { duration: 2000 });
-      
+
     } catch (error) {
       console.error('Erreur lors de la mise à jour de l\'adresse:', error);
       this.snackBar.open('Erreur lors de la mise à jour', 'Fermer', { duration: 3000 });
@@ -2963,15 +2961,15 @@ getSelectedConvoyeurInfo(): string {
 
   addNewTrajectPoint(): void {
     if (!this.selectedTraject) return;
-    
+
     const newPoint: ITrajectPoint = {
       location: '',
       order: this.selectedTraject.points.length + 1
     };
-    
+
     this.selectedTraject.points.push(newPoint);
     this.hasUnsavedTrajectChanges = true;
-    
+
     setTimeout(() => {
       this.startPointEdit(this.selectedTraject!.points.length - 1, '');
     }, 100);
@@ -2979,23 +2977,23 @@ getSelectedConvoyeurInfo(): string {
 
   async deleteTrajectPoint(index: number): Promise<void> {
     if (!this.selectedTraject || this.selectedTraject.points.length <= 1) return;
-    
+
     const confirmed = confirm('Êtes-vous sûr de vouloir supprimer ce point du traject ?');
     if (!confirmed) return;
 
     try {
       this.savingTrajectChanges = true;
-      
+
       this.selectedTraject!.points.splice(index, 1);
-      
+
       this.selectedTraject!.points.forEach((point, i) => {
         point.order = i + 1;
       });
-      
+
       await this.saveTrajectChanges();
-      
+
       this.snackBar.open('Point supprimé', 'Fermer', { duration: 2000 });
-      
+
     } catch (error) {
       console.error('Erreur lors de la suppression:', error);
       this.snackBar.open('Erreur lors de la suppression', 'Fermer', { duration: 3000 });
@@ -3006,20 +3004,20 @@ getSelectedConvoyeurInfo(): string {
 
   async dropTrajectPoint(event: CdkDragDrop<ITrajectPoint[]>): Promise<void> {
     if (!this.selectedTraject) return;
-    
+
     if (event.previousIndex === event.currentIndex) return;
-    
+
     moveItemInArray(this.selectedTraject.points, event.previousIndex, event.currentIndex);
-    
+
     this.updateTrajectPointOrders();
-    
+
     this.hasUnsavedTrajectChanges = true;
     this.debouncedSaveTrajectChanges();
   }
 
   private updateTrajectPointOrders(): void {
     if (!this.selectedTraject) return;
-    
+
     this.selectedTraject.points.forEach((point, index) => {
       point.order = index + 1;
     });
@@ -3027,12 +3025,12 @@ getSelectedConvoyeurInfo(): string {
 
   togglePredefinedStatus(): void {
     if (!this.selectedTraject) return;
-    
+
     const newStatus = !this.selectedTraject.isPredefined;
-    const message = newStatus 
+    const message = newStatus
       ? 'Voulez-vous définir ce traject comme standard? Il sera disponible pour tous les utilisateurs.'
       : 'Voulez-vous retirer ce traject de la liste des trajects standards?';
-      
+
     Swal.fire({
       title: 'Changer le statut du traject',
       text: message,
@@ -3050,10 +3048,10 @@ getSelectedConvoyeurInfo(): string {
 
   async saveTrajectChanges(): Promise<void> {
     if (!this.selectedTraject) return;
-    
+
     try {
       this.savingTrajectChanges = true;
-      
+
       const trajectData: any = {
         name: this.selectedTraject.name,
         points: this.selectedTraject.points.map(point => ({
@@ -3065,14 +3063,14 @@ getSelectedConvoyeurInfo(): string {
         endLocationId: this.tripForm.get('endLocationId')?.value,
         isPredefined: this.selectedTraject.isPredefined
       };
-      
+
       let result: any;
       if (this.selectedTraject.id) {
         result = await this.http.updateTraject(this.selectedTraject.id, trajectData).toPromise();
       } else {
         result = await this.http.createTraject(trajectData).toPromise();
       }
-      
+
       if (result && result.id) {
         const index = this.trajects.findIndex(t => t.id === result.id);
         if (index !== -1) {
@@ -3080,23 +3078,23 @@ getSelectedConvoyeurInfo(): string {
         } else {
           this.trajects.push(result);
         }
-        
+
         this.trajects = this.trajects
           .filter(t => t && t.name)
           .sort((a, b) => {
             if (!a || !b || !a.name || !b.name) return 0;
             return a.name.localeCompare(b.name);
           });
-        
+
         this.selectedTraject = result;
-        
+
         this.selectedTrajectControl.setValue(result.id);
       }
-      
+
       this.hasUnsavedTrajectChanges = false;
-      
+
       this.snackBar.open('Traject mis à jour avec succès', 'Fermer', { duration: 2000 });
-      
+
     } catch (error) {
       console.error('Erreur lors de la sauvegarde du traject:', error);
       this.snackBar.open('Erreur lors de la sauvegarde', 'Fermer', { duration: 3000 });
@@ -3107,11 +3105,11 @@ getSelectedConvoyeurInfo(): string {
 
   debouncedSaveTrajectChanges(): void {
     this.hasUnsavedTrajectChanges = true;
-    
+
     if (this.debounceTimer) {
       clearTimeout(this.debounceTimer);
     }
-    
+
     this.debounceTimer = setTimeout(() => {
       if (this.hasUnsavedTrajectChanges) {
         this.saveTrajectChanges();
@@ -3137,39 +3135,39 @@ getSelectedConvoyeurInfo(): string {
     const currentStatus = this.tripForm.get('tripStatus')?.value;
     const currentOrder = this.getStatusOrder(currentStatus);
     const targetOrder = this.getStatusOrder(status);
-    
+
     return currentOrder > targetOrder && currentStatus !== 'Cancelled';
   }
 
   canAdvanceStatus(): boolean {
     const currentStatus = this.tripForm.get('tripStatus')?.value;
-    
+
     if (currentStatus === 'Cancelled' || currentStatus === 'Receipt') {
       return false;
     }
-    
+
     switch (currentStatus) {
       case 'Planned':
         const truckId = this.tripForm.get('truckId')?.value;
         const driverId = this.tripForm.get('driverId')?.value;
         const startDate = this.tripForm.get('estimatedStartDate')?.value;
         return !!(truckId && driverId && startDate);
-        
+
       case 'Accepted':
-        return true; 
-        
+        return true;
+
       case 'Loading':
         return true;
-        
+
       case 'LoadingInProgress':
         return this.getCompletedDeliveriesCount() === this.deliveries.length;
-        
+
       case 'Delivery':
-        return true; 
-        
+        return true;
+
       case 'DeliveryInProgress':
         return this.areAllDeliveriesCompleted();
-        
+
       default:
         return false;
     }
@@ -3178,7 +3176,7 @@ getSelectedConvoyeurInfo(): string {
   advanceStatus(): void {
     if (!this.canAdvanceStatus()) {
       const currentStatus = this.tripForm.get('tripStatus')?.value;
-      
+
       switch (currentStatus) {
         case 'Planned':
           if (!this.tripForm.get('truckId')?.value) {
@@ -3189,19 +3187,19 @@ getSelectedConvoyeurInfo(): string {
             this.snackBar.open('Veuillez sélectionner une date de début', 'Fermer', { duration: 3000 });
           }
           break;
-          
+
         case 'LoadingInProgress':
           const completed = this.getCompletedDeliveriesCount();
           const total = this.deliveries.length;
           if (completed < total) {
             this.snackBar.open(
               `${total - completed} marchandise(s) ne sont pas complètement chargées`,
-              'Fermer', 
+              'Fermer',
               { duration: 3000 }
             );
           }
           break;
-          
+
         case 'DeliveryInProgress':
           if (!this.areAllDeliveriesCompleted()) {
             this.snackBar.open(
@@ -3214,10 +3212,10 @@ getSelectedConvoyeurInfo(): string {
       }
       return;
     }
-    
+
     const currentStatus = this.tripForm.get('tripStatus')?.value;
     let nextStatus: TripStatus;
-    
+
     switch (currentStatus) {
       case 'Planned':
         nextStatus = TripStatus.Accepted;
@@ -3225,7 +3223,7 @@ getSelectedConvoyeurInfo(): string {
         break;
       case 'Accepted':
         nextStatus = TripStatus.LoadingInProgress;
-        this.showLoadingConfirmation(); 
+        this.showLoadingConfirmation();
         break;
       case 'LoadingInProgress':
         nextStatus = TripStatus.DeliveryInProgress;
@@ -3238,7 +3236,7 @@ getSelectedConvoyeurInfo(): string {
       default:
         return;
     }
-    
+
     this.tripForm.patchValue({ tripStatus: nextStatus });
     this.updateTripStatusInForm(nextStatus);
     this.updateTripStatusOnBackend(nextStatus);
@@ -3246,25 +3244,25 @@ getSelectedConvoyeurInfo(): string {
 
   private updateTripStatusOnBackend(status: TripStatus, notes?: string): void {
     if (!this.tripId) return;
-    
+
     this.loading = true;
-    
+
     const payload = {
       status: status,
       notes: notes || null
     };
-    
+
     this.http.updateTripStatus(this.tripId, payload).subscribe({
       next: (response: any) => {
         this.loading = false;
-        
+
         const statusLabel = this.getTripStatusLabel(status);
-        const message = notes 
+        const message = notes
           ? `Statut mis à jour: ${statusLabel} - Note: ${notes}`
           : `Statut mis à jour: ${statusLabel}`;
-        
+
         this.tripForm.patchValue({ tripStatus: status }, { emitEvent: true });
-        
+
         if (this.tripId) {
           this.loadTrip(this.tripId);
         }
@@ -3275,23 +3273,23 @@ getSelectedConvoyeurInfo(): string {
         this.tripForm.patchValue({ tripStatus: this.getPreviousStatus() }, { emitEvent: true });
 
         let errorMessage = 'Erreur lors de la mise à jour du statut';
-        
+
         if (error.error?.message) {
           errorMessage = error.error.message;
         } else if (error.status === 400) {
           errorMessage = 'Transition de statut invalide';
         }
-        
+
         this.snackBar.open(errorMessage, 'Fermer', { duration: 4000 });
       }
     });
   }
 
   areAllDeliveriesCompleted(): boolean {
-    return this.deliveries.length > 0 && 
+    return this.deliveries.length > 0 &&
            this.getCompletedDeliveriesCount() === this.deliveries.length;
   }
- 
+
   cancelTrip(): void {
     if (!this.tripId) {
       this.snackBar.open('Erreur: ID du voyage non trouvé', 'Fermer', { duration: 3000 });
@@ -3321,7 +3319,7 @@ getSelectedConvoyeurInfo(): string {
   private showDeliveryConfirmation(): void {
     const completedDeliveries = this.getCompletedDeliveriesCount();
     const totalDeliveries = this.deliveries.length;
-    
+
     Swal.fire({
       title: 'Début des livraisons',
       html: `
@@ -3333,7 +3331,7 @@ getSelectedConvoyeurInfo(): string {
             <li>Chauffeur: <strong>${this.getSelectedDriverInfo()}</strong></li>
             <li>Convoyeur: <strong>${this.getSelectedConvoyeurInfo()}</strong></li>
           </ul>
-          ${completedDeliveries < totalDeliveries ? 
+          ${completedDeliveries < totalDeliveries ?
             `<p style="color: #ef4444; margin-top: 1rem;">
               <mat-icon style="vertical-align: middle;">error</mat-icon>
               Attention: ${totalDeliveries - completedDeliveries} livraisons ne sont pas complètement préparées.
@@ -3350,7 +3348,7 @@ getSelectedConvoyeurInfo(): string {
   private showReceiptConfirmation(): void {
     const completedDeliveries = this.getCompletedDeliveriesCount();
     const totalDeliveries = this.deliveries.length;
-    
+
     Swal.fire({
       title: 'Générer la réception',
       html: `
@@ -3380,25 +3378,25 @@ getSelectedConvoyeurInfo(): string {
 
   getDeliveryStepClass(index: number, deliveryGroup: FormGroup): string {
     const classes = ['timeline-step', 'delivery-step'];
-    
+
     if (this.isSequenceUpdated(index)) {
       classes.push('sequence-updated');
     }
-    
+
     if (this.isDragging) {
       classes.push('dragging-active');
     }
-    
+
     const customerId = deliveryGroup.get('customerId')?.value;
     const orderId = deliveryGroup.get('orderId')?.value;
     const address = deliveryGroup.get('deliveryAddress')?.value;
-    
+
     if (customerId && orderId && address) {
       classes.push('delivery-complete');
     } else {
       classes.push('delivery-incomplete');
     }
-    
+
     return classes.join(' ');
   }
 
@@ -3406,7 +3404,7 @@ getSelectedConvoyeurInfo(): string {
     const customerId = deliveryGroup.get('customerId')?.value;
     const orderId = deliveryGroup.get('orderId')?.value;
     const address = deliveryGroup.get('deliveryAddress')?.value;
-    
+
     if (customerId && orderId && address) {
       return {
         'background': 'linear-gradient(135deg, #10b981, #059669)',
@@ -3424,22 +3422,22 @@ getSelectedConvoyeurInfo(): string {
 
   formatTimeForDisplay(timeString: string): string {
     if (!timeString) return '';
-    
+
     const [hours, minutes] = timeString.split(':').map(Number);
     const date = new Date();
     date.setHours(hours, minutes);
-    
+
     return this.datePipe.transform(date, 'HH:mm') || timeString;
   }
 
   calculateDeliveryTime(sequence: number): string {
     const startHour = 8;
     const intervalMinutes = 45;
-    
+
     const totalMinutes = startHour * 60 + ((sequence - 1) * intervalMinutes);
     const hours = Math.floor(totalMinutes / 60);
     const minutes = totalMinutes % 60;
-    
+
     return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
   }
 
@@ -3447,18 +3445,18 @@ getSelectedConvoyeurInfo(): string {
     const customerId = deliveryGroup.get('customerId')?.value;
     const orderId = deliveryGroup.get('orderId')?.value;
     const address = deliveryGroup.get('deliveryAddress')?.value;
-    
+
     if (!customerId && !orderId) return 'À compléter';
     if (!customerId) return 'Client manquant';
     if (!orderId) return 'Commande manquante';
     if (!address || address.trim().length < 5) return 'Adresse incomplète';
-    
+
     return 'Prête';
   }
 
   getDeliveryStatusColor(deliveryGroup: FormGroup): string {
     const status = this.getDeliveryStatus(deliveryGroup);
-    
+
     switch (status) {
       case 'Prête':
         return 'linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(5, 150, 105, 0.1))';
@@ -3479,7 +3477,7 @@ getSelectedConvoyeurInfo(): string {
     this.deliveryControls.forEach((group, index) => {
       group.get('sequence')?.setValue(index + 1, { emitEvent: false });
     });
-    
+
     this.snackBar.open('Ordres réinitialisés', 'Fermer', { duration: 2000 });
   }
 
@@ -3490,37 +3488,37 @@ getSelectedConvoyeurInfo(): string {
         const seqB = b.get('sequence')?.value || 0;
         return seqA - seqB;
       });
-    
+
     this.deliveries.clear();
     sortedDeliveries.forEach(delivery => {
       this.deliveries.push(delivery);
     });
-    
+
     this.snackBar.open('Livraisons triées par ordre', 'Fermer', { duration: 2000 });
   }
 
   validateDeliverySequence(): boolean {
     const sequences = this.deliveryControls.map(group => group.get('sequence')?.value);
     const uniqueSequences = new Set(sequences);
-    
+
     if (uniqueSequences.size !== sequences.length) {
       this.snackBar.open('Attention: Des numéros d\'ordre sont en double', 'Fermer', { duration: 3000 });
       return false;
     }
-    
+
     const minSequence = Math.min(...sequences);
     const maxSequence = Math.max(...sequences);
-    
+
     if (minSequence !== 1) {
       this.snackBar.open('Attention: L\'ordre doit commencer à 1', 'Fermer', { duration: 3000 });
       return false;
     }
-    
+
     if (maxSequence !== sequences.length) {
       this.snackBar.open('Attention: L\'ordre n\'est pas continu', 'Fermer', { duration: 3000 });
       return false;
     }
-    
+
     return true;
   }
 
@@ -3529,19 +3527,19 @@ getSelectedConvoyeurInfo(): string {
       const calculatedTime = this.calculateDeliveryTime(index + 1);
       group.get('plannedTime')?.setValue(calculatedTime, { emitEvent: false });
     });
-    
+
     this.snackBar.open('Heures planifiées calculées automatiquement', 'Fermer', { duration: 2000 });
   }
 
   calculateArrivalTime(): string {
     const startDate = this.tripForm.get('estimatedStartDate')?.value;
     const duration = parseFloat(this.tripForm.get('estimatedDuration')?.value || '0');
-    
+
     if (!startDate || !duration) return 'Non calculable';
-    
+
     const start = new Date(startDate);
     start.setHours(8, 0, 0, 0);
-    
+
     const arrival = new Date(start.getTime() + (duration * 60 * 60 * 1000));
     return this.datePipe.transform(arrival, 'HH:mm') || '';
   }
@@ -3559,27 +3557,27 @@ getSelectedConvoyeurInfo(): string {
     const deliveryElement = document.querySelector(`[formGroupName="${index}"]`);
     if (deliveryElement) {
       deliveryElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      
+
       deliveryElement.classList.add('editing');
       setTimeout(() => {
         deliveryElement.classList.remove('editing');
       }, 2000);
     }
-    
+
     this.snackBar.open(`Modification de la livraison ${index + 1}`, 'Fermer', { duration: 2000 });
   }
 
   getDeliveryCompletionPercentage(): number {
     const total = this.deliveries.length * 3;
     if (total === 0) return 0;
-    
+
     let completed = 0;
     this.deliveryControls.forEach(group => {
       if (group.get('customerId')?.value) completed++;
       if (group.get('orderId')?.value) completed++;
       if (group.get('deliveryAddress')?.value?.trim().length > 5) completed++;
     });
-    
+
     return Math.round((completed / total) * 100);
   }
 
@@ -3604,15 +3602,15 @@ getSelectedConvoyeurInfo(): string {
       clearTimeout(this.availabilityCheckTimeout);
       this.availabilityCheckTimeout = null;
     }
-    
+
     if (this.autoSaveSubscription) {
       this.autoSaveSubscription.unsubscribe();
     }
-    
+
     if (this.shouldSaveDraft()) {
       this.saveDraft();
     }
-    
+
     if (this.arrivalEqualsDepartureChangeSub) {
       this.arrivalEqualsDepartureChangeSub.unsubscribe();
     }
@@ -3658,7 +3656,7 @@ getSelectedConvoyeurInfo(): string {
 
   private performTrajectDeletion(): void {
     const trajectId = this.selectedTraject?.id;
-    
+
     this.http.deleteTraject(trajectId).subscribe({
       next: () => {
         Swal.fire({
@@ -3675,9 +3673,9 @@ getSelectedConvoyeurInfo(): string {
       },
       error: (error) => {
         console.error('Erreur lors de la suppression:', error);
-        
+
         let errorMessage = 'Erreur lors de la suppression du traject';
-        
+
         if (error.status === 404) {
           errorMessage = 'Traject non trouvé';
         } else if (error.status === 403) {
@@ -3689,7 +3687,7 @@ getSelectedConvoyeurInfo(): string {
         } else if (error.error?.errors?.[0]?.message) {
           errorMessage = error.error.errors[0].message;
         }
-        
+
         Swal.fire('Erreur', errorMessage, 'error');
       }
     });
@@ -3701,17 +3699,17 @@ getSelectedConvoyeurInfo(): string {
       this.http.getLocations().subscribe({
         next: (response: any) => {
           const locations = response.data || response.locations || response;
-          
+
           if (Array.isArray(locations)) {
             this.locations = locations.map(location => ({
               ...location,
               zoneId: location.zoneId || location.zone?.id || null,
               zoneName: location.zoneName || location.zone?.name || ''
             }));
-            
+
             this.activeLocations = this.locations.filter(loc => loc.isActive);
           }
-          
+
           this.loadingLocations = false;
           resolve();
         },
@@ -3747,28 +3745,28 @@ getSelectedConvoyeurInfo(): string {
     }
 
     this.selectedTraject = { ...traject };
-    
-    // ✅ FIX: Set locations with explicit update and validity
+
+
     if (traject.startLocationId) {
       this.tripForm.get('startLocationId')?.setValue(traject.startLocationId, { emitEvent: true });
       this.tripForm.get('startLocationId')?.markAsTouched();
       this.tripForm.get('startLocationId')?.updateValueAndValidity();
     }
-    
+
     if (traject.endLocationId) {
       this.tripForm.get('endLocationId')?.setValue(traject.endLocationId, { emitEvent: true });
       this.tripForm.get('endLocationId')?.markAsTouched();
       this.tripForm.get('endLocationId')?.updateValueAndValidity();
     }
-    
-    // Update arrival equals departure checkbox
-    if (traject.startLocationId && traject.endLocationId && 
+
+
+    if (traject.startLocationId && traject.endLocationId &&
         traject.startLocationId === traject.endLocationId) {
       this.arrivalEqualsDeparture.setValue(true, { emitEvent: true });
     } else {
       this.arrivalEqualsDeparture.setValue(false, { emitEvent: true });
     }
-    
+
     if (!traject.isPredefined && this.tripId) {
       this.showSaveAsPredefinedOption = true;
       this.saveAsPredefined = false;
@@ -3776,9 +3774,9 @@ getSelectedConvoyeurInfo(): string {
       this.showSaveAsPredefinedOption = false;
       this.saveAsPredefined = traject.isPredefined;
     }
-    
+
     this.loadTrajectCustomersForOrderSelection(traject);
-    
+
     setTimeout(() => {
       if (traject.startLocationId) {
         this.fetchWeatherForStartLocation();
@@ -3803,7 +3801,7 @@ getSelectedConvoyeurInfo(): string {
         }
         return unique;
       }, [] as { clientId: number, order: number, clientName: string }[])
-      .sort((a, b) => a.order - b.order); 
+      .sort((a, b) => a.order - b.order);
 
     if (customerPoints.length === 0) {
       this.snackBar.open('Ce traject ne contient pas de clients', 'Fermer', { duration: 3000 });
@@ -3811,7 +3809,7 @@ getSelectedConvoyeurInfo(): string {
     }
 
     const trajectCustomers: ICustomer[] = [];
-    
+
     customerPoints.forEach(customerPoint => {
       const customer = this.allCustomers.find(c => c.id === customerPoint.clientId);
       if (customer) {
@@ -3825,18 +3823,18 @@ getSelectedConvoyeurInfo(): string {
     });
 
     this.trajectCustomers = trajectCustomers;
-    
+
     this.showTrajectOrderSelection = true;
     this.trajectMode = 'predefined';
     this.hasMadeTrajectChoice = true;
-    
+
     setTimeout(() => {
       const section = document.querySelector('.traject-order-selection');
       if (section) {
         section.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }
     }, 100);
-    
+
     this.snackBar.open(
       `Traject "${traject.name}" sélectionné. Choisissez les commandes pour ${trajectCustomers.length} client(s)`,
       'Fermer',
@@ -3858,10 +3856,10 @@ getSelectedConvoyeurInfo(): string {
   calculateCapacityPercentage(): number {
     const truckId = this.tripForm.get('truckId')?.value;
     if (!truckId) return 0;
-    
+
     const truck = this.trucks.find(t => t.id === truckId);
     if (!truck || !truck.typeTruck?.capacity) return 0;
-    
+
     const totalWeight = this.calculateTotalWeight();
     return Math.min(100, (totalWeight / truck.typeTruck?.capacity) * 100);
   }
@@ -3876,30 +3874,30 @@ getSelectedConvoyeurInfo(): string {
   getProgressBarColor(): string {
     const percentage = Number(this.calculateCapacityPercentage().toFixed(2));
     if (percentage >= 100) {
-      return '#ef4444'; 
+      return '#ef4444';
     } else if (percentage >= 90) {
-      return '#f59e0b'; 
+      return '#f59e0b';
     } else if (percentage >= 70) {
-      return '#3b82f6'; 
+      return '#3b82f6';
     } else {
-      return '#10b981'; 
+      return '#10b981';
     }
   }
 
   calculateDeliveryPercentage(index: number): number {
     const truckId = this.tripForm.get('truckId')?.value;
     if (!truckId) return 0;
-    
+
     const truck = this.trucks.find(t => t.id === truckId);
     if (!truck?.typeTruck?.capacity) return 0;
-    
+
     const deliveryGroup = this.deliveryControls[index];
     const orderId = deliveryGroup.get('orderId')?.value;
     if (!orderId) return 0;
-    
+
     const order = this.allOrders.find(o => o.id === orderId);
     const weight = order?.weight || 0;
-    
+
     return (weight / truck.typeTruck?.capacity) * 100;
   }
 
@@ -3946,11 +3944,11 @@ getSelectedConvoyeurInfo(): string {
               this.driverTruckMap.set(driver.id, driver.idCamion);
             }
           });
-          
-          console.log('🚛 Mapping chauffeur-camion:', 
+
+          console.log('🚛 Mapping chauffeur-camion:',
             Array.from(this.driverTruckMap.entries())
           );
-          
+
           this.loadingDrivers = false;
           resolve();
         },
@@ -3967,7 +3965,7 @@ getSelectedConvoyeurInfo(): string {
   getCurrentDriverName(): string {
     const driverId = this.tripForm.get('driverId')?.value;
     if (!driverId) return '';
-    
+
     const driver = this.drivers.find(d => d.id === driverId);
     return driver?.name || 'Chauffeur actuel';
   }
@@ -3975,7 +3973,7 @@ getSelectedConvoyeurInfo(): string {
   getCurrentDriverPermis(): string {
     const driverId = this.tripForm.get('driverId')?.value;
     if (!driverId) return '';
-    
+
     const driver = this.drivers.find(d => d.id === driverId);
     return driver?.drivingLicense || '';
   }
@@ -3987,13 +3985,13 @@ getSelectedConvoyeurInfo(): string {
   isCurrentDriverInAvailableList(): boolean {
     const driverId = this.tripForm.get('driverId')?.value;
     if (!driverId) return false;
-    
+
     return this.availableDrivers.some(d => d.id === driverId);
   }
 
   getDriverNameById(id: number | null): string {
     if (!id) return '';
-    const driver = this.availableDrivers.find(d => d.id === id) || 
+    const driver = this.availableDrivers.find(d => d.id === id) ||
                    this.drivers.find(d => d.id === id);
     return driver ? driver.name : '';
   }
@@ -4015,7 +4013,7 @@ getSelectedConvoyeurInfo(): string {
 
   showMoreClients(): void {
     this.showAllClients = true;
-    
+
     setTimeout(() => {
       const clientGrid = document.querySelector('.client-grid');
       if (clientGrid) {
@@ -4026,7 +4024,7 @@ getSelectedConvoyeurInfo(): string {
 
   showLessClients(): void {
     this.showAllClients = false;
-   
+
     setTimeout(() => {
       const clientGrid = document.querySelector('.client-grid');
       if (clientGrid) {
@@ -4051,7 +4049,7 @@ getSelectedConvoyeurInfo(): string {
     } else {
       this.clientsToShowCount = this.maxInitialClients;
     }
-    
+
     if (this.showAllClients && this.filteredClients.length <= this.clientsToShowCount) {
       this.showAllClients = false;
     }
@@ -4059,10 +4057,10 @@ getSelectedConvoyeurInfo(): string {
 
   getSaveButtonTooltip(): string {
     const reasons = [];
-    
+
     if (this.tripForm.invalid) {
       reasons.push('Formulaire invalide');
-      
+
       if (this.tripForm.get('estimatedStartDate')?.invalid) reasons.push('Date début requise');
       if (this.tripForm.get('estimatedEndDate')?.invalid) reasons.push('Date fin requise');
       if (this.tripForm.get('truckId')?.invalid) reasons.push('Camion requis');
@@ -4072,24 +4070,24 @@ getSelectedConvoyeurInfo(): string {
       if (this.tripForm.get('startLocationId')?.invalid) reasons.push('Lieu départ requis');
       if (this.tripForm.get('endLocationId')?.invalid) reasons.push('Lieu arrivée requis');
     }
-    
+
     if (this.deliveries.length === 0) {
       reasons.push('Aucune livraison');
     } else if (this.deliveries.invalid) {
       reasons.push('Livraisons invalides');
     }
-    
+
     if (this.loading) {
       reasons.push('Chargement en cours');
     }
-    
+
     if (this.saveAsPredefined && !this.trajectName?.trim()) {
       reasons.push('Nom du traject requis');
     }
-    
+
     return reasons.length > 0 ? `Impossible de sauvegarder: ${reasons.join(', ')}` : '';
   }
-  
+
   private showAcceptedConfirmation(): void {
     Swal.fire({
       title: 'Accepter le voyage',
@@ -4116,7 +4114,7 @@ getSelectedConvoyeurInfo(): string {
     const totalWeight = this.calculateTotalWeight();
     const capacity = this.getSelectedTruckCapacity();
     const percentage = Number(this.calculateCapacityPercentage().toFixed(2));
-    
+
     Swal.fire({
       title: 'Début du chargement',
       html: `
@@ -4139,7 +4137,7 @@ getSelectedConvoyeurInfo(): string {
       cancelButtonText: 'Revoir'
     });
   }
-  
+
   private getPreviousStatus(): string {
     const current = this.tripForm.get('tripStatus')?.value;
     switch(current) {
@@ -4150,21 +4148,21 @@ getSelectedConvoyeurInfo(): string {
       default: return 'Planned';
     }
   }
-  
+
   private updateTripStatusInForm(status: TripStatus): void {
     const statusControl = this.tripForm.get('tripStatus');
     if (statusControl?.disabled) {
       statusControl.enable();
     }
-    
+
     this.tripForm.patchValue({ tripStatus: status });
-    
+
     statusControl?.markAsTouched();
     statusControl?.updateValueAndValidity();
-    
+
     this.tripForm.updateValueAndValidity();
   }
-  
+
   initializeDropdownFilters(): void {
     this.dropdownFilters.client = new Array(this.deliveries.length).fill('');
     this.dropdownFilters.order = new Array(this.deliveries.length).fill('');
@@ -4176,12 +4174,12 @@ getSelectedConvoyeurInfo(): string {
 
   getFilteredCustomers(index: number): ICustomer[] {
     const filterText = this.dropdownFilters.client[index] || '';
-    
+
     if (!filterText) {
       return this.customers;
     }
-    
-    return this.customers.filter(customer => 
+
+    return this.customers.filter(customer =>
       customer.name.toLowerCase().includes(filterText) ||
       customer.matricule?.toLowerCase().includes(filterText) ||
       customer.email?.toLowerCase().includes(filterText)
@@ -4191,22 +4189,22 @@ getSelectedConvoyeurInfo(): string {
   getFilteredOrders(index: number): IOrder[] {
     const deliveryGroup = this.deliveryControls[index];
     const customerId = deliveryGroup.get('customerId')?.value;
-    
+
     if (!customerId) {
       return [];
     }
-    
+
     const filterText = this.dropdownFilters.order[index] || '';
-    const customerOrders = this.allOrders.filter(order => 
-      order.customerId === parseInt(customerId) && 
+    const customerOrders = this.allOrders.filter(order =>
+      order.customerId === parseInt(customerId) &&
       (order.status?.toLowerCase() === OrderStatus.ReadyToLoad?.toLowerCase())
     );
-    
+
     if (!filterText) {
       return customerOrders;
     }
-    
-    return customerOrders.filter(order => 
+
+    return customerOrders.filter(order =>
       order.reference.toLowerCase().includes(filterText) ||
       order.type?.toLowerCase().includes(filterText)
     );
@@ -4214,27 +4212,27 @@ getSelectedConvoyeurInfo(): string {
 
 
 
-  
+
 
 
 getSelectedStartLocationInfo(): string {
   const locationId = this.getStartLocationId();
   if (!locationId) return 'Non sélectionné';
-  
+
   const location = this.locations.find(l => l.id === locationId);
   if (!location) return 'Lieu inconnu';
-  
-  return location.name; 
+
+  return location.name;
 }
 
 getSelectedEndLocationInfo(): string {
   const locationId = this.getEndLocationId();
   if (!locationId) return 'Non sélectionné';
-  
+
   const location = this.locations.find(l => l.id === locationId);
   if (!location) return 'Lieu inconnu';
-  
-  return location.name; 
+
+  return location.name;
 }
 
   getStartZoneName(): string | null {
@@ -4255,40 +4253,40 @@ getSelectedEndLocationInfo(): string {
 
   getStartWeatherInfo(): string {
     if (!this.startLocationWeather) return 'Aucune donnée météo';
-    
+
     const zoneName = this.getStartZoneName();
     const locationName = this.getSelectedStartLocationInfo();
-    
+
     return `Météo ${zoneName ? `pour la zone ${zoneName}` : `à ${locationName}`}: ${this.startLocationWeather.description}, ${this.startLocationWeather.temperature}°C`;
   }
 
   getEndWeatherInfo(): string {
     if (!this.endLocationWeather) return 'Aucune donnée météo';
-    
+
     const zoneName = this.getEndZoneName();
     const locationName = this.getSelectedEndLocationInfo();
-    
+
     return `Météo ${zoneName ? `pour la zone ${zoneName}` : `à ${locationName}`}: ${this.endLocationWeather.description}, ${this.endLocationWeather.temperature}°C`;
   }
-  
+
   getWeatherIconClass(iconCode: string): string {
     return this.http.getWeatherIconClass(iconCode);
   }
-  
 
- 
 
- 
+
+
+
 
   toggleWeatherForecast(): void {
     this.showWeatherForecast = !this.showWeatherForecast;
-    
+
     if (this.showWeatherForecast && this.startLocationForecast.length === 0 && this.endLocationForecast.length === 0) {
       this.fetchWeatherForecast();
     }
   }
 
-  
+
 
   private fetchForecasts(): void {
     const startZoneName = this.getStartZoneName();
@@ -4335,14 +4333,14 @@ getSelectedEndLocationInfo(): string {
 
   private getZoneNameForLocation(locationId: number): string | null {
     if (!locationId) return null;
-    
+
     const location = this.locations.find(l => l.id === locationId);
     if (!location) return null;
-    
+
     if (location.zoneName) {
       return location.zoneName;
     }
-    
+
     return location.name;
   }
 
@@ -4351,9 +4349,9 @@ getSelectedEndLocationInfo(): string {
       console.warn('Locations not loaded yet');
       return;
     }
-    
+
     const startDate = this.tripForm.get('estimatedStartDate')?.value;
-    
+
     if (startDate) {
       this.loadAvailableDrivers(startDate);
     } else {
@@ -4368,12 +4366,12 @@ getSelectedEndLocationInfo(): string {
       this.unavailableDrivers = [];
       return;
     }
-    
+
     const dateStr = this.formatDateForAPI(date);
     const excludeTripId = this.tripId || this.tripId;
-    
+
     this.loadingAvailableDrivers = true;
-    
+
     this.http.getAvailableDriversByDateAndZone(dateStr, undefined, excludeTripId).subscribe({
       next: (response: any) => {
         this.processDriverResponse(response, date);
@@ -4389,10 +4387,10 @@ getSelectedEndLocationInfo(): string {
 
   private handleDriverLoadError(date: Date, excludeTripId?: number): void {
     console.error('Driver load error - Date:', date, 'ExcludeTrip:', excludeTripId);
-    
+
     if (date) {
       const dateStr = this.formatDateForAPI(date);
-      
+
       this.http.getAvailableDriversByDateAndZone(dateStr, undefined, excludeTripId).subscribe({
         next: (response: any) => {
           this.processDriverResponse(response, date);
@@ -4416,7 +4414,7 @@ getSelectedEndLocationInfo(): string {
       driver.requiresApproval = undefined;
       driver.totalHours = undefined;
     });
-   
+
     this.availableDrivers = (response.availableDrivers || []).map((apiDriver: any) => ({
       id: apiDriver.driverId,
       name: apiDriver.driverName,
@@ -4434,11 +4432,11 @@ getSelectedEndLocationInfo(): string {
       requiresApproval: undefined,
       totalHours: undefined
     }));
-    
+
     this.unavailableDrivers = response.unavailableDrivers || [];
-    
+
     this.handleCurrentDriverForEdit(response);
-    
+
     this.checkNoDriversWarning(date, response);
   }
 
@@ -4458,16 +4456,16 @@ getSelectedEndLocationInfo(): string {
   private checkNoDriversWarning(date: Date, response: any): void {
     if (this.availableDrivers.length === 0 && this.drivers.length > 0) {
       const zoneName = this.getStartZoneName();
-      
+
       let warningMessage = `Aucun chauffeur disponible le ${this.formatDateForDisplay(date)}`;
       if (zoneName) {
         warningMessage += ` dans la zone ${zoneName}`;
       }
-      
+
       if (response.unavailableDrivers && response.unavailableDrivers.length > 0) {
         warningMessage += ` (${response.unavailableDrivers.length} chauffeur(s) indisponible(s))`;
       }
-      
+
       console.warn(warningMessage);
     }
   }
@@ -4509,15 +4507,15 @@ getSelectedEndLocationInfo(): string {
 
   generateCalendar(): void {
     this.calendarDays = [];
-    
+
     const firstDay = new Date(this.currentYear, this.currentMonth, 1);
     const lastDay = new Date(this.currentYear, this.currentMonth + 1, 0);
-    
+
     const startDay = firstDay.getDay() === 0 ? 6 : firstDay.getDay() - 1;
     for (let i = 0; i < startDay; i++) {
       this.calendarDays.push(null);
     }
-    
+
     for (let i = 1; i <= lastDay.getDate(); i++) {
       this.calendarDays.push(new Date(this.currentYear, this.currentMonth, i));
     }
@@ -4549,24 +4547,24 @@ getSelectedEndLocationInfo(): string {
 
   isDaySelected(day: Date | null): boolean {
     if (!day || !this.selectedDateField) return false;
-    
-    const formDate = this.selectedDateField === 'start' 
+
+    const formDate = this.selectedDateField === 'start'
       ? this.tripForm.get('estimatedStartDate')?.value
       : this.tripForm.get('estimatedEndDate')?.value;
-    
+
     if (!formDate) return false;
-    
+
     return this.datePipe.transform(formDate, 'yyyy-MM-dd') === this.datePipe.transform(day, 'yyyy-MM-dd');
   }
 
   isDayDisabled(day: Date | null): boolean {
     if (!day) return true;
-    
+
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    
+
     if (day < today) return true;
-    
+
     if (this.calendarMode === 'range') {
       if (this.selectedRangeStart && day < this.selectedRangeStart) {
         return true;
@@ -4577,18 +4575,18 @@ getSelectedEndLocationInfo(): string {
         return true;
       }
     }
-    
+
     return false;
   }
 
   selectToday(): void {
     const today = new Date();
-    
+
     if (this.calendarMode === 'single') {
       this.selectDate(today);
     } else if (this.calendarMode === 'range') {
       this.selectDateRange(today);
-      
+
       if (!this.selectedRangeEnd) {
         this.selectedRangeEnd = new Date(today);
         this.isSelectingRange = false;
@@ -4615,16 +4613,16 @@ getSelectedEndLocationInfo(): string {
   private dateSequenceValidator(control: AbstractControl): ValidationErrors | null {
     const startDate = this.estimatedStartDateControl?.value;
     const endDate = control.value;
-    
+
     if (startDate && endDate) {
       const start = new Date(startDate);
       const end = new Date(endDate);
-      
+
       start.setHours(0, 0, 0, 0);
       end.setHours(0, 0, 0, 0);
-      
+
       if (end < start) {
-        return { 
+        return {
           dateSequence: {
             message: 'La date de fin doit être après la date de début',
             startDate: startDate,
@@ -4633,7 +4631,7 @@ getSelectedEndLocationInfo(): string {
         };
       }
     }
-    
+
     return null;
   }
 
@@ -4648,16 +4646,16 @@ getSelectedEndLocationInfo(): string {
   calculateDateDuration(): number {
     const start = this.estimatedStartDateControl?.value;
     const end = this.estimatedEndDateControl?.value;
-    
+
     if (!start || !end) return 0;
-    
+
     const startDate = new Date(start);
     const endDate = new Date(end);
-    
+
     if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
       return 0;
     }
-    
+
     const diffTime = Math.abs(endDate.getTime() - startDate.getTime());
     return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
   }
@@ -4665,10 +4663,10 @@ getSelectedEndLocationInfo(): string {
   openDateRangePicker(): void {
     this.calendarMode = 'range';
     this.showDateRangeModal = true;
-    
+
     this.selectedRangeStart = this.estimatedStartDateControl?.value;
     this.selectedRangeEnd = this.estimatedEndDateControl?.value;
-    
+
     if (this.selectedRangeStart && !this.selectedRangeEnd) {
       this.selectedRangeEnd = new Date(this.selectedRangeStart);
       this.isSelectingRange = false;
@@ -4677,13 +4675,13 @@ getSelectedEndLocationInfo(): string {
     } else {
       this.isSelectingRange = false;
     }
-    
+
     this.generateCalendar();
   }
 
   selectDateRange(day: Date | null): void {
     if (!day || this.isDayDisabled(day)) return;
-    
+
     if (!this.selectedRangeStart || (this.selectedRangeStart && this.selectedRangeEnd)) {
       this.selectedRangeStart = day;
       this.selectedRangeEnd = null;
@@ -4697,10 +4695,10 @@ getSelectedEndLocationInfo(): string {
         );
         return;
       }
-      
+
       this.selectedRangeEnd = day;
       this.isSelectingRange = false;
-      
+
       if (this.isSameDay(this.selectedRangeStart, this.selectedRangeEnd)) {
         this.applyDateRange();
       }
@@ -4718,18 +4716,18 @@ getSelectedEndLocationInfo(): string {
         return;
       }
     }
-    
+
     if (this.selectedRangeStart) {
       this.estimatedStartDateControl?.setValue(this.selectedRangeStart);
-      
+
       if (!this.selectedRangeEnd) {
         this.selectedRangeEnd = new Date(this.selectedRangeStart);
       }
-      
-      this.estimatedEndDateControl?.setValue(this.selectedRangeEnd);    
+
+      this.estimatedEndDateControl?.setValue(this.selectedRangeEnd);
       this.estimatedEndDateControl?.updateValueAndValidity();
     }
-    
+
     this.closeDateRangeModal();
   }
 
@@ -4742,13 +4740,13 @@ getSelectedEndLocationInfo(): string {
 
   isDateInRange(day: Date | null): boolean {
     if (!day || !this.selectedRangeStart) return false;
-    
+
     if (this.selectedRangeStart && this.selectedRangeEnd) {
       return day >= this.selectedRangeStart && day <= this.selectedRangeEnd;
     } else if (this.selectedRangeStart && !this.selectedRangeEnd && this.isSelectingRange) {
       return this.isSameDay(day, this.selectedRangeStart);
     }
-    
+
     return false;
   }
 
@@ -4769,9 +4767,9 @@ getSelectedEndLocationInfo(): string {
 
   selectDate(day: Date | null): void {
     if (!day || this.isDayDisabled(day)) return;
-    
+
     this.loadDateStats(day);
-    
+
     if (this.calendarMode === 'single') {
       if (this.selectedDateField === 'start') {
         this.estimatedStartDateControl?.setValue(day);
@@ -4786,14 +4784,14 @@ getSelectedEndLocationInfo(): string {
 
   calculateRangeDuration(start: Date, end: Date): number {
     const diffTime = Math.abs(end.getTime() - start.getTime());
-    return Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1; 
+    return Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
   }
 
   clearDateRange(): void {
     this.selectedRangeStart = null;
     this.selectedRangeEnd = null;
     this.isSelectingRange = false;
-    
+
     this.estimatedStartDateControl?.setValue(null);
     this.estimatedEndDateControl?.setValue(null);
   }
@@ -4802,7 +4800,7 @@ getSelectedEndLocationInfo(): string {
     this.removeRecentlyAddedDeliveries();
     this.currentQuickAddStep = 2;
     this.restoreOrdersToSelection();
-    
+
     setTimeout(() => {
       const orderSelectionSection = document.querySelector('.order-selection-step');
       if (orderSelectionSection) {
@@ -4813,16 +4811,16 @@ getSelectedEndLocationInfo(): string {
 
   private removeRecentlyAddedDeliveries(): void {
     if (!this.selectedClient) return;
-    
+
     const deliveriesToRemove: number[] = [];
-    
+
     this.deliveryControls.forEach((delivery, index) => {
       const customerId = delivery.get('customerId')?.value;
       if (customerId && parseInt(customerId) === this.selectedClient!.id) {
         deliveriesToRemove.push(index);
       }
     });
-    
+
     deliveriesToRemove.sort((a, b) => b - a).forEach(index => {
       this.removeDelivery(index);
     });
@@ -4830,7 +4828,7 @@ getSelectedEndLocationInfo(): string {
 
   private restoreOrdersToSelection(): void {
     if (!this.selectedClient) return;
-    
+
     const clientOrderIds = this.clientPendingOrders.map(order => order.id);
     this.selectedOrders = [...clientOrderIds];
   }
@@ -4840,18 +4838,18 @@ getSelectedEndLocationInfo(): string {
     const startDate = this.tripForm.get('estimatedStartDate')?.value;
     const duration = this.tripForm.get('estimatedDuration')?.value;
     const excludeTripId = this.tripId;
-    
+
     if (this.availabilityCheckTimeout) {
       clearTimeout(this.availabilityCheckTimeout);
     }
-    
+
     if (!driverId || !startDate || !duration || duration <= 0) {
       this.driverAvailabilityResult = null;
       return;
     }
-    
+
     this.checkingDriverAvailability = true;
-    
+
     this.availabilityCheckTimeout = setTimeout(() => {
       this.checkDriverAvailabilityWithParams(driverId, startDate, duration, excludeTripId);
     }, 500);
@@ -4861,7 +4859,7 @@ getSelectedEndLocationInfo(): string {
     const startDate = this.tripForm.get('estimatedStartDate')?.value;
     const duration = this.tripForm.get('estimatedDuration')?.value;
     const excludeTripId = this.tripId;
-    
+
     if (driverId && startDate && duration && duration > 0) {
       this.checkDriverAvailabilityWithParams(driverId, startDate, duration, excludeTripId);
     }
@@ -4871,20 +4869,20 @@ getSelectedEndLocationInfo(): string {
     this.checkingDriverAvailability = true;
     this.driverAvailabilityWarning = false;
     this.driverAvailabilityError = false;
-    
+
     const dateStr = this.formatDateForAPI(startDate);
-    
+
     const finalExcludeTripId = this.tripId || this.tripId || excludeTripId;
-    
+
     this.http.checkDriverAvailabilityWithTripDuration(driverId, dateStr, duration, finalExcludeTripId).subscribe({
       next: (response: any) => {
         this.driverAvailabilityResult = response;
-        
+
         if (!response.isAvailable) {
           this.driverAvailabilityWarning = true;
-          
+
           this.showDriverAvailabilityWarning(response);
-          
+
           if (response.status === 'exceeded') {
             this.suggestAlternativeDriver(startDate, duration, finalExcludeTripId);
           }
@@ -4892,7 +4890,7 @@ getSelectedEndLocationInfo(): string {
           this.driverAvailabilityWarning = true;
           this.showOvertimeWarning(response);
         }
-        
+
         this.checkingDriverAvailability = false;
       },
       error: (error) => {
@@ -4907,10 +4905,10 @@ getSelectedEndLocationInfo(): string {
     const driverName = response.driverName;
     const message = response.message;
     const status = response.status;
-    
+
     let icon = 'warning';
     let color = 'warn';
-    
+
     if (status === 'exceeded') {
       icon = 'error';
       color = 'error';
@@ -4918,7 +4916,7 @@ getSelectedEndLocationInfo(): string {
       icon = 'schedule';
       color = 'accent';
     }
-    
+
     this.snackBar.open(`${driverName}: ${message}`, 'Fermer', {
       duration: 5000,
       panelClass: [`${color}-snackbar`]
@@ -4959,12 +4957,12 @@ getSelectedEndLocationInfo(): string {
   private suggestAlternativeDriver(startDate: Date, duration: number, excludeTripId?: number): void {
     const dateStr = this.formatDateForAPI(startDate);
     const finalExcludeTripId = this.tripId || this.tripId || excludeTripId;
-    
+
     this.http.getAvailableDriversByDateAndZone(dateStr, undefined, finalExcludeTripId).subscribe({
       next: (response: any) => {
         if (response.availableDrivers && response.availableDrivers.length > 0) {
           const availableDrivers = response.availableDrivers;
-          
+
           if (availableDrivers.length > 0) {
             Swal.fire({
               title: 'Chauffeur non disponible',
@@ -5010,17 +5008,17 @@ getSelectedEndLocationInfo(): string {
 
   private async loadDateStats(date: Date): Promise<void> {
     if (!date) return;
-    
+
     this.dateStatsLoading = true;
-    
+
     const dateStr = this.datePipe.transform(date, 'yyyy-MM-dd') || '';
-    
+
     try {
       const response = await this.http.getDateStatistics(dateStr).toPromise();
-      
+
       if (response && response.success) {
         const data = response.data;
-        
+
         this.selectedDateStats = {
           date: date,
           totalClients: data.summary?.totalClients || 0,
@@ -5049,7 +5047,7 @@ getSelectedEndLocationInfo(): string {
       }
     } catch (error) {
       console.error('Erreur lors du chargement des statistiques:', error);
-      
+
       this.loadLocalDateStats(date);
     } finally {
       this.dateStatsLoading = false;
@@ -5059,28 +5057,28 @@ getSelectedEndLocationInfo(): string {
 
   private loadLocalDateStats(date: Date): void {
     const dateStr = this.datePipe.transform(date, 'yyyy-MM-dd') || '';
-    
-    const clientsWithOrders = this.customers.filter(customer => 
+
+    const clientsWithOrders = this.customers.filter(customer =>
       this.getClientPendingOrdersCount(customer.id) > 0
     );
-    
+
     const assignedOrderIds: number[] = [];
-    
+
     this.deliveryControls.forEach(delivery => {
       const orderId = delivery.get('orderId')?.value;
       if (orderId) {
         assignedOrderIds.push(orderId);
       }
     });
-    
-    const ordersNotAssigned = this.ordersForQuickAdd.filter(order => 
+
+    const ordersNotAssigned = this.ordersForQuickAdd.filter(order =>
       !assignedOrderIds.includes(order.id)
     );
-    
-    const clientsWithOrdersNotAssigned = this.customers.filter(customer => 
+
+    const clientsWithOrdersNotAssigned = this.customers.filter(customer =>
       ordersNotAssigned.some(order => order.customerId === customer.id)
     );
-    
+
     this.selectedDateStats = {
       date: date,
       totalClients: clientsWithOrdersNotAssigned.length,
@@ -5129,29 +5127,29 @@ getSelectedEndLocationInfo(): string {
 
   private generateLocalRecommendations(ordersReady: number, plannedTrips: number, availableDrivers: number): string[] {
     const recommendations: string[] = [];
-    
+
     if (ordersReady > 0 && plannedTrips === 0) {
       recommendations.push(`${ordersReady} commande(s) prête(s) - Créez un nouveau voyage`);
     }
-    
+
     if (availableDrivers === 0 && plannedTrips > 0) {
       recommendations.push('Aucun chauffeur disponible');
     }
-    
+
     if (recommendations.length === 0) {
       recommendations.push('Statistiques locales chargées');
     }
-    
+
     return recommendations;
   }
 
   continueWithDateSelection(): void {
     if (!this.selectedDateStats.date) return;
-    
+
     this.showDateStatsModal = false;
-    
+
     const day = this.selectedDateStats.date;
-    
+
     if (this.calendarMode === 'single') {
       if (this.selectedDateField === 'start') {
         this.estimatedStartDateControl?.setValue(day);
@@ -5180,38 +5178,38 @@ getSelectedEndLocationInfo(): string {
 
   isLightColor(colorCode: string): boolean {
     const hex = colorCode.replace('#', '');
-    
+
     const r = parseInt(hex.substr(0, 2), 16);
     const g = parseInt(hex.substr(2, 2), 16);
     const b = parseInt(hex.substr(4, 2), 16);
-    
+
     const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-    
+
     return luminance > 0.5;
   }
 
 private applyCombinedFilters(): void {
   const searchText = this.clientSearchControl.value?.toLowerCase().trim() || '';
   const entityId = this.entityFilterControl.value;
-  
+
   let filtered = [...this.allClientsWithPendingOrders];
-  
+
   if (entityId) {
-    filtered = filtered.filter(client => 
+    filtered = filtered.filter(client =>
       client.geographicalEntities?.some(ge => ge.geographicalEntityId === entityId)
     );
   }
-  
+
   if (searchText) {
     filtered = filtered.filter(client => {
       return (
         client.name.toLowerCase().includes(searchText) ||
-        client.matricule?.toLowerCase().includes(searchText) ||    
+        client.matricule?.toLowerCase().includes(searchText) ||
         client.email?.toLowerCase().includes(searchText)
       );
     });
   }
-  
+
   this.filteredClients = filtered;
   this.showAllClients = false;
 }
@@ -5246,24 +5244,24 @@ getClientEntityName(clientId: number): string {
 
 filterClients(): void {
   let filtered = this.allClientsWithPendingOrders;
-  
+
   const searchTerm = this.clientSearchControl.value;
   if (searchTerm) {
-    filtered = filtered.filter(client => 
+    filtered = filtered.filter(client =>
       client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (client.matricule && client.matricule.toLowerCase().includes(searchTerm.toLowerCase()))
     );
   }
-  
+
   const entityId = this.entityFilterControl.value;
   if (entityId) {
-    filtered = filtered.filter(client => 
+    filtered = filtered.filter(client =>
       client.geographicalEntities?.some(ge => ge.geographicalEntityId === entityId)
     );
   }
-  
+
   this.filteredClients = filtered;
-  
+
   if (this.viewport) {
     this.viewport.scrollToIndex(0);
   }
@@ -5271,29 +5269,29 @@ filterClients(): void {
 onEntityFilterChange(): void {
   this.filterClients();
 }
-// Update clearFilters method
+
 clearFilters(): void {
   this.clientSearchControl.setValue('');
   this.entityFilterControl.setValue(null);
   this.filterClients();
 }
 
-  
+
   onClientSearchChange(): void {
     this.filterClients();
   }
-  
+
   onZoneFilterChange(): void {
     this.filterClients();
   }
-  
+
 
 
   private checkAndRestoreDraft(): void {
     if (this.tripId || this.tripId) return;
-    
+
     const draft = this.loadDraft();
-    
+
     if (draft) {
       this.showDraftRestoreNotification(draft);
     }
@@ -5301,10 +5299,10 @@ clearFilters(): void {
 
   showDraftRestoreNotification(draft: any): void {
     const deliveryCount = draft.deliveries?.length || 0;
-    const dateStr = draft.formData?.estimatedStartDate ? 
+    const dateStr = draft.formData?.estimatedStartDate ?
       new Date(draft.formData.estimatedStartDate).toLocaleDateString() : 'Date non définie';
     const lastSaved = draft.savedAt ? new Date(draft.savedAt).toLocaleTimeString() : 'Inconnue';
-    
+
     Swal.fire({
       title: 'Brouillon disponible',
       html: `
@@ -5318,7 +5316,7 @@ clearFilters(): void {
               </p>
             </div>
           </div>
-          
+
           <div style="background-color: #f0f9ff; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
             <h5 style="margin: 0 0 12px 0; color: #0369a1;">Détails du brouillon</h5>
             <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;">
@@ -5340,9 +5338,9 @@ clearFilters(): void {
               </div>
             </div>
           </div>
-          
+
           <p style="color: #4b5563; margin-bottom: 20px; font-size: 14px; line-height: 1.5;">
-            Voulez-vous restaurer ce brouillon pour continuer votre travail ou 
+            Voulez-vous restaurer ce brouillon pour continuer votre travail ou
             préférez-vous commencer un nouveau voyage ?
           </p>
         </div>
@@ -5366,7 +5364,7 @@ clearFilters(): void {
         this.restoreDraft(draft);
       } else if (result.isDenied) {
         this.clearDraft();
-        this.snackBar.open('Brouillon effacé, création d\'un nouveau voyage', 'Fermer', { 
+        this.snackBar.open('Brouillon effacé, création d\'un nouveau voyage', 'Fermer', {
           duration: 3000,
           panelClass: ['info-snackbar']
         });
@@ -5375,31 +5373,31 @@ clearFilters(): void {
       }
     });
   }
-  
+
   private restoreDraft(draft: any): void {
     try {
       console.log('Restauration du draft:', draft);
-      
+
       if (draft.formData) {
         const formData = { ...draft.formData };
-        
+
         if (formData.estimatedStartDate && typeof formData.estimatedStartDate === 'string') {
           formData.estimatedStartDate = new Date(formData.estimatedStartDate);
         }
-        
+
         if (formData.estimatedEndDate && typeof formData.estimatedEndDate === 'string') {
           formData.estimatedEndDate = new Date(formData.estimatedEndDate);
         }
-        
+
         this.tripForm.patchValue(formData, { emitEvent: false });
       }
-      
+
       if (draft.deliveries && draft.deliveries.length > 0) {
         this.deliveries.clear();
-        
+
         draft.deliveries.forEach((delivery: any, index: number) => {
           const sequence = delivery.sequence || index + 1;
-          
+
           const deliveryGroup = this.fb.group({
             customerId: [delivery.customerId || '', Validators.required],
             orderId: [delivery.orderId || '', Validators.required],
@@ -5408,26 +5406,26 @@ clearFilters(): void {
             plannedTime: [delivery.plannedTime || ''],
             notes: [delivery.notes || '']
           });
-          
+
           this.deliveries.push(deliveryGroup);
         });
-        
+
         this.showDeliveriesSection = true;
       }
-      
+
       if (draft.selectedTraject) {
         this.selectedTraject = draft.selectedTraject;
         if (draft.selectedTraject.id) {
           this.selectedTrajectControl.setValue(draft.selectedTraject.id);
         }
       }
-      
+
       if (draft.trajectMode) {
         this.trajectMode = draft.trajectMode;
       }
-      
+
       this.snackBar.open('✅ Brouillon restauré', 'Fermer', { duration: 3000 });
-      
+
       setTimeout(() => {
         const startDate = this.tripForm.get('estimatedStartDate')?.value;
         if (startDate) {
@@ -5435,11 +5433,11 @@ clearFilters(): void {
           this.loadAvailableDrivers(startDate);
         }
       }, 500);
-      
+
       setTimeout(() => {
         this.fetchWeatherForBothLocations();
       }, 1000);
-      
+
       setTimeout(() => {
         this.resetInitialState();
       }, 100);
@@ -5449,7 +5447,7 @@ clearFilters(): void {
       this.clearDraft();
     }
   }
-  
+
   private setupAutoSave(): void {
     setTimeout(() => {
       const formChanges$ = this.tripForm.valueChanges
@@ -5459,7 +5457,7 @@ clearFilters(): void {
             this.saveDraft();
           }
         });
-      
+
       const deliveriesChanges$ = this.deliveries.valueChanges
         .pipe(debounceTime(3000))
         .subscribe(() => {
@@ -5467,7 +5465,7 @@ clearFilters(): void {
             this.saveDraft();
           }
         });
-      
+
       const trajectChanges$ = this.selectedTrajectControl.valueChanges
         .pipe(debounceTime(3000))
         .subscribe(() => {
@@ -5475,27 +5473,27 @@ clearFilters(): void {
             this.saveDraft();
           }
         });
-      
+
       this.autoSaveSubscription.add(formChanges$);
       this.autoSaveSubscription.add(deliveriesChanges$);
       this.autoSaveSubscription.add(trajectChanges$);
-      
+
       const interval$ = interval(60000).subscribe(() => {
         if (this.shouldSaveDraft()) {
           this.saveDraft();
         }
       });
-      
+
       this.autoSaveSubscription.add(interval$);
     }, 200);
   }
-  
+
   private saveDraft(): void {
     if (!this.shouldSaveDraft()) {
       console.log('No changes detected, skipping draft save');
       return;
     }
-    
+
     try {
       const draft = {
         formData: this.tripForm.value,
@@ -5512,14 +5510,14 @@ clearFilters(): void {
         savedAt: new Date().toISOString(),
         tripReference: this.tripForm.get('tripReference')?.value || 'Nouveau voyage'
       };
-      
+
       localStorage.setItem(this.DRAFT_KEY, JSON.stringify(draft));
       console.log('Draft saved at:', draft.savedAt, 'Deliveries:', draft.deliveries.length);
-      
+
       this.initialFormState = this.getFormState();
       this.initialDeliveriesState = this.getDeliveriesState();
       this.initialTrajectState = this.getTrajectState();
-      
+
     } catch (error) {
       console.error('Error saving draft:', error);
       this.saveMinimalDraft();
@@ -5537,32 +5535,32 @@ clearFilters(): void {
         deliveries: this.deliveryControls.map(group => group.value),
         savedAt: new Date().toISOString()
       };
-      
+
       localStorage.setItem(this.DRAFT_KEY, JSON.stringify(minimalDraft));
     } catch (e) {
       console.error('Erreur sauvegarde minimal:', e);
     }
   }
-  
+
   private loadDraft(): any {
     try {
       const saved = localStorage.getItem(this.DRAFT_KEY);
       if (!saved) return null;
-      
+
       const draft = JSON.parse(saved);
-      
+
       if (draft.savedAt) {
         const savedDate = new Date(draft.savedAt);
         const now = new Date();
         const diffHours = (now.getTime() - savedDate.getTime()) / (1000 * 60 * 60);
-        
+
         if (diffHours > 24) {
           console.log('Draft trop vieux, effacé');
           this.clearDraft();
           return null;
         }
       }
-      
+
       return draft;
     } catch (error) {
       console.error('Erreur chargement draft:', error);
@@ -5570,23 +5568,23 @@ clearFilters(): void {
       return null;
     }
   }
-  
+
   clearDraft(): void {
     localStorage.removeItem(this.DRAFT_KEY);
     console.log('Draft effacé');
   }
-  
+
   hasDraft(): boolean {
     return !!localStorage.getItem(this.DRAFT_KEY);
   }
-  
+
   clearDraftManually(): void {
     if (confirm('Êtes-vous sûr de vouloir effacer le brouillon ?')) {
       this.clearDraft();
       this.snackBar.open('Brouillon effacé', 'Fermer', { duration: 2000 });
     }
   }
-  
+
   saveDraftManually(): void {
     this.saveDraft();
     this.snackBar.open('💾 Brouillon sauvegardé', 'Fermer', { duration: 2000 });
@@ -5594,15 +5592,15 @@ clearFilters(): void {
 
   getGroupedDeliveries(): {customerId: number, orders: any[], deliveryGroup: FormGroup, totalWeight: number}[] {
     const groups = new Map<number, {customerId: number, orders: any[], deliveryGroup: FormGroup, totalWeight: number}>();
-    
+
     this.deliveryControls.forEach((deliveryGroup, index) => {
       const customerId = deliveryGroup.get('customerId')?.value;
       const orderId = deliveryGroup.get('orderId')?.value;
-      
+
       if (customerId && orderId) {
         const order = this.allOrders.find(o => o.id === orderId);
         const orderWeight = order?.weight || 0;
-        
+
         if (!groups.has(customerId)) {
           groups.set(customerId, {
             customerId,
@@ -5611,20 +5609,20 @@ clearFilters(): void {
             totalWeight: 0
           });
         }
-        
+
         const group = groups.get(customerId)!;
         group.orders.push({
           id: orderId,
           reference: order?.reference || 'N/A',
           weight: orderWeight,
           type: order?.type || '',
-          deliveryIndex: index 
+          deliveryIndex: index
         });
-        
+
         group.totalWeight += orderWeight;
       }
     });
-    
+
     return Array.from(groups.values());
   }
 
@@ -5647,17 +5645,17 @@ clearFilters(): void {
 
   removeCustomerDeliveries(customerId: number): void {
     const indicesToRemove: number[] = [];
-    
+
     this.deliveryControls.forEach((deliveryGroup, index) => {
       if (deliveryGroup.get('customerId')?.value === customerId) {
         indicesToRemove.push(index);
       }
     });
-    
+
     indicesToRemove.sort((a, b) => b - a).forEach(index => {
       this.removeDelivery(index);
     });
-    
+
     this.snackBar.open(`Toutes les commandes du client ont été retirées`, 'Fermer', { duration: 3000 });
   }
 
@@ -5675,11 +5673,11 @@ clearFilters(): void {
     let sequence = this.deliveries.length + 1;
 
     const ordersByCustomer = new Map<number, number[]>();
-    
+
     this.selectedOrders.forEach(orderId => {
       const order = this.allOrders.find(o => o.id === orderId);
       if (!order) return;
-      
+
       if (!ordersByCustomer.has(order.customerId)) {
         ordersByCustomer.set(order.customerId, []);
       }
@@ -5700,7 +5698,7 @@ clearFilters(): void {
         };
 
         this.addDelivery(newDelivery);
-        
+
         this.ordersForQuickAdd = this.ordersForQuickAdd.filter(o => o.id !== orderId);
         this.filteredOrders = this.filteredOrders.filter(o => o.id !== orderId);
       });
@@ -5719,7 +5717,7 @@ clearFilters(): void {
   private loadAllCustomers(): Promise<void> {
     return new Promise((resolve, reject) => {
       console.log('🔄 Loading ALL customers...');
-      
+
       this.http.getAllCustomers().subscribe({
         next: (customers) => {
           this.allCustomers = customers;
@@ -5737,13 +5735,13 @@ clearFilters(): void {
 
   getGroupDeliveryIndices(customerId: number): number[] {
     const indices: number[] = [];
-    
+
     this.deliveryControls.forEach((deliveryGroup, index) => {
       if (deliveryGroup.get('customerId')?.value === customerId) {
         indices.push(index);
       }
     });
-    
+
     return indices;
   }
 
@@ -5762,38 +5760,38 @@ clearFilters(): void {
   calculateClientCapacityPercentage(customerId: number): number {
     const truckId = this.tripForm.get('truckId')?.value;
     if (!truckId) return 0;
-    
+
     const truck = this.trucks.find(t => t.id === truckId);
     if (!truck?.typeTruck?.capacity) return 0;
-    
+
     const clientWeight = this.getGroupedDeliveries()
       .find(g => g.customerId === customerId)
       ?.totalWeight || 0;
-    
+
     return (clientWeight / truck.typeTruck?.capacity) * 100;
   }
 
   calculateOrderPercentage(orderWeight: number): number {
     const truckId = this.tripForm.get('truckId')?.value;
     if (!truckId) return 0;
-    
+
     const truck = this.trucks.find(t => t.id === truckId);
     if (!truck?.typeTruck?.capacity) return 0;
-    
+
     return (orderWeight / truck.typeTruck?.capacity) * 100;
   }
 
   dropGroup(event: CdkDragDrop<string[]>): void {
     const customerId = event.item.data;
     if (!customerId) return;
-    
+
     const groupIndices = this.getGroupDeliveryIndices(customerId);
     if (groupIndices.length === 0) return;
-    
+
     const firstIndex = groupIndices[0];
-    
+
     console.log('Déplacement du groupe client:', customerId, 'depuis', firstIndex);
-    
+
     this.updateDeliverySequences();
   }
 
@@ -5868,50 +5866,50 @@ clearFilters(): void {
 
   getVisibleDeliveryRange(): string {
     if (!this.deliveriesViewport || this.getGroupedDeliveries().length === 0) return '';
-    
+
     const renderedRange = this.deliveriesViewport.getRenderedRange();
     const total = this.getGroupedDeliveries().length;
-    
+
     const start = renderedRange.start + 1;
     const end = Math.min(renderedRange.end, total);
-    
+
     return `${start}-${end} sur ${total}`;
   }
 
   getVisibleCapacityRange(): string {
     if (!this.capacityViewport || this.getGroupedDeliveries().length === 0) return '';
-    
+
     const renderedRange = this.capacityViewport.getRenderedRange();
     const total = this.getGroupedDeliveries().length;
-    
+
     const start = renderedRange.start + 1;
     const end = Math.min(renderedRange.end, total);
-    
+
     return `Clients ${start}-${end} sur ${total}`;
   }
 
   getVisibleTimelineRange(): string {
     if (!this.timelineViewport || this.getGroupedDeliveries().length === 0) return '';
-    
+
     const renderedRange = this.timelineViewport.getRenderedRange();
-    const total = this.getGroupedDeliveries().length + 2; 
-    
+    const total = this.getGroupedDeliveries().length + 2;
+
     const start = Math.max(1, renderedRange.start);
     const end = Math.min(renderedRange.end, total);
-    
+
     return `Étapes ${start}-${end} sur ${total}`;
   }
 
   getTimelineScrollProgress(): number {
     if (!this.timelineViewport || this.getGroupedDeliveries().length === 0) return 0;
-    
+
     const scrollOffset = this.timelineViewport.measureScrollOffset();
     const viewportSize = this.timelineViewport.getViewportSize();
     const contentSize = (this.getGroupedDeliveries().length + 2) * 150;
-    
+
     const maxScroll = Math.max(0, contentSize - viewportSize);
     if (maxScroll === 0) return 100;
-    
+
     const progress = (scrollOffset / maxScroll) * 100;
     return Math.min(100, Math.max(0, Math.round(progress)));
   }
@@ -5924,41 +5922,41 @@ clearFilters(): void {
 
   calculateGroupDeliveryTime(groupIndex: number): string {
     const startHour = 8;
-    const intervalMinutes = 60; 
-    
+    const intervalMinutes = 60;
+
     const totalMinutes = startHour * 60 + (groupIndex * intervalMinutes);
     const hours = Math.floor(totalMinutes / 60);
     const minutes = totalMinutes % 60;
-    
+
     return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
   }
 
   calculateGroupTotalWeight(customerId: number): number {
     const group = this.getGroupedDeliveries().find(g => g.customerId === customerId);
     if (!group) return 0;
-    
+
     return group.orders.reduce((total, order) => total + (order.weight || 0), 0);
   }
 
   calculateOrderCapacityPercentage(orderWeight: number): number {
     const truckId = this.tripForm.get('truckId')?.value;
     if (!truckId) return 0;
-    
+
     const truck = this.trucks.find(t => t.id === truckId);
     if (!truck?.typeTruck?.capacity) return 0;
-    
+
     return (orderWeight / truck.typeTruck?.capacity) * 100;
   }
 
   calculateGroupCapacityPercentage(customerId: number): number {
     const groupWeight = this.calculateGroupTotalWeight(customerId);
     const truckId = this.tripForm.get('truckId')?.value;
-    
+
     if (!truckId || groupWeight === 0) return 0;
-    
+
     const truck = this.trucks.find(t => t.id === truckId);
     if (!truck?.typeTruck?.capacity) return 0;
-    
+
     return (groupWeight / truck.typeTruck?.capacity) * 100;
   }
 
@@ -5971,17 +5969,17 @@ clearFilters(): void {
 
   getCapacityDistributionSummary(): string {
     if (this.getGroupedDeliveries().length === 0) return 'Aucune charge';
-    
+
     const totalWeight = this.calculateTotalWeight();
     const avgPerClient = totalWeight / this.getGroupedDeliveries().length;
-    
+
     return `${avgPerClient.toFixed(1)} palette/client en moyenne`;
   }
 
   getGroupMarkerStyle(group: any): any {
     const customerId = group.customerId;
     const hasOrders = group.orders.length > 0;
-    
+
     if (hasOrders) {
       return {
         'background': 'linear-gradient(135deg, #3b82f6, #1d4ed8)',
@@ -6004,43 +6002,43 @@ clearFilters(): void {
 
   getProgressBarColorForPercentage(percentage: number): string {
     if (percentage >= 100) {
-      return '#ef4444';  
+      return '#ef4444';
     } else if (percentage >= 90) {
       return '#f59e0b';
     } else if (percentage >= 70) {
-      return '#3b82f6'; 
+      return '#3b82f6';
     } else {
-      return '#10b981'; 
+      return '#10b981';
     }
   }
 
   getSelectedTruckDisplay(): string {
     const truckId = this.tripForm.get('truckId')?.value;
     if (!truckId) return '';
-    
+
     const availableTruck = this.availableTrucks.find(t => t.id === truckId);
     if (availableTruck) {
       return `${availableTruck.immatriculation} - ${this.getMarqueName(availableTruck.marqueTruckId)}`;
     }
-    
+
     const unavailableTruck = this.unavailableTrucks.find(t => t.id === truckId);
     if (unavailableTruck) {
       return `${unavailableTruck.immatriculation} - ${this.getMarqueName(unavailableTruck.marqueTruckId)}`;
     }
-    
+
     return '';
   }
 
   toggleTrajectOrderSelection(customerId: number, orderId: number): void {
     const selectedOrders = this.selectedTrajectOrders.get(customerId) || [];
-    
+
     if (selectedOrders.includes(orderId)) {
       const index = selectedOrders.indexOf(orderId);
       selectedOrders.splice(index, 1);
     } else {
       selectedOrders.push(orderId);
     }
-    
+
     if (selectedOrders.length === 0) {
       this.selectedTrajectOrders.delete(customerId);
     } else {
@@ -6056,7 +6054,7 @@ clearFilters(): void {
   selectAllOrdersForTrajectCustomer(customerId: number): void {
     const customerOrders = this.getClientPendingOrders(customerId);
     const orderIds = customerOrders.map(order => order.id);
-    
+
     if (orderIds.length > 0) {
       this.selectedTrajectOrders.set(customerId, orderIds);
     }
@@ -6088,7 +6086,7 @@ clearFilters(): void {
 
   getTotalSelectedTrajectOrdersWeight(): number {
     let totalWeight = 0;
-    
+
     this.selectedTrajectOrders.forEach((orderIds, customerId) => {
       orderIds.forEach(orderId => {
         const order = this.allOrders.find(o => o.id === orderId);
@@ -6097,14 +6095,14 @@ clearFilters(): void {
         }
       });
     });
-    
+
     return totalWeight;
   }
 
   deselectAllTrajectOrders(): void {
     this.selectedTrajectOrders.clear();
   }
-  
+
   async addSelectedTrajectOrders(): Promise<void> {
     if (this.selectedTrajectOrders.size === 0) {
       this.snackBar.open('Aucune commande sélectionnée', 'Fermer', { duration: 3000 });
@@ -6121,7 +6119,7 @@ clearFilters(): void {
 
     this.trajectCustomers.forEach(customer => {
       const selectedOrderIds = this.selectedTrajectOrders.get(customer.id) || [];
-      
+
       selectedOrderIds.forEach(orderId => {
         const order = this.allOrders.find(o => o.id === orderId);
         if (!order) return;
@@ -6140,7 +6138,7 @@ clearFilters(): void {
     });
 
     this.showCapacitySummaryAfterAddition(totalWeight);
-    
+
     Swal.fire({
       icon: 'success',
       title: 'Commandes ajoutées',
@@ -6168,27 +6166,27 @@ clearFilters(): void {
 
   getVisibleLeftRange(): string {
     if (!this.leftViewport) return '';
-    
+
     const viewport = this.leftViewport;
     const startIndex = Math.floor(
       (this.leftViewport?.getOffsetToRenderedContentStart() ?? 0) / this.leftItemSize
     );
 
     const endIndex = Math.min(startIndex + Math.ceil(viewport.getViewportSize() / this.leftItemSize), this.leftSectionItems.length);
-    
+
     return `Éléments ${startIndex + 1}-${endIndex} sur ${this.leftSectionItems.length}`;
   }
 
   getVisibleRightRange(): string {
     if (!this.rightViewport) return '';
-    
+
     const viewport = this.rightViewport;
     const startIndex = Math.floor(
       (this.rightViewport?.getOffsetToRenderedContentStart() ?? 0) / this.rightItemSize
     );
 
     const endIndex = Math.min(startIndex + Math.ceil(viewport.getViewportSize() / this.rightItemSize), this.rightSectionItems.length);
-    
+
     return `Éléments ${startIndex + 1}-${endIndex} sur ${this.rightSectionItems.length}`;
   }
 
@@ -6223,97 +6221,97 @@ clearFilters(): void {
 
   private createLeftSectionItems(): any[] {
     const sections = [];
-    
+
     if (this.trajectMode === 'new') {
       sections.push({ type: 'location' });
     }
-    
+
     sections.push(
       { type: 'date' },
       { type: 'truck-driver' },
       { type: 'distance-duration' }
     );
-    
+
     if (this.driverAvailabilityResult && !this.checkingDriverAvailability) {
       sections.push({ type: 'driver-availability' });
     }
-    
+
     sections.push({ type: 'status-convoyeur' });
-    
+
     if (!this.tripId) {
       sections.push({ type: 'traject' });
     }
-    
+
     if (this.showTrajectOrderSelection && this.selectedTraject) {
       sections.push({ type: 'traject-order' });
     }
-    
+
     if (this.trajectMode === 'new') {
       sections.push({ type: 'quick-add' });
     }
-    
+
     if (this.trajectMode !== null && (!this.showDeliveriesSection || this.deliveries.length === 0)) {
       sections.push({ type: 'add-delivery-button' });
     }
-    
+
     if (this.showDeliveriesSection) {
       sections.push({ type: 'deliveries' });
     }
-    
+
     if (this.selectedTraject) {
       sections.push({ type: 'traject-preview' });
     }
-    
+
     if (this.tripForm.get('tripStatus')?.value === 'Cancelled') {
       sections.push({ type: 'cancelled-info' });
     }
-    
+
     return sections;
   }
 
   private createRightSectionItems(): any[] {
     const sections = [];
-    
+
     if (this.shouldShowWeather()) {
       sections.push({ type: 'weather' });
     }
-    
+
     if (!this.shouldShowWeather() && this.shouldShowWeatherPrompt()) {
       sections.push({ type: 'weather-prompt' });
     }
-    
+
     if (this.tripId) {
       sections.push({ type: 'status-workflow' });
     }
-    
+
     if (this.tripForm.get('truckId')?.value) {
       sections.push({ type: 'capacity' });
     }
-    
+
     if (this.shouldShowTimelineSummary()) {
       sections.push({ type: 'timeline-summary' });
     }
-    
+
     return sections;
   }
 
   showDateErrors(): boolean | undefined {
-    const startInvalid = this.estimatedStartDateControl?.invalid && 
+    const startInvalid = this.estimatedStartDateControl?.invalid &&
                         (this.estimatedStartDateControl?.dirty || this.estimatedStartDateControl?.touched);
-    
-    const endInvalid = this.estimatedEndDateControl?.invalid && 
+
+    const endInvalid = this.estimatedEndDateControl?.invalid &&
                       (this.estimatedEndDateControl?.dirty || this.estimatedEndDateControl?.touched);
-    
+
     return startInvalid || endInvalid;
   }
 
   private checkForDraftToRestore(): void {
     try {
       const draftToRestore = localStorage.getItem('trip_draft_to_restore');
-      
+
       if (draftToRestore) {
         const draft = JSON.parse(draftToRestore);
-        
+
         this.showDraftRestoreConfirmation(draft);
       }
     } catch (error) {
@@ -6324,9 +6322,9 @@ clearFilters(): void {
 
   private showDraftRestoreConfirmation(draft: any): void {
     const deliveryCount = draft.deliveries?.length || 0;
-    const dateStr = draft.formData?.estimatedStartDate ? 
+    const dateStr = draft.formData?.estimatedStartDate ?
       new Date(draft.formData.estimatedStartDate).toLocaleDateString() : 'Date non définie';
-    
+
     Swal.fire({
       title: 'Restaurer le brouillon ?',
       html: `
@@ -6359,24 +6357,24 @@ clearFilters(): void {
     try {
       if (draft.formData) {
         const formData = { ...draft.formData };
-        
+
         if (formData.estimatedStartDate && typeof formData.estimatedStartDate === 'string') {
           formData.estimatedStartDate = new Date(formData.estimatedStartDate);
         }
-        
+
         if (formData.estimatedEndDate && typeof formData.estimatedEndDate === 'string') {
           formData.estimatedEndDate = new Date(formData.estimatedEndDate);
         }
-        
+
         this.tripForm.patchValue(formData, { emitEvent: false });
       }
-      
+
       if (draft.deliveries && draft.deliveries.length > 0) {
         this.deliveries.clear();
-        
+
         draft.deliveries.forEach((delivery: any, index: number) => {
           const sequence = delivery.sequence || index + 1;
-          
+
           const deliveryGroup = this.fb.group({
             customerId: [delivery.customerId || '', Validators.required],
             orderId: [delivery.orderId || '', Validators.required],
@@ -6385,63 +6383,63 @@ clearFilters(): void {
             plannedTime: [delivery.plannedTime || ''],
             notes: [delivery.notes || '']
           });
-          
+
           this.deliveries.push(deliveryGroup);
         });
-        
+
         this.showDeliveriesSection = true;
       }
-      
+
       if (draft.selectedTraject) {
         this.selectedTraject = draft.selectedTraject;
         if (draft.selectedTraject.id) {
           this.selectedTrajectControl.setValue(draft.selectedTraject.id);
         }
       }
-      
+
       if (draft.trajectMode) {
         this.trajectMode = draft.trajectMode;
       }
-      
+
       if (draft.selectedClient) {
         this.selectedClient = draft.selectedClient;
       }
-      
+
       if (draft.selectedOrders) {
         this.selectedOrders = draft.selectedOrders;
       }
-      
+
       if (draft.currentQuickAddStep) {
         this.currentQuickAddStep = draft.currentQuickAddStep;
       }
-      
+
       if (draft.clientSearch) {
         this.clientSearchControl.setValue(draft.clientSearch);
       }
-      
+
       if (draft.entityFilter) {
         this.entityFilterControl.setValue(draft.entityFilter);
       }
-      
+
       if (draft.saveAsPredefined !== undefined) {
         this.saveAsPredefined = draft.saveAsPredefined;
       }
-      
+
       if (draft.trajectName) {
         this.trajectName = draft.trajectName;
       }
-      
+
       localStorage.removeItem('trip_draft_to_restore');
-      
-      this.snackBar.open('✅ Brouillon restauré avec succès', 'Fermer', { 
+
+      this.snackBar.open('✅ Brouillon restauré avec succès', 'Fermer', {
         duration: 3000,
         panelClass: ['success-snackbar']
       });
-      
+
       this.refreshWeatherForRestoredDraft();
-      
+
       this.refreshResourcesForRestoredDraft(draft);
-      
+
     } catch (error) {
       console.error('Error restoring draft from storage:', error);
       localStorage.removeItem('trip_draft_to_restore');
@@ -6453,24 +6451,24 @@ clearFilters(): void {
     const startLocationId = this.tripForm.get('startLocationId')?.value;
     const endLocationId = this.tripForm.get('endLocationId')?.value;
     const startDate = this.tripForm.get('estimatedStartDate')?.value;
-    
+
     if (!startLocationId || !endLocationId) {
       console.log('No locations selected, skipping weather refresh');
       return;
     }
-    
+
     this.startLocationWeather = null;
     this.endLocationWeather = null;
     this.weatherLoading = true;
-    
-    this.snackBar.open('🔄 Mise à jour de la météo...', 'Fermer', { 
+
+    this.snackBar.open('🔄 Mise à jour de la météo...', 'Fermer', {
       duration: 2000,
       panelClass: ['info-snackbar']
     });
-    
+
     setTimeout(() => {
       this.fetchWeatherForBothLocations();
-      
+
       if (startDate) {
         setTimeout(() => {
           this.fetchWeatherForecast();
@@ -6481,19 +6479,19 @@ clearFilters(): void {
 
   private refreshResourcesForRestoredDraft(draft: any): void {
     const startDate = this.tripForm.get('estimatedStartDate')?.value;
-    
+
     if (startDate) {
       setTimeout(() => {
         this.loadTrucks();
       }, 600);
     }
-    
+
     if (startDate) {
       setTimeout(() => {
         this.loadAvailableDrivers(startDate);
       }, 800);
     }
-    
+
     setTimeout(() => {
       if (this.tripForm.get('truckId')?.value) {
         this.tripForm.get('truckId')?.updateValueAndValidity();
@@ -6526,33 +6524,33 @@ clearFilters(): void {
 
   private shouldSaveDraft(): boolean {
     if (this.tripId || this.tripId) return false;
-    
+
     if (!this.tripForm || this.tripForm.pristine && this.deliveries.length === 0) {
       return false;
     }
-    
+
     const currentFormState = this.getFormState();
     const currentDeliveriesState = this.getDeliveriesState();
     const currentTrajectState = this.getTrajectState();
-    
+
     const formChanged = JSON.stringify(this.initialFormState) !== JSON.stringify(currentFormState);
     const deliveriesChanged = JSON.stringify(this.initialDeliveriesState) !== JSON.stringify(currentDeliveriesState);
     const trajectChanged = JSON.stringify(this.initialTrajectState) !== JSON.stringify(currentTrajectState);
-    
+
     const hasFormData = Object.values(currentFormState || {}).some(
       val => val !== null && val !== '' && val !== undefined
     );
     const hasDeliveries = (currentDeliveriesState?.length || 0) > 0;
-    
+
     const hasChanged = formChanged || deliveriesChanged || trajectChanged;
     const hasData = hasFormData || hasDeliveries;
-    
+
     return hasChanged && hasData;
   }
 
   patchValue(value: any, options?: any): void {
     this.tripForm.patchValue(value, options);
-    
+
     this.initialFormState = this.getFormState();
   }
 
@@ -6563,29 +6561,27 @@ clearFilters(): void {
     }
   }
 
-  /**
-   * Génère un nom de traject par défaut basé sur les lieux de départ/arrivée
-   */
+
   private generateDefaultTrajectName(): void {
     const startLocationName = this.getSelectedStartLocationInfo();
     const endLocationName = this.getSelectedEndLocationInfo();
     const today = new Date();
     const dateStr = this.datePipe.transform(today, 'dd/MM/yyyy') || '';
-    
-    if (startLocationName !== 'Non sélectionné' && 
+
+    if (startLocationName !== 'Non sélectionné' &&
         endLocationName !== 'Non sélectionné' &&
-        startLocationName !== 'Lieu inconnu' && 
+        startLocationName !== 'Lieu inconnu' &&
         endLocationName !== 'Lieu inconnu') {
-      
+
       const cleanStart = startLocationName.replace(/\s*\(.*?\)\s*/g, '').trim();
       const cleanEnd = endLocationName.replace(/\s*\(.*?\)\s*/g, '').trim();
-      
+
       this.trajectName = `${cleanStart} → ${cleanEnd} (${dateStr})`;
-      
+
     } else if (this.deliveries.length > 0) {
       const firstClient = this.getClientName(this.deliveryControls[0]?.get('customerId')?.value);
       const lastClient = this.getClientName(this.deliveryControls[this.deliveries.length - 1]?.get('customerId')?.value);
-      
+
       if (firstClient && lastClient) {
         this.trajectName = `${firstClient} → ${lastClient} (${dateStr})`;
       } else if (this.deliveries.length > 0) {
@@ -6598,7 +6594,7 @@ clearFilters(): void {
 
   getCapacityUnitLabel(unit?: string): string {
     const unitToUse = this.loadingUnit;
-    
+
     switch(unitToUse?.toLowerCase()) {
       case 'tonnes':
       case 'tonne':
@@ -6621,10 +6617,10 @@ clearFilters(): void {
   getSelectedTruckCapacityDisplay(): string {
     const truckId = this.tripForm.get('truckId')?.value;
     if (!truckId) return '0';
-    
+
     const truck = this.trucks.find(t => t.id === truckId);
     if (!truck) return '0';
-    
+
     const unit = this.loadingUnit;
     return `${truck.typeTruck?.capacity} ${this.loadingUnit}`;
   }
@@ -6632,7 +6628,7 @@ clearFilters(): void {
   getTotalWeightDisplay(): string {
     const total = this.calculateTotalWeight();
     const unit = this.loadingUnit;
-    
+
     return `${total.toFixed(2)} ${unit}`;
   }
 
@@ -6678,9 +6674,9 @@ private listenToSettingsChanges(): void {
 
   private updateTruckFieldBasedOnSettings(): void {
     const truckControl = this.tripForm.get('truckId');
-    
+
     if (!truckControl) return;
-    
+
     if (this.tripSettings?.linkDriverToTruck === false) {
       truckControl.clearValidators();
       truckControl.setErrors(null);
@@ -6689,24 +6685,24 @@ private listenToSettingsChanges(): void {
       truckControl.setValidators([Validators.required]);
       console.log('🚛 Champ camion requis (par défaut)');
     }
-    
+
     truckControl.updateValueAndValidity();
   }
 
   private autoSelectTruckForDriver(driverId: number | null): void {
     if (!driverId) return;
-    
+
     const truckId = this.driverTruckMap.get(driverId);
-    
+
     if (!truckId) {
       console.log(`ℹ️ Aucun camion associé au chauffeur ${driverId}`);
       return;
     }
-    
+
     console.log(`🔄 Sélection auto du camion ${truckId} pour le chauffeur ${driverId}`);
-    
+
     this.tripForm.get('truckId')?.setValue(truckId, { emitEvent: false });
-    
+
     const truck = this.trucks.find(t => t.id === truckId);
     if (truck) {
       this.snackBar.open(
@@ -6727,27 +6723,27 @@ private listenToSettingsChanges(): void {
 private loadMarques(): void {
   this.http.getMarqueTrucks().subscribe({
     next: (response) => {
-      // Handle different response formats
+
       let marquesData: any[] = [];
-      
+
       if (response && typeof response === 'object') {
-        // Check if response has a data property (ApiResponse wrapper)
+
         if ('data' in response && Array.isArray((response as any).data)) {
           marquesData = (response as any).data;
-        } 
-        // Check if response is directly an array
+        }
+
         else if (Array.isArray(response)) {
           marquesData = response;
         }
       }
-      
+
       this.marqueMap.clear();
       marquesData.forEach(marque => {
         if (marque && marque.id && marque.name) {
           this.marqueMap.set(marque.id, marque.name);
         }
       });
-      
+
       console.log('✅ Marques loaded:', this.marqueMap.size, 'marques');
     },
     error: (error) => {
@@ -6756,17 +6752,15 @@ private loadMarques(): void {
   });
 }
 
-// Add this method to get marque name
+
 getMarqueName(marqueId?: number): string {
   console.log(marqueId)
   if (!marqueId) return 'N/A';
   return this.marqueMap.get(marqueId) || 'N/A';
 }
-// ========== WEATHER METHODS ==========
 
-/**
- * Fetch weather for start location using location ID
- */
+
+
 private fetchWeatherForStartLocation(): void {
   const locationId = this.tripForm.get('startLocationId')?.value;
   if (!locationId) {
@@ -6774,9 +6768,9 @@ private fetchWeatherForStartLocation(): void {
     this.startLocationWeather = null;
     return;
   }
-  
+
   this.weatherLoading = true;
-  
+
   this.http.getWeatherByLocation(locationId).subscribe({
     next: (weather) => {
       console.log('Start location weather received:', weather);
@@ -6795,9 +6789,7 @@ private fetchWeatherForStartLocation(): void {
   });
 }
 
-/**
- * Fetch weather for end location using location ID
- */
+
 private fetchWeatherForEndLocation(): void {
   const locationId = this.tripForm.get('endLocationId')?.value;
   if (!locationId) {
@@ -6805,7 +6797,7 @@ private fetchWeatherForEndLocation(): void {
     this.endLocationWeather = null;
     return;
   }
-  
+
   this.http.getWeatherByLocation(locationId).subscribe({
     next: (weather) => {
       console.log('End location weather received:', weather);
@@ -6822,62 +6814,58 @@ private fetchWeatherForEndLocation(): void {
   });
 }
 
-/**
- * Fetch weather for both locations in one call
- */
+
 fetchWeatherForBothLocations(): void {
   const startLocationId = this.tripForm.get('startLocationId')?.value;
   const endLocationId = this.tripForm.get('endLocationId')?.value;
-  
+
   console.log('Fetching weather for both locations:', { startLocationId, endLocationId });
-  
+
   if (!startLocationId || !endLocationId) {
     console.log('Missing locations, cannot fetch both');
     return;
   }
-  
+
   this.weatherLoading = true;
   this.startLocationWeather = null;
   this.endLocationWeather = null;
-  
+
   this.http.getWeatherForTrip(startLocationId, endLocationId).subscribe({
     next: (result) => {
       console.log('Weather for both locations received:', result);
-      
+
       if (result.start) {
         this.startLocationWeather = this.mapWeatherData(result.start, this.getSelectedStartLocationInfo());
       }
-      
+
       if (result.end) {
         this.endLocationWeather = this.mapWeatherData(result.end, this.getSelectedEndLocationInfo());
       }
-      
+
       this.weatherLoading = false;
     },
     error: (error) => {
       console.error('Error fetching weather for both locations:', error);
       this.weatherLoading = false;
-      
-      // Fallback to individual calls
+
+
       this.fetchWeatherForStartLocation();
       this.fetchWeatherForEndLocation();
     }
   });
 }
 
-/**
- * Fetch weather forecast for a location
- */
+
 fetchWeatherForecast(): void {
   const startLocationId = this.tripForm.get('startLocationId')?.value;
   const endLocationId = this.tripForm.get('endLocationId')?.value;
-  
+
   if (!startLocationId || !endLocationId) return;
-  
+
   this.startLocationForecast = [];
   this.endLocationForecast = [];
-  
-  // Fetch forecasts for both locations
+
+
   forkJoin({
     startForecast: this.http.getWeatherForecastByLocation(startLocationId).pipe(catchError(() => of([]))),
     endForecast: this.http.getWeatherForecastByLocation(endLocationId).pipe(catchError(() => of([])))
@@ -6892,26 +6880,24 @@ fetchWeatherForecast(): void {
   });
 }
 
-/**
- * Map weather data from API to WeatherData interface
- */
+
 private mapWeatherData(weather: any, locationInfo: string): WeatherData {
-  // Handle OpenWeatherMap format (from coordinates/city endpoint)
+
   if (weather.main) {
     return {
       temperature: weather.main.temp,
       feels_like: weather.main.feels_like,
       humidity: weather.main.humidity,
       description: weather.weather?.[0]?.description || '',
-      icon: weather.weather?.[0]?.icon 
+      icon: weather.weather?.[0]?.icon
         ? `https://openweathermap.org/img/wn/${weather.weather[0].icon}@2x.png`
         : '',
       wind_speed: weather.wind?.speed || 0,
       precipitation: weather.rain?.precipitation || weather.rain?.['1h'] || 0,
       location: locationInfo
     };
-  } 
-  // Handle custom API format (from your backend)
+  }
+
   else {
     return {
       temperature: weather.temperature || 0,
@@ -6926,34 +6912,30 @@ private mapWeatherData(weather: any, locationInfo: string): WeatherData {
   }
 }
 
-/**
- * Refresh weather data
- */
+
 refreshWeather(): void {
   this.weatherLoading = true;
-  
+
   this.startLocationWeather = null;
   this.endLocationWeather = null;
   this.startLocationForecast = [];
   this.endLocationForecast = [];
-  
+
   this.fetchWeatherForBothLocations();
-  
+
   setTimeout(() => {
     this.fetchWeatherForecast();
   }, 500);
 }
 
-/**
- * Get weather warning message based on conditions
- */
+
 getWeatherWarningMessage(): string {
   if (!this.startLocationWeather && !this.endLocationWeather) {
     return 'Données météo indisponibles';
   }
-  
+
   const warnings = [];
-  
+
   if (this.startLocationWeather) {
     if (this.startLocationWeather.temperature < 0) {
       warnings.push('gel au départ');
@@ -6965,7 +6947,7 @@ getWeatherWarningMessage(): string {
       warnings.push('fortes précipitations au départ');
     }
   }
-  
+
   if (this.endLocationWeather) {
     if (this.endLocationWeather.temperature < 0) {
       warnings.push('gel à l\'arrivée');
@@ -6977,24 +6959,20 @@ getWeatherWarningMessage(): string {
       warnings.push('fortes précipitations à l\'arrivée');
     }
   }
-  
+
   if (warnings.length === 0) {
     return 'Conditions favorables pour le trajet';
   }
-  
+
   return 'Conditions difficiles: ' + warnings.join(', ');
 }
 
-/**
- * Check if weather should be shown
- */
+
 shouldShowWeather(): boolean {
   return !!(this.startLocationWeather || this.endLocationWeather) || this.weatherLoading;
 }
 
-/**
- * Check if weather warning should be shown
- */
+
 shouldShowWeatherWarning(): boolean {
   if (!this.startLocationWeather && !this.endLocationWeather) {
     return false;
@@ -7005,9 +6983,9 @@ shouldShowWeatherWarning(): boolean {
   if (this.endLocationWeather) weatherConditionsToCheck.push(this.endLocationWeather);
 
   const warningThresholds = {
-    heavyRain: 10, 
-    strongWind: 40, 
-    extremeTemperature: { min: -10, max: 35 }, 
+    heavyRain: 10,
+    strongWind: 40,
+    extremeTemperature: { min: -10, max: 35 },
   };
 
   return weatherConditionsToCheck.some(weather => {
@@ -7034,26 +7012,22 @@ shouldShowWeatherWarning(): boolean {
       'grêle', 'hail',
       'brouillard', 'fog'
     ];
-    
-    const hasSevereCondition = severeKeywords.some(keyword => 
+
+    const hasSevereCondition = severeKeywords.some(keyword =>
       weather.description.toLowerCase().includes(keyword.toLowerCase())
     );
-    
+
     return hasSevereCondition;
   });
 }
 
-/**
- * Check if weather prompt should be shown
- */
+
 shouldShowWeatherPrompt(): boolean {
   const hasLocations = this.tripForm.get('startLocationId')?.value || this.tripForm.get('endLocationId')?.value;
   const weatherNotLoaded = !this.startLocationWeather && !this.endLocationWeather && !this.weatherLoading;
   return hasLocations && weatherNotLoaded;
 }
-/**
- * Get entity name by ID
- */
+
 getEntityName(entityId: number): string {
   if (!entityId) return '';
   const entity = this.geographicalEntities.find(e => e.id === entityId);

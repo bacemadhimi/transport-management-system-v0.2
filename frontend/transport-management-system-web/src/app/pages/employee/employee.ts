@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+﻿import { Component, OnInit, inject } from '@angular/core';
 import { Http } from '../../services/http';
 import { Table } from '../../components/table/table';
 import { MatButtonModule } from '@angular/material/button';
@@ -44,7 +44,7 @@ import { MatIconModule } from '@angular/material/icon';
 })
 export class Employee implements OnInit {
   constructor(public auth: Auth) {}
-  
+
   private translation = inject(Translation);
   t(key: string): string { return this.translation.t(key); }
 
@@ -76,7 +76,7 @@ export class Employee implements OnInit {
       format: (row: IEmployee) => {
         if (row.attachmentFileType) {
           return `<span class="attachment-cell" data-employee-id="${row.id}">
-                    ✓ ${row.attachmentFileType} 
+                    ✓ ${row.attachmentFileType}
                     <span class="view-icon">👁️</span>
                   </span>`;
         }
@@ -130,14 +130,14 @@ export class Employee implements OnInit {
     });
   }
 
-  add() { 
-    this.openDialog(); 
+  add() {
+    this.openDialog();
   }
 
-  
+
   edit(employee: IEmployee) {
-    const ref = this.dialog.open(EmployeeForm, { 
-      panelClass: 'm-auto', 
+    const ref = this.dialog.open(EmployeeForm, {
+      panelClass: 'm-auto',
       data: { employeeId: employee.id },
       width: '90vw',
       maxWidth: '1200px',
@@ -149,7 +149,7 @@ export class Employee implements OnInit {
   }
 
   openDialog() {
-    const ref = this.dialog.open(EmployeeForm, { 
+    const ref = this.dialog.open(EmployeeForm, {
       data: {},
       panelClass: 'm-auto',
       width: '90vw',
@@ -161,14 +161,14 @@ export class Employee implements OnInit {
     ref.afterClosed().subscribe(() => this.getLatestData());
   }
 
-  // delete(employee: IEmployee) {
-  //   if (confirm(`Voulez-vous vraiment supprimer l'employé ${employee.name}?`)) {
-  //     this.httpService.deleteEmployee(employee.id).subscribe(() => {
-  //       alert("Employé supprimé avec succès");
-  //       this.getLatestData();
-  //     });
-  //   }
-  // }
+
+
+
+
+
+
+
+
   delete(employee: IEmployee) {
   if (confirm(`${this.t('EMPLOYEE_DELETE_CONFIRM')} ${employee.name}?`)) {
     this.httpService.deleteEmployee(employee.id).subscribe(() => {
@@ -180,13 +180,13 @@ export class Employee implements OnInit {
 
   onRowClick(event: any) {
     console.log('Row clicked:', event);
-    
-    // Handle attachment column click
+
+
     if (event.column === 'attachment' && event.rowData.attachmentFileType) {
       this.viewAttachment(event.rowData);
       return;
     }
-    
+
     if (event.btn === this.t('ACTION_EDIT')) {
         console.log('Edit action triggered for:', event.rowData);
       this.edit(event.rowData);
@@ -210,25 +210,25 @@ export class Employee implements OnInit {
 
   viewAttachment(employee: IEmployee) {
     if (!employee.id) return;
-    
+
     this.httpService.downloadEmployeeAttachment(employee.id).subscribe({
       next: (blob: Blob) => {
         const url = window.URL.createObjectURL(blob);
         const fileName = employee.attachmentFileName || `employee_${employee.id}_attachment.${employee.attachmentFileType}`;
-        
-        // Check if it's a viewable file (image or PDF)
+
+
         if (employee.attachmentFileType && ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'pdf'].includes(employee.attachmentFileType.toLowerCase())) {
-          // Open in new tab for viewing
+
           window.open(url, '_blank');
         } else {
-          // Download the file
+
           const link = document.createElement('a');
           link.href = url;
           link.download = fileName;
           link.click();
         }
-        
-        // Clean up
+
+
         setTimeout(() => window.URL.revokeObjectURL(url), 100);
       },
       error: (err) => {

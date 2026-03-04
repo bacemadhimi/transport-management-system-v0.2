@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+﻿import { Injectable } from '@angular/core';
 import Chart from 'chart.js/auto';
 
 @Injectable({
@@ -17,16 +17,16 @@ export class ChartService {
     return new Promise((resolve) => {
       setTimeout(() => {
         try {
-          // Get canvas element
+
           const canvas = document.getElementById(canvasId) as HTMLCanvasElement;
-          
+
           if (!canvas) {
             console.error(`Canvas element with id '${canvasId}' not found`);
             resolve(false);
             return;
           }
 
-          // Check if canvas context can be acquired
+
           const ctx = canvas.getContext('2d');
           if (!ctx) {
             console.error('Failed to get 2D context from canvas');
@@ -34,10 +34,10 @@ export class ChartService {
             return;
           }
 
-          // Destroy existing chart if any
+
           this.destroyChart(canvasId);
 
-          // Create new chart
+
           const chart = new Chart(ctx, {
             type: 'pie',
             data: {
@@ -56,7 +56,7 @@ export class ChartService {
               maintainAspectRatio: false,
               plugins: {
                 legend: {
-                  display: false // We'll use custom legend
+                  display: false
                 },
                 tooltip: {
                   callbacks: {
@@ -87,10 +87,10 @@ export class ChartService {
           });
 
           this.charts.set(canvasId, chart);
-          
-          // Update custom legend
+
+
           this.updateCustomLegend(canvasId, config);
-          
+
           resolve(true);
         } catch (error) {
           console.error('Chart creation error:', error);
@@ -105,12 +105,12 @@ export class ChartService {
     if (!legendContainer) return;
 
     let legendHtml = '';
-    
+
     config.labels.forEach((label: string, index: number) => {
       const percentage = config.values[index];
       const count = config.counts[index];
       const color = config.colors[index];
-      
+
       legendHtml += `
         <div class="legend-item" data-index="${index}">
           <span class="legend-color" style="background-color: ${color}"></span>
@@ -120,7 +120,7 @@ export class ChartService {
         </div>
       `;
     });
-    
+
     legendContainer.innerHTML = legendHtml;
   }
 

@@ -1,11 +1,11 @@
-import { ICustomer } from "./customer";
+﻿import { ICustomer } from "./customer";
 
 export interface IOrder {
   id: number;
   customerId: number;
   customerName: string;
   customerMatricule: string;
-  customerCity?: string;  
+  customerCity?: string;
   reference: string;
   type: string;
   weight: number;
@@ -15,10 +15,10 @@ export interface IOrder {
    deliveryDate?: Date | string;
   deliveryAddress?: string;
   notes?: string;
- 
+
   hasDelivery?: boolean;
   customer?: ICustomer;
-  sourceSystem?: string; 
+  sourceSystem?: string;
   zoneId?: number;
   zoneName?: string;
 }
@@ -30,8 +30,8 @@ export interface CreateOrderDto {
 
   deliveryAddress?: string;
   notes?: string;
-    customerCity?: string;  
-      deliveryDate?: string; 
+    customerCity?: string;
+      deliveryDate?: string;
 }
 
 export interface UpdateOrderDto {
@@ -42,16 +42,16 @@ export interface UpdateOrderDto {
   status?: OrderStatus;
   deliveryAddress?: string;
   notes?: string;
-  
+
 }
 
 export enum OrderStatus {
-  Pending = 'pending',          // En attente
-  ReadyToLoad = 'readyToLoad',  // Prête au chargement
-  InProgress = 'inProgress',    // En cours de livraison
-  Received = 'received',        // Réception
-  Closed = 'closed',            // Clôturée
-  Cancelled = 'cancelled'       // Annulée
+  Pending = 'pending',
+  ReadyToLoad = 'readyToLoad',
+  InProgress = 'inProgress',
+  Received = 'received',
+  Closed = 'closed',
+  Cancelled = 'cancelled'
 }
 
 export function getOrderStatusText(status: OrderStatus): string {
@@ -74,7 +74,7 @@ export function getOrderStatusText(status: OrderStatus): string {
 }
 
 
-// Helper function to get status CSS class
+
 export function getOrderStatusClass(status: OrderStatus): string {
   switch (status) {
     case OrderStatus.Pending:
@@ -93,5 +93,5 @@ export function getOrderStatusClass(status: OrderStatus): string {
       return '';
   }
 
-  
+
 }

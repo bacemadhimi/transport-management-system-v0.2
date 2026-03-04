@@ -1,4 +1,4 @@
-import { Component, inject, OnInit } from '@angular/core';
+﻿import { Component, inject, OnInit } from '@angular/core';
 import { FormBuilder, Validators, ReactiveFormsModule, FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
@@ -42,10 +42,10 @@ export class GeneralSettingsForm implements OnInit {
 
   isSubmitting = false;
 
-  // Fixed parameter type - only EMPLOYEE_CATEGORY
+
   readonly parameterType = 'EMPLOYEE_CATEGORY';
 
-  // Common employee category codes
+
   readonly suggestedCodes = [
     'DRIVER',
     'CONVOYEUR',
@@ -59,12 +59,12 @@ export class GeneralSettingsForm implements OnInit {
     'PLANNER'
   ];
 
-  // Form with fields matching GeneralSettings entity (no value field)
+
   parameterForm = this.fb.group({
     parameterCode: this.fb.control<string>('', [
-      Validators.required, 
+      Validators.required,
       Validators.maxLength(50),
-      Validators.pattern(/^[A-Z0-9_]+$/) // Only uppercase letters, numbers, and underscores
+      Validators.pattern(/^[A-Z0-9_]+$/)
     ]),
     description: this.fb.control<string>('', [
       Validators.required,
@@ -82,11 +82,11 @@ export class GeneralSettingsForm implements OnInit {
     this.httpService.getGeneralSetting(this.data.parameterId!).subscribe({
       next: (parameter: IGeneralSettings) => {
         console.log("Parameter loaded:", parameter);
-        
-        // Parse the parameterCode which is in "CODE=value" format
-        // For employee categories, we only need the code part
+
+
+
         const [code] = this.parseParameterCode(parameter.parameterCode);
-        
+
         this.parameterForm.patchValue({
           parameterCode: code,
           description: parameter.description
@@ -104,15 +104,13 @@ export class GeneralSettingsForm implements OnInit {
     });
   }
 
-  /**
-   * Parse parameterCode which is in format "CODE=value"
-   */
+
   private parseParameterCode(parameterCode: string): [string, string] {
     const parts = parameterCode.split('=');
     if (parts.length === 2) {
       return [parts[0], parts[1]];
     }
-    // Fallback for backward compatibility
+
     return [parameterCode, ''];
   }
 
@@ -131,12 +129,12 @@ export class GeneralSettingsForm implements OnInit {
     this.isSubmitting = true;
 
     const formValue = this.parameterForm.value;
-    
-    // For employee categories, we don't need a value, just the code
-    // But the backend expects "CODE=value" format, so we'll use a default value
+
+
+
     const fullParameterCode = `${formValue.parameterCode!.trim().toUpperCase()}=true`;
 
-    // Create DTO matching backend entity (without id field)
+
     const parameterDto: IGeneralSettingsDto = {
       parameterType: this.parameterType,
       parameterCode: fullParameterCode,
@@ -168,9 +166,9 @@ export class GeneralSettingsForm implements OnInit {
         console.error('URL:', error.url);
         console.error('Error object:', error);
         console.error('Error response:', error.error);
-        
+
         let errorMessage = 'Une erreur est survenue lors de l\'enregistrement';
-        
+
         if (error.status === 400) {
           if (error.error?.message) {
             errorMessage = error.error.message;
@@ -179,7 +177,7 @@ export class GeneralSettingsForm implements OnInit {
           } else if (error.error?.errors) {
             const errors = error.error.errors;
             console.log('Validation errors:', errors);
-            
+
             if (errors.parameterCode) {
               errorMessage = `Code: ${errors.parameterCode.join(', ')}`;
             } else if (errors.description) {
@@ -194,7 +192,7 @@ export class GeneralSettingsForm implements OnInit {
         } else if (error.status === 409 || (error.status === 400 && error.error?.message?.includes('existe déjà'))) {
           errorMessage = 'Ce code de catégorie existe déjà';
         }
-        
+
         Swal.fire({
           icon: 'error',
           title: 'Erreur',
@@ -218,18 +216,18 @@ export class GeneralSettingsForm implements OnInit {
 
   getErrorMessage(controlName: string): string {
     const control = this.parameterForm.get(controlName);
-    
+
     if (controlName === 'parameterCode') {
       if (control?.hasError('required')) return 'Le code est obligatoire';
       if (control?.hasError('maxlength')) return 'Le code ne doit pas dépasser 50 caractères';
       if (control?.hasError('pattern')) return 'Utilisez uniquement des majuscules, chiffres et underscores';
     }
-    
+
     if (controlName === 'description') {
       if (control?.hasError('required')) return 'La description est obligatoire';
       if (control?.hasError('maxlength')) return 'La description ne doit pas dépasser 200 caractères';
     }
-    
+
     return '';
   }
 }

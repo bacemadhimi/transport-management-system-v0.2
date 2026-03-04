@@ -1,16 +1,16 @@
-import { Component, OnInit, AfterViewInit, OnDestroy } from '@angular/core';
+﻿import { Component, OnInit, AfterViewInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Observable, Subscription } from 'rxjs';
 
 import { StatisticsService } from '../../services/statistics.service';
-import { 
+import {
   StatisticsFilter
 } from '../../types/pie-chart-data.model';
-import { 
-  ITruck, 
+import {
+  ITruck,
   ITruckWithZone,
-  STATUS_CONFIG 
+  STATUS_CONFIG
 } from '../../types/truck';
 import { IDriver } from '../../types/driver';
 import { IGeographicalEntity, IGeographicalLevel } from '../../types/general-settings';
@@ -25,33 +25,33 @@ import { Http } from '../../services/http';
   styleUrls: ['./statistics.component.scss']
 })
 export class StatisticsComponent implements OnInit, AfterViewInit, OnDestroy {
-  // ========== FILTRES ==========
+
   filter: StatisticsFilter = {};
   startDate: string = '';
   endDate: string = '';
 
-  // ========== DONNÉES PRINCIPALES ==========
+
   trucks: ITruck[] = [];
   trucksWithGeo: (ITruck & { geographicalEntity?: IGeographicalEntity; entityName?: string; entityCoordinates?: { lat: number; lng: number } })[] = [];
-  
+
   drivers: IDriver[] = [];
   driversWithGeo: (IDriver & { geographicalEntity?: IGeographicalEntity; entityName?: string; entityCoordinates?: { lat: number; lng: number } })[] = [];
-  
-  // ========== DONNÉES GÉOGRAPHIQUES ==========
+
+
   geographicalLevels: IGeographicalLevel[] = [];
   geographicalEntities: IGeographicalEntity[] = [];
   mappableEntities: IGeographicalEntity[] = [];
-  
-  // ========== DONNÉES FILTRÉES ==========
+
+
   filteredTrucks: ITruck[] = [];
   filteredDrivers: IDriver[] = [];
   inactiveTrucks: ITruck[] = [];
   unavailableDrivers: IDriver[] = [];
 
-  // ========== DONNÉES PAR ENTITÉ ==========
+
   trucksByEntity: { [entityId: number]: ITruck[] } = {};
   driversByEntity: { [entityId: number]: IDriver[] } = {};
-  
+
   truckEntityStatistics: {
     entityId: number;
     entityName: string;
@@ -78,35 +78,35 @@ export class StatisticsComponent implements OnInit, AfterViewInit, OnDestroy {
     offDutyDrivers: number;
   }[] = [];
 
-  // ========== ÉTATS DE CHARGEMENT ==========
+
   loadingTrucks = false;
   loadingDrivers = false;
   loadingGeographical = false;
-  
+
   mapsLoading = {
     trucks: false,
     drivers: false
   };
-  
+
   mapsError = {
     trucks: false,
     drivers: false
   };
 
-  // ========== ÉTAT DE L'INTERFACE ==========
+
   activeEntityView: 'trucks' | 'drivers' = 'trucks';
   activeEntityName: string = 'all';
-  
-  // ✅ FILTRES RÉGIONAUX INDÉPENDANTS
+
+
   activeTruckRegionFilter: string = 'all';
   activeDriverRegionFilter: string = 'all';
-  
+
   showHelp = false;
   errorMessage: string = '';
   successMessage: string = '';
   lastUpdateTime: string = '';
 
-  // ========== STATISTIQUES RAPIDES ==========
+
   truckStats = {
     total: 0,
     available: 0,
@@ -126,25 +126,25 @@ export class StatisticsComponent implements OnInit, AfterViewInit, OnDestroy {
     offDuty: 0,
     activeEntities: 0
   };
-  
-  // ========== CARTES LEAFLET ==========
+
+
   private truckMap: L.Map | null = null;
   private driverMap: L.Map | null = null;
   private tunisiaCenter: L.LatLngTuple = [34.5, 9.5];
-  
+
   private truckEntityMarkers: L.Marker[] = [];
   private truckMarkers: L.Marker[] = [];
   private driverEntityMarkers: L.Marker[] = [];
   private driverMarkers: L.Marker[] = [];
-  
-  // ========== ABONNEMENTS ==========
+
+
   private subscriptions: Subscription = new Subscription();
   private resizeTimer: any;
 
-  // ========== CONSTANTES ==========
+
   Object = Object;
 
-  // ========== PALETTES DE COULEURS ==========
+
   private driverStatusColors = {
     'available': '#1cc88a',
     'on_trip': '#4e73df',
@@ -163,7 +163,7 @@ export class StatisticsComponent implements OnInit, AfterViewInit, OnDestroy {
     this.configureLeafletIcons();
   }
 
-  // ========== CYCLES DE VIE ==========
+
   ngOnInit(): void {
     this.updateLastUpdateTime();
     this.loadMarques();
@@ -197,7 +197,7 @@ export class StatisticsComponent implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
-  // ========== INITIALISATION ==========
+
   private initializeDates(): void {
     const today = new Date();
     const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
@@ -241,23 +241,23 @@ export class StatisticsComponent implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
-  // ========== CHARGEMENT DES DONNÉES GÉOGRAPHIQUES ==========
+
   private loadGeographicalData(): void {
     this.loadingGeographical = true;
-    
+
     const levelsSub = this.httpService.getGeographicalLevels().subscribe({
       next: (levels) => {
         this.geographicalLevels = levels.filter(l => l.isActive);
-        
+
         const entitiesSub = this.httpService.getGeographicalEntities().subscribe({
           next: (entities) => {
             this.geographicalEntities = entities.filter(e => e.isActive);
             this.mappableEntities = this.geographicalEntities.filter(e => {
               return e.latitude != null && e.longitude != null;
             });
-            
+
             this.loadingGeographical = false;
-            
+
             if (this.trucks.length > 0) {
               this.processTrucksByEntity();
             }
@@ -280,31 +280,31 @@ export class StatisticsComponent implements OnInit, AfterViewInit, OnDestroy {
     this.subscriptions.add(levelsSub);
   }
 
-  // ========== CHARGEMENT DES DONNÉES ==========
+
   loadTrucks(): void {
     this.loadingTrucks = true;
     const subscription = this.statisticsService.getTrucks().subscribe({
       next: (trucks) => {
         this.trucks = trucks;
         this.enrichTrucksWithGeographicalData();
-        
+
         if (this.geographicalEntities.length > 0) {
           this.processTrucksByEntity();
         }
-        
+
         this.updateTruckStats();
-        this.filteredTrucks = trucks.filter(t => 
-          t.status.toLowerCase() === 'disponible' || 
+        this.filteredTrucks = trucks.filter(t =>
+          t.status.toLowerCase() === 'disponible' ||
           t.status.toLowerCase() === 'en mission' ||
           t.status.toLowerCase() === 'available'
         );
-        this.inactiveTrucks = trucks.filter(t => 
-          t.status.toLowerCase() === 'maintenance' || 
+        this.inactiveTrucks = trucks.filter(t =>
+          t.status.toLowerCase() === 'maintenance' ||
           t.status.toLowerCase() === 'hors service' ||
           t.status.toLowerCase() === 'inactive'
         );
         this.loadingTrucks = false;
-        
+
         if (this.truckMap) {
           this.addTruckEntityMarkers();
           this.addTruckMarkers();
@@ -325,23 +325,23 @@ export class StatisticsComponent implements OnInit, AfterViewInit, OnDestroy {
       next: (drivers) => {
         this.drivers = drivers;
         this.enrichDriversWithGeographicalData();
-        
+
         if (this.geographicalEntities.length > 0) {
           this.processDriversByEntity();
         }
-        
+
         this.updateDriverStats();
-        this.filteredDrivers = drivers.filter(d => 
-          d.status?.toLowerCase() === 'disponible' || 
-          d.status?.toLowerCase() === 'available' || 
+        this.filteredDrivers = drivers.filter(d =>
+          d.status?.toLowerCase() === 'disponible' ||
+          d.status?.toLowerCase() === 'available' ||
           d.availabilityStatus === 'available'
         );
-        this.unavailableDrivers = drivers.filter(d => 
-          d.status?.toLowerCase() !== 'disponible' && 
+        this.unavailableDrivers = drivers.filter(d =>
+          d.status?.toLowerCase() !== 'disponible' &&
           d.status?.toLowerCase() !== 'available'
         );
         this.loadingDrivers = false;
-        
+
         if (this.driverMap) {
           this.addDriverEntityMarkers();
           this.addDriverMarkers();
@@ -356,20 +356,20 @@ export class StatisticsComponent implements OnInit, AfterViewInit, OnDestroy {
     this.subscriptions.add(subscription);
   }
 
-  // ========== ENRICHISSEMENT DES DONNÉES ==========
+
   private enrichTrucksWithGeographicalData(): void {
     this.trucksWithGeo = this.trucks.map(truck => {
       const truckEntities = (truck as any).geographicalEntities || [];
-      
-      const firstEntity = truckEntities.length > 0 ? 
-        this.geographicalEntities.find(e => e.id === truckEntities[0]?.geographicalEntityId) : 
+
+      const firstEntity = truckEntities.length > 0 ?
+        this.geographicalEntities.find(e => e.id === truckEntities[0]?.geographicalEntityId) :
         undefined;
-      
+
       return {
         ...truck,
         geographicalEntity: firstEntity,
         entityName: firstEntity?.name || 'Non assigné',
-        entityCoordinates: firstEntity?.latitude && firstEntity?.longitude ? 
+        entityCoordinates: firstEntity?.latitude && firstEntity?.longitude ?
           { lat: firstEntity.latitude, lng: firstEntity.longitude } : undefined
       };
     });
@@ -378,36 +378,36 @@ export class StatisticsComponent implements OnInit, AfterViewInit, OnDestroy {
   private enrichDriversWithGeographicalData(): void {
     this.driversWithGeo = this.drivers.map(driver => {
       const driverEntities = (driver as any).geographicalEntities || [];
-      
-      const firstEntity = driverEntities.length > 0 ? 
-        this.geographicalEntities.find(e => e.id === driverEntities[0]?.geographicalEntityId) : 
+
+      const firstEntity = driverEntities.length > 0 ?
+        this.geographicalEntities.find(e => e.id === driverEntities[0]?.geographicalEntityId) :
         undefined;
-      
+
       return {
         ...driver,
         geographicalEntity: firstEntity,
         entityName: firstEntity?.name || 'Non assigné',
-        entityCoordinates: firstEntity?.latitude && firstEntity?.longitude ? 
+        entityCoordinates: firstEntity?.latitude && firstEntity?.longitude ?
           { lat: firstEntity.latitude, lng: firstEntity.longitude } : undefined,
         imageBase64: driver.imageBase64 || null
       };
     });
   }
 
-  // ========== TRAITEMENT PAR ENTITÉ ==========
+
   private processTrucksByEntity(): void {
     this.trucksByEntity = {};
     this.truckEntityStatistics = [];
-    
+
     this.mappableEntities.forEach(entity => {
       if (entity.id) {
         this.trucksByEntity[entity.id] = [];
       }
     });
-    
+
     this.trucksWithGeo.forEach(truck => {
       const truckEntities = (truck as any).geographicalEntities || [];
-      
+
       truckEntities.forEach((item: any) => {
         const entityId = item.geographicalEntityId;
         if (entityId && this.trucksByEntity[entityId]) {
@@ -415,50 +415,50 @@ export class StatisticsComponent implements OnInit, AfterViewInit, OnDestroy {
         }
       });
     });
-    
+
     this.mappableEntities.forEach(entity => {
       if (!entity.id) return;
-      
+
       const entityTrucks = this.trucksByEntity[entity.id] || [];
       const level = this.geographicalLevels.find(l => l.id === entity.levelId);
-      
+
       this.truckEntityStatistics.push({
         entityId: entity.id,
         entityName: entity.name,
         levelName: level?.name || 'Niveau inconnu',
         levelNumber: level?.levelNumber || 0,
         totalTrucks: entityTrucks.length,
-        availableTrucks: entityTrucks.filter(t => 
+        availableTrucks: entityTrucks.filter(t =>
           t.status.toLowerCase() === 'disponible' || t.status.toLowerCase() === 'available'
         ).length,
-        onMissionTrucks: entityTrucks.filter(t => 
+        onMissionTrucks: entityTrucks.filter(t =>
           t.status.toLowerCase() === 'en mission' || t.status.toLowerCase() === 'on_mission'
         ).length,
-        maintenanceTrucks: entityTrucks.filter(t => 
+        maintenanceTrucks: entityTrucks.filter(t =>
           t.status.toLowerCase() === 'maintenance'
         ).length,
-        outOfServiceTrucks: entityTrucks.filter(t => 
+        outOfServiceTrucks: entityTrucks.filter(t =>
           t.status.toLowerCase() === 'hors service' || t.status.toLowerCase() === 'inactive'
         ).length
       });
     });
-    
+
     this.truckStats.activeEntities = this.truckEntityStatistics.filter(e => e.totalTrucks > 0).length;
   }
 
   private processDriversByEntity(): void {
     this.driversByEntity = {};
     this.driverEntityStatistics = [];
-    
+
     this.mappableEntities.forEach(entity => {
       if (entity.id) {
         this.driversByEntity[entity.id] = [];
       }
     });
-    
+
     this.driversWithGeo.forEach(driver => {
       const driverEntities = (driver as any).geographicalEntities || [];
-      
+
       driverEntities.forEach((item: any) => {
         const entityId = item.geographicalEntityId;
         if (entityId && this.driversByEntity[entityId]) {
@@ -466,64 +466,64 @@ export class StatisticsComponent implements OnInit, AfterViewInit, OnDestroy {
         }
       });
     });
-    
+
     this.mappableEntities.forEach(entity => {
       if (!entity.id) return;
-      
+
       const entityDrivers = this.driversByEntity[entity.id] || [];
       const level = this.geographicalLevels.find(l => l.id === entity.levelId);
-      
+
       this.driverEntityStatistics.push({
         entityId: entity.id,
         entityName: entity.name,
         levelName: level?.name || 'Niveau inconnu',
         levelNumber: level?.levelNumber || 0,
         totalDrivers: entityDrivers.length,
-        availableDrivers: entityDrivers.filter(d => 
-          d.status?.toLowerCase() === 'disponible' || 
-          d.status?.toLowerCase() === 'available' || 
+        availableDrivers: entityDrivers.filter(d =>
+          d.status?.toLowerCase() === 'disponible' ||
+          d.status?.toLowerCase() === 'available' ||
           d.availabilityStatus === 'available'
         ).length,
-        onMissionDrivers: entityDrivers.filter(d => 
-          d.status?.toLowerCase() === 'on_trip' || 
+        onMissionDrivers: entityDrivers.filter(d =>
+          d.status?.toLowerCase() === 'on_trip' ||
           d.status?.toLowerCase() === 'en mission'
         ).length,
-        overtimeDrivers: entityDrivers.filter(d => 
-          d.availabilityStatus === 'overtime' || 
+        overtimeDrivers: entityDrivers.filter(d =>
+          d.availabilityStatus === 'overtime' ||
           (d.totalHours && d.totalHours > 8)
         ).length,
-        exceededDrivers: entityDrivers.filter(d => 
-          d.availabilityStatus === 'exceeded' || 
+        exceededDrivers: entityDrivers.filter(d =>
+          d.availabilityStatus === 'exceeded' ||
           (d.totalHours && d.totalHours > 12)
         ).length,
-        conflictDrivers: entityDrivers.filter(d => 
-          d.availabilityStatus === 'conflict' || 
+        conflictDrivers: entityDrivers.filter(d =>
+          d.availabilityStatus === 'conflict' ||
           d.requiresApproval === true
         ).length,
-        offDutyDrivers: entityDrivers.filter(d => 
-          d.status === 'off_duty' || 
+        offDutyDrivers: entityDrivers.filter(d =>
+          d.status === 'off_duty' ||
           d.status === 'hors service'
         ).length
       });
     });
-    
+
     this.driverStats.activeEntities = this.driverEntityStatistics.filter(e => e.totalDrivers > 0).length;
   }
 
-  // ========== MISE À JOUR DES STATS ==========
+
   private updateTruckStats(): void {
     this.truckStats = {
       total: this.trucksWithGeo.length,
-      available: this.trucksWithGeo.filter(t => 
+      available: this.trucksWithGeo.filter(t =>
         t.status.toLowerCase() === 'disponible' || t.status.toLowerCase() === 'available'
       ).length,
-      onMission: this.trucksWithGeo.filter(t => 
+      onMission: this.trucksWithGeo.filter(t =>
         t.status.toLowerCase() === 'en mission' || t.status.toLowerCase() === 'on_mission'
       ).length,
-      maintenance: this.trucksWithGeo.filter(t => 
+      maintenance: this.trucksWithGeo.filter(t =>
         t.status.toLowerCase() === 'maintenance'
       ).length,
-      outOfService: this.trucksWithGeo.filter(t => 
+      outOfService: this.trucksWithGeo.filter(t =>
         t.status.toLowerCase() === 'hors service' || t.status.toLowerCase() === 'inactive'
       ).length,
       activeEntities: this.truckStats.activeEntities
@@ -533,38 +533,38 @@ export class StatisticsComponent implements OnInit, AfterViewInit, OnDestroy {
   private updateDriverStats(): void {
     this.driverStats = {
       total: this.driversWithGeo.length,
-      available: this.driversWithGeo.filter(d => 
-        d.status?.toLowerCase() === 'disponible' || 
-        d.status?.toLowerCase() === 'available' || 
+      available: this.driversWithGeo.filter(d =>
+        d.status?.toLowerCase() === 'disponible' ||
+        d.status?.toLowerCase() === 'available' ||
         d.availabilityStatus === 'available'
       ).length,
-      onMission: this.driversWithGeo.filter(d => 
-        d.status?.toLowerCase() === 'on_trip' || 
+      onMission: this.driversWithGeo.filter(d =>
+        d.status?.toLowerCase() === 'on_trip' ||
         d.status?.toLowerCase() === 'en mission'
       ).length,
-      overtime: this.driversWithGeo.filter(d => 
+      overtime: this.driversWithGeo.filter(d =>
         d.availabilityStatus === 'overtime' || (d.totalHours && d.totalHours > 8)
       ).length,
-      exceeded: this.driversWithGeo.filter(d => 
+      exceeded: this.driversWithGeo.filter(d =>
         d.availabilityStatus === 'exceeded' || (d.totalHours && d.totalHours > 12)
       ).length,
-      conflict: this.driversWithGeo.filter(d => 
+      conflict: this.driversWithGeo.filter(d =>
         d.availabilityStatus === 'conflict' || d.requiresApproval === true
       ).length,
-      offDuty: this.driversWithGeo.filter(d => 
+      offDuty: this.driversWithGeo.filter(d =>
         d.status === 'off_duty' || d.status === 'hors service'
       ).length,
       activeEntities: this.driverStats.activeEntities
     };
   }
 
-  // ========== INITIALISATION DES CARTES ==========
+
   private initTrucksMap(): void {
     if (typeof window === 'undefined') return;
     if (this.truckMap) return;
-    
+
     this.mapsLoading.trucks = true;
-    
+
     setTimeout(() => {
       const mapElement = document.getElementById('trucksMap');
       if (!mapElement) {
@@ -573,20 +573,20 @@ export class StatisticsComponent implements OnInit, AfterViewInit, OnDestroy {
         this.mapsError.trucks = true;
         return;
       }
-      
+
       try {
         this.truckMap = L.map('trucksMap', {
           center: this.tunisiaCenter,
           zoom: 7,
           zoomControl: true
         });
-        
+
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
           attribution: '© OpenStreetMap Tunisie',
           maxZoom: 19,
           minZoom: 6
         }).addTo(this.truckMap);
-        
+
         setTimeout(() => {
           if (this.truckMap) {
             this.truckMap.invalidateSize();
@@ -595,7 +595,7 @@ export class StatisticsComponent implements OnInit, AfterViewInit, OnDestroy {
             this.mapsLoading.trucks = false;
           }
         }, 300);
-        
+
       } catch (error) {
         console.error('❌ Erreur création carte camions:', error);
         this.mapsError.trucks = true;
@@ -607,9 +607,9 @@ export class StatisticsComponent implements OnInit, AfterViewInit, OnDestroy {
   private initDriversMap(): void {
     if (typeof window === 'undefined') return;
     if (this.driverMap) return;
-    
+
     this.mapsLoading.drivers = true;
-    
+
     setTimeout(() => {
       const mapElement = document.getElementById('driversMap');
       if (!mapElement) {
@@ -618,20 +618,20 @@ export class StatisticsComponent implements OnInit, AfterViewInit, OnDestroy {
         this.mapsError.drivers = true;
         return;
       }
-      
+
       try {
         this.driverMap = L.map('driversMap', {
           center: this.tunisiaCenter,
           zoom: 7,
           zoomControl: true
         });
-        
+
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
           attribution: '© OpenStreetMap Tunisie',
           maxZoom: 19,
           minZoom: 6
         }).addTo(this.driverMap);
-        
+
         setTimeout(() => {
           if (this.driverMap) {
             this.driverMap.invalidateSize();
@@ -640,7 +640,7 @@ export class StatisticsComponent implements OnInit, AfterViewInit, OnDestroy {
             this.mapsLoading.drivers = false;
           }
         }, 300);
-        
+
       } catch (error) {
         console.error('❌ Erreur création carte chauffeurs:', error);
         this.mapsError.drivers = true;
@@ -649,24 +649,24 @@ export class StatisticsComponent implements OnInit, AfterViewInit, OnDestroy {
     }, 300);
   }
 
-  // ========== MARQUEURS ENTITÉS CAMIONS ==========
+
   private addTruckEntityMarkers(): void {
     if (!this.truckMap) return;
-    
+
     this.truckEntityMarkers.forEach(marker => marker.remove());
     this.truckEntityMarkers = [];
-    
+
     this.mappableEntities.forEach(entity => {
       if (!entity.id || !entity.latitude || !entity.longitude) return;
-      
+
       const entityTrucks = this.trucksByEntity[entity.id] || [];
       const totalTrucks = entityTrucks.length;
       const level = this.geographicalLevels.find(l => l.id === entity.levelId);
-      
+
       let entityColor = '#6c757d';
       if (totalTrucks > 0) {
-        const activeTrucks = entityTrucks.filter(t => 
-          t.status.toLowerCase() === 'en mission' || 
+        const activeTrucks = entityTrucks.filter(t =>
+          t.status.toLowerCase() === 'en mission' ||
           t.status.toLowerCase() === 'available' ||
           t.status.toLowerCase() === 'disponible'
         ).length;
@@ -675,16 +675,16 @@ export class StatisticsComponent implements OnInit, AfterViewInit, OnDestroy {
         else if (activeTrucks > 0) entityColor = '#f6c23e';
         else entityColor = '#e74a3b';
       }
-      
+
       const entityIcon = this.createTruckEntityIcon(entity, entityColor, totalTrucks, level?.name || '');
-      
-      const marker = L.marker([entity.latitude, entity.longitude], { 
+
+      const marker = L.marker([entity.latitude, entity.longitude], {
         icon: entityIcon,
         zIndexOffset: totalTrucks > 0 ? 1000 : 500
       }).addTo(this.truckMap!);
-      
+
       marker.bindPopup(this.createTruckEntityPopup(entity, entityColor, entityTrucks, level?.name || ''));
-      
+
       marker.on('popupopen', () => {
         setTimeout(() => {
           const btn = document.getElementById(`truck-filter-entity-btn-${entity.id}`);
@@ -698,7 +698,7 @@ export class StatisticsComponent implements OnInit, AfterViewInit, OnDestroy {
           }
         }, 100);
       });
-      
+
       this.truckEntityMarkers.push(marker);
     });
   }
@@ -736,22 +736,22 @@ export class StatisticsComponent implements OnInit, AfterViewInit, OnDestroy {
 
   private createTruckEntityPopup(entity: IGeographicalEntity, color: string, entityTrucks: ITruck[], levelName: string): HTMLDivElement {
     const total = entityTrucks.length;
-    const available = entityTrucks.filter(t => 
+    const available = entityTrucks.filter(t =>
       t.status.toLowerCase() === 'disponible' || t.status.toLowerCase() === 'available'
     ).length;
-    const onMission = entityTrucks.filter(t => 
+    const onMission = entityTrucks.filter(t =>
       t.status.toLowerCase() === 'en mission' || t.status.toLowerCase() === 'on_mission'
     ).length;
     const maintenance = entityTrucks.filter(t => t.status.toLowerCase() === 'maintenance').length;
-    const outOfService = entityTrucks.filter(t => 
+    const outOfService = entityTrucks.filter(t =>
       t.status.toLowerCase() === 'hors service' || t.status.toLowerCase() === 'inactive'
     ).length;
-    
+
     const popup = document.createElement('div');
     popup.style.fontFamily = 'Segoe UI, sans-serif';
     popup.style.padding = '15px';
     popup.style.minWidth = '280px';
-    
+
     popup.innerHTML = `
       <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px;">
         <div style="background: ${color}; width: 50px; height: 50px; border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: white; font-weight: bold;">
@@ -763,7 +763,7 @@ export class StatisticsComponent implements OnInit, AfterViewInit, OnDestroy {
           <div style="color: #6c757d; font-size: 13px;">${levelName} • ${total} camions</div>
         </div>
       </div>
-      
+
       <div style="border-top: 1px solid #e9ecef; padding-top: 12px;">
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
           <div style="background: #f8f9fa; padding: 8px; border-radius: 6px;">
@@ -787,36 +787,36 @@ export class StatisticsComponent implements OnInit, AfterViewInit, OnDestroy {
             <span style="color: #6c757d; margin-left: 4px;">HS</span>
           </div>
         </div>
-        
-        <button id="truck-filter-entity-btn-${entity.id}" 
+
+        <button id="truck-filter-entity-btn-${entity.id}"
                 style="width: 100%; margin-top: 15px; padding: 10px; background: linear-gradient(135deg, #667eea, #764ba2); color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer;">
           <i class="fas fa-filter"></i> Voir les camions de ${entity.name}
         </button>
       </div>
     `;
-    
+
     return popup;
   }
 
-  // ========== MARQUEURS ENTITÉS CHAUFFEURS ==========
+
   private addDriverEntityMarkers(): void {
     if (!this.driverMap) return;
-    
+
     this.driverEntityMarkers.forEach(marker => marker.remove());
     this.driverEntityMarkers = [];
-    
+
     this.mappableEntities.forEach(entity => {
       if (!entity.id || !entity.latitude || !entity.longitude) return;
-      
+
       const entityDrivers = this.driversByEntity[entity.id] || [];
       const totalDrivers = entityDrivers.length;
       const level = this.geographicalLevels.find(l => l.id === entity.levelId);
-      
+
       let entityColor = '#6c757d';
       if (totalDrivers > 0) {
-        const availableDrivers = entityDrivers.filter(d => 
-          d.status?.toLowerCase() === 'disponible' || 
-          d.status?.toLowerCase() === 'available' || 
+        const availableDrivers = entityDrivers.filter(d =>
+          d.status?.toLowerCase() === 'disponible' ||
+          d.status?.toLowerCase() === 'available' ||
           d.availabilityStatus === 'available'
         ).length;
         if (availableDrivers > 3) entityColor = '#1cc88a';
@@ -824,16 +824,16 @@ export class StatisticsComponent implements OnInit, AfterViewInit, OnDestroy {
         else if (availableDrivers > 0) entityColor = '#f6c23e';
         else entityColor = '#e74a3b';
       }
-      
+
       const entityIcon = this.createDriverEntityIcon(entity, entityColor, totalDrivers, level?.name || '');
-      
-      const marker = L.marker([entity.latitude, entity.longitude], { 
+
+      const marker = L.marker([entity.latitude, entity.longitude], {
         icon: entityIcon,
         zIndexOffset: totalDrivers > 0 ? 1000 : 500
       }).addTo(this.driverMap!);
-      
+
       marker.bindPopup(this.createDriverEntityPopup(entity, entityColor, entityDrivers, level?.name || ''));
-      
+
       marker.on('popupopen', () => {
         setTimeout(() => {
           const btn = document.getElementById(`driver-filter-entity-btn-${entity.id}`);
@@ -847,7 +847,7 @@ export class StatisticsComponent implements OnInit, AfterViewInit, OnDestroy {
           }
         }, 100);
       });
-      
+
       this.driverEntityMarkers.push(marker);
     });
   }
@@ -885,27 +885,27 @@ export class StatisticsComponent implements OnInit, AfterViewInit, OnDestroy {
 
   private createDriverEntityPopup(entity: IGeographicalEntity, color: string, entityDrivers: IDriver[], levelName: string): HTMLDivElement {
     const total = entityDrivers.length;
-    const available = entityDrivers.filter(d => 
-      d.status?.toLowerCase() === 'disponible' || 
-      d.status?.toLowerCase() === 'available' || 
+    const available = entityDrivers.filter(d =>
+      d.status?.toLowerCase() === 'disponible' ||
+      d.status?.toLowerCase() === 'available' ||
       d.availabilityStatus === 'available'
     ).length;
-    const onMission = entityDrivers.filter(d => 
-      d.status?.toLowerCase() === 'on_trip' || 
+    const onMission = entityDrivers.filter(d =>
+      d.status?.toLowerCase() === 'on_trip' ||
       d.status?.toLowerCase() === 'en mission'
     ).length;
-    const overtime = entityDrivers.filter(d => 
+    const overtime = entityDrivers.filter(d =>
       d.availabilityStatus === 'overtime' || (d.totalHours && d.totalHours > 8)
     ).length;
-    const conflict = entityDrivers.filter(d => 
+    const conflict = entityDrivers.filter(d =>
       d.availabilityStatus === 'conflict' || d.requiresApproval === true
     ).length;
-    
+
     const popup = document.createElement('div');
     popup.style.fontFamily = 'Segoe UI, sans-serif';
     popup.style.padding = '15px';
     popup.style.minWidth = '280px';
-    
+
     popup.innerHTML = `
       <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px;">
         <div style="background: ${color}; width: 50px; height: 50px; border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: white; font-weight: bold;">
@@ -917,7 +917,7 @@ export class StatisticsComponent implements OnInit, AfterViewInit, OnDestroy {
           <div style="color: #6c757d; font-size: 13px;">${levelName} • ${total} chauffeurs</div>
         </div>
       </div>
-      
+
       <div style="border-top: 1px solid #e9ecef; padding-top: 12px;">
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
           <div style="background: #f8f9fa; padding: 8px; border-radius: 6px;">
@@ -941,61 +941,61 @@ export class StatisticsComponent implements OnInit, AfterViewInit, OnDestroy {
             <span style="color: #6c757d; margin-left: 4px;">Conflit</span>
           </div>
         </div>
-        
-        <button id="driver-filter-entity-btn-${entity.id}" 
+
+        <button id="driver-filter-entity-btn-${entity.id}"
                 style="width: 100%; margin-top: 15px; padding: 10px; background: linear-gradient(135deg, #36b9cc, #4e73df); color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer;">
           <i class="fas fa-filter"></i> Voir les chauffeurs de ${entity.name}
         </button>
       </div>
     `;
-    
+
     return popup;
   }
 
-  // ========== MARQUEURS INDIVIDUELS CAMIONS ==========
+
   private addTruckMarkers(): void {
     if (!this.truckMap) return;
-    
+
     this.truckMarkers.forEach(marker => marker.remove());
     this.truckMarkers = [];
-    
-    const activeTrucks = this.trucks.filter(t => 
-      t.status.toLowerCase() !== 'inactive' && 
+
+    const activeTrucks = this.trucks.filter(t =>
+      t.status.toLowerCase() !== 'inactive' &&
       t.status.toLowerCase() !== 'hors service'
     );
-    
+
     activeTrucks.forEach(truck => {
       const truckWithGeo = this.trucksWithGeo.find(t => t.id === truck.id);
       if (!truckWithGeo?.entityCoordinates) return;
-      
+
       const coords = truckWithGeo.entityCoordinates;
-      
+
       const latOffset = (Math.random() - 0.5) * 0.02;
       const lngOffset = (Math.random() - 0.5) * 0.02;
-      
+
       const status = STATUS_CONFIG[truck.status] || STATUS_CONFIG['available'];
       const truckColor = truck.color || this.getStatusColor(truck.status);
-      
+
       const firstImage = (truck.images && truck.images.length > 0) ? truck.images[0] : null;
       const formattedImage = this.formatBase64Image(firstImage);
-      
+
       const truckIcon = this.createTruckIcon(truck, truckColor, formattedImage);
-      
+
       const marker = L.marker([
-        coords.lat + latOffset, 
+        coords.lat + latOffset,
         coords.lng + lngOffset
-      ], { 
+      ], {
         icon: truckIcon,
         zIndexOffset: 2000
       }).addTo(this.truckMap!);
-      
+
       const truckWithZone = {
         ...truck,
         zoneName: truckWithGeo.entityName
       };
-      
+
       marker.bindPopup(this.createTruckPopup(truckWithZone, truckColor, formattedImage));
-      
+
       this.truckMarkers.push(marker);
     });
   }
@@ -1003,9 +1003,9 @@ export class StatisticsComponent implements OnInit, AfterViewInit, OnDestroy {
   private createTruckIcon(truck: ITruck, color: string, imageBase64: string | null): L.DivIcon {
     const hasImage = !!imageBase64;
     const isOnMission = truck.status.toLowerCase() === 'en mission' || truck.status.toLowerCase() === 'on_mission';
-    
+
     let iconHtml = '';
-    
+
     if (hasImage) {
       iconHtml = `
         <div style="
@@ -1021,8 +1021,8 @@ export class StatisticsComponent implements OnInit, AfterViewInit, OnDestroy {
           justify-content: center;
           animation: ${isOnMission ? 'bounce 2s infinite' : 'none'};
         ">
-          <img src="${imageBase64}" 
-               style="width: 100%; height: 100%; object-fit: contain;" 
+          <img src="${imageBase64}"
+               style="width: 100%; height: 100%; object-fit: contain;"
                alt="Camion ${truck.immatriculation}"
                title="${this.getMarqueName(truck.marqueTruckId)} - ${truck.immatriculation}"
                onerror="this.style.display='none'; this.parentElement.style.background='${color}'; this.parentElement.innerHTML='<i class=\\'fas fa-truck\\' style=\\'color: white; font-size: 24px;\\'></i>';">
@@ -1048,7 +1048,7 @@ export class StatisticsComponent implements OnInit, AfterViewInit, OnDestroy {
         </div>
       `;
     }
-    
+
     return L.divIcon({
       html: iconHtml,
       className: `truck-marker-${truck.status}`,
@@ -1061,18 +1061,18 @@ export class StatisticsComponent implements OnInit, AfterViewInit, OnDestroy {
   private createTruckPopup(truck: any, color: string, imageBase64: string | null): HTMLDivElement {
     const status = STATUS_CONFIG[truck.status] || STATUS_CONFIG['available'];
     const zoneName = truck.zoneName || 'Non assigné';
-    
+
     const popup = document.createElement('div');
     popup.style.fontFamily = 'Segoe UI, sans-serif';
     popup.style.padding = '16px';
     popup.style.minWidth = '320px';
-    
-    const imageHtml = imageBase64 
+
+    const imageHtml = imageBase64
       ? `<img src="${imageBase64}" style="width: 100%; height: 100%; object-fit: contain; border-radius: 8px;" alt="Camion">`
       : `<div style="width: 100%; height: 100%; background: ${color}; display: flex; align-items: center; justify-content: center; color: white; font-size: 24px; border-radius: 8px;">
            <i class="fas fa-truck"></i>
          </div>`;
-    
+
     popup.innerHTML = `
       <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 16px;">
         <div style="
@@ -1102,7 +1102,7 @@ export class StatisticsComponent implements OnInit, AfterViewInit, OnDestroy {
           </div>
         </div>
       </div>
-      
+
       <div style="border-top: 1px solid #e9ecef; padding-top: 12px;">
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
           <div>
@@ -1130,51 +1130,51 @@ export class StatisticsComponent implements OnInit, AfterViewInit, OnDestroy {
         </div>
       </div>
     `;
-    
+
     return popup;
   }
 
-  // ========== MARQUEURS INDIVIDUELS CHAUFFEURS ==========
+
   private addDriverMarkers(): void {
     if (!this.driverMap) return;
-    
+
     this.driverMarkers.forEach(marker => marker.remove());
     this.driverMarkers = [];
-    
-    const activeDrivers = this.drivers.filter(d => 
+
+    const activeDrivers = this.drivers.filter(d =>
       d.status !== 'off_duty' && d.status !== 'hors service'
     );
-    
+
     activeDrivers.forEach(driver => {
       const driverWithGeo = this.driversWithGeo.find(d => d.id === driver.id);
       if (!driverWithGeo?.entityCoordinates) return;
-      
+
       const coords = driverWithGeo.entityCoordinates;
-      
+
       const latOffset = (Math.random() - 0.5) * 0.02;
       const lngOffset = (Math.random() - 0.5) * 0.02;
-      
+
       const driverColor = this.getDriverStatusColor(driver);
       const formattedImage = this.formatBase64Image(driver.imageBase64);
-      
+
       const driverIcon = this.createDriverIcon(driver, driverColor, formattedImage);
-      
+
       const marker = L.marker([
-        coords.lat + latOffset, 
+        coords.lat + latOffset,
         coords.lng + lngOffset
-      ], { 
+      ], {
         icon: driverIcon,
         zIndexOffset: 2000
       }).addTo(this.driverMap!);
-      
+
       const statusLabel = this.getDriverStatusLabel(driver);
       const driverForPopup = {
         ...driver,
         zoneName: driverWithGeo.entityName
       };
-      
+
       marker.bindPopup(this.createDriverPopup(driverForPopup, driverColor, statusLabel, formattedImage));
-      
+
       this.driverMarkers.push(marker);
     });
   }
@@ -1183,9 +1183,9 @@ export class StatisticsComponent implements OnInit, AfterViewInit, OnDestroy {
     const hasImage = !!imageBase64;
     const hasConflict = driver.availabilityStatus === 'conflict' || driver.requiresApproval;
     const isOvertime = driver.availabilityStatus === 'overtime';
-    
+
     let iconHtml = '';
-    
+
     if (hasImage) {
       iconHtml = `
         <div style="
@@ -1201,8 +1201,8 @@ export class StatisticsComponent implements OnInit, AfterViewInit, OnDestroy {
           justify-content: center;
           position: relative;
         ">
-          <img src="${imageBase64}" 
-               style="width: 100%; height: 100%; object-fit: cover;" 
+          <img src="${imageBase64}"
+               style="width: 100%; height: 100%; object-fit: cover;"
                alt="Chauffeur ${driver.name}"
                title="${driver.name}"
                onerror="this.style.display='none'; this.parentElement.style.background='${color}'; this.parentElement.innerHTML='<i class=\\'fas fa-user-tie\\' style=\\'color: white; font-size: 24px;\\'></i>';">
@@ -1248,7 +1248,7 @@ export class StatisticsComponent implements OnInit, AfterViewInit, OnDestroy {
         </div>
       `;
     }
-    
+
     return L.divIcon({
       html: iconHtml,
       className: `driver-marker-${driver.status}`,
@@ -1259,31 +1259,31 @@ export class StatisticsComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private createDriverPopup(
-    driver: any, 
-    color: string, 
+    driver: any,
+    color: string,
     statusLabel: string,
     imageBase64: string | null
   ): HTMLDivElement {
     const zoneName = driver.zoneName || 'Non assigné';
     const hours = driver.totalHours || 0;
-    
+
     const assignedTruck = driver.idCamion ? this.trucks.find(t => t.id === driver.idCamion) : null;
     const marqueName = assignedTruck ? this.getMarqueName(assignedTruck.marqueTruckId) : '';
-    const truckDisplay = assignedTruck 
-      ? `${assignedTruck.immatriculation} - ${marqueName}` 
+    const truckDisplay = assignedTruck
+      ? `${assignedTruck.immatriculation} - ${marqueName}`
       : 'Non assigné';
-    
+
     const popup = document.createElement('div');
     popup.style.fontFamily = 'Segoe UI, sans-serif';
     popup.style.padding = '16px';
     popup.style.minWidth = '320px';
-    
-    const imageHtml = imageBase64 
+
+    const imageHtml = imageBase64
       ? `<img src="${imageBase64}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;" alt="Chauffeur">`
       : `<div style="width: 100%; height: 100%; background: ${color}; display: flex; align-items: center; justify-content: center; color: white; font-size: 30px; border-radius: 50%;">
            <i class="fas fa-user-tie"></i>
          </div>`;
-    
+
     popup.innerHTML = `
       <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 16px;">
         <div style="
@@ -1313,7 +1313,7 @@ export class StatisticsComponent implements OnInit, AfterViewInit, OnDestroy {
           </div>
         </div>
       </div>
-      
+
       <div style="border-top: 1px solid #e9ecef; padding-top: 12px;">
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
           <div>
@@ -1339,7 +1339,7 @@ export class StatisticsComponent implements OnInit, AfterViewInit, OnDestroy {
             </div>
           </div>
         </div>
-        
+
         <div style="background: #f8f9fa; border-radius: 8px; padding: 12px;">
           <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
             <i class="fas fa-clock" style="color: ${hours > 12 ? '#e74a3b' : hours > 8 ? '#f6c23e' : '#1cc88a'};"></i>
@@ -1349,14 +1349,14 @@ export class StatisticsComponent implements OnInit, AfterViewInit, OnDestroy {
               ${hours > 12 ? 'Dépassé' : hours > 8 ? 'Heures sup' : 'Normal'}
             </span>
           </div>
-          
+
           ${driver.requiresApproval ? `
             <div style="margin-top: 8px; padding: 8px; background: #e74a3b10; border-radius: 6px; color: #e74a3b; font-size: 12px; display: flex; align-items: center; gap: 8px; border-left: 3px solid #e74a3b;">
               <i class="fas fa-exclamation-triangle"></i>
               <span>Approbation requise</span>
             </div>
           ` : ''}
-          
+
           ${driver.availabilityMessage ? `
             <div style="margin-top: 8px; color: #6c757d; font-size: 12px; font-style: italic; padding: 4px 0;">
               "${driver.availabilityMessage}"
@@ -1365,11 +1365,11 @@ export class StatisticsComponent implements OnInit, AfterViewInit, OnDestroy {
         </div>
       </div>
     `;
-    
+
     return popup;
   }
 
-  // ========== FORMATAGE IMAGE ==========
+
   private formatBase64Image(base64: string | null | undefined): string | null {
     if (!base64) return null;
     if (base64.startsWith('data:image/')) {
@@ -1378,7 +1378,7 @@ export class StatisticsComponent implements OnInit, AfterViewInit, OnDestroy {
     return `data:image/jpeg;base64,${base64}`;
   }
 
-  // ========== GESTION DES CARTES ==========
+
   centerMap(mapType: 'truck' | 'driver'): void {
     if (mapType === 'truck' && this.truckMap) {
       this.truckMap.setView(this.tunisiaCenter, 7);
@@ -1387,7 +1387,7 @@ export class StatisticsComponent implements OnInit, AfterViewInit, OnDestroy {
       }, 100);
       this.activeTruckRegionFilter = 'all';
     }
-    
+
     if (mapType === 'driver' && this.driverMap) {
       this.driverMap.setView(this.tunisiaCenter, 7);
       setTimeout(() => {
@@ -1395,7 +1395,7 @@ export class StatisticsComponent implements OnInit, AfterViewInit, OnDestroy {
       }, 100);
       this.activeDriverRegionFilter = 'all';
     }
-    
+
     this.activeEntityName = 'all';
   }
 
@@ -1405,13 +1405,13 @@ export class StatisticsComponent implements OnInit, AfterViewInit, OnDestroy {
       this.addTruckMarkers();
       this.truckMap.invalidateSize();
     }
-    
+
     if (mapType === 'driver' && this.driverMap) {
       this.addDriverEntityMarkers();
       this.addDriverMarkers();
       this.driverMap.invalidateSize();
     }
-    
+
     this.updateLastUpdateTime();
     this.successMessage = `Carte des ${mapType === 'truck' ? 'camions' : 'chauffeurs'} actualisée`;
     setTimeout(() => this.successMessage = '', 3000);
@@ -1421,45 +1421,45 @@ export class StatisticsComponent implements OnInit, AfterViewInit, OnDestroy {
     if (mapType === 'truck') {
       const level = this.geographicalLevels.find(l => l.name === region);
       if (!level || !this.truckMap) return;
-      
+
       const entities = this.mappableEntities.filter(e => e.levelId === level.id && e.latitude && e.longitude);
       if (entities.length === 0) return;
-      
+
       const bounds = L.latLngBounds(
         entities.map(e => [e.latitude!, e.longitude!] as L.LatLngTuple)
       );
-      
+
       this.truckMap.fitBounds(bounds);
       this.activeTruckRegionFilter = region;
     } else {
       const level = this.geographicalLevels.find(l => l.name === region);
       if (!level || !this.driverMap) return;
-      
+
       const entities = this.mappableEntities.filter(e => e.levelId === level.id && e.latitude && e.longitude);
       if (entities.length === 0) return;
-      
+
       const bounds = L.latLngBounds(
         entities.map(e => [e.latitude!, e.longitude!] as L.LatLngTuple)
       );
-      
+
       this.driverMap.fitBounds(bounds);
       this.activeDriverRegionFilter = region;
     }
-    
+
     this.activeEntityName = 'all';
   }
 
   focusOnEntity(entityId: number, viewType: 'trucks' | 'drivers'): void {
     const entity = this.geographicalEntities.find(e => e.id === entityId);
     if (!entity || !entity.latitude || !entity.longitude) return;
-    
+
     this.activeEntityName = entity.name;
-    
+
     if (viewType === 'trucks' && this.truckMap) {
       this.truckMap.setView([entity.latitude, entity.longitude], 10);
       this.highlightTruckEntity(entityId);
     }
-    
+
     if (viewType === 'drivers' && this.driverMap) {
       this.driverMap.setView([entity.latitude, entity.longitude], 10);
       this.highlightDriverEntity(entityId);
@@ -1468,13 +1468,13 @@ export class StatisticsComponent implements OnInit, AfterViewInit, OnDestroy {
 
   private highlightTruckEntity(entityId: number): void {
     if (!this.truckMap) return;
-    
+
     const entityMarker = this.truckEntityMarkers.find(m => {
       const latLng = m.getLatLng();
       const entity = this.mappableEntities.find(e => e.latitude === latLng.lat && e.longitude === latLng.lng);
       return entity?.id === entityId;
     });
-    
+
     if (entityMarker) {
       entityMarker.openPopup();
     }
@@ -1482,13 +1482,13 @@ export class StatisticsComponent implements OnInit, AfterViewInit, OnDestroy {
 
   private highlightDriverEntity(entityId: number): void {
     if (!this.driverMap) return;
-    
+
     const entityMarker = this.driverEntityMarkers.find(m => {
       const latLng = m.getLatLng();
       const entity = this.mappableEntities.find(e => e.latitude === latLng.lat && e.longitude === latLng.lng);
       return entity?.id === entityId;
     });
-    
+
     if (entityMarker) {
       entityMarker.openPopup();
     }
@@ -1500,12 +1500,12 @@ export class StatisticsComponent implements OnInit, AfterViewInit, OnDestroy {
     setTimeout(() => this.successMessage = '', 3000);
   }
 
-  // ========== CHANGEMENT DE VUE ==========
+
   switchEntityView(view: 'trucks' | 'drivers'): void {
     this.activeEntityView = view;
   }
 
-  // ========== GETTERS STATISTIQUES ==========
+
   getTruckEntityStats(entityId: number) {
     return this.truckEntityStatistics.find(e => e.entityId === entityId) || {
       totalTrucks: 0, availableTrucks: 0, onMissionTrucks: 0, maintenanceTrucks: 0, outOfServiceTrucks: 0
@@ -1562,7 +1562,7 @@ export class StatisticsComponent implements OnInit, AfterViewInit, OnDestroy {
     return level ? level.name : '';
   }
 
-  // ========== UTILITAIRES ==========
+
   getTruckDisplay(truck: ITruck): string {
     const status = STATUS_CONFIG[truck.status]?.label || truck.status;
     const truckWithGeo = this.trucksWithGeo.find(t => t.id === truck.id);
@@ -1605,7 +1605,7 @@ export class StatisticsComponent implements OnInit, AfterViewInit, OnDestroy {
     if (driver.availabilityStatus === 'overtime' || (driver.totalHours && driver.totalHours > 8)) {
       return this.driverStatusColors['overtime'];
     }
-    return this.driverStatusColors[driver.status as keyof typeof this.driverStatusColors] || 
+    return this.driverStatusColors[driver.status as keyof typeof this.driverStatusColors] ||
            this.driverStatusColors['default'];
   }
 
@@ -1627,7 +1627,7 @@ export class StatisticsComponent implements OnInit, AfterViewInit, OnDestroy {
     return `${year}-${month}-${day}`;
   }
 
-  // ========== GESTION DES ERREURS ==========
+
   clearError(): void {
     this.errorMessage = '';
   }

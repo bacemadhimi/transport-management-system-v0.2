@@ -1,4 +1,4 @@
-import { Component, inject, Inject, OnInit, OnDestroy, AfterViewInit, ChangeDetectorRef } from '@angular/core';
+﻿import { Component, inject, Inject, OnInit, OnDestroy, AfterViewInit, ChangeDetectorRef } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { CommonModule } from '@angular/common';
@@ -65,21 +65,21 @@ export class LocationFormComponent implements OnInit, OnDestroy {
   locationForm!: FormGroup;
   loading = false;
   isSubmitting = false;
-  
-  // Address autocomplete
+
+
   addressSuggestions: NominatimResult[] = [];
   searchingAddress = false;
   addressSearchTerm = '';
   private searchSubscription?: Subscription;
-  
-  // Map
+
+
   private map: L.Map | null = null;
   private marker: L.Marker | null = null;
 
   constructor(
     private fb: FormBuilder,
-    private http: Http, 
-    private cdr: ChangeDetectorRef, 
+    private http: Http,
+    private cdr: ChangeDetectorRef,
     private dialogRef: MatDialogRef<LocationFormComponent>,
     @Inject(MAT_DIALOG_DATA) public data: DialogData
   ) {}
@@ -87,7 +87,7 @@ export class LocationFormComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.initForm();
     this.setupAddressAutocomplete();
-    
+
     if (this.data.locationId) {
       this.loadLocation(this.data.locationId);
     }
@@ -107,15 +107,15 @@ export class LocationFormComponent implements OnInit, OnDestroy {
       address: ['', [Validators.required]],
       latitude: [null],
       longitude: [null],
-      name: ['', [Validators.maxLength(100)]], // Name is now optional
+      name: ['', [Validators.maxLength(100)]],
       isActive: [true]
     });
 
-    // Auto-fill name from address when address is selected
+
     this.locationForm.get('address')?.valueChanges.subscribe(value => {
-      // Only auto-fill if name is empty
+
       if (!this.locationForm.get('name')?.value && value && !this.addressSuggestions.length) {
-        // This is a manual entry, not a selection from dropdown
+
         this.locationForm.get('name')?.setValue(value.substring(0, 100));
       }
     });
@@ -133,8 +133,8 @@ export class LocationFormComponent implements OnInit, OnDestroy {
         }
         this.searchingAddress = true;
         this.addressSearchTerm = value;
-        
-        // Convert Promise to Observable using from
+
+
         return from(this.searchAddress(value)).pipe(
           catchError(error => {
             console.error('Error searching address:', error);
@@ -152,7 +152,7 @@ export class LocationFormComponent implements OnInit, OnDestroy {
 
   private searchAddress(query: string): Promise<NominatimResult[]> {
     const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&addressdetails=1&limit=5&countrycodes=tn`;
-    
+
     return fetch(url, {
       headers: {
         'Accept': 'application/json',
@@ -167,7 +167,7 @@ export class LocationFormComponent implements OnInit, OnDestroy {
   }
 
   onAddressInput(): void {
-    // Triggered on input, handled by valueChanges
+
   }
 
 onAddressSelected(event: any): void {
@@ -188,7 +188,7 @@ onAddressSelected(event: any): void {
 
   setTimeout(() => {
     if (!this.map) {
-      this.initMap(); // initialize now that div exists
+      this.initMap();
     }
     this.updateMapLocation(lat, lng);
   }, 0);
@@ -237,8 +237,8 @@ onAddressSelected(event: any): void {
 
     this.map.setView([lat, lng], 15);
     this.marker = L.marker([lat, lng]).addTo(this.map);
-    
-    // Add a popup with coordinates
+
+
     this.marker.bindPopup(`
       <div style="font-family: 'Segoe UI', sans-serif; padding: 4px;">
         <strong>Coordonnées:</strong><br/>
@@ -287,10 +287,10 @@ private loadLocation(locationId: number): void {
 
     this.isSubmitting = true;
     const formValue = this.locationForm.value;
-    
-    // If name is empty, use address as name
+
+
     const locationName = formValue.name?.trim() || formValue.address?.trim().substring(0, 100);
-    
+
     const locationData = {
       name: locationName,
       address: formValue.address.trim(),
@@ -298,7 +298,7 @@ private loadLocation(locationId: number): void {
       longitude: formValue.longitude,
       isActive: formValue.isActive
     };
-    
+
     if (this.data.locationId) {
       this.updateLocation(locationData);
     } else {
@@ -374,18 +374,18 @@ private loadLocation(locationId: number): void {
 
   getErrorMessage(controlName: string): string {
     const control = this.locationForm.get(controlName);
-    
+
     if (control?.hasError('required')) {
       if (controlName === 'address') {
         return this.t('ADDRESS_REQUIRED') || 'L\'adresse est requise';
       }
       return this.t('FIELD_REQUIRED') || 'Ce champ est obligatoire';
     }
-    
+
     if (control?.hasError('maxlength')) {
       return this.t('MAX_LENGTH_EXCEEDED') || 'Le nom ne peut pas dépasser 100 caractères';
     }
-    
+
     return '';
   }
 

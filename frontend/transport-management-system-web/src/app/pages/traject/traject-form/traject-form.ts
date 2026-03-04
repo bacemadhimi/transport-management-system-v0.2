@@ -1,4 +1,4 @@
-// traject-form.component.ts
+﻿
 import { Component, Inject, OnInit } from '@angular/core';
 import { FormArray, FormBuilder, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
@@ -43,7 +43,7 @@ import { debounceTime } from 'rxjs';
 export class TrajectForm implements OnInit {
   trajectForm!: FormGroup;
   points: FormArray;
-  
+
   loading = false;
   searchControl = new FormControl('');
 
@@ -59,7 +59,7 @@ export class TrajectForm implements OnInit {
 
   ngOnInit(): void {
     this.initForm();
-    
+
     if (this.data.trajectId) {
       this.loadTraject(this.data.trajectId);
     }
@@ -71,7 +71,7 @@ export class TrajectForm implements OnInit {
       points: this.points
     });
 
-    // Ajouter un point par défaut
+
     this.addPoint();
   }
 
@@ -83,10 +83,10 @@ export class TrajectForm implements OnInit {
           name: traject.name
         });
 
-        // Effacer les points existants
+
         this.points.clear();
-        
-        // Ajouter les points du traject
+
+
         if (traject.points && traject.points.length > 0) {
           const sortedPoints = [...traject.points].sort((a, b) => a.order - b.order);
           sortedPoints.forEach(point => {
@@ -95,7 +95,7 @@ export class TrajectForm implements OnInit {
         } else {
           this.addPoint();
         }
-        
+
         this.loading = false;
       },
       error: (error) => {
@@ -106,7 +106,7 @@ export class TrajectForm implements OnInit {
     });
   }
 
-  // Gestion des points
+
   get pointControls(): FormGroup[] {
     return this.points.controls as FormGroup[];
   }
@@ -123,7 +123,7 @@ export class TrajectForm implements OnInit {
 
   removePoint(index: number): void {
     this.points.removeAt(index);
-    // Mettre à jour les ordres
+
     this.updatePointOrders();
   }
 
@@ -131,10 +131,10 @@ export class TrajectForm implements OnInit {
     if (index > 0) {
       const currentPoint = this.points.at(index);
       const previousPoint = this.points.at(index - 1);
-      
+
       this.points.setControl(index, previousPoint);
       this.points.setControl(index - 1, currentPoint);
-      
+
       this.updatePointOrders();
     }
   }
@@ -143,10 +143,10 @@ export class TrajectForm implements OnInit {
     if (index < this.points.length - 1) {
       const currentPoint = this.points.at(index);
       const nextPoint = this.points.at(index + 1);
-      
+
       this.points.setControl(index, nextPoint);
       this.points.setControl(index + 1, currentPoint);
-      
+
       this.updatePointOrders();
     }
   }
@@ -157,14 +157,14 @@ export class TrajectForm implements OnInit {
     });
   }
 
- // traject-form.component.ts
-// Modifiez la méthode onSubmit()
+
+
 
 onSubmit(): void {
   if (this.trajectForm.invalid || this.points.length === 0) {
     this.markFormGroupTouched(this.trajectForm);
     this.pointControls.forEach(group => this.markFormGroupTouched(group));
-    
+
     if (this.points.length === 0) {
       this.snackBar.open('Ajoutez au moins un point', 'Fermer', { duration: 3000 });
     }
@@ -172,19 +172,19 @@ onSubmit(): void {
   }
 
   const formValue = this.trajectForm.value;
-  
-  // Préparer les points AVEC trajectId
+
+
   const points = this.preparePoints();
 
   if (this.data.trajectId) {
-    // Mise à jour
+
     const updateTrajectData: IUpdateTrajectDto = {
       name: formValue.name,
       points: points
     };
 
     console.log('Updating traject with data:', JSON.stringify(updateTrajectData, null, 2));
-    
+
     this.http.updateTraject(this.data.trajectId, updateTrajectData).subscribe({
       next: () => {
         this.snackBar.open('Traject modifié avec succès', 'Fermer', { duration: 3000 });
@@ -198,14 +198,14 @@ onSubmit(): void {
       }
     });
   } else {
-    // Création - N'incluez PAS trajectId ici car il sera assigné par le backend
+
     const createTrajectData: ICreateTrajectDto = {
       name: formValue.name,
       points: points
     };
 
     console.log('Creating traject with data:', JSON.stringify(createTrajectData, null, 2));
-    
+
     this.http.createTraject(createTrajectData).subscribe({
       next: () => {
         this.snackBar.open('Traject créé avec succès', 'Fermer', { duration: 3000 });
@@ -228,19 +228,19 @@ private preparePoints(): any[] {
     return {
       location: point.location,
       order: parseInt(point.order) || (index + 1)
-      // NOTE: Ne pas inclure trajectId ici pour la création
-      // Le backend l'assignera automatiquement
+
+
     };
   });
 }
 
-  // Helper pour obtenir des suggestions d'adresses
+
   suggestAddresses(searchTerm: string): void {
-    // Implémentez ici une recherche d'adresses si nécessaire
-    // Par exemple avec un service de géocoding
+
+
   }
 
-  // Validation helper
+
   private markFormGroupTouched(formGroup: FormGroup): void {
     Object.values(formGroup.controls).forEach(control => {
       control.markAsTouched();
@@ -254,7 +254,7 @@ private preparePoints(): any[] {
     this.dialogRef.close(false);
   }
 
-  // Méthode pour ajouter un point depuis la recherche
+
   addPointFromSearch(location: string): void {
     const pointGroup = this.fb.group({
       location: [location, [Validators.required, Validators.maxLength(200)]],
@@ -266,12 +266,12 @@ private preparePoints(): any[] {
     this.snackBar.open('Point ajouté', 'Fermer', { duration: 2000 });
   }
 
-  // Calculer les estimations
+
   calculateEstimations(): { distance: number, duration: number } {
     const pointsCount = this.points.length;
     return {
-      distance: pointsCount * 10, // 10km par point
-      duration: pointsCount * 0.5 // 30min par point
+      distance: pointsCount * 10,
+      duration: pointsCount * 0.5
     };
   }
 }
