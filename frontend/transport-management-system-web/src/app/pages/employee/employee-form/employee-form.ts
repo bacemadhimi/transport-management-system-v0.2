@@ -99,8 +99,7 @@ export class EmployeeForm implements OnInit, AfterViewInit, OnDestroy {
   private entityMap: Map<number, IGeographicalEntity> = new Map();
 
   // Available categories (filtered to just 3)
-  availableCategories = ['DRIVER', 'MECHANIC', 'CONVOYEUR'];
-
+ 
   // Define form type
   employeeForm: FormGroup;
 
@@ -640,36 +639,45 @@ private setGeographicalSelections(employeeData: any) {
     const category = this.employeeForm.get('employeeCategory')?.value;
     return category === 'DRIVER';
   }
-
-  getCategoryLabel(categoryCode: string): string {
-    const categoryMap: {[key: string]: string} = {
-      'DRIVER': 'Chauffeur',
-      'MECHANIC': 'Mécanicien',
-      'CONVOYEUR': 'Convoyeur'
-    };
-    return categoryMap[categoryCode] || categoryCode;
+getCategoryLabel(categoryCode: string): string {
+  if (!categoryCode) return '';
+  
+  
+  let cleanCode = categoryCode;
+  if (cleanCode.includes('=')) {
+    cleanCode = cleanCode.split('=')[0];
   }
 
-  private loadEmployeeCategories(): void {
-    this.loadingCategories = true;
-    
-    const categoriesSub = this.settingsService.getEmployeeCategories().subscribe({
-      next: (categories) => {
-        // Filter to only show DRIVER, MECHANIC, CONVOYEUR
-        this.employeeCategories = categories.filter(cat => 
-          this.availableCategories.includes(cat.parameterCode)
-        );
-        this.loadingCategories = false;
-        console.log('✅ Employee categories loaded:', this.employeeCategories);
-      },
-      error: (error) => {
-        console.error('Error loading employee categories:', error);
-        this.loadingCategories = false;
-      }
-    });
-    
-    this.subscriptions.push(categoriesSub);
-  }
+  const categoryMap: {[key: string]: string} = {
+    'DRIVER': 'Chauffeur',
+    'MECHANIC': 'Mécanicien',
+    'CONVOYEUR': 'Convoyeur',
+    'MAGASINIER': 'Magasinier',
+    'ADMIN': 'Administrateur',
+    'MANAGER': 'Gestionnaire'
+  };
+  
+  return categoryMap[cleanCode] || cleanCode.charAt(0).toUpperCase() + cleanCode.slice(1).toLowerCase();
+}
+
+private loadEmployeeCategories(): void {
+  this.loadingCategories = true;
+  
+  const categoriesSub = this.settingsService.getEmployeeCategories().subscribe({
+    next: (categories) => {
+      // Remove the filter - show all categories
+      this.employeeCategories = categories; // ← Just assign all categories directly
+      this.loadingCategories = false;
+      console.log('✅ All employee categories loaded:', this.employeeCategories);
+    },
+    error: (error) => {
+      console.error('Error loading employee categories:', error);
+      this.loadingCategories = false;
+    }
+  });
+  
+  this.subscriptions.push(categoriesSub);
+}
 
   private loadTypeTrucks(): void {
     this.loadingTypeTrucks = true;
