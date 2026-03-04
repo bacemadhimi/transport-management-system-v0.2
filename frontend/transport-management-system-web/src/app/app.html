@@ -1,14 +1,21 @@
 <header>
   <mat-toolbar class="bg-blue-600! flex justify-between relative shadow-md">
  
-    <!-- Logo -->
-    <div class="flex items-center">
-      <img *ngIf="authService.isLoggedIn"
-           src="logo.jpg"
-           alt="{{ t('APP_TITLE') }}"
-           class="w-10 h-10 rounded-full bg-white p-1 shadow-sm object-cover cursor-pointer ml-2"
-           (click)="drawer.toggle()">
-    </div>
+ <!-- Logo -->
+<div class="flex items-center">
+  <img *ngIf="authService.isLoggedIn && companyLogo"
+       [src]="companyLogo"
+       alt="{{ t('APP_TITLE') }}"
+       class="w-10 h-10 rounded-full bg-white p-1 shadow-sm object-cover cursor-pointer ml-2"
+       (click)="drawer.toggle()">
+  
+  <!-- Optional: Show a placeholder icon when no logo -->
+  <div *ngIf="authService.isLoggedIn && !companyLogo" 
+       class="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center cursor-pointer ml-2"
+       (click)="drawer.toggle()">
+    <mat-icon class="text-gray-500">business</mat-icon>
+  </div>
+</div>
  
     <!-- Right side -->
     <div *ngIf="authService.isLoggedIn" class="flex gap-4 items-center relative">

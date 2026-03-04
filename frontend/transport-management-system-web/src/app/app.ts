@@ -18,6 +18,7 @@ import { MatMenuModule } from '@angular/material/menu';
 import { Subscription } from 'rxjs';
 import { Translation } from './services/Translation';
 import { environment } from '../environments/environment';
+import { IGeneralSettings } from './types/general-settings';
 
 @Component({
   selector: 'app-root',
@@ -59,7 +60,7 @@ export class App implements OnInit, OnDestroy {
   currentLanguage = 'fr';
   maintenanceOpen = false;
   userMenuOpen = false;
-
+  companyLogo: string | null = null;
   cancelledTrips: any[] = [];
   cancelledTripsCount = 0;
   notifications: TripNotification[] = [];
@@ -102,7 +103,7 @@ ngOnInit() {
     this.authService.loadLoggedInUser();
     this.initializeSignalR();
 
-
+    this.loadCompanyLogo(); 
     this.loadNotificationsFromDatabase(0, this.pageSize);
   }
 
@@ -115,6 +116,25 @@ ngOnInit() {
       this.refreshNotifications();
     }
   }, 30000);
+}
+loadCompanyLogo() {
+  this.httpService.getAllSettingsByType('COMPANY').subscribe({
+    next: (settings: IGeneralSettings[]) => {
+      const companyRecord = settings.find(s => 
+        s.parameterCode === 'COMPANY_LOGO'
+      );
+      
+      if (companyRecord?.logoBase64) {
+        this.companyLogo = companyRecord.logoBase64;
+      } else {
+        this.companyLogo = null;
+      }
+    },
+    error: (error) => {
+      console.error('Error loading company logo:', error);
+      this.companyLogo = null;
+    }
+  });
 }
 loadNotificationsFromDatabase(pageIndex: number = 0, pageSize: number = 20) {
   this.http.get(`${environment.apiUrl}/api/notifications?pageIndex=${pageIndex}&pageSize=${pageSize}`).subscribe({

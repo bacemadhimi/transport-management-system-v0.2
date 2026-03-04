@@ -88,7 +88,8 @@ public class GeneralSettingsController : ControllerBase
         existing.ParameterType = model.ParameterType;
         existing.ParameterCode = model.ParameterCode;
         existing.Description = model.Description;
-     
+        existing.LogoBase64 = model.LogoBase64;
+
 
         await _context.SaveChangesAsync();
         return Ok(existing);
@@ -168,7 +169,8 @@ public class GeneralSettingsController : ControllerBase
                 Id = g.Id,
                 ParameterType = g.ParameterType,
                 ParameterCode = g.ParameterCode,
-                Description = g.Description 
+                Description = g.Description,
+                LogoBase64 = g.LogoBase64
             })
             .ToListAsync();
 
