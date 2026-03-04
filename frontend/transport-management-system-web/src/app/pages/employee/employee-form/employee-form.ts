@@ -926,10 +926,13 @@ onFileSelected(event: any) {
   formData.append('phoneCountry', formValues.phoneCountry || 'tn');
   formData.append('drivingLicense', formValues.drivingLicense || '');
 
-  const employeeCategory = formValues.employeeCategory;
-  if (employeeCategory) {
-    formData.append('employeeCategory', employeeCategory);
+let employeeCategory = formValues.employeeCategory;
+if (employeeCategory) {
+  if (employeeCategory.includes('=')) {
+    employeeCategory = employeeCategory.split('=')[0];
   }
+  formData.append('employeeCategory', employeeCategory);
+}
 
   const isInternal = formValues.isInternal;
   formData.append('isInternal', isInternal ? 'true' : 'false');
@@ -999,11 +1002,14 @@ updateEmployee() {
   formData.append('drivingLicense', formValues.drivingLicense || '');
   formData.append('isEnable', 'true');
 
-  const employeeCategory = formValues.employeeCategory;
-  if (employeeCategory) {
-    formData.append('employeeCategory', employeeCategory);
-  }
+let employeeCategory = formValues.employeeCategory;
+if (employeeCategory) {
 
+  if (employeeCategory.includes('=')) {
+    employeeCategory = employeeCategory.split('=')[0];
+  }
+  formData.append('employeeCategory', employeeCategory);
+}
   const isInternal = formValues.isInternal;
   formData.append('isInternal', isInternal ? 'true' : 'false');
 

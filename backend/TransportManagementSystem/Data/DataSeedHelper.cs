@@ -459,7 +459,7 @@ namespace TransportManagementSystem.Data
 
                     foreach (var name in names)
                     {
-                        employees.Add(new Employee
+                        employees.Add(new Driver
                         {
 
                             IdNumber = $"DRV-{1000 + index}",
