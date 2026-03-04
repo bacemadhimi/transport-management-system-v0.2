@@ -745,7 +745,17 @@ loadEmployee(employeeId: number) {
 
       this.employeeData = employee;
 
-
+let categoryValue = employee.employeeCategory || '';
+if (categoryValue) {
+ 
+  const matchingCategory = this.employeeCategories.find(
+    cat => this.extractCode(cat.parameterCode) === categoryValue
+  );
+  if (matchingCategory) {
+   
+    categoryValue = matchingCategory.parameterCode;
+  }
+}
       this.employeeForm.patchValue({
         idNumber: employee.idNumber,
         name: employee.name,
@@ -754,7 +764,7 @@ loadEmployee(employeeId: number) {
         phoneCountry: employee.phoneCountry || 'tn',
         drivingLicense: employee.drivingLicense || '',
         typeTruckId: employee.typeTruckId || null,
-        employeeCategory: employee.employeeCategory || '',
+        employeeCategory: categoryValue,
         isInternal: employee.isInternal || false
       }, { emitEvent: false });
 
@@ -820,6 +830,10 @@ loadEmployee(employeeId: number) {
     }
   });
   this.subscriptions.push(sub);
+}
+extractCode(parameterCode: string): string {
+  if (!parameterCode) return '';
+  return parameterCode.split('=')[0];
 }
 onFileSelected(event: any) {
   const file: File = event.target.files[0];
