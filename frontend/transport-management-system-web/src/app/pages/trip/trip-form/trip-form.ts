@@ -91,8 +91,8 @@ export class TripForm implements OnInit {
   @ViewChild(CdkVirtualScrollViewport) viewport!: CdkVirtualScrollViewport;
   tripForm!: FormGroup;
   deliveries: FormArray;
-
-
+  driverEntityFilterControl = new FormControl(null);
+  truckEntityFilterControl = new FormControl(null);
   availableDrivers: IDriver[] = [];
   unavailableDrivers: any[] = [];
   loadingAvailableDrivers = false;
@@ -100,10 +100,11 @@ export class TripForm implements OnInit {
   geographicalEntities: IGeographicalEntity[] = [];
   entityFilterControl = new FormControl(null);
   filteredClientsByEntity: any[] = [];
-
+  allowMixingOrderTypes: boolean = false;
   convoyeurs: IConvoyeur[] = [];
   loadingConvoyeurs = false;
-
+  filteredAvailableDrivers: IDriver[] = [];
+  filteredAvailableTrucks: ITruck[] = [];
   allowExceedMaxCapacity: boolean = false;
   maxCapacityPercentage: number = 100;
   trucks: ITruck[] = [];
@@ -444,10 +445,19 @@ this.tripForm.get('estimatedStartDate')?.valueChanges.subscribe(() => {
     this.tripForm.get('driverId')?.valueChanges.subscribe(() => {
       this.checkDriverAvailabilityOnChange();
     });
+
+    this.driverEntityFilterControl.valueChanges.subscribe(() => {
+      this.filterDriversByEntity();
+    });
+
+    this.truckEntityFilterControl.valueChanges.subscribe(() => {
+      this.filterTrucksByEntity();
+    });
   }
 
 private loadConfiguration(): void {
   this.loadTripSettings();
+  this.loadOrderSettings()  
   this.listenToSettingsChanges();
 
   this.settingsService.orderSettings$.subscribe(settings => {
@@ -456,6 +466,7 @@ private loadConfiguration(): void {
       this.allowEditOrder = settings?.allowEditOrder || false;
       this.allowLoadLateOrders = settings?.allowLoadLateOrders || false;
       this.acceptOrdersWithoutAddress = settings?.acceptOrdersWithoutAddress || false;
+      this.allowMixingOrderTypes = settings?.allowMixingOrderTypes || false;
     }
   });
 
@@ -653,7 +664,7 @@ private loadGeographicalEntities(): void {
       endLocationId: [null, Validators.required],
       convoyeurId: [null],
       trajectId: [null]
-    });
+    }, { validators: this.orderTypeValidator.bind(this) }); 
 
     const startDateControl = this.tripForm.get('estimatedStartDate');
     const endDateControl = this.tripForm.get('estimatedEndDate');
@@ -694,121 +705,122 @@ private loadGeographicalEntities(): void {
     });
   }
 
-  private loadAllTrucks(): void {
-    this.loadingAvailableTrucks = true;
+private loadAllTrucks(): void {
+  this.loadingAvailableTrucks = true;
 
-    this.http.getTrucks().subscribe({
-      next: (trucks: ITruck[]) => {
-        this.trucks = trucks
-          .filter(truck => truck.isEnable)
-          .map(truck => ({
-            ...truck,
-            disabled: false,
-            availabilityMessage: 'Disponible',
-            tooltip: 'Tous les camions (aucune date sélectionnée)',
-            isAvailable: true
-          }));
-
-        this.availableTrucks = [...this.trucks];
-        this.unavailableTrucks = [];
-
-        this.loadingAvailableTrucks = false;
-      },
-      error: (error) => {
-        console.error('Error loading all trucks:', error);
-        this.snackBar.open('Erreur lors du chargement des camions', 'Fermer', { duration: 3000 });
-        this.loadingAvailableTrucks = false;
-      }
-    });
-  }
-
-  private processTruckResponse(response: any, date: Date): void {
-    console.log('🔄 Processing truck response...');
-    console.log('Raw response:', response);
-
-    this.availableTrucks = [];
-    this.unavailableTrucks = [];
-    this.trucks = [];
-
-    if (!response || !response.data) {
-      console.warn('❌ No data in response');
-      return;
-    }
-
-    const data = response.data;
-    const currentTruckId = this.tripForm.get('truckId')?.value;
-
-
-    if (data.availableTrucks && Array.isArray(data.availableTrucks)) {
-      console.log(`✅ Processing ${data.availableTrucks.length} available trucks`);
-
-      this.availableTrucks = data.availableTrucks.map((apiTruck: any) => {
-        const typeTruckData = apiTruck.typeTruck || null;
-        return {
-          id: apiTruck.Id || apiTruck.id,
-          immatriculation: apiTruck.Immatriculation || apiTruck.immatriculation || 'N/A',
-          marqueTruckId: apiTruck.marqueTruckId || null,
-          model: apiTruck.Model || apiTruck.model || '',
-          capacity: apiTruck.typeTruck?.capacity || 0,
-          capacityUnit: this.loadingUnit || 'tonnes',
-          status: apiTruck.Status || apiTruck.status || 'active',
-          isEnable: apiTruck.IsEnable || apiTruck.isEnable || true,
-          color: apiTruck.Color || apiTruck.color || '',
+  this.http.getTrucks().subscribe({
+    next: (trucks: ITruck[]) => {
+      this.trucks = trucks
+        .filter(truck => truck.isEnable)
+        .map(truck => ({
+          ...truck,
           disabled: false,
           availabilityMessage: 'Disponible',
-          tooltip: `Disponible le ${this.formatDateForDisplay(date)}`,
+          tooltip: 'Tous les camions (aucune date sélectionnée)',
           isAvailable: true,
-          availabilityDate: date,
-          zoneId: apiTruck.ZoneId || apiTruck.zoneId || apiTruck.Zone?.id || null,
-          typeTruck: typeTruckData ? {
-            id: typeTruckData.Id || typeTruckData.id,
-            type: typeTruckData.type || '',
-            capacity: typeTruckData.capacity,
-            unit: typeTruckData.unit
-          } : null
-        };
-      });
+          truckGeographicalEntities: truck.truckGeographicalEntities || [] 
+        }));
+
+      this.availableTrucks = [...this.trucks];
+      this.unavailableTrucks = [];
+      this.filteredAvailableTrucks = [...this.availableTrucks]; 
+      this.loadingAvailableTrucks = false;
+    },
+    error: (error) => {
+      console.error('Error loading all trucks:', error);
+      this.snackBar.open('Erreur lors du chargement des camions', 'Fermer', { duration: 3000 });
+      this.loadingAvailableTrucks = false;
     }
+  });
+}
 
+private processTruckResponse(response: any, date: Date): void {
+  console.log('🔄 Processing truck response...');
+  console.log('Raw response:', response);
 
-    if (data.unavailableTrucks && Array.isArray(data.unavailableTrucks)) {
-      console.log(`⚠️ Processing ${data.unavailableTrucks.length} unavailable trucks`);
+  this.availableTrucks = [];
+  this.unavailableTrucks = [];
+  this.trucks = [];
 
-      this.unavailableTrucks = data.unavailableTrucks.map((truck: any) => {
-        return {
-          id: truck.Id || truck.id,
-          immatriculation: truck.Immatriculation || truck.immatriculation || 'N/A',
-          marqueTruckId: truck.marqueTruckId || null,
-          model: truck.Model || truck.model || '',
-          capacity: truck.typeTruck?.capacity || 0,
-          capacityUnit: this.loadingUnit,
-          reason: truck.reason || 'Non disponible',
-          status: truck.Status || truck.status || 'inactive',
-          disabled: true,
-          availabilityMessage: truck.reason || 'Non disponible',
-          tooltip: `Indisponible le ${this.formatDateForDisplay(date)} - ${truck.reason || 'Raison inconnue'}`,
-          isAvailable: false,
-          zoneId: truck.ZoneId || truck.zoneId || null
-        };
-      });
-    }
+  if (!response || !response.data) {
+    console.warn('❌ No data in response');
+    return;
+  }
 
+  const data = response.data;
+  const currentTruckId = this.tripForm.get('truckId')?.value;
 
-    if (this.tripId && currentTruckId) {
-      this.forceAddCurrentTruck(currentTruckId, date);
-    }
+  if (data.availableTrucks && Array.isArray(data.availableTrucks)) {
+    console.log(`✅ Processing ${data.availableTrucks.length} available trucks`);
 
-    this.trucks = [...this.availableTrucks, ...this.unavailableTrucks];
-
-    console.log('📊 Final state:', {
-      availableCount: this.availableTrucks.length,
-      unavailableCount: this.unavailableTrucks.length,
-      totalCount: this.trucks.length,
-      currentTruckId: currentTruckId,
-      isInAvailable: this.availableTrucks.some(t => t.id === currentTruckId),
-      isInUnavailable: this.unavailableTrucks.some(t => t.id === currentTruckId)
+    this.availableTrucks = data.availableTrucks.map((apiTruck: any) => {
+      const typeTruckData = apiTruck.typeTruck || null;
+      return {
+        id: apiTruck.Id || apiTruck.id,
+        immatriculation: apiTruck.Immatriculation || apiTruck.immatriculation || 'N/A',
+        marqueTruckId: apiTruck.marqueTruckId || null,
+        model: apiTruck.Model || apiTruck.model || '',
+        capacity: apiTruck.typeTruck?.capacity || 0,
+        capacityUnit: this.loadingUnit || 'tonnes',
+        status: apiTruck.Status || apiTruck.status || 'active',
+        isEnable: apiTruck.IsEnable || apiTruck.isEnable || true,
+        color: apiTruck.Color || apiTruck.color || '',
+        disabled: false,
+        availabilityMessage: 'Disponible',
+        tooltip: `Disponible le ${this.formatDateForDisplay(date)}`,
+        isAvailable: true,
+        availabilityDate: date,
+        zoneId: apiTruck.ZoneId || apiTruck.zoneId || apiTruck.Zone?.id || null,
+        typeTruck: typeTruckData ? {
+          id: typeTruckData.Id || typeTruckData.id,
+          type: typeTruckData.type || '',
+          capacity: typeTruckData.capacity,
+          unit: typeTruckData.unit
+        } : null,
+        truckGeographicalEntities: apiTruck.truckGeographicalEntities || [] // Add this line
+      };
     });
   }
+
+  if (data.unavailableTrucks && Array.isArray(data.unavailableTrucks)) {
+    console.log(`⚠️ Processing ${data.unavailableTrucks.length} unavailable trucks`);
+
+    this.unavailableTrucks = data.unavailableTrucks.map((truck: any) => {
+      return {
+        id: truck.Id || truck.id,
+        immatriculation: truck.Immatriculation || truck.immatriculation || 'N/A',
+        marqueTruckId: truck.marqueTruckId || null,
+        model: truck.Model || truck.model || '',
+        capacity: truck.typeTruck?.capacity || 0,
+        capacityUnit: this.loadingUnit,
+        reason: truck.reason || 'Non disponible',
+        status: truck.Status || truck.status || 'inactive',
+        disabled: true,
+        availabilityMessage: truck.reason || 'Non disponible',
+        tooltip: `Indisponible le ${this.formatDateForDisplay(date)} - ${truck.reason || 'Raison inconnue'}`,
+        isAvailable: false,
+        zoneId: truck.ZoneId || truck.zoneId || null,
+        truckGeographicalEntities: truck.truckGeographicalEntities || [] // Add this line
+      };
+    });
+  }
+
+  if (this.tripId && currentTruckId) {
+    this.forceAddCurrentTruck(currentTruckId, date);
+  }
+
+  this.trucks = [...this.availableTrucks, ...this.unavailableTrucks];
+  this.filteredAvailableTrucks = [...this.availableTrucks]; // Add this line
+
+  console.log('📊 Final state:', {
+    availableCount: this.availableTrucks.length,
+    unavailableCount: this.unavailableTrucks.length,
+    totalCount: this.trucks.length,
+    currentTruckId: currentTruckId,
+    isInAvailable: this.availableTrucks.some(t => t.id === currentTruckId),
+    isInUnavailable: this.unavailableTrucks.some(t => t.id === currentTruckId)
+  });
+}
 
 
   private forceAddCurrentTruck(truckId: number, date: Date): void {
@@ -1695,7 +1707,18 @@ getSelectedConvoyeurInfo(): string {
       }
       return;
     }
-
+      const orderTypeValidation = this.validateOrderTypes();
+        if (!orderTypeValidation.isValid) {
+          await Swal.fire({
+            icon: 'error',
+            title: 'Erreur de validation',
+            html: orderTypeValidation.message,
+            confirmButtonText: 'Compris',
+            confirmButtonColor: '#ef4444',
+            width: '600px'
+          });
+          return;
+        }
     if (this.trajectMode === 'new' && !this.saveAsPredefined) {
       const result = await Swal.fire({
         icon: 'warning',
@@ -4474,31 +4497,33 @@ getSelectedEndLocationInfo(): string {
     }
   }
 
-  private loadAvailableDrivers(date: Date | null): void {
-    if (!date) {
-      this.availableDrivers = [...this.drivers];
-      this.unavailableDrivers = [];
-      return;
-    }
-
-    const dateStr = this.formatDateForAPI(date);
-    const excludeTripId = this.tripId || this.tripId;
-
-    this.loadingAvailableDrivers = true;
-
-    this.http.getAvailableDriversByDateAndZone(dateStr, undefined, excludeTripId).subscribe({
-      next: (response: any) => {
-        this.processDriverResponse(response, date);
-        this.loadingAvailableDrivers = false;
-      },
-      error: (error) => {
-        console.error('Error loading available drivers:', error);
-        this.handleDriverLoadError(date, excludeTripId);
-        this.loadingAvailableDrivers = false;
-      }
-    });
+loadAvailableDrivers(date: Date | null): void {
+  if (!date) {
+    this.availableDrivers = [...this.drivers];
+    this.unavailableDrivers = [];
+    this.filteredAvailableDrivers = [...this.availableDrivers];
+    return;
   }
 
+  const dateStr = this.formatDateForAPI(date);
+  const excludeTripId = this.tripId || this.tripId;
+
+  this.loadingAvailableDrivers = true;
+
+  this.http.getAvailableDriversByDateAndZone(dateStr, undefined, excludeTripId).subscribe({
+    next: (response: any) => {
+      this.processDriverResponse(response, date);
+      this.filteredAvailableDrivers = [...this.availableDrivers];
+      this.filterDriversByEntity();
+      this.loadingAvailableDrivers = false;
+    },
+    error: (error) => {
+      console.error('Error loading available drivers:', error);
+      this.handleDriverLoadError(date, excludeTripId);
+      this.loadingAvailableDrivers = false;
+    }
+  });
+}
   private handleDriverLoadError(date: Date, excludeTripId?: number): void {
     console.error('Driver load error - Date:', date, 'ExcludeTrip:', excludeTripId);
 
@@ -4521,38 +4546,39 @@ getSelectedEndLocationInfo(): string {
     }
   }
 
-  private processDriverResponse(response: any, date: Date): void {
-    this.availableDrivers.forEach(driver => {
-      driver.availabilityStatus = undefined;
-      driver.availabilityMessage = undefined;
-      driver.requiresApproval = undefined;
-      driver.totalHours = undefined;
-    });
+private processDriverResponse(response: any, date: Date): void {
+  this.availableDrivers.forEach(driver => {
+    driver.availabilityStatus = undefined;
+    driver.availabilityMessage = undefined;
+    driver.requiresApproval = undefined;
+    driver.totalHours = undefined;
+  });
 
-    this.availableDrivers = (response.availableDrivers || []).map((apiDriver: any) => ({
-      id: apiDriver.driverId,
-      name: apiDriver.driverName,
-      permisNumber: apiDriver.permisNumber || '',
-      phone: apiDriver.phone || '',
-      email: apiDriver.email || '',
-      phoneCountry: apiDriver.phoneCountry || '+216',
-      status: apiDriver.status || 'active',
-      idCamion: apiDriver.idCamion || null,
-      isActive: true,
-      zoneId: apiDriver.zoneId || null,
-      zoneName: apiDriver.zoneName || '',
-      availabilityStatus: undefined,
-      availabilityMessage: undefined,
-      requiresApproval: undefined,
-      totalHours: undefined
-    }));
+  this.availableDrivers = (response.availableDrivers || []).map((apiDriver: any) => ({
+    id: apiDriver.driverId,
+    name: apiDriver.driverName,
+    permisNumber: apiDriver.permisNumber || '',
+    phone: apiDriver.phone || '',
+    email: apiDriver.email || '',
+    phoneCountry: apiDriver.phoneCountry || '+216',
+    status: apiDriver.status || 'active',
+    idCamion: apiDriver.idCamion || null,
+    isActive: true,
+    zoneId: apiDriver.zoneId || null,
+    zoneName: apiDriver.zoneName || '',
+    driverGeographicalEntities: apiDriver.driverGeographicalEntities || [], // Add this line
+    availabilityStatus: undefined,
+    availabilityMessage: undefined,
+    requiresApproval: undefined,
+    totalHours: undefined
+  }));
 
-    this.unavailableDrivers = response.unavailableDrivers || [];
+  this.unavailableDrivers = response.unavailableDrivers || [];
+  this.filteredAvailableDrivers = [...this.availableDrivers];
 
-    this.handleCurrentDriverForEdit(response);
-
-    this.checkNoDriversWarning(date, response);
-  }
+  this.handleCurrentDriverForEdit(response);
+  this.checkNoDriversWarning(date, response);
+}
 
   private handleCurrentDriverForEdit(response: any): void {
     const driverId = this.tripForm.get('driverId')?.value;
@@ -5783,7 +5809,45 @@ clearFilters(): void {
   private addSelectedOrdersToDeliveries(): void {
     const customer = this.selectedClient;
     if (!customer) return;
+if (!this.allowMixingOrderTypes && this.deliveries.length > 0) {
+    // Récupérer le type des commandes existantes
+    const existingTypes = new Set<string>();
+    this.deliveryControls.forEach(group => {
+      const orderId = group.get('orderId')?.value;
+      if (orderId) {
+        const order = this.allOrders.find(o => o.id === orderId);
+        if (order?.type) existingTypes.add(order.type);
+      }
+    });
 
+    // Vérifier les nouvelles commandes
+    const newTypes = new Set<string>();
+    this.selectedOrders.forEach(orderId => {
+      const order = this.allOrders.find(o => o.id === orderId);
+      if (order?.type) newTypes.add(order.type);
+    });
+
+    // Vérifier si les types sont compatibles
+    const allTypes = new Set([...existingTypes, ...newTypes]);
+    if (allTypes.size > 1) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Mélange de types non autorisé',
+        html: `
+          <div style="text-align: left;">
+            <p>Les commandes existantes sont de type : <strong>${Array.from(existingTypes).join(', ')}</strong></p>
+            <p>Les nouvelles commandes sont de type : <strong>${Array.from(newTypes).join(', ')}</strong></p>
+            <p style="color: #ef4444; margin-top: 15px;">
+              Le mélange des types de commandes n'est pas autorisé dans les paramètres.
+            </p>
+          </div>
+        `,
+        confirmButtonText: 'Compris',
+        confirmButtonColor: '#ef4444'
+      });
+      return;
+    }
+  }
     let sequence = this.deliveries.length + 1;
 
     const ordersByCustomer = new Map<number, number[]>();
@@ -7295,5 +7359,325 @@ private loadCapacitySettings(): void {
       this.maxCapacityPercentage = 100;
     }
   });
+}
+// Filter drivers by geographical entity
+filterDriversByEntity(): void {
+  const entityId = this.driverEntityFilterControl.value;
+  
+  if (!entityId) {
+    this.filteredAvailableDrivers = [...this.availableDrivers];
+    return;
+  }
+  
+  this.filteredAvailableDrivers = this.availableDrivers.filter(driver => {
+    // Check if driver has the selected geographical entity through DriverGeographicalEntities
+    return driver.driverGeographicalEntities?.some(
+      ge => ge.geographicalEntityId === entityId
+    );
+  });
+  
+  console.log(`Filtered drivers by entity ${entityId}: ${this.filteredAvailableDrivers.length} drivers`);
+}
+
+// Filter trucks by geographical entity
+filterTrucksByEntity(): void {
+  const entityId = this.truckEntityFilterControl.value;
+  
+  if (!entityId) {
+    this.filteredAvailableTrucks = [...this.availableTrucks];
+    return;
+  }
+  
+  this.filteredAvailableTrucks = this.availableTrucks.filter(truck => {
+    // Check if truck has the selected geographical entity through TruckGeographicalEntities
+    return truck.truckGeographicalEntities?.some(
+      ge => ge.geographicalEntityId === entityId
+    );
+  });
+  
+  console.log(`Filtered trucks by entity ${entityId}: ${this.filteredAvailableTrucks.length} trucks`);
+}
+// Dans la classe TripForm, ajoutez ces méthodes:
+
+/**
+ * Vérifie s'il y a plusieurs types de commandes
+ */
+hasMultipleOrderTypes(): boolean {
+  const types = new Set<string>();
+  
+  this.deliveryControls.forEach(group => {
+    const orderId = group.get('orderId')?.value;
+    if (orderId && orderId !== '') {
+      const order = this.allOrders.find(o => o.id === orderId);
+      // Si le type est undefined ou null, on le traite comme "Standard"
+      const orderType = order?.type || 'Standard';
+      types.add(orderType);
+      console.log(`Order ${orderId} type: "${orderType}" (original: ${order?.type || 'undefined'})`);
+    }
+  });
+  
+  console.log('Types détectés (avec fallback):', Array.from(types));
+  return types.size > 1;
+}
+getDistinctOrderTypes(): string[] {
+  const types = new Set<string>();
+  
+  this.deliveryControls.forEach(group => {
+    const orderId = group.get('orderId')?.value;
+    if (orderId && orderId !== '') {
+      const order = this.allOrders.find(o => o.id === orderId);
+      // Si le type est undefined ou null, on le traite comme "Standard"
+      const orderType = order?.type || 'Standard';
+      types.add(orderType);
+    }
+  });
+  
+  return Array.from(types);
+}
+
+
+getOrderTypesSummary(): string {
+  const types = this.getDistinctOrderTypes();
+  if (types.length === 0) return 'Aucun type';
+  if (types.length === 1) return types[0];
+  return types.join(', ');
+}
+
+
+getOrderTypeTooltip(): string {
+  if (this.allowMixingOrderTypes) {
+    return 'Le mélange des types de commandes est autorisé dans les paramètres';
+  }
+  
+  const types = this.getDistinctOrderTypes();
+  if (types.length <= 1) {
+    return `Toutes les commandes sont du même type: ${types[0] || 'Non défini'}`;
+  }
+  
+  return `⚠️ Mélange de types interdit! Types détectés: ${types.join(', ')}`;
+}
+
+
+getOrderTypesBreakdown(): { type: string, count: number, totalWeight: number, orders: any[] }[] {
+  const breakdown = new Map<string, { count: number, totalWeight: number, orders: any[] }>();
+  
+  this.deliveryControls.forEach(group => {
+    const orderId = group.get('orderId')?.value;
+    if (orderId) {
+      const order = this.allOrders.find(o => o.id === orderId);
+      if (order) {
+        const type = order.type || 'Standard';
+        if (!breakdown.has(type)) {
+          breakdown.set(type, { count: 0, totalWeight: 0, orders: [] });
+        }
+        const data = breakdown.get(type)!;
+        data.count++;
+        data.totalWeight += order.weight || 0;
+        data.orders.push(order);
+      }
+    }
+  });
+  
+  return Array.from(breakdown.entries()).map(([type, data]) => ({
+    type,
+    count: data.count,
+    totalWeight: data.totalWeight,
+    orders: data.orders
+  }));
+}
+
+
+removeOrdersByType(type: string): void {
+  const indicesToRemove: number[] = [];
+  
+  this.deliveryControls.forEach((group, index) => {
+    const orderId = group.get('orderId')?.value;
+    if (orderId) {
+      const order = this.allOrders.find(o => o.id === orderId);
+      if (order && (order.type || 'Standard') === type) {
+        indicesToRemove.push(index);
+      }
+    }
+  });
+  
+  if (indicesToRemove.length === 0) return;
+  
+  Swal.fire({
+    title: 'Confirmation',
+    text: `Voulez-vous supprimer les ${indicesToRemove.length} commande(s) de type "${type}" ?`,
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonText: 'Oui, supprimer',
+    cancelButtonText: 'Annuler',
+    confirmButtonColor: '#ef4444'
+  }).then((result) => {
+    if (result.isConfirmed) {
+
+      indicesToRemove.sort((a, b) => b - a).forEach(index => {
+        this.removeDelivery(index);
+      });
+      
+      this.snackBar.open(
+        `${indicesToRemove.length} commande(s) de type "${type}" supprimée(s)`,
+        'Fermer',
+        { duration: 3000 }
+      );
+    }
+  });
+}
+
+getTypeColor(type: string): string {
+  const colors: { [key: string]: string } = {
+    'Frais': '#10b981',
+    'Sec': '#3b82f6',
+    'Standard': '#6b7280',
+    'Urgent': '#ef4444',
+    'Fragile': '#f59e0b',
+    'Réfrigéré': '#06b6d4',
+    'Congelé': '#0284c7',
+    'Dangereux': '#dc2626'
+  };
+  
+  return colors[type] || '#9ca3af';
+}
+private loadOrderSettings(): void {
+  this.http.getAllSettingsByType('ORDER').subscribe({
+    next: (settings) => {
+      const allowMixingSetting = settings.find(s => 
+        s.parameterCode.startsWith('ALLOW_MIXING_ORDER_TYPES=')
+      );
+      
+      if (allowMixingSetting) {
+        const value = allowMixingSetting.parameterCode.split('=')[1];
+        this.allowMixingOrderTypes = value === 'true';
+      }
+      
+      console.log('✅ Order mixing settings loaded:', this.allowMixingOrderTypes);
+    },
+    error: (error) => {
+      console.error('Error loading order mixing settings:', error);
+      this.allowMixingOrderTypes = false;
+    }
+  });
+}
+/**
+ * Vérifie que toutes les commandes dans le voyage sont du même type
+ * Retourne true si OK, false si erreur
+ */
+private validateOrderTypes(): { isValid: boolean, message?: string } {
+  // Si le mélange est autorisé, pas de validation
+  if (this.allowMixingOrderTypes) {
+    return { isValid: true };
+  }
+
+  // Récupérer tous les types de commandes
+  const orderTypes = new Set<string>();
+  const ordersWithTypes: { orderId: number, type: string, reference: string }[] = [];
+
+  this.deliveryControls.forEach(deliveryGroup => {
+    const orderId = deliveryGroup.get('orderId')?.value;
+    if (orderId) {
+      const order = this.allOrders.find(o => o.id === orderId);
+      if (order) {
+        const orderType = order.type || 'Standard';
+        orderTypes.add(orderType);
+        ordersWithTypes.push({
+          orderId: orderId,
+          type: orderType,
+          reference: order.reference
+        });
+      }
+    }
+  });
+
+  // Si plusieurs types différents détectés
+  if (orderTypes.size > 1) {
+    const typesList = Array.from(orderTypes).join(', ');
+    
+    // Grouper les commandes par type pour le message d'erreur
+    const ordersByType = new Map<string, string[]>();
+    ordersWithTypes.forEach(item => {
+      if (!ordersByType.has(item.type)) {
+        ordersByType.set(item.type, []);
+      }
+      ordersByType.get(item.type)!.push(item.reference);
+    });
+
+    let detailsHtml = '<div style="text-align: left; max-height: 300px; overflow-y: auto;">';
+    ordersByType.forEach((references, type) => {
+      detailsHtml += `
+        <div style="margin-bottom: 15px;">
+          <strong style="color: #ef4444;">${type}:</strong>
+          <ul style="margin-top: 5px; margin-left: 20px;">
+            ${references.slice(0, 5).map(ref => `<li>${ref}</li>`).join('')}
+            ${references.length > 5 ? `<li>... et ${references.length - 5} autre(s)</li>` : ''}
+          </ul>
+        </div>
+      `;
+    });
+    detailsHtml += '</div>';
+
+    return {
+      isValid: false,
+      message: `
+        <div style="text-align: left; padding: 10px;">
+          <div style="display: flex; align-items: center; margin-bottom: 15px;">
+            <mat-icon style="color: #ef4444; font-size: 32px; margin-right: 10px;">error</mat-icon>
+            <h3 style="margin: 0; color: #1f2937;">Mélange de types de commandes interdit</h3>
+          </div>
+          
+          <p style="margin-bottom: 15px; color: #4b5563;">
+            Vous avez sélectionné des commandes de différents types (${typesList}), 
+            mais le paramètre "Autoriser le mélange des types de commandes" est désactivé.
+          </p>
+          
+          <div style="background-color: #fee; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+            <p style="margin: 0 0 10px 0; font-weight: 600; color: #991b1b;">Détail des commandes par type :</p>
+            ${detailsHtml}
+          </div>
+          
+          <p style="color: #4b5563; font-size: 14px;">
+            <strong>Solution :</strong> Vous devez soit :
+          </p>
+          <ul style="color: #4b5563; font-size: 14px; margin-left: 20px;">
+            <li>Ne sélectionner que des commandes du même type</li>
+            <li>Activer le paramètre "Autoriser le mélange des types de commandes" dans les paramètres généraux</li>
+          </ul>
+        </div>
+      `
+    };
+  }
+
+  return { isValid: true };
+}
+
+private orderTypeValidator(): ValidationErrors | null {
+  
+  if (this.allowMixingOrderTypes) {
+    return null;
+  }
+
+  const orderTypes = new Set<string>();
+  
+  this.deliveryControls.forEach(deliveryGroup => {
+    const orderId = deliveryGroup.get('orderId')?.value;
+    if (orderId) {
+      const order = this.allOrders.find(o => o.id === orderId);
+      if (order?.type) {
+        orderTypes.add(order.type);
+      }
+    }
+  });
+
+  if (orderTypes.size > 1) {
+    return {
+      mixedOrderTypes: {
+        types: Array.from(orderTypes),
+        message: 'Mélange de types de commandes interdit'
+      }
+    };
+  }
+
+  return null;
 }
 }

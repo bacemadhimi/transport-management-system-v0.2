@@ -18,4 +18,10 @@ export interface IEmployee {
   employeeCategory?: string;
   isInternal: boolean;
   phoneCountry?: string;
+  driverGeographicalEntities?: Array<{
+    id?: number;
+    driverId?: number;
+    geographicalEntityId: number;
+    geographicalEntity?: any;
+  }>;
 }

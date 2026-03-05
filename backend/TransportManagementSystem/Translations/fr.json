@@ -478,7 +478,10 @@
   "DATE_FIRST_REGISTRATION_REQUIRED": "Date de première immatriculation requise",
   "EMPTY_WEIGHT_REQUIRED": "Le poids à vide est requis",
   "PHOTO_TRUCKv": "Ajouter des photos",
-  "DELETE_PHOTO": "Tout supprimer"
+  "DELETE_PHOTO": "Tout supprimer",
+  "LICENSE_ATTACHMENT_REQUIRED": "Pièce jointe du permis requise",
+  "CONVOYEUR_INFO": "Transporter Information",
+  "SUPPORTED_FILE_TYPES": "Types de fichiers pris en charge"
 
 
 }

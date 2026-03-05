@@ -96,22 +96,23 @@ export class GeneralSettings implements OnInit {
     'ALLOW_LOAD_LATE_ORDERS': 'ALLOW_LOAD_LATE_ORDERS',
     'ACCEPT_ORDERS_WITHOUT_ADDRESS': 'ACCEPT_ORDERS_WITHOUT_ADDRESS',
     'LOADING_UNIT': 'LOADING_UNIT',
-    'PLANNING_HORIZON': 'PLANNING_HORIZON'
+    'PLANNING_HORIZON': 'PLANNING_HORIZON',
+    'ALLOW_MIXING_ORDER_TYPES': 'ALLOW_MIXING_ORDER_TYPES'
   };
 
-  private tripControlMap: { [key: string]: string } = {
-    'ALLOW_EDIT_TRIPS': 'ALLOW_EDIT_TRIPS',
-    'ALLOW_DELETE_TRIPS': 'ALLOW_DELETE_TRIPS',
-    'EDIT_TIME_LIMIT': 'EDIT_TIME_LIMIT',
-    'MAX_TRIPS_PER_DAY': 'MAX_TRIPS_PER_DAY',
-    'TRIP_ORDER': 'TRIP_ORDER',
-    'REQUIRE_DELETE_CONFIRMATION': 'REQUIRE_DELETE_CONFIRMATION',
-    'NOTIFY_ON_TRIP_EDIT': 'NOTIFY_ON_TRIP_EDIT',
-    'NOTIFY_ON_TRIP_DELETE': 'NOTIFY_ON_TRIP_DELETE',
-    'LINK_DRIVER_TO_TRUCK': 'LINK_DRIVER_TO_TRUCK',
-    'ALLOW_EXCEED_MAX_CAPACITY': 'ALLOW_EXCEED_MAX_CAPACITY',
-    'MAX_CAPACITY_PERCENTAGE': 'MAX_CAPACITY_PERCENTAGE'
-  };
+private tripControlMap: { [key: string]: string } = {
+  'ALLOW_EDIT_TRIPS': 'ALLOW_EDIT_TRIPS',
+  'ALLOW_DELETE_TRIPS': 'ALLOW_DELETE_TRIPS',
+  'MAX_TRIPS_PER_DAY': 'MAX_TRIPS_PER_DAY',
+  'REQUIRE_DELETE_CONFIRMATION': 'REQUIRE_DELETE_CONFIRMATION',
+  'NOTIFY_ON_TRIP_EDIT': 'NOTIFY_ON_TRIP_EDIT',
+  'NOTIFY_ON_TRIP_DELETE': 'NOTIFY_ON_TRIP_DELETE',
+  'LINK_DRIVER_TO_TRUCK': 'LINK_DRIVER_TO_TRUCK',
+  'ALLOW_EXCEED_MAX_CAPACITY': 'ALLOW_EXCEED_MAX_CAPACITY',
+  'MAX_CAPACITY_PERCENTAGE': 'MAX_CAPACITY_PERCENTAGE',
+  
+};
+
 
   ngOnInit() {
     this.initForms();
@@ -130,23 +131,22 @@ export class GeneralSettings implements OnInit {
       ALLOW_LOAD_LATE_ORDERS: [false],
       ACCEPT_ORDERS_WITHOUT_ADDRESS: [false],
       LOADING_UNIT: ['palette'],
-      PLANNING_HORIZON: [30, [Validators.min(1), Validators.max(365)]]
+      PLANNING_HORIZON: [30, [Validators.min(1), Validators.max(365)]],
+      ALLOW_MIXING_ORDER_TYPES: [false]
     });
 
    
-    this.tripSettingsForm = this.fb.group({
-      ALLOW_EDIT_TRIPS: [false],
-      ALLOW_DELETE_TRIPS: [false],
-      EDIT_TIME_LIMIT: [60, [Validators.min(1)]],
-      MAX_TRIPS_PER_DAY: [10, [Validators.min(1)]],
-      TRIP_ORDER: ['chronologique'],
-      REQUIRE_DELETE_CONFIRMATION: [true],
-      NOTIFY_ON_TRIP_EDIT: [false],
-      NOTIFY_ON_TRIP_DELETE: [false],
-      LINK_DRIVER_TO_TRUCK: [false],
-      ALLOW_EXCEED_MAX_CAPACITY: [false],
-      MAX_CAPACITY_PERCENTAGE: [{ value: 100, disabled: true }, [Validators.min(1), Validators.max(200)]]
-    });
+this.tripSettingsForm = this.fb.group({
+  ALLOW_EDIT_TRIPS: [false],
+  ALLOW_DELETE_TRIPS: [false],
+  MAX_TRIPS_PER_DAY: [10, [Validators.min(1)]],
+  REQUIRE_DELETE_CONFIRMATION: [true],
+  NOTIFY_ON_TRIP_EDIT: [false],
+  NOTIFY_ON_TRIP_DELETE: [false],
+  LINK_DRIVER_TO_TRUCK: [false],
+  ALLOW_EXCEED_MAX_CAPACITY: [false],
+  MAX_CAPACITY_PERCENTAGE: [{ value: 100, disabled: true }, [Validators.min(1), Validators.max(200)]],
+});
 
    
     this.geographicalLevelsForm = this.fb.group({

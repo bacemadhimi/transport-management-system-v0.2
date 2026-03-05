@@ -7,6 +7,7 @@
   <form [formGroup]="tripForm" (ngSubmit)="onSubmit()">
     <div class="main-layout">
   
+      <!-- Left Section with Virtual Scroll -->
       <div class="left-section">
         <div class="loading-overlay" *ngIf="loading">
           <mat-spinner diameter="50"></mat-spinner>
@@ -22,9 +23,11 @@
     
           <div class="left-content-wrapper">
 
+            <!-- Unified First Line Section -->
             <div class="unified-first-line-section" *ngIf="trajectMode === 'new' || trajectMode === 'predefined' || isEditMode">
               <div class="unified-first-line-grid">
 
+                <!-- Departure Location Card -->
                 <div class="location-card">
                   <div class="location-header">
                     <div class="location-icon start">
@@ -41,7 +44,6 @@
                       <mat-option *ngFor="let location of activeLocations" [value]="location.id">
                         <div class="location-option">
                           <span class="location-name">{{ location.name }}</span>
-                         
                         </div>
                       </mat-option>
                     </mat-select>
@@ -59,6 +61,7 @@
                   </mat-form-field>
                 </div>
 
+                <!-- Date Card -->
                 <div class="date-card-wrapper">
                   <div class="unified-date-section">
                     <div class="date-selector-header">
@@ -169,6 +172,7 @@
                   </div>
                 </div>
 
+                <!-- Arrival Location Card -->
                 <div class="location-card">
                   <div class="location-header">
                     <div class="location-icon end">
@@ -205,12 +209,14 @@
               </div>
             </div>
 
+            <!-- Driver Row -->
             <div class="trip-row">
  
               <mat-form-field appearance="outline" class="trip-field">
                 <mat-label>Chauffeur</mat-label>
                 <mat-select
                   formControlName="driverId"
+                  panelClass="driver-select-panel"
                   placeholder="Sélectionner un chauffeur"
                   [disabled]="loadingDrivers || loadingAvailableDrivers">
                   
@@ -220,6 +226,7 @@
                     </div>
                   </mat-select-trigger>
 
+                  <!-- Date Filter Info -->
                   <div class="filter-date-info" *ngIf="tripForm.get('estimatedStartDate')?.value">
                     <mat-icon class="date-icon">calendar_today</mat-icon>
                     <span class="date-text">
@@ -232,10 +239,34 @@
                     <span>Sélectionnez une date pour filtrer les chauffeurs</span>
                   </div>
 
-                  <mat-optgroup label="Chauffeurs disponibles">
-                    <mat-option *ngFor="let driver of availableDrivers" [value]="driver.id">
-                      <div class="driver-option-with-details">
+                  <!-- Driver Entity Filter -->
+                  <div class="entity-filter-row" *ngIf="geographicalEntities.length > 0">
+                    <mat-form-field appearance="outline" class="entity-filter-field">
+                    
+                      <mat-select [formControl]="driverEntityFilterControl" placeholder="Toutes les entités">
+                        <mat-option [value]="null">Toutes les entités</mat-option>
+                        <mat-option *ngFor="let entity of geographicalEntities" [value]="entity.id">
+                          {{ entity.name }}
+                        </mat-option>
+                      </mat-select>
+                    </mat-form-field>
+                    
+                    <button 
+                      *ngIf="driverEntityFilterControl.value"
+                      mat-icon-button 
+                      type="button" 
+                      (click)="driverEntityFilterControl.setValue(null)"
+                      class="clear-entity-filter-btn"
+                      matTooltip="Effacer le filtre"
+                    >
+                      <mat-icon>clear</mat-icon>
+                    </button>
+                  </div>
 
+                  <!-- Available Drivers Group -->
+                  <mat-optgroup label="Chauffeurs disponibles">
+                    <mat-option *ngFor="let driver of filteredAvailableDrivers" [value]="driver.id">
+                      <div class="driver-option-with-details">
                         <div class="driver-main-info">
                           <span class="driver-name">{{ driver.name }}</span>
                           <span *ngIf="driverTruckMap?.has(driver.id)" 
@@ -245,9 +276,7 @@
                             {{ getTruckImmatriculation(driverTruckMap.get(driver.id)) }}
                           </span>
                         </div>
-                        
                         <div class="driver-secondary-info">
-                          
                           <div class="driver-availability-info" 
                               [ngClass]="driver.availabilityStatus || 'available'">
                             <mat-icon class="availability-icon" 
@@ -260,9 +289,7 @@
                             </mat-icon>
                             <span class="availability-text">
                               {{ driver.availabilityMessage || 'Disponible' }}
-                              <span *ngIf="driver.totalHours" class="total-hours">
-                                ({{ driver.totalHours }}h)
-                              </span>
+                              <span *ngIf="driver.totalHours" class="total-hours">({{ driver.totalHours }}h)</span>
                             </span>
                           </div>
                         </div>
@@ -270,6 +297,7 @@
                     </mat-option>
                   </mat-optgroup>
 
+                  <!-- Unavailable Drivers Group -->
                   <mat-optgroup *ngIf="unavailableDrivers.length > 0" label="Chauffeurs indisponibles">
                     <mat-option *ngFor="let driver of unavailableDrivers" [value]="driver.id" [disabled]="true">
                       <div class="driver-option-with-details unavailable">
@@ -286,6 +314,7 @@
                     </mat-option>
                   </mat-optgroup>
 
+                  <!-- No Drivers Message -->
                   <mat-option *ngIf="availableDrivers.length === 0 && !loadingAvailableDrivers" disabled>
                     <div class="no-driver-message">
                       <mat-icon class="no-driver-icon">warning</mat-icon>
@@ -300,6 +329,7 @@
                     </div>
                   </mat-option>
 
+                  <!-- Loading State -->
                   <mat-option *ngIf="loadingAvailableDrivers" disabled>
                     <div class="loading-drivers">
                       <mat-spinner diameter="20"></mat-spinner>
@@ -318,10 +348,11 @@
                 </mat-error>
               </mat-form-field>
 
+              <!-- Truck Field -->
               <mat-form-field appearance="outline" class="trip-field">
                 <mat-label>Camion</mat-label>
                 
-                <mat-select formControlName="truckId" placeholder="Sélectionner un camion">
+                <mat-select formControlName="truckId" placeholder="Sélectionner un camion"  panelClass="truck-select-panel">
                   
                   <mat-option disabled class="settings-info-option" *ngIf="tripSettings?.linkDriverToTruck === false">
                     <div class="settings-info-message">
@@ -340,6 +371,7 @@
                   </mat-select-trigger>
                   
 
+                  <!-- Date Filter Info -->
                   <div *ngIf="tripForm.get('estimatedStartDate')?.value" class="filter-date-info">
                     <mat-icon class="date-icon">calendar_today</mat-icon>
                     <span class="date-text">
@@ -352,8 +384,33 @@
                     <span>{{ t('SELECT_DATE_TO_FILTER_TRUCKS') }}</span>
                   </div>
 
-                  <mat-optgroup *ngIf="availableTrucks.length > 0" label="Camions disponibles">
-                    <mat-option *ngFor="let truck of availableTrucks" [value]="truck.id">
+                  <!-- Truck Entity Filter -->
+                  <div class="entity-filter-row" *ngIf="geographicalEntities.length > 0">
+                    <mat-form-field appearance="outline" class="entity-filter-field">
+                      
+                      <mat-select [formControl]="truckEntityFilterControl" placeholder="Toutes les entités">
+                        <mat-option [value]="null">Toutes les entités</mat-option>
+                        <mat-option *ngFor="let entity of geographicalEntities" [value]="entity.id">
+                          {{ entity.name }}
+                        </mat-option>
+                      </mat-select>
+                    </mat-form-field>
+                    
+                    <button 
+                      *ngIf="truckEntityFilterControl.value"
+                      mat-icon-button 
+                      type="button" 
+                      (click)="truckEntityFilterControl.setValue(null)"
+                      class="clear-entity-filter-btn"
+                      matTooltip="Effacer le filtre"
+                    >
+                      <mat-icon>clear</mat-icon>
+                    </button>
+                  </div>
+
+                  <!-- Available Trucks Group -->
+                  <mat-optgroup *ngIf="filteredAvailableTrucks.length > 0" label="Camions disponibles">
+                    <mat-option *ngFor="let truck of filteredAvailableTrucks" [value]="truck.id">
                       <div class="truck-option">
                         <div class="truck-main-info">
                           <span class="truck-identification">
@@ -368,9 +425,7 @@
                         <div class="truck-details">
                           <div class="truck-capacity-info">
                             <mat-icon class="capacity-icon">inventory</mat-icon>
-                            <span class="capacity-text">
-                              {{ truck.typeTruck?.capacity }} {{ loadingUnit }}
-                            </span>
+                            <span class="capacity-text">{{ truck.typeTruck?.capacity }} {{ loadingUnit }}</span>
                           </div>
                           
                           <div class="truck-color-info" *ngIf="truck.color">
@@ -389,6 +444,7 @@
                     </mat-option>
                   </mat-optgroup>
 
+                  <!-- Unavailable Trucks Group -->
                   <mat-optgroup *ngIf="unavailableTrucks.length > 0" label="Camions indisponibles">
                     <mat-option *ngFor="let truck of unavailableTrucks" [value]="truck.id" [disabled]="true">
                       <div class="truck-option unavailable">
@@ -404,7 +460,7 @@
                           </span>
                           <span class="unavailable-badge">
                             <mat-icon class="unavailable-icon">cancel</mat-icon>
-                            {{ t('AVAILABLE') }}
+                            {{ t('UNAVAILABLE') }}
                           </span>
                         </div>
                         <div class="truck-details">
@@ -431,6 +487,7 @@
                     </mat-option>
                   </mat-optgroup>
                   
+                  <!-- Loading State -->
                   <mat-option *ngIf="loadingAvailableTrucks" disabled>
                     <div class="truck-loading">
                       <mat-spinner diameter="20" class="truck-loading-spinner"></mat-spinner>
@@ -438,6 +495,7 @@
                     </div>
                   </mat-option>
                   
+                  <!-- Empty State -->
                   <mat-option *ngIf="!loadingAvailableTrucks && availableTrucks.length === 0 && unavailableTrucks.length === 0" disabled>
                     <div class="truck-empty-state">
                       <mat-icon class="truck-empty-icon">local_shipping</mat-icon>
@@ -465,6 +523,7 @@
               </mat-form-field>
             </div>
 
+            <!-- Distance, Duration, Convoyeur Row -->
             <div class="trip-row">
               <mat-form-field appearance="outline" class="trip-field">
                 <mat-label>{{ t('ESTIMATED_DISTANCE_KM') }}</mat-label>
@@ -493,6 +552,7 @@
               </mat-form-field>
             </div>
 
+            <!-- Driver Availability Container -->
             <div class="driver-availability-container" *ngIf="driverAvailabilityResult && !checkingDriverAvailability">
               <div class="availability-status-card" [class]="'status-' + driverAvailabilityResult.status">
                 <div class="status-icon">
@@ -526,6 +586,7 @@
               </mat-form-field>
             </div>
 
+            <!-- Traject Section -->
             <div class="traject-section" *ngIf="!tripId">
               <div class="section-header">
                 <div>
@@ -566,6 +627,7 @@
                 </mat-radio-group>
               </div>
 
+              <!-- Predefined Traject Selection -->
               <div *ngIf="trajectMode === 'predefined'">
                 <div class="traject-selection-section">
                   <div class="selection-header">
@@ -581,6 +643,7 @@
                         [formControl]="selectedTrajectControl"
                         (selectionChange)="onTrajectSelected($event.value)"
                         [disabled]="loadingTrajects"
+                        panelClass="traject-select-panel"
                       >
                         <mat-option [value]="null">{{ t('NONE') }}</mat-option>
                         <mat-option *ngFor="let traject of trajects" [value]="traject.id">
@@ -609,6 +672,7 @@
                 </div>
               </div>
 
+              <!-- Save Traject Section -->
               <div *ngIf="trajectMode === 'new' && deliveries.length > 0" class="save-traject-section">
                 <div class="save-header">
                   <mat-checkbox 
@@ -663,6 +727,7 @@
               </div>
             </div>
 
+            <!-- Traject Order Selection -->
             <div *ngIf="showTrajectOrderSelection && selectedTraject" class="traject-order-selection">
               <div class="section-header">
                 <div>
@@ -799,6 +864,7 @@
               </div>
             </div>
 
+            <!-- Quick Add Title -->
             <div class="quick-add-title" *ngIf="trajectMode === 'new' || isEditMode">
               <h3>Ajout rapide de commandes</h3>
               <p class="text-sm text-gray-500">
@@ -810,6 +876,7 @@
               </p>
             </div>
 
+            <!-- Quick Add Section -->
             <div class="quick-add-section" *ngIf="trajectMode === 'new' || isEditMode">
               <div class="section-header">
                 <div class="quick-add-step-indicator">
@@ -830,6 +897,7 @@
                 </div>
               </div>
 
+              <!-- Step 1: Client Selection -->
               <div *ngIf="currentQuickAddStep === 1" class="client-selection-step">
                 <div class="search-and-filter-row">
 
@@ -855,32 +923,33 @@
                   </div>
                   
 
-<div class="entity-filter-container" *ngIf="geographicalEntities.length > 0">
-  <mat-form-field appearance="outline" class="entity-filter-field">
-    <mat-select [formControl]="entityFilterControl" placeholder="Toutes les entités">
-      <mat-option [value]="null">Toutes les entités</mat-option>
-      <mat-option *ngFor="let entity of geographicalEntities" [value]="entity.id">
-        {{ entity.name }}
-      </mat-option>
-    </mat-select>
-    <mat-hint *ngIf="entityFilterControl.value">
-      Entité {{ getEntityName(entityFilterControl.value) }}
-    </mat-hint>
-  </mat-form-field>
-  
-  <button 
-    *ngIf="entityFilterControl.value"
-    mat-icon-button 
-    type="button" 
-    (click)="clearEntityFilter()"
-    class="clear-entity-filter-btn"
-    matTooltip="Effacer le filtre d'entité"
-  >
-    <mat-icon>clear</mat-icon>
-  </button>
-</div>
+                  <div class="entity-filter-container" *ngIf="geographicalEntities.length > 0">
+                    <mat-form-field appearance="outline" class="entity-filter-field">
+                      <mat-select [formControl]="entityFilterControl" placeholder="Toutes les entités">
+                        <mat-option [value]="null">Toutes les entités</mat-option>
+                        <mat-option *ngFor="let entity of geographicalEntities" [value]="entity.id">
+                          {{ entity.name }}
+                        </mat-option>
+                      </mat-select>
+                      <mat-hint *ngIf="entityFilterControl.value">
+                        Entité {{ getEntityName(entityFilterControl.value) }}
+                      </mat-hint>
+                    </mat-form-field>
+                    
+                    <button 
+                      *ngIf="entityFilterControl.value"
+                      mat-icon-button 
+                      type="button" 
+                      (click)="clearEntityFilter()"
+                      class="clear-entity-filter-btn"
+                      matTooltip="Effacer le filtre d'entité"
+                    >
+                      <mat-icon>clear</mat-icon>
+                    </button>
+                  </div>
                 </div>
 
+                <!-- Client Virtual Scroll Container -->
                 <div class="client-virtual-scroll-container" *ngIf="filteredClients.length > 0">
                   <cdk-virtual-scroll-viewport
                     [itemSize]="95"
@@ -945,25 +1014,28 @@
                   </div>
                 </div>
 
-              <div *ngIf="filteredClients.length === 0 && (clientSearchControl.value || entityFilterControl.value)" 
-                    class="no-results">
-                  <mat-icon class="no-results-icon">search_off</mat-icon>
-                  <h4>Aucun client trouvé</h4>
-                  <p>Aucun client ne correspond aux critères de recherche</p>
-                  <button mat-button type="button" (click)="clearFilters()" class="clear-filter-btn">
-                    <mat-icon>clear_all</mat-icon>
-                    Effacer les filtres
-                  </button>
-                </div>
+                <!-- No Results -->
+                <div *ngIf="filteredClients.length === 0 && (clientSearchControl.value || entityFilterControl.value)" 
+                      class="no-results">
+                    <mat-icon class="no-results-icon">search_off</mat-icon>
+                    <h4>Aucun client trouvé</h4>
+                    <p>Aucun client ne correspond aux critères de recherche</p>
+                    <button mat-button type="button" (click)="clearFilters()" class="clear-filter-btn">
+                      <mat-icon>clear_all</mat-icon>
+                      Effacer les filtres
+                    </button>
+                  </div>
 
+                <!-- No Clients Empty State -->
                 <div *ngIf="filteredClients.length === 0 && !clientSearchControl.value && !entityFilterControl.value" 
-                    class="no-clients-empty">
-                  <mat-icon class="empty-icon">person_off</mat-icon>
-                  <h4>Aucun client avec des commandes en attente</h4>
-                  <p>Tous les clients ont leurs commandes déjà traitées ou aucune commande en attente.</p>
+                      class="no-clients-empty">
+                    <mat-icon class="empty-icon">person_off</mat-icon>
+                    <h4>Aucun client avec des commandes en attente</h4>
+                    <p>Tous les clients ont leurs commandes déjà traitées ou aucune commande en attente.</p>
+                  </div>
                 </div>
-              </div>
 
+              <!-- Step 2: Order Selection -->
               <div *ngIf="currentQuickAddStep === 2 && selectedClient" class="order-selection-step">
                 <div class="selected-client-header">
                   <div class="client-info">
@@ -1051,6 +1123,7 @@
                 </div>
               </div>
 
+              <!-- Step 3: Confirmation -->
               <div *ngIf="currentQuickAddStep === 3" class="confirmation-step">
                 <div class="confirmation-header">
                   <mat-icon class="success-icon">check_circle</mat-icon>
@@ -1098,10 +1171,41 @@
               </div>
             </div>
 
+            <!-- Deliveries Section -->
             <div class="deliveries-section" formArrayName="deliveries" *ngIf="showDeliveriesSection">
               <div class="section-header">
                 <h3>Livraisons</h3>
                 <div class="section-header-actions">
+       <div class="order-type-indicator" 
+     [class.warning]="!allowMixingOrderTypes && hasMultipleOrderTypes()"
+     [class.success]="allowMixingOrderTypes || !hasMultipleOrderTypes()">
+  <mat-icon [class.warning-icon]="!allowMixingOrderTypes && hasMultipleOrderTypes()">
+    {{ allowMixingOrderTypes ? 'check_circle' : (hasMultipleOrderTypes() ? 'error' : 'check_circle') }}
+  </mat-icon>
+  <span class="indicator-text" [matTooltip]="getOrderTypeTooltip()">
+    
+    {{ allowMixingOrderTypes ? 'Mélange autorisé' : 
+       (hasMultipleOrderTypes() ? '⚠️ Types mixtes détectés!' : '✓ Tous les types identiques') }}
+  </span>
+  <span class="order-types-badge" *ngIf="hasMultipleOrderTypes()">
+    {{ getDistinctOrderTypes().length }} types
+  </span>
+</div>
+      
+      <div class="delivery-stats">
+        <div class="stat-item">
+          <mat-icon>groups</mat-icon>
+          <span>{{ getGroupedDeliveries().length }} client(s)</span>
+        </div>
+        <div class="stat-item">
+          <mat-icon>inventory_2</mat-icon>
+          <span>{{ deliveries.length }} commande(s)</span>
+        </div>
+        <div class="stat-item">
+          <mat-icon>scale</mat-icon>
+          <span>{{ calculateTotalWeight() | number:'1.2-2' }} {{ loadingUnit }}</span>
+        </div>
+      </div>
                   <div class="delivery-stats">
                     <div class="stat-item">
                       <mat-icon>groups</mat-icon>
@@ -1117,6 +1221,15 @@
                     </div>
                   </div>
                 </div>
+                <mat-error *ngIf="tripForm.hasError('mixedOrderTypes') && !allowMixingOrderTypes" class="form-level-error">
+                <div class="error-content">
+                  <mat-icon>error</mat-icon>
+                  <div class="error-text">
+                    <strong>Erreur de validation :</strong> Mélange de types de commandes interdit
+                    <span class="error-details">({{ getOrderTypesSummary() }})</span>
+                  </div>
+                </div>
+              </mat-error>
               </div>
               
               <div class="virtual-scroll-container deliveries-virtual-container" 
@@ -1286,6 +1399,7 @@
               </div>
             </div>
 
+            <!-- Selected Traject Preview -->
             <div class="selected-traject-preview" *ngIf="selectedTraject && !isEditMode">
               <div class="preview-header">
                 <div class="preview-title">
@@ -1383,6 +1497,7 @@
               </div>
             </div>
 
+            <!-- Cancelled Info -->
             <div class="cancelled-info" *ngIf="tripForm.get('tripStatus')?.value === 'Cancelled'">
               <mat-icon class="cancelled-icon">cancel</mat-icon>
               <div class="cancelled-text">
@@ -1418,961 +1533,459 @@
         </div>
       </div>
 
+      <!-- Right Section - Fixed, scrolls independently -->
       <div class="right-section">
-        <cdk-virtual-scroll-viewport
-          #rightViewport
-          [itemSize]="rightItemSize"
-          class="right-virtual-viewport"
-          minBufferPx="200"
-          maxBufferPx="400">
-    
-          <div class="right-content-wrapper">
-            
-            <div class="weather-section" *ngIf="shouldShowWeather()">
-              <div class="weather-header">
-                <h3>
-                  <mat-icon>cloud</mat-icon>
-                  Météo du trajet
-                </h3>
-                <button mat-icon-button type="button" (click)="refreshWeather()" [disabled]="weatherLoading" matTooltip="Actualiser">
-                  <mat-icon>refresh</mat-icon>
-                </button>
-              </div>
-
-              <div class="weather-loading" *ngIf="weatherLoading">
-                <mat-spinner diameter="20"></mat-spinner>
-                <span>Chargement...</span>
-              </div>
-
-              <div class="weather-compact" *ngIf="!weatherLoading">
-
-                <div class="weather-location" *ngIf="startLocationWeather">
-                  <div class="location-header">
-                    <mat-icon class="location-icon start">place</mat-icon>
-                    <div class="location-info">
-                      <div class="location-title">Départ</div>
-                      <div class="location-name">{{ getSelectedStartLocationInfo() | truncate:20 }}</div>
-                    </div>
-                  </div>
-                  
-                  <div class="weather-display">
-                    <div class="temp-display">
-                      <span class="temp-value">{{ startLocationWeather.temperature }}°</span>
-                      <div class="temp-details">
-                        <div class="feels-like">Ressenti {{ startLocationWeather.feels_like }}°</div>
-                        <div class="weather-desc">{{ startLocationWeather.description | titlecase }}</div>
-                      </div>
-                    </div>
-                    
-                    <div class="weather-icon">
-                      <img [src]="startLocationWeather.icon" [alt]="startLocationWeather.description" class="weather-icon-img">
-                    </div>
-                  </div>
-                  
-                  <div class="weather-stats">
-                    <div class="stat-item">
-                      <mat-icon class="stat-icon">water_drop</mat-icon>
-                      <span>{{ startLocationWeather.humidity }}%</span>
-                    </div>
-                    <div class="stat-item">
-                      <mat-icon class="stat-icon">air</mat-icon>
-                      <span>{{ startLocationWeather.wind_speed }} km/h</span>
-                    </div>
-                    <div class="stat-item" *ngIf="startLocationWeather.precipitation && startLocationWeather.precipitation > 0">
-                      <mat-icon class="stat-icon">rainy</mat-icon>
-                      <span>{{ startLocationWeather.precipitation | number:'1.1-1' }} mm</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div class="weather-separator" *ngIf="startLocationWeather && endLocationWeather">
-                  <mat-icon class="separator-icon">arrow_forward</mat-icon>
-                  <div class="comparison">
-                    <div class="temp-comparison">
-                      <span class="temp-diff" [class.positive]="(endLocationWeather.temperature - startLocationWeather.temperature) > 0">
-                        {{ endLocationWeather.temperature - startLocationWeather.temperature > 0 ? '+' : '' }}
-                        {{ (endLocationWeather.temperature - startLocationWeather.temperature).toFixed(1) }}°
-                      </span>
-                    </div>
-                    <div class="distance-info" *ngIf="tripForm.get('estimatedDistance')?.value">
-                      {{ tripForm.get('estimatedDistance')?.value }} km
-                    </div>
-                  </div>
-                </div>
-
-                <div class="weather-location" *ngIf="endLocationWeather">
-                  <div class="location-header">
-                    <mat-icon class="location-icon end">flag</mat-icon>
-                    <div class="location-info">
-                      <div class="location-title">Arrivée</div>
-                      <div class="location-name">{{ getSelectedEndLocationInfo() | truncate:20 }}</div>
-                    </div>
-                  </div>
-                  
-                  <div class="weather-display">
-                    <div class="weather-icon">
-                      <img [src]="endLocationWeather.icon" [alt]="endLocationWeather.description" class="weather-icon-img">
-                    </div>
-                    
-                    <div class="temp-display">
-                      <span class="temp-value">{{ endLocationWeather.temperature }}°</span>
-                      <div class="temp-details">
-                        <div class="feels-like">Ressenti {{ endLocationWeather.feels_like }}°</div>
-                        <div class="weather-desc">{{ endLocationWeather.description | titlecase }}</div>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div class="weather-stats">
-                    <div class="stat-item">
-                      <mat-icon class="stat-icon">water_drop</mat-icon>
-                      <span>{{ endLocationWeather.humidity }}%</span>
-                    </div>
-                    <div class="stat-item">
-                      <mat-icon class="stat-icon">air</mat-icon>
-                      <span>{{ endLocationWeather.wind_speed }} km/h</span>
-                    </div>
-                    <div class="stat-item" *ngIf="endLocationWeather.precipitation && endLocationWeather.precipitation > 0">
-                      <mat-icon class="stat-icon">rainy</mat-icon>
-                      <span>{{ endLocationWeather.precipitation | number:'1.1-1' }} mm</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div class="weather-warning-mini" *ngIf="shouldShowWeatherWarning()">
-                <mat-icon class="warning-icon">warning</mat-icon>
-                <span class="warning-text">{{ getWeatherWarningMessage() }}</span>
-              </div>
-
-              <div class="weather-prompt-mini" *ngIf="!shouldShowWeather() && (tripForm.get('startLocationId')?.value || tripForm.get('endLocationId')?.value)">
-                <button mat-button type="button" color="primary" (click)="fetchWeatherForBothLocations()" [disabled]="weatherLoading">
-                  <mat-icon>cloud_download</mat-icon>
-                  Charger la météo
-                </button>
-              </div>
+        <div class="right-content-wrapper">
+          
+          <!-- Weather Section -->
+          <div class="weather-section" *ngIf="shouldShowWeather()">
+            <div class="weather-header">
+              <h3>
+                <mat-icon>cloud</mat-icon>
+                Météo du trajet
+              </h3>
+              <button mat-icon-button type="button" (click)="refreshWeather()" [disabled]="weatherLoading" matTooltip="Actualiser">
+                <mat-icon>refresh</mat-icon>
+              </button>
             </div>
 
-            <div class="weather-prompt" *ngIf="!shouldShowWeather() && shouldShowWeatherPrompt()">
-              <mat-icon>cloud_queue</mat-icon>
-              <div class="prompt-content">
-                <div class="prompt-title">Météo du trajet</div>
-                <p>Vérifiez les conditions météorologiques pour optimiser votre trajet</p>
-                <button mat-button type="button" color="primary" (click)="fetchWeatherForBothLocations()" [disabled]="weatherLoading">
-                  <mat-icon>cloud_download</mat-icon>
-                  Charger la météo
-                </button>
-              </div>
+            <div class="weather-loading" *ngIf="weatherLoading">
+              <mat-spinner diameter="20"></mat-spinner>
+              <span>Chargement...</span>
             </div>
 
-            <div class="weather-prompt" *ngIf="!shouldShowWeather() && (tripForm.get('startLocationId')?.value || tripForm.get('endLocationId')?.value)">
-              <mat-icon>cloud_queue</mat-icon>
-              <div class="prompt-content">
-                <p>Charger les conditions météo pour le trajet ?</p>
-                <button mat-button type="button" color="primary" (click)="fetchWeatherForBothLocations()" [disabled]="weatherLoading">
-                  <mat-icon>cloud_download</mat-icon>
-                  Charger la météo
-                </button>
-              </div>
-            </div>
-            
-            <div class="status-workflow-section" *ngIf="tripId">
-              <div class="section-header">
-                <h3>Progression du voyage</h3>
-                <div class="status-indicator">
-                  <mat-icon class="status-icon">info</mat-icon>
-                  <span class="status-text">
-                    Statut actuel: <strong>{{ getTripStatusLabel(tripForm.get('tripStatus')?.value) }}</strong>
-                  </span>
+            <div class="weather-compact" *ngIf="!weatherLoading">
+              <div class="weather-location" *ngIf="startLocationWeather">
+                <div class="location-header">
+                  <mat-icon class="location-icon start">place</mat-icon>
+                  <div class="location-info">
+                    <div class="location-title">Départ</div>
+                    <div class="location-name">{{ getSelectedStartLocationInfo() | truncate:20 }}</div>
+                  </div>
+                </div>
+                
+                <div class="weather-display">
+                  <div class="temp-display">
+                    <span class="temp-value">{{ startLocationWeather.temperature }}°</span>
+                    <div class="temp-details">
+                      <div class="feels-like">Ressenti {{ startLocationWeather.feels_like }}°</div>
+                      <div class="weather-desc">{{ startLocationWeather.description | titlecase }}</div>
+                    </div>
+                  </div>
+                  
+                  <div class="weather-icon">
+                    <img [src]="startLocationWeather.icon" [alt]="startLocationWeather.description" class="weather-icon-img">
+                  </div>
+                </div>
+                
+                <div class="weather-stats">
+                  <div class="stat-item">
+                    <mat-icon class="stat-icon">water_drop</mat-icon>
+                    <span>{{ startLocationWeather.humidity }}%</span>
+                  </div>
+                  <div class="stat-item">
+                    <mat-icon class="stat-icon">air</mat-icon>
+                    <span>{{ startLocationWeather.wind_speed }} km/h</span>
+                  </div>
+                  <div class="stat-item" *ngIf="startLocationWeather.precipitation && startLocationWeather.precipitation > 0">
+                    <mat-icon class="stat-icon">rainy</mat-icon>
+                    <span>{{ startLocationWeather.precipitation | number:'1.1-1' }} mm</span>
+                  </div>
                 </div>
               </div>
 
-              <div class="status-progress-bar">
-                <div class="progress-steps">
-                  <div class="progress-step" 
-                      [class.active]="tripForm.get('tripStatus')?.value === 'Planned'"
-                      [class.completed]="isStatusCompleted('Planned')">
-                    <div class="step-circle">
-                      <span class="step-number">1</span>
-                      <mat-icon *ngIf="isStatusCompleted('Planned')" class="step-check">check</mat-icon>
-                    </div>
-                    <div class="step-label">
-                      <span>Planifié</span>
-                      <small *ngIf="tripForm.get('tripStatus')?.value === 'Planned'" class="current-badge">En cours</small>
+              <div class="weather-separator" *ngIf="startLocationWeather && endLocationWeather">
+                <mat-icon class="separator-icon">arrow_forward</mat-icon>
+                <div class="comparison">
+                  <div class="temp-comparison">
+                    <span class="temp-diff" [class.positive]="(endLocationWeather.temperature - startLocationWeather.temperature) > 0">
+                      {{ endLocationWeather.temperature - startLocationWeather.temperature > 0 ? '+' : '' }}
+                      {{ (endLocationWeather.temperature - startLocationWeather.temperature).toFixed(1) }}°
+                    </span>
+                  </div>
+                  <div class="distance-info" *ngIf="tripForm.get('estimatedDistance')?.value">
+                    {{ tripForm.get('estimatedDistance')?.value }} km
+                  </div>
+                </div>
+              </div>
+
+              <div class="weather-location" *ngIf="endLocationWeather">
+                <div class="location-header">
+                  <mat-icon class="location-icon end">flag</mat-icon>
+                  <div class="location-info">
+                    <div class="location-title">Arrivée</div>
+                    <div class="location-name">{{ getSelectedEndLocationInfo() | truncate:20 }}</div>
+                  </div>
+                </div>
+                
+                <div class="weather-display">
+                  <div class="weather-icon">
+                    <img [src]="endLocationWeather.icon" [alt]="endLocationWeather.description" class="weather-icon-img">
+                  </div>
+                  
+                  <div class="temp-display">
+                    <span class="temp-value">{{ endLocationWeather.temperature }}°</span>
+                    <div class="temp-details">
+                      <div class="feels-like">Ressenti {{ endLocationWeather.feels_like }}°</div>
+                      <div class="weather-desc">{{ endLocationWeather.description | titlecase }}</div>
                     </div>
                   </div>
-
-                  <div class="progress-connector" [class.active]="isStatusCompleted('Planned')"></div>
-
-                  <div class="progress-step" 
-                      [class.active]="tripForm.get('tripStatus')?.value === 'Accepted'"
-                      [class.completed]="isStatusCompleted('Accepted')">
-                    <div class="step-circle">
-                      <span class="step-number">2</span>
-                      <mat-icon *ngIf="isStatusCompleted('Accepted')" class="step-check">check</mat-icon>
-                    </div>
-                    <div class="step-label">
-                      <span>Accepté</span>
-                      <small *ngIf="tripForm.get('tripStatus')?.value === 'Accepted'" class="current-badge">En cours</small>
-                    </div>
+                </div>
+                
+                <div class="weather-stats">
+                  <div class="stat-item">
+                    <mat-icon class="stat-icon">water_drop</mat-icon>
+                    <span>{{ endLocationWeather.humidity }}%</span>
                   </div>
-
-                  <div class="progress-connector" [class.active]="isStatusCompleted('Accepted')"></div>
-
-                  <div class="progress-connector" [class.active]="isStatusCompleted('Loading')"></div>
-
-                  <div class="progress-step" 
-                      [class.active]="tripForm.get('tripStatus')?.value === 'LoadingInProgress'"
-                      [class.completed]="isStatusCompleted('LoadingInProgress')">
-                    <div class="step-circle">
-                      <span class="step-number">4</span>
-                      <mat-icon *ngIf="isStatusCompleted('LoadingInProgress')" class="step-check">check</mat-icon>
-                    </div>
-                    <div class="step-label">
-                      <span>Chargement<br>en cours</span>
-                      <small *ngIf="tripForm.get('tripStatus')?.value === 'LoadingInProgress'" class="current-badge">En cours</small>
-                    </div>
+                  <div class="stat-item">
+                    <mat-icon class="stat-icon">air</mat-icon>
+                    <span>{{ endLocationWeather.wind_speed }} km/h</span>
                   </div>
-
-                  <div class="progress-connector" [class.active]="isStatusCompleted('LoadingInProgress')"></div>
-
-                  <div class="progress-connector" [class.active]="isStatusCompleted('Delivery')"></div>
-
-                  <div class="progress-step" 
-                      [class.active]="tripForm.get('tripStatus')?.value === 'DeliveryInProgress'"
-                      [class.completed]="isStatusCompleted('DeliveryInProgress')">
-                    <div class="step-circle">
-                      <span class="step-number">6</span>
-                      <mat-icon *ngIf="isStatusCompleted('DeliveryInProgress')" class="step-check">check</mat-icon>
-                    </div>
-                    <div class="step-label">
-                      <span>Livraison<br>en cours</span>
-                      <small *ngIf="tripForm.get('tripStatus')?.value === 'DeliveryInProgress'" class="current-badge">En cours</small>
-                    </div>
-                  </div>
-
-                  <div class="progress-connector" [class.active]="isStatusCompleted('DeliveryInProgress')"></div>
-
-                  <div class="progress-step" 
-                      [class.active]="tripForm.get('tripStatus')?.value === 'Completed'"
-                      [class.completed]="isStatusCompleted('Completed')">
-                    <div class="step-circle">
-                      <span class="step-number">7</span>
-                      <mat-icon *ngIf="isStatusCompleted('Completed')" class="step-check">check</mat-icon>
-                    </div>
-                    <div class="step-label">
-                      <span>Livrée</span>
-                      <small *ngIf="tripForm.get('tripStatus')?.value === 'Completed'" class="current-badge">Terminé</small>
-                    </div>
+                  <div class="stat-item" *ngIf="endLocationWeather.precipitation && endLocationWeather.precipitation > 0">
+                    <mat-icon class="stat-icon">rainy</mat-icon>
+                    <span>{{ endLocationWeather.precipitation | number:'1.1-1' }} mm</span>
                   </div>
                 </div>
               </div>
             </div>
- 
-            <div class="delivery-itinerary-section" *ngIf="false">
-              <div class="section-header">
-                <h3>
-                  <mat-icon>route</mat-icon>
-                  Itinéraire de livraison
-                </h3>
+
+            <div class="weather-warning-mini" *ngIf="shouldShowWeatherWarning()">
+              <mat-icon class="warning-icon">warning</mat-icon>
+              <span class="warning-text">{{ getWeatherWarningMessage() }}</span>
+            </div>
+
+            <div class="weather-prompt-mini" *ngIf="!shouldShowWeather() && (tripForm.get('startLocationId')?.value || tripForm.get('endLocationId')?.value)">
+              <button mat-button type="button" color="primary" (click)="fetchWeatherForBothLocations()" [disabled]="weatherLoading">
+                <mat-icon>cloud_download</mat-icon>
+                Charger la météo
+              </button>
+            </div>
+          </div>
+
+          <div class="weather-prompt" *ngIf="!shouldShowWeather() && shouldShowWeatherPrompt()">
+            <mat-icon>cloud_queue</mat-icon>
+            <div class="prompt-content">
+              <div class="prompt-title">Météo du trajet</div>
+              <p>Vérifiez les conditions météorologiques pour optimiser votre trajet</p>
+              <button mat-button type="button" color="primary" (click)="fetchWeatherForBothLocations()" [disabled]="weatherLoading">
+                <mat-icon>cloud_download</mat-icon>
+                Charger la météo
+              </button>
+            </div>
+          </div>
+
+          <div class="weather-prompt" *ngIf="!shouldShowWeather() && (tripForm.get('startLocationId')?.value || tripForm.get('endLocationId')?.value)">
+            <mat-icon>cloud_queue</mat-icon>
+            <div class="prompt-content">
+              <p>Charger les conditions météo pour le trajet ?</p>
+              <button mat-button type="button" color="primary" (click)="fetchWeatherForBothLocations()" [disabled]="weatherLoading">
+                <mat-icon>cloud_download</mat-icon>
+                Charger la météo
+              </button>
+            </div>
+          </div>
+          
+          <!-- Status Workflow Section -->
+          <div class="status-workflow-section" *ngIf="tripId">
+            <div class="section-header">
+              <h3>Progression du voyage</h3>
+              <div class="status-indicator">
+                <mat-icon class="status-icon">info</mat-icon>
+                <span class="status-text">
+                  Statut actuel: <strong>{{ getTripStatusLabel(tripForm.get('tripStatus')?.value) }}</strong>
+                </span>
+              </div>
+            </div>
+
+            <div class="status-progress-bar">
+              <div class="progress-steps">
+                <div class="progress-step" 
+                    [class.active]="tripForm.get('tripStatus')?.value === 'Planned'"
+                    [class.completed]="isStatusCompleted('Planned')">
+                  <div class="step-circle">
+                    <span class="step-number">1</span>
+                    <mat-icon *ngIf="isStatusCompleted('Planned')" class="step-check">check</mat-icon>
+                  </div>
+                  <div class="step-label">
+                    <span>Planifié</span>
+                    <small *ngIf="tripForm.get('tripStatus')?.value === 'Planned'" class="current-badge">En cours</small>
+                  </div>
+                </div>
+
+                <div class="progress-connector" [class.active]="isStatusCompleted('Planned')"></div>
+
+                <div class="progress-step" 
+                    [class.active]="tripForm.get('tripStatus')?.value === 'Accepted'"
+                    [class.completed]="isStatusCompleted('Accepted')">
+                  <div class="step-circle">
+                    <span class="step-number">2</span>
+                    <mat-icon *ngIf="isStatusCompleted('Accepted')" class="step-check">check</mat-icon>
+                  </div>
+                  <div class="step-label">
+                    <span>Accepté</span>
+                    <small *ngIf="tripForm.get('tripStatus')?.value === 'Accepted'" class="current-badge">En cours</small>
+                  </div>
+                </div>
+
+                <div class="progress-connector" [class.active]="isStatusCompleted('Accepted')"></div>
+
+                <div class="progress-connector" [class.active]="isStatusCompleted('Loading')"></div>
+
+                <div class="progress-step" 
+                    [class.active]="tripForm.get('tripStatus')?.value === 'LoadingInProgress'"
+                    [class.completed]="isStatusCompleted('LoadingInProgress')">
+                  <div class="step-circle">
+                    <span class="step-number">4</span>
+                    <mat-icon *ngIf="isStatusCompleted('LoadingInProgress')" class="step-check">check</mat-icon>
+                  </div>
+                  <div class="step-label">
+                    <span>Chargement<br>en cours</span>
+                    <small *ngIf="tripForm.get('tripStatus')?.value === 'LoadingInProgress'" class="current-badge">En cours</small>
+                  </div>
+                </div>
+
+                <div class="progress-connector" [class.active]="isStatusCompleted('LoadingInProgress')"></div>
+
+                <div class="progress-connector" [class.active]="isStatusCompleted('Delivery')"></div>
+
+                <div class="progress-step" 
+                    [class.active]="tripForm.get('tripStatus')?.value === 'DeliveryInProgress'"
+                    [class.completed]="isStatusCompleted('DeliveryInProgress')">
+                  <div class="step-circle">
+                    <span class="step-number">6</span>
+                    <mat-icon *ngIf="isStatusCompleted('DeliveryInProgress')" class="step-check">check</mat-icon>
+                  </div>
+                  <div class="step-label">
+                    <span>Livraison<br>en cours</span>
+                    <small *ngIf="tripForm.get('tripStatus')?.value === 'DeliveryInProgress'" class="current-badge">En cours</small>
+                  </div>
+                </div>
+
+                <div class="progress-connector" [class.active]="isStatusCompleted('DeliveryInProgress')"></div>
+
+                <div class="progress-step" 
+                    [class.active]="tripForm.get('tripStatus')?.value === 'Completed'"
+                    [class.completed]="isStatusCompleted('Completed')">
+                  <div class="step-circle">
+                    <span class="step-number">7</span>
+                    <mat-icon *ngIf="isStatusCompleted('Completed')" class="step-check">check</mat-icon>
+                  </div>
+                  <div class="step-label">
+                    <span>Livrée</span>
+                    <small *ngIf="tripForm.get('tripStatus')?.value === 'Completed'" class="current-badge">Terminé</small>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Capacity Section -->
+          <div class="capacity-section" *ngIf="tripForm.get('truckId')?.value">
+            <div class="capacity-header">
+              <div class="capacity-info">
+                <div class="truck-icon-container">
+                  <mat-icon class="truck-icon">local_shipping</mat-icon>
+                  <div class="vehicle-info-badges">
+                    <div class="truck-badge" *ngIf="getSelectedTruckInfo()">
+                      {{ getSelectedTruckInfo() }}
+                    </div>
+                    <div class="driver-badge" *ngIf="getSelectedDriverInfo()">
+                      {{ getSelectedDriverInfo() }}
+                    </div>
+                  </div>
+                </div>
+                <div class="capacity-details">
+                  <h4>Capacité du camion</h4>
+                  <p class="capacity-stats">
+                    {{ calculateTotalWeight() | number:'1.2-2' }} / {{ getSelectedTruckCapacity() }}
+                    {{ loadingUnit }}
+                    <span class="capacity-percentage">
+                      ({{ calculateCapacityPercentage() | number:'1.0-0' }}%)
+                    </span>
+                  </p>
+                </div>
               </div>
               
-              <div class="itinerary-summary">
-                <div class="summary-stats">
-                  <div class="stat-item">
-                    <mat-icon>local_shipping</mat-icon>
-                    <div class="stat-content">
-                      <div class="stat-value">{{ deliveries.length }}</div>
-                      <div class="stat-label">Points de livraison</div>
-                    </div>
-                  </div>
-                  
-                  <div class="stat-item">
-                    <mat-icon>timer</mat-icon>
-                    <div class="stat-content">
-                      <div class="stat-value">{{ tripForm.get('estimatedDuration')?.value || 0 }}h</div>
-                      <div class="stat-label">Temps total estimé</div>
-                    </div>
-                  </div>
+              <div *ngIf="calculateCapacityPercentage() >= 90" 
+                  class="capacity-alert"
+                  [ngStyle]="{'background': getCapacityAlert().color + '20'}">
+                <mat-icon [color]="getCapacityAlert().color">
+                  {{ getCapacityAlert().icon }}
+                </mat-icon>
+                <span [style.color]="getCapacityAlert().color">
+                  {{ getCapacityAlert().message }}
+                </span>
+              </div>
+            </div>
+            
+            <div class="capacity-progress">
+              <div class="progress-bar">
+                <div class="progress-fill"
+                    [style.width.%]="calculateCapacityPercentage()"
+                    [style.background]="getProgressBarColor()">
                 </div>
                 
-                <div class="itinerary-stops">
-                  <div class="stop-item start-stop">
-                    <div class="stop-marker">
-                      <mat-icon>play_arrow</mat-icon>
-                    </div>
-                    <div class="stop-content">
-                      <div class="stop-title">Départ</div>
-                      <div class="stop-location">{{ getSelectedStartLocationInfo() }}</div>
-                    </div>
-                  </div>
-                  
-                  <div *ngFor="let deliveryGroup of deliveryControls; let i = index" class="stop-item delivery-stop">
-                    <div class="stop-marker">
-                      <span class="stop-number">{{ i + 1 }}</span>
-                    </div>
-                    <div class="stop-content">
-                      <div class="stop-title">Livraison {{ i + 1 }}</div>
-                      <div class="stop-location">{{ deliveryGroup.get('deliveryAddress')?.value || 'Adresse non définie' }}</div>
-                      <div class="stop-details">
-                        <span class="client-name">
-                          {{ getClientName(deliveryGroup.get('customerId')?.value)}}
-                        </span>
-                        <span class="delivery-time">{{ deliveryGroup.get('plannedTime')?.value || calculateDeliveryTime(i + 1) }}</span>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div class="stop-item end-stop">
-                    <div class="stop-marker">
-                      <mat-icon>flag</mat-icon>
-                    </div>
-                    <div class="stop-content">
-                      <div class="stop-title">Arrivée</div>
-                      <div class="stop-location">{{ getSelectedEndLocationInfo() }}</div>
-                    </div>
-                  </div>
+                <div class="threshold-marker" style="left: 70%">
+                  <div class="threshold-dot" style="background: #3b82f6"></div>
+                  <span class="threshold-label">70%</span>
+                </div>
+                
+                <div class="threshold-marker" style="left: 90%">
+                  <div class="threshold-dot" style="background: #f59e0b"></div>
+                  <span class="threshold-label">90%</span>
+                </div>
+                
+                <div class="threshold-marker" style="left: 100%">
+                  <div class="threshold-dot" style="background: #ef4444"></div>
+                  <span class="threshold-label">Max</span>
+                </div>
+              </div>
+              
+              <div class="progress-legend">
+                <div class="legend-item">
+                  <span class="legend-color" style="background: #10b981"></span>
+                  <span>Normal</span>
+                </div>
+                <div class="legend-item">
+                  <span class="legend-color" style="background: #3b82f6"></span>
+                  <span>Élevé</span>
+                </div>
+                <div class="legend-item">
+                  <span class="legend-color" style="background: #f59e0b"></span>
+                  <span>Attention</span>
+                </div>
+                <div class="legend-item">
+                  <span class="legend-color" style="background: #ef4444"></span>
+                  <span>Dépassé</span>
                 </div>
               </div>
             </div>
-
-            <div class="capacity-section" *ngIf="tripForm.get('truckId')?.value">
-              <div class="capacity-header">
-                <div class="capacity-info">
-                  <div class="truck-icon-container">
-                    <mat-icon class="truck-icon">local_shipping</mat-icon>
-                    <div class="vehicle-info-badges">
-                      <div class="truck-badge" *ngIf="getSelectedTruckInfo()">
-                        {{ getSelectedTruckInfo() }}
-                      </div>
-                      <div class="driver-badge" *ngIf="getSelectedDriverInfo()">
-                        {{ getSelectedDriverInfo() }}
-                      </div>
-                    </div>
-                  </div>
-                  <div class="capacity-details">
-                    <h4>Capacité du camion</h4>
-                    <p class="capacity-stats">
-                      {{ calculateTotalWeight() | number:'1.2-2' }} / {{ getSelectedTruckCapacity() }}
-                      {{ loadingUnit }}
-                      <span class="capacity-percentage">
-                        ({{ calculateCapacityPercentage() | number:'1.0-0' }}%)
-                      </span>
-                    </p>
-                  </div>
-                </div>
-                
-                <div *ngIf="calculateCapacityPercentage() >= 90" 
-                    class="capacity-alert"
-                    [ngStyle]="{'background': getCapacityAlert().color + '20'}">
-                  <mat-icon [color]="getCapacityAlert().color">
-                    {{ getCapacityAlert().icon }}
-                  </mat-icon>
-                  <span [style.color]="getCapacityAlert().color">
-                    {{ getCapacityAlert().message }}
+            
+            <div class="capacity-breakdown-virtual" *ngIf="getGroupedDeliveries().length > 0">
+              <div class="breakdown-header">
+                <h5>Détail du chargement par client</h5>
+                <div class="breakdown-summary">
+                  <span class="summary-item">
+                    <mat-icon>groups</mat-icon>
+                    {{ getGroupedDeliveries().length }} client(s)
+                  </span>
+                  <span class="summary-item">
+                    <mat-icon>inventory</mat-icon>
+                    {{ deliveries.length }} commande(s)
+                  </span>
+                  <span class="summary-item">
+                    <mat-icon>scale</mat-icon>
+                    {{ calculateTotalWeight() | number:'1.2-2' }} {{ loadingUnit }}
                   </span>
                 </div>
               </div>
               
-              <div class="capacity-progress">
-                <div class="progress-bar">
-                  <div class="progress-fill"
-                      [style.width.%]="calculateCapacityPercentage()"
-                      [style.background]="getProgressBarColor()">
-                  </div>
-                  
-                  <div class="threshold-marker" style="left: 70%">
-                    <div class="threshold-dot" style="background: #3b82f6"></div>
-                    <span class="threshold-label">70%</span>
-                  </div>
-                  
-                  <div class="threshold-marker" style="left: 90%">
-                    <div class="threshold-dot" style="background: #f59e0b"></div>
-                    <span class="threshold-label">90%</span>
-                  </div>
-                  
-                  <div class="threshold-marker" style="left: 100%">
-                    <div class="threshold-dot" style="background: #ef4444"></div>
-                    <span class="threshold-label">Max</span>
-                  </div>
-                </div>
-                
-                <div class="progress-legend">
-                  <div class="legend-item">
-                    <span class="legend-color" style="background: #10b981"></span>
-                    <span>Normal</span>
-                  </div>
-                  <div class="legend-item">
-                    <span class="legend-color" style="background: #3b82f6"></span>
-                    <span>Élevé</span>
-                  </div>
-                  <div class="legend-item">
-                    <span class="legend-color" style="background: #f59e0b"></span>
-                    <span>Attention</span>
-                  </div>
-                  <div class="legend-item">
-                    <span class="legend-color" style="background: #ef4444"></span>
-                    <span>Dépassé</span>
-                  </div>
-                </div>
-              </div>
-              
-              <div class="capacity-breakdown-virtual" *ngIf="getGroupedDeliveries().length > 0">
-                <div class="breakdown-header">
-                  <h5>Détail du chargement par client</h5>
-                  <div class="breakdown-summary">
-                    <span class="summary-item">
-                      <mat-icon>groups</mat-icon>
-                      {{ getGroupedDeliveries().length }} client(s)
-                    </span>
-                    <span class="summary-item">
-                      <mat-icon>inventory</mat-icon>
-                      {{ deliveries.length }} commande(s)
-                    </span>
-                    <span class="summary-item">
-                      <mat-icon>scale</mat-icon>
-                      {{ calculateTotalWeight() | number:'1.2-2' }} {{ loadingUnit }}
-                    </span>
-                  </div>
-                </div>
-                
 
-                <div class="virtual-scroll-container capacity-virtual-container">
-                  <cdk-virtual-scroll-viewport
-                    #capacityViewport
-                    [itemSize]="120"
-                    class="capacity-virtual-viewport"
-                    minBufferPx="200"
-                    maxBufferPx="400"
-                    (scrolledIndexChange)="onCapacityScroll($event)">
-                    
-
-                    <div *cdkVirtualFor="let group of getGroupedDeliveries(); 
-                                        let i = index;
-                                        let last = last;
-                                        trackBy: trackByGroupId"
-                        class="client-group-item-virtual"
-                        [class.expanded]="isGroupExpanded(group.customerId)"
-                        [class.last-item]="last">
-                      
-
-                      <div class="client-group-header" 
-                          (click)="toggleGroupExpanded(group.customerId)">
-                        
-                        <div class="client-group-info">
-                          <div class="client-group-name">
-                            <mat-icon class="client-icon">person</mat-icon>
-                            <div class="client-name-container">
-                              <span class="client-name">{{ getClientName(group.customerId) }}</span>
-                              <span class="group-index">Client #{{ i + 1 }}</span>
-                            </div>
-                          </div>
-                          
-                          <div class="client-group-stats">
-                            <div class="client-stat" [matTooltip]="'Nombre de commandes'">
-                              <mat-icon class="stat-icon">inventory</mat-icon>
-                              <span class="stat-text">{{ group.orders.length }} cmd</span>
-                            </div>
-                            
-                            <div class="client-stat" [matTooltip]="'Poids total du client'">
-                              <mat-icon class="stat-icon">scale</mat-icon>
-                              <span class="stat-text">{{ calculateGroupTotalWeight(group.customerId).toFixed(2) }} {{ loadingUnit }}</span>
-                            </div>
-                            
-                            <div class="client-stat" [matTooltip]="'Pourcentage de la capacité du camion'">
-                              <span class="percentage-badge" 
-                                    [ngClass]="getCapacityLevelClass(calculateGroupCapacityPercentage(group.customerId))">
-                                {{ calculateGroupCapacityPercentage(group.customerId) | number:'1.0-0' }}%
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                        
-                        <mat-icon class="expand-icon">
-                          {{ isGroupExpanded(group.customerId) ? 'expand_less' : 'expand_more' }}
-                        </mat-icon>
-                      </div>
-                      
-
-                      <div class="client-orders-details" *ngIf="isGroupExpanded(group.customerId)">
-                        <div class="orders-header">
-                          <h6>Détail des commandes</h6>
-                          <span class="orders-weight-total">
-                            Total: {{ calculateGroupTotalWeight(group.customerId).toFixed(2) }} {{ loadingUnit }}
-                          </span>
-                        </div>
-                        
-                        <div *ngFor="let order of group.orders; let orderIndex = index" 
-                            class="order-item-breakdown">
-                          
-                          <div class="order-sequence">
-                            <span class="sequence-number">#{{ orderIndex + 1 }}</span>
-                          </div>
-                          
-                          <div class="order-details">
-                            <div class="order-main">
-                              <span class="order-ref" [matTooltip]="order.reference">
-                                {{ order.reference | truncate:15 }}
-                              </span>
-                              <span class="order-type">{{ order.type || 'Standard' }}</span>
-                            </div>
-                            
-                            <div class="order-weight-info">
-                              <div class="order-weight">
-                                <mat-icon class="weight-icon">scale</mat-icon>
-                                <span class="weight-value">{{ order.weight }} {{ loadingUnit }}</span>
-                              </div>
-                              <div class="order-percentage">
-                                {{ calculateOrderCapacityPercentage(order.weight) | number:'1.1-1' }}%
-                              </div>
-                            </div>
-                          </div>
-                          
-                        </div>
-                        
-
-                        <div class="client-progress">
-                          <div class="progress-label">
-                            <span>Utilisation de la capacité pour ce client</span>
-                            <span class="progress-percentage">
-                              {{ calculateGroupCapacityPercentage(group.customerId) | number:'1.1-1' }}%
-                            </span>
-                          </div>
-                          <div class="progress-bar-mini">
-                            <div class="progress-fill-mini"
-                                [style.width.%]="calculateGroupCapacityPercentage(group.customerId)"
-                                [style.background]="getProgressBarColorForPercentage(calculateGroupCapacityPercentage(group.customerId))">
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </cdk-virtual-scroll-viewport>
-                  
-                  <div class="virtual-scroll-info">
-                    <div class="scroll-info-item">
-                      <mat-icon class="info-icon">pie_chart</mat-icon>
-                      <div class="info-content">
-                        <span class="info-text">{{ getCapacityDistributionSummary() }}</span>
-                        <small class="info-subtext">Répartition par client</small>
-                      </div>
-                    </div>
-                    
-                    <div class="scroll-info-item" *ngIf="getVisibleCapacityRange()">
-                      <mat-icon class="info-icon">visibility</mat-icon>
-                      <div class="info-content">
-                        <span class="info-text">{{ getVisibleCapacityRange() }}</span>
-                        <small class="info-subtext">Clients visibles</small>
-                      </div>
-                    </div>
-                    
-                    <div class="scroll-actions">
-                      <button mat-icon-button 
-                              type="button" 
-                              (click)="scrollCapacityToTop()"
-                              matTooltip="Premier client">
-                        <mat-icon>keyboard_arrow_up</mat-icon>
-                      </button>
-                      <button mat-icon-button 
-                              type="button" 
-                              (click)="scrollCapacityToBottom()"
-                              matTooltip="Dernier client">
-                        <mat-icon>keyboard_arrow_down</mat-icon>
-                      </button>
-                    </div>
-                  </div>
-                </div>
-                
-
-                <div class="capacity-total-summary">
-                  <div class="total-row">
-                    <div class="total-label">
-                      <mat-icon>summarize</mat-icon>
-                      <span>Résumé total du chargement</span>
-                    </div>
-                    
-                    <div class="total-values">
-                      <div class="total-item">
-                        <mat-icon class="total-icon">groups</mat-icon>
-                        <div class="total-content">
-                          <div class="total-value">{{ getGroupedDeliveries().length }}</div>
-                          <div class="total-label-text">Clients</div>
-                        </div>
-                      </div>
-                      
-                      <div class="total-item">
-                        <mat-icon class="total-icon">inventory</mat-icon>
-                        <div class="total-content">
-                          <div class="total-value">{{ deliveries.length }}</div>
-                          <div class="total-label-text">Commandes</div>
-                        </div>
-                      </div>
-                      
-                      <div class="total-item">
-                        <mat-icon class="total-icon">scale</mat-icon>
-                        <div class="total-content">
-                          <div class="total-value">{{ calculateTotalWeight() | number:'1.2-2' }}</div>
-                          <div class="total-label-text">{{ loadingUnit }}s</div>
-                        </div>
-                      </div>
-                      
-                      <div class="total-item">
-                        <mat-icon class="total-icon">speed</mat-icon>
-                        <div class="total-content">
-                          <div class="total-value">{{ calculateCapacityPercentage() | number:'1.0-0' }}%</div>
-                          <div class="total-label-text">Capacité</div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  
-
-                  <div *ngIf="calculateCapacityPercentage() >= 70" 
-                      class="capacity-warning-summary"
-                      [ngClass]="calculateCapacityPercentage() >= 90 ? 'warning-critical' : 'warning-high'">
-                    <mat-icon class="warning-icon">
-                      {{ calculateCapacityPercentage() >= 90 ? 'error' : 'warning' }}
-                    </mat-icon>
-                    <div class="warning-content">
-                      <div class="warning-title">
-                        {{ calculateCapacityPercentage() >= 90 ? 'DÉPASSEMENT IMMINENT' : 'CAPACITÉ ÉLEVÉE' }}
-                      </div>
-                      <div class="warning-text">
-                        {{ getCapacityAlert().message }}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div class="timeline-summary" *ngIf="shouldShowTimelineSummary()" [class.loading]="isDragging">
-              <div class="summary-header">
-                <div class="summary-title">
-                  <h4>
-                    <mat-icon class="title-icon">route</mat-icon>
-                    Récapitulatif du trajet
-                  </h4>
-                  <div class="drag-instructions" *ngIf="getGroupedDeliveries().length > 1">
-                    <mat-icon class="drag-icon">drag_indicator</mat-icon>
-                    <span>Glissez-déposez les clients pour réorganiser</span>
-                  </div>
-                </div>
-                
-                <div class="trip-id-badge">
-                  <mat-icon>confirmation_number</mat-icon>
-                  <span>#{{ tripForm.get('tripReference')?.value || 'Nouveau' }}</span>
-                </div>
-              </div>
-              
-              <div class="trip-stats-virtual">
-                <div class="stat-card-virtual total-distance">
-                  <mat-icon class="stat-icon">directions_car</mat-icon>
-                  <div class="stat-content">
-                    <div class="stat-value">{{ tripForm.get('estimatedDistance')?.value || 0 }} km</div>
-                    <div class="stat-label">Distance totale</div>
-                  </div>
-                </div>
-                
-                <div class="stat-card-virtual total-duration">
-                  <mat-icon class="stat-icon">schedule</mat-icon>
-                  <div class="stat-content">
-                    <div class="stat-value">{{ tripForm.get('estimatedDuration')?.value || 0 }}h</div>
-                    <div class="stat-label">Durée estimée</div>
-                  </div>
-                </div>
-                
-                <div class="stat-card-virtual delivery-count">
-                  <mat-icon class="stat-icon">local_shipping</mat-icon>
-                  <div class="stat-content">
-                    <div class="stat-value">{{ getGroupedDeliveries().length }}</div>
-                    <div class="stat-label">Points d'arrêt</div>
-                    <div class="stat-subtext" *ngIf="deliveries.length > 0">
-                      {{ deliveries.length }} commande(s)
-                    </div>
-                  </div>
-                </div>
-                
-                <div class="stat-card-virtual status-indicator" [class]="tripForm.get('tripStatus')?.value || 'Planned'">
-                  <mat-icon class="stat-icon">flag</mat-icon>
-                  <div class="stat-content">
-                    <div class="stat-value">{{ getTripStatusLabel(tripForm.get('tripStatus')?.value) }}</div>
-                    <div class="stat-label">Statut</div>
-                  </div>
-                </div>
-              </div>
-              
-              <div class="divider-line">
-                <div class="divider-icon">
-                  <mat-icon>arrow_downward</mat-icon>
-                </div>
-              </div>
-              
-              <div class="timeline-virtual-container" *ngIf="getGroupedDeliveries().length > 0">
+              <div class="virtual-scroll-container capacity-virtual-container">
                 <cdk-virtual-scroll-viewport
-                  #timelineViewport
-                  [itemSize]="150"
-                  class="timeline-virtual-viewport"
+                  #capacityViewport
+                  [itemSize]="120"
+                  class="capacity-virtual-viewport"
                   minBufferPx="200"
                   maxBufferPx="400"
-                  (scrolledIndexChange)="onTimelineScroll($event)">
+                  (scrolledIndexChange)="onCapacityScroll($event)">
                   
-                  <div class="timeline-step-virtual start-step">
-                    <div class="step-marker">
-                      <mat-icon class="marker-icon">play_arrow</mat-icon>
-                    </div>
-                    <div class="step-content">
-                      <div class="step-header">
-                        <div class="step-title">Départ</div>
-                        <div class="step-badge start-badge">Démarrage</div>
-                      </div>
-                      <div class="step-details">
-                        <div class="detail-item">
-                          <mat-icon class="detail-icon location-icon">place</mat-icon>
-                          <div class="detail-text">
-                            <strong>Lieu:</strong> {{ getSelectedStartLocationInfo() }}
-                          </div>
-                        </div>
-                        <div class="detail-item">
-                          <mat-icon class="detail-icon calendar_today">calendar_today</mat-icon>
-                          <div class="detail-text">
-                            <strong>Date:</strong> {{ formatDateForDisplay(tripForm.get('estimatedStartDate')?.value) || 'Non définie' }}
-                          </div>
-                        </div>
-                        <div class="detail-item">
-                          <mat-icon class="detail-icon local_shipping">local_shipping</mat-icon>
-                          <div class="detail-text">
-                            <strong>Camion:</strong> {{ getSelectedTruckInfo() }}
-                          </div>
-                        </div>
-                        <div class="detail-item">
-                          <mat-icon class="detail-icon person">person</mat-icon>
-                          <div class="detail-text">
-                            <strong>Chauffeur:</strong> {{ getSelectedDriverInfo() }}
-                          </div>
-                        </div>
-                        <div class="detail-item" *ngIf="tripForm.get('estimatedStartDate')?.value">
-                          <mat-icon class="detail-icon time-icon">schedule</mat-icon>
-                          <div class="detail-text">
-                            <strong>Heure départ:</strong> 08:00
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <div class="step-connector start-connector">
-                      <div class="connector-line"></div>
-                      <div class="connector-arrow">
-                        <mat-icon>arrow_downward</mat-icon>
-                      </div>
-                      <div class="connector-label">Départ</div>
-                    </div>
-                  </div>
-                  
+
                   <div *cdkVirtualFor="let group of getGroupedDeliveries(); 
                                       let i = index;
                                       let last = last;
                                       trackBy: trackByGroupId"
-                      class="timeline-step-virtual delivery-group-step"
-                      cdkDrag
-                      [cdkDragData]="getGroupDeliveryIndices(group.customerId)"
-                      (cdkDragStarted)="onDragStarted()"
-                      (cdkDragEnded)="onDragEnded()"
-                      [class.last-group]="last"
-                      [class.dragging]="isDragging">
+                      class="client-group-item-virtual"
+                      [class.expanded]="isGroupExpanded(group.customerId)"
+                      [class.last-item]="last">
                     
-                    <div class="drag-handle" cdkDragHandle *ngIf="getGroupedDeliveries().length > 1">
-                      <mat-icon>drag_indicator</mat-icon>
-                    </div>
-                    
-                    <div class="step-connector">
-                      <div class="connector-line"></div>
-                      <div class="connector-arrow">
-                        <mat-icon>arrow_downward</mat-icon>
-                      </div>
-                      <div class="connector-label">
-                        <span>Arrêt {{ i + 1 }}</span>
-                        <span class="drag-hint" *ngIf="getGroupedDeliveries().length > 1">
-                          <mat-icon>open_with</mat-icon>
-                        </span>
-                      </div>
-                    </div>
-                    
-                    <div class="step-marker" [ngStyle]="getGroupMarkerStyle(group)">
-                      <span class="delivery-group-number" [class.updated]="isSequenceUpdated(i)">
-                        {{ i + 1 }}
-                      </span>
-                    </div>
-                    
-                    <div class="step-content">
-                      <div class="step-header">
-                        <div class="step-title">Arrêt {{ i + 1 }}: {{ getClientName(group.customerId) }}</div>
-                        <div class="step-badge delivery-group-badge">
-                          {{ group.orders.length }} commande(s)
-                        </div>
-                      </div>
+
+                    <div class="client-group-header" 
+                        (click)="toggleGroupExpanded(group.customerId)">
                       
-                      <div class="step-details">
-                        <div class="detail-item">
-                          <mat-icon class="detail-icon client-icon">person</mat-icon>
-                          <div class="detail-text">
-                            <strong>Client:</strong> {{ getClientName(group.customerId) }}
+                      <div class="client-group-info">
+                        <div class="client-group-name">
+                          <mat-icon class="client-icon">person</mat-icon>
+                          <div class="client-name-container">
+                            <span class="client-name">{{ getClientName(group.customerId) }}</span>
+                            <span class="group-index">Client #{{ i + 1 }}</span>
                           </div>
                         </div>
                         
-                        <div class="detail-item">
-                          <mat-icon class="detail-icon order-icon">inventory</mat-icon>
-                          <div class="detail-text">
-                            <strong>Commandes:</strong> {{ group.orders.length }}
+                        <div class="client-group-stats">
+                          <div class="client-stat" [matTooltip]="'Nombre de commandes'">
+                            <mat-icon class="stat-icon">inventory</mat-icon>
+                            <span class="stat-text">{{ group.orders.length }} cmd</span>
                           </div>
-                        </div>
-                        
-                        <div class="detail-item">
-                          <mat-icon class="detail-icon weight-icon">scale</mat-icon>
-                          <div class="detail-text">
-                            <strong>Poids total:</strong> {{ calculateGroupTotalWeight(group.customerId).toFixed(2) }} {{ loadingUnit }}
+                          
+                          <div class="client-stat" [matTooltip]="'Poids total du client'">
+                            <mat-icon class="stat-icon">scale</mat-icon>
+                            <span class="stat-text">{{ calculateGroupTotalWeight(group.customerId).toFixed(2) }} {{ loadingUnit }}</span>
                           </div>
-                        </div>
-                        
-                        
-                        
-                        <div class="detail-item">
-                          <mat-icon class="detail-icon time-icon">schedule</mat-icon>
-                          <div class="detail-text">
-                            <strong>Heure estimée:</strong> {{ calculateGroupDeliveryTime(i + 1) }}
-                            <span class="time-hint">(estimée)</span>
-                          </div>
-                        </div>
-                        
-                        <div class="detail-item" *ngIf="group.deliveryGroup.get('notes')?.value">
-                          <mat-icon class="detail-icon notes-icon">note</mat-icon>
-                          <div class="detail-text notes-preview">
-                            <strong>Notes:</strong> {{ group.deliveryGroup.get('notes')?.value | slice:0:50 }}
-                            {{ group.deliveryGroup.get('notes')?.value?.length > 50 ? '...' : '' }}
-                          </div>
-                        </div>
-                        
-                        <div class="detail-item sequence-info">
-                          <mat-icon class="detail-icon sequence-icon">sort</mat-icon>
-                          <div class="detail-text">
-                            <strong>Ordre:</strong> {{ group.deliveryGroup.get('sequence')?.value || i + 1 }}
-                            <span class="sequence-change" *ngIf="hasSequenceChanged(i, group.deliveryGroup)">
-                              (Changé)
+                          
+                          <div class="client-stat" [matTooltip]="'Pourcentage de la capacité du camion'">
+                            <span class="percentage-badge" 
+                                  [ngClass]="getCapacityLevelClass(calculateGroupCapacityPercentage(group.customerId))">
+                              {{ calculateGroupCapacityPercentage(group.customerId) | number:'1.0-0' }}%
                             </span>
                           </div>
                         </div>
-                        
-
-                        <div class="detail-item group-actions">
-                          <button mat-icon-button color="primary" 
-                                  type="button" 
-                                  (click)="toggleGroupExpanded(group.customerId)"
-                                  matTooltip="Voir les détails">
-                            <mat-icon>{{ isGroupExpanded(group.customerId) ? 'expand_less' : 'expand_more' }}</mat-icon>
-                          </button>
-                          
-                          <button mat-icon-button color="accent" 
-                                  type="button" 
-                                  (click)="scrollToDeliveryGroup(i)"
-                                  matTooltip="Voir dans la liste">
-                            <mat-icon>list</mat-icon>
-                          </button>
-                          
-                          <button mat-icon-button color="warn" 
-                                  type="button" 
-                                  (click)="removeCustomerDeliveries(group.customerId)"
-                                  matTooltip="Supprimer toutes les commandes">
-                            <mat-icon>delete</mat-icon>
-                          </button>
-                        </div>
-                        
-
-                        <div class="group-orders-details" *ngIf="isGroupExpanded(group.customerId)">
-                          <div class="orders-title">
-                            <mat-icon>inventory_2</mat-icon>
-                            <span>Commandes de ce client ({{ group.orders.length }})</span>
-                          </div>
-                          
-                          <div *ngFor="let order of group.orders; let orderIndex = index" 
-                              class="group-order-item">
-                            
-                            <div class="order-indicator">
-                              <mat-icon>inventory</mat-icon>
-                            </div>
-                            
-                            <div class="order-info">
-                              <div class="order-ref">{{ order.reference }}</div>
-                              <div class="order-type">{{ order.type || 'Standard' }}</div>
-                              <div class="order-weight">{{ order.weight }} {{ loadingUnit }}</div>
-                            </div>
-                            
-                            <div class="order-actions">
-                              <button mat-icon-button color="warn" 
-                                      type="button" 
-                                      (click)="removeSingleOrder(order.deliveryIndex)"
-                                      matTooltip="Retirer cette commande">
-                                <mat-icon>close</mat-icon>
-                              </button>
-                            </div>
-                          </div>
-                        </div>
                       </div>
-                    </div>
-                  </div>
-                  
-                  <div class="timeline-step-virtual end-step">
-                    <div class="step-connector">
-                      <div class="connector-line"></div>
-                      <div class="connector-arrow">
-                        <mat-icon>arrow_downward</mat-icon>
-                      </div>
-                      <div class="connector-label">Fin</div>
+                      
+                      <mat-icon class="expand-icon">
+                        {{ isGroupExpanded(group.customerId) ? 'expand_less' : 'expand_more' }}
+                      </mat-icon>
                     </div>
                     
-                    <div class="step-marker">
-                      <mat-icon class="marker-icon">flag</mat-icon>
-                    </div>
-                    
-                    <div class="step-content">
-                      <div class="step-header">
-                        <div class="step-title">Arrivée</div>
-                        <div class="step-badge end-badge">Final</div>
+
+                    <div class="client-orders-details" *ngIf="isGroupExpanded(group.customerId)">
+                      <div class="orders-header">
+                        <h6>Détail des commandes</h6>
+                        <span class="orders-weight-total">
+                          Total: {{ calculateGroupTotalWeight(group.customerId).toFixed(2) }} {{ loadingUnit }}
+                        </span>
                       </div>
-                      <div class="step-details">
-                        <div class="detail-item">
-                          <mat-icon class="detail-icon location-icon">place</mat-icon>
-                          <div class="detail-text">
-                            <strong>Lieu:</strong> {{ getSelectedEndLocationInfo() }}
+                      
+                      <div *ngFor="let order of group.orders; let orderIndex = index" 
+                          class="order-item-breakdown">
+                        
+                        <div class="order-sequence">
+                          <span class="sequence-number">#{{ orderIndex + 1 }}</span>
+                        </div>
+                        
+                        <div class="order-details">
+                          <div class="order-main">
+                            <span class="order-ref" [matTooltip]="order.reference">
+                              {{ order.reference | truncate:15 }}
+                            </span>
+                            <span class="order-type">{{ order.type || 'Standard' }}</span>
+                          </div>
+                          
+                          <div class="order-weight-info">
+                            <div class="order-weight">
+                              <mat-icon class="weight-icon">scale</mat-icon>
+                              <span class="weight-value">{{ order.weight }} {{ loadingUnit }}</span>
+                            </div>
+                            <div class="order-percentage">
+                              {{ calculateOrderCapacityPercentage(order.weight) | number:'1.1-1' }}%
+                            </div>
                           </div>
                         </div>
-                        <div class="detail-item">
-                          <mat-icon class="detail-icon calendar_today">calendar_today</mat-icon>
-                          <div class="detail-text">
-                            <strong>Date:</strong> {{ formatDateForDisplay(tripForm.get('estimatedEndDate')?.value) || 'Non définie' }}
-                          </div>
+                        
+                      </div>
+                      
+
+                      <div class="client-progress">
+                        <div class="progress-label">
+                          <span>Utilisation de la capacité pour ce client</span>
+                          <span class="progress-percentage">
+                            {{ calculateGroupCapacityPercentage(group.customerId) | number:'1.1-1' }}%
+                          </span>
                         </div>
-                        <div class="detail-item">
-                          <mat-icon class="detail-icon trending_up">trending_up</mat-icon>
-                          <div class="detail-text">
-                            <strong>Distance:</strong> {{ tripForm.get('estimatedDistance')?.value || 0 }} km
-                          </div>
-                        </div>
-                        <div class="detail-item">
-                          <mat-icon class="detail-icon timer">timer</mat-icon>
-                          <div class="detail-text">
-                            <strong>Durée:</strong> {{ tripForm.get('estimatedDuration')?.value || 0 }}h
-                          </div>
-                        </div>
-                        <div class="detail-item">
-                          <mat-icon class="detail-icon speed">speed</mat-icon>
-                          <div class="detail-text">
-                            <strong>Vitesse moy.:</strong> {{ calculateAverageSpeed() }} km/h
-                          </div>
-                        </div>
-                        <div class="detail-item" *ngIf="tripForm.get('estimatedEndDate')?.value">
-                          <mat-icon class="detail-icon time-icon">schedule</mat-icon>
-                          <div class="detail-text">
-                            <strong>Heure arrivée:</strong> {{ calculateArrivalTime() }}
+                        <div class="progress-bar-mini">
+                          <div class="progress-fill-mini"
+                              [style.width.%]="calculateGroupCapacityPercentage(group.customerId)"
+                              [style.background]="getProgressBarColorForPercentage(calculateGroupCapacityPercentage(group.customerId))">
                           </div>
                         </div>
                       </div>
@@ -2380,97 +1993,505 @@
                   </div>
                 </cdk-virtual-scroll-viewport>
                 
-                <div class="timeline-virtual-navigation">
-                  <div class="nav-controls">
-                    <div class="nav-buttons">
-                      <button mat-icon-button 
-                              type="button" 
-                              (click)="scrollTimelineToTop()"
-                              matTooltip="Début du trajet">
-                        <mat-icon>first_page</mat-icon>
-                      </button>
-                      <button mat-icon-button 
-                              type="button"
-                              (click)="scrollTimelineUp()"
-                              matTooltip="Monter">
-                        <mat-icon>keyboard_arrow_up</mat-icon>
-                      </button>
-                      <button mat-icon-button 
-                              type="button"
-                              (click)="scrollTimelineDown()"
-                              matTooltip="Descendre">
-                        <mat-icon>keyboard_arrow_down</mat-icon>
-                      </button>
-                      <button mat-icon-button 
-                              type="button"
-                              (click)="scrollTimelineToBottom()"
-                              matTooltip="Fin du trajet">
-                        <mat-icon>last_page</mat-icon>
-                      </button>
+                <div class="virtual-scroll-info">
+                  <div class="scroll-info-item">
+                    <mat-icon class="info-icon">pie_chart</mat-icon>
+                    <div class="info-content">
+                      <span class="info-text">{{ getCapacityDistributionSummary() }}</span>
+                      <small class="info-subtext">Répartition par client</small>
                     </div>
                   </div>
                   
-                  <div class="timeline-info">
-                    <div class="info-item">
-                      <mat-icon class="info-icon">visibility</mat-icon>
-                      <span class="info-text">{{ getVisibleTimelineRange() }}</span>
+                  <div class="scroll-info-item" *ngIf="getVisibleCapacityRange()">
+                    <mat-icon class="info-icon">visibility</mat-icon>
+                    <div class="info-content">
+                      <span class="info-text">{{ getVisibleCapacityRange() }}</span>
+                      <small class="info-subtext">Clients visibles</small>
                     </div>
-                    
-                    <div class="info-item">
-                      <mat-icon class="info-icon">trending_up</mat-icon>
-                      <span class="info-text">{{ getTimelineScrollProgress() }}% parcourus</span>
-                    </div>
-                    
-                    <div class="scroll-progress">
-                      <div class="progress-bar-timeline">
-                        <div class="progress-fill-timeline"
-                            [style.width.%]="getTimelineScrollProgress()">
-                        </div>
-                      </div>
-                    </div>
+                  </div>
+                  
+                  <div class="scroll-actions">
+                    <button mat-icon-button 
+                            type="button" 
+                            (click)="scrollCapacityToTop()"
+                            matTooltip="Premier client">
+                      <mat-icon>keyboard_arrow_up</mat-icon>
+                    </button>
+                    <button mat-icon-button 
+                            type="button" 
+                            (click)="scrollCapacityToBottom()"
+                            matTooltip="Dernier client">
+                      <mat-icon>keyboard_arrow_down</mat-icon>
+                    </button>
                   </div>
                 </div>
               </div>
               
-              <div *ngIf="getGroupedDeliveries().length === 0" class="no-timeline-points">
-                <div class="no-points-content">
-                  <mat-icon class="empty-icon">timeline</mat-icon>
-                  <div class="empty-text">
-                    <h4>Aucun point d'arrêt défini</h4>
-                    <p>Ajoutez des livraisons pour voir le récapitulatif du trajet</p>
+
+              <div class="capacity-total-summary">
+                <div class="total-row">
+                  <div class="total-label">
+                    <mat-icon>summarize</mat-icon>
+                    <span>Résumé total du chargement</span>
+                  </div>
+                  
+                  <div class="total-values">
+                    <div class="total-item">
+                      <mat-icon class="total-icon">groups</mat-icon>
+                      <div class="total-content">
+                        <div class="total-value">{{ getGroupedDeliveries().length }}</div>
+                        <div class="total-label-text">Clients</div>
+                      </div>
+                    </div>
+                    
+                    <div class="total-item">
+                      <mat-icon class="total-icon">inventory</mat-icon>
+                      <div class="total-content">
+                        <div class="total-value">{{ deliveries.length }}</div>
+                        <div class="total-label-text">Commandes</div>
+                      </div>
+                    </div>
+                    
+                    <div class="total-item">
+                      <mat-icon class="total-icon">scale</mat-icon>
+                      <div class="total-content">
+                        <div class="total-value">{{ calculateTotalWeight() | number:'1.2-2' }}</div>
+                        <div class="total-label-text">{{ loadingUnit }}s</div>
+                      </div>
+                    </div>
+                    
+                    <div class="total-item">
+                      <mat-icon class="total-icon">speed</mat-icon>
+                      <div class="total-content">
+                        <div class="total-value">{{ calculateCapacityPercentage() | number:'1.0-0' }}%</div>
+                        <div class="total-label-text">Capacité</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+
+                <div *ngIf="calculateCapacityPercentage() >= 70" 
+                    class="capacity-warning-summary"
+                    [ngClass]="calculateCapacityPercentage() >= 90 ? 'warning-critical' : 'warning-high'">
+                  <mat-icon class="warning-icon">
+                    {{ calculateCapacityPercentage() >= 90 ? 'error' : 'warning' }}
+                  </mat-icon>
+                  <div class="warning-content">
+                    <div class="warning-title">
+                      {{ calculateCapacityPercentage() >= 90 ? 'DÉPASSEMENT IMMINENT' : 'CAPACITÉ ÉLEVÉE' }}
+                    </div>
+                    <div class="warning-text">
+                      {{ getCapacityAlert().message }}
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
           </div>
-        </cdk-virtual-scroll-viewport>
-      </div>
 
-      <div class="virtual-scroll-info right-scroll-info" *ngIf="rightSectionItems.length > 0">
-        <div class="scroll-info-item">
-          <mat-icon class="info-icon">visibility</mat-icon>
-          <div class="info-content">
-            <span class="info-text">{{ getVisibleRightRange() }}</span>
-            <small class="info-subtext">Utilisez la molette pour naviguer</small>
+          <!-- Timeline Summary -->
+          <div class="timeline-summary" *ngIf="shouldShowTimelineSummary()" [class.loading]="isDragging">
+            <div class="summary-header">
+              <div class="summary-title">
+                <h4>
+                  <mat-icon class="title-icon">route</mat-icon>
+                  Récapitulatif du trajet
+                </h4>
+                <div class="drag-instructions" *ngIf="getGroupedDeliveries().length > 1">
+                  <mat-icon class="drag-icon">drag_indicator</mat-icon>
+                  <span>Glissez-déposez les clients pour réorganiser</span>
+                </div>
+              </div>
+              
+              <div class="trip-id-badge">
+                <mat-icon>confirmation_number</mat-icon>
+                <span>#{{ tripForm.get('tripReference')?.value || 'Nouveau' }}</span>
+              </div>
+            </div>
+            
+            <div class="trip-stats-virtual">
+              <div class="stat-card-virtual total-distance">
+                <mat-icon class="stat-icon">directions_car</mat-icon>
+                <div class="stat-content">
+                  <div class="stat-value">{{ tripForm.get('estimatedDistance')?.value || 0 }} km</div>
+                  <div class="stat-label">Distance totale</div>
+                </div>
+              </div>
+              
+              <div class="stat-card-virtual total-duration">
+                <mat-icon class="stat-icon">schedule</mat-icon>
+                <div class="stat-content">
+                  <div class="stat-value">{{ tripForm.get('estimatedDuration')?.value || 0 }}h</div>
+                  <div class="stat-label">Durée estimée</div>
+                </div>
+              </div>
+              
+              <div class="stat-card-virtual delivery-count">
+                <mat-icon class="stat-icon">local_shipping</mat-icon>
+                <div class="stat-content">
+                  <div class="stat-value">{{ getGroupedDeliveries().length }}</div>
+                  <div class="stat-label">Points d'arrêt</div>
+                  <div class="stat-subtext" *ngIf="deliveries.length > 0">
+                    {{ deliveries.length }} commande(s)
+                  </div>
+                </div>
+              </div>
+              
+              <div class="stat-card-virtual status-indicator" [class]="tripForm.get('tripStatus')?.value || 'Planned'">
+                <mat-icon class="stat-icon">flag</mat-icon>
+                <div class="stat-content">
+                  <div class="stat-value">{{ getTripStatusLabel(tripForm.get('tripStatus')?.value) }}</div>
+                  <div class="stat-label">Statut</div>
+                </div>
+              </div>
+            </div>
+            
+            <div class="divider-line">
+              <div class="divider-icon">
+                <mat-icon>arrow_downward</mat-icon>
+              </div>
+            </div>
+            
+            <div class="timeline-virtual-container" *ngIf="getGroupedDeliveries().length > 0">
+              <cdk-virtual-scroll-viewport
+                #timelineViewport
+                [itemSize]="150"
+                class="timeline-virtual-viewport"
+                minBufferPx="200"
+                maxBufferPx="400"
+                (scrolledIndexChange)="onTimelineScroll($event)">
+                
+                <div class="timeline-step-virtual start-step">
+                  <div class="step-marker">
+                    <mat-icon class="marker-icon">play_arrow</mat-icon>
+                  </div>
+                  <div class="step-content">
+                    <div class="step-header">
+                      <div class="step-title">Départ</div>
+                      <div class="step-badge start-badge">Démarrage</div>
+                    </div>
+                    <div class="step-details">
+                      <div class="detail-item">
+                        <mat-icon class="detail-icon location-icon">place</mat-icon>
+                        <div class="detail-text">
+                          <strong>Lieu:</strong> {{ getSelectedStartLocationInfo() }}
+                        </div>
+                      </div>
+                      <div class="detail-item">
+                        <mat-icon class="detail-icon calendar_today">calendar_today</mat-icon>
+                        <div class="detail-text">
+                          <strong>Date:</strong> {{ formatDateForDisplay(tripForm.get('estimatedStartDate')?.value) || 'Non définie' }}
+                        </div>
+                      </div>
+                      <div class="detail-item">
+                        <mat-icon class="detail-icon local_shipping">local_shipping</mat-icon>
+                        <div class="detail-text">
+                          <strong>Camion:</strong> {{ getSelectedTruckInfo() }}
+                        </div>
+                      </div>
+                      <div class="detail-item">
+                        <mat-icon class="detail-icon person">person</mat-icon>
+                        <div class="detail-text">
+                          <strong>Chauffeur:</strong> {{ getSelectedDriverInfo() }}
+                        </div>
+                      </div>
+                      <div class="detail-item" *ngIf="tripForm.get('estimatedStartDate')?.value">
+                        <mat-icon class="detail-icon time-icon">schedule</mat-icon>
+                        <div class="detail-text">
+                          <strong>Heure départ:</strong> 08:00
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div class="step-connector start-connector">
+                    <div class="connector-line"></div>
+                    <div class="connector-arrow">
+                      <mat-icon>arrow_downward</mat-icon>
+                    </div>
+                    <div class="connector-label">Départ</div>
+                  </div>
+                </div>
+                
+                <div *cdkVirtualFor="let group of getGroupedDeliveries(); 
+                                    let i = index;
+                                    let last = last;
+                                    trackBy: trackByGroupId"
+                    class="timeline-step-virtual delivery-group-step"
+                    cdkDrag
+                    [cdkDragData]="getGroupDeliveryIndices(group.customerId)"
+                    (cdkDragStarted)="onDragStarted()"
+                    (cdkDragEnded)="onDragEnded()"
+                    [class.last-group]="last"
+                    [class.dragging]="isDragging">
+                  
+                  <div class="drag-handle" cdkDragHandle *ngIf="getGroupedDeliveries().length > 1">
+                    <mat-icon>drag_indicator</mat-icon>
+                  </div>
+                  
+                  <div class="step-connector">
+                    <div class="connector-line"></div>
+                    <div class="connector-arrow">
+                      <mat-icon>arrow_downward</mat-icon>
+                    </div>
+                    <div class="connector-label">
+                      <span>Arrêt {{ i + 1 }}</span>
+                      <span class="drag-hint" *ngIf="getGroupedDeliveries().length > 1">
+                        <mat-icon>open_with</mat-icon>
+                      </span>
+                    </div>
+                  </div>
+                  
+                  <div class="step-marker" [ngStyle]="getGroupMarkerStyle(group)">
+                    <span class="delivery-group-number" [class.updated]="isSequenceUpdated(i)">
+                      {{ i + 1 }}
+                    </span>
+                  </div>
+                  
+                  <div class="step-content">
+                    <div class="step-header">
+                      <div class="step-title">Arrêt {{ i + 1 }}: {{ getClientName(group.customerId) }}</div>
+                      <div class="step-badge delivery-group-badge">
+                        {{ group.orders.length }} commande(s)
+                      </div>
+                    </div>
+                    
+                    <div class="step-details">
+                      <div class="detail-item">
+                        <mat-icon class="detail-icon client-icon">person</mat-icon>
+                        <div class="detail-text">
+                          <strong>Client:</strong> {{ getClientName(group.customerId) }}
+                        </div>
+                      </div>
+                      
+                      <div class="detail-item">
+                        <mat-icon class="detail-icon order-icon">inventory</mat-icon>
+                        <div class="detail-text">
+                          <strong>Commandes:</strong> {{ group.orders.length }}
+                        </div>
+                      </div>
+                      
+                      <div class="detail-item">
+                        <mat-icon class="detail-icon weight-icon">scale</mat-icon>
+                        <div class="detail-text">
+                          <strong>Poids total:</strong> {{ calculateGroupTotalWeight(group.customerId).toFixed(2) }} {{ loadingUnit }}
+                        </div>
+                      </div>
+                      
+                      
+                      
+                      <div class="detail-item">
+                        <mat-icon class="detail-icon time-icon">schedule</mat-icon>
+                        <div class="detail-text">
+                          <strong>Heure estimée:</strong> {{ calculateGroupDeliveryTime(i + 1) }}
+                          <span class="time-hint">(estimée)</span>
+                        </div>
+                      </div>
+                      
+                      <div class="detail-item" *ngIf="group.deliveryGroup.get('notes')?.value">
+                        <mat-icon class="detail-icon notes-icon">note</mat-icon>
+                        <div class="detail-text notes-preview">
+                          <strong>Notes:</strong> {{ group.deliveryGroup.get('notes')?.value | slice:0:50 }}
+                          {{ group.deliveryGroup.get('notes')?.value?.length > 50 ? '...' : '' }}
+                        </div>
+                      </div>
+                      
+                      <div class="detail-item sequence-info">
+                        <mat-icon class="detail-icon sequence-icon">sort</mat-icon>
+                        <div class="detail-text">
+                          <strong>Ordre:</strong> {{ group.deliveryGroup.get('sequence')?.value || i + 1 }}
+                          <span class="sequence-change" *ngIf="hasSequenceChanged(i, group.deliveryGroup)">
+                            (Changé)
+                          </span>
+                        </div>
+                      </div>
+                      
+
+                      <div class="detail-item group-actions">
+                        <button mat-icon-button color="primary" 
+                                type="button" 
+                                (click)="toggleGroupExpanded(group.customerId)"
+                                matTooltip="Voir les détails">
+                          <mat-icon>{{ isGroupExpanded(group.customerId) ? 'expand_less' : 'expand_more' }}</mat-icon>
+                        </button>
+                        
+                        <button mat-icon-button color="accent" 
+                                type="button" 
+                                (click)="scrollToDeliveryGroup(i)"
+                                matTooltip="Voir dans la liste">
+                          <mat-icon>list</mat-icon>
+                        </button>
+                        
+                        <button mat-icon-button color="warn" 
+                                type="button" 
+                                (click)="removeCustomerDeliveries(group.customerId)"
+                                matTooltip="Supprimer toutes les commandes">
+                          <mat-icon>delete</mat-icon>
+                        </button>
+                      </div>
+                      
+
+                      <div class="group-orders-details" *ngIf="isGroupExpanded(group.customerId)">
+                        <div class="orders-title">
+                          <mat-icon>inventory_2</mat-icon>
+                          <span>Commandes de ce client ({{ group.orders.length }})</span>
+                        </div>
+                        
+                        <div *ngFor="let order of group.orders; let orderIndex = index" 
+                            class="group-order-item">
+                          
+                          <div class="order-indicator">
+                            <mat-icon>inventory</mat-icon>
+                          </div>
+                          
+                          <div class="order-info">
+                            <div class="order-ref">{{ order.reference }}</div>
+                            <div class="order-type">{{ order.type || 'Standard' }}</div>
+                            <div class="order-weight">{{ order.weight }} {{ loadingUnit }}</div>
+                          </div>
+                          
+                          <div class="order-actions">
+                            <button mat-icon-button color="warn" 
+                                    type="button" 
+                                    (click)="removeSingleOrder(order.deliveryIndex)"
+                                    matTooltip="Retirer cette commande">
+                              <mat-icon>close</mat-icon>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                <div class="timeline-step-virtual end-step">
+                  <div class="step-connector">
+                    <div class="connector-line"></div>
+                    <div class="connector-arrow">
+                      <mat-icon>arrow_downward</mat-icon>
+                    </div>
+                    <div class="connector-label">Fin</div>
+                  </div>
+                  
+                  <div class="step-marker">
+                    <mat-icon class="marker-icon">flag</mat-icon>
+                  </div>
+                  
+                  <div class="step-content">
+                    <div class="step-header">
+                      <div class="step-title">Arrivée</div>
+                      <div class="step-badge end-badge">Final</div>
+                    </div>
+                    <div class="step-details">
+                      <div class="detail-item">
+                        <mat-icon class="detail-icon location-icon">place</mat-icon>
+                        <div class="detail-text">
+                          <strong>Lieu:</strong> {{ getSelectedEndLocationInfo() }}
+                        </div>
+                      </div>
+                      <div class="detail-item">
+                        <mat-icon class="detail-icon calendar_today">calendar_today</mat-icon>
+                        <div class="detail-text">
+                          <strong>Date:</strong> {{ formatDateForDisplay(tripForm.get('estimatedEndDate')?.value) || 'Non définie' }}
+                        </div>
+                      </div>
+                      <div class="detail-item">
+                        <mat-icon class="detail-icon trending_up">trending_up</mat-icon>
+                        <div class="detail-text">
+                          <strong>Distance:</strong> {{ tripForm.get('estimatedDistance')?.value || 0 }} km
+                        </div>
+                      </div>
+                      <div class="detail-item">
+                        <mat-icon class="detail-icon timer">timer</mat-icon>
+                        <div class="detail-text">
+                          <strong>Durée:</strong> {{ tripForm.get('estimatedDuration')?.value || 0 }}h
+                        </div>
+                      </div>
+                      <div class="detail-item">
+                        <mat-icon class="detail-icon speed">speed</mat-icon>
+                        <div class="detail-text">
+                          <strong>Vitesse moy.:</strong> {{ calculateAverageSpeed() }} km/h
+                        </div>
+                      </div>
+                      <div class="detail-item" *ngIf="tripForm.get('estimatedEndDate')?.value">
+                        <mat-icon class="detail-icon time-icon">schedule</mat-icon>
+                        <div class="detail-text">
+                          <strong>Heure arrivée:</strong> {{ calculateArrivalTime() }}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </cdk-virtual-scroll-viewport>
+              
+              <div class="timeline-virtual-navigation">
+                <div class="nav-controls">
+                  <div class="nav-buttons">
+                    <button mat-icon-button 
+                            type="button" 
+                            (click)="scrollTimelineToTop()"
+                            matTooltip="Début du trajet">
+                      <mat-icon>first_page</mat-icon>
+                    </button>
+                    <button mat-icon-button 
+                            type="button"
+                            (click)="scrollTimelineUp()"
+                            matTooltip="Monter">
+                      <mat-icon>keyboard_arrow_up</mat-icon>
+                    </button>
+                    <button mat-icon-button 
+                            type="button"
+                            (click)="scrollTimelineDown()"
+                            matTooltip="Descendre">
+                      <mat-icon>keyboard_arrow_down</mat-icon>
+                    </button>
+                    <button mat-icon-button 
+                            type="button"
+                            (click)="scrollTimelineToBottom()"
+                            matTooltip="Fin du trajet">
+                      <mat-icon>last_page</mat-icon>
+                    </button>
+                  </div>
+                </div>
+                
+                <div class="timeline-info">
+                  <div class="info-item">
+                    <mat-icon class="info-icon">visibility</mat-icon>
+                    <span class="info-text">{{ getVisibleTimelineRange() }}</span>
+                  </div>
+                  
+                  <div class="info-item">
+                    <mat-icon class="info-icon">trending_up</mat-icon>
+                    <span class="info-text">{{ getTimelineScrollProgress() }}% parcourus</span>
+                  </div>
+                  
+                  <div class="scroll-progress">
+                    <div class="progress-bar-timeline">
+                      <div class="progress-fill-timeline"
+                          [style.width.%]="getTimelineScrollProgress()">
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div *ngIf="getGroupedDeliveries().length === 0" class="no-timeline-points">
+              <div class="no-points-content">
+                <mat-icon class="empty-icon">timeline</mat-icon>
+                <div class="empty-text">
+                  <h4>Aucun point d'arrêt défini</h4>
+                  <p>Ajoutez des livraisons pour voir le récapitulatif du trajet</p>
+                </div>
+              </div>
+            </div>
           </div>
-        </div>
-        <div class="scroll-actions">
-          <button mat-icon-button 
-                  type="button" 
-                  (click)="scrollRightToTop()"
-                  matTooltip="Aller au début">
-            <mat-icon>vertical_align_top</mat-icon>
-          </button>
-          <button mat-icon-button 
-                  type="button" 
-                  (click)="scrollRightToBottom()"
-                  matTooltip="Aller à la fin">
-            <mat-icon>vertical_align_bottom</mat-icon>
-          </button>
         </div>
       </div>
     </div>
 
+    <!-- Draft Status -->
     <div class="draft-status" *ngIf="hasDraft() && !tripId && !data?.tripId">
       <div class="draft-status-content">
         <mat-icon class="draft-icon">drafts</mat-icon>
@@ -2496,6 +2517,7 @@
       </div>
     </div>
 
+    <!-- Form Footer -->
     <div class="form-footer-simple">
       <button mat-button type="button" (click)="onCancel()" [disabled]="loading" class="cancel-btn">
         Annuler
@@ -2514,6 +2536,7 @@
     </div>
   </form>
 
+  <!-- Calendar Modal -->
   <div class="calendar-modal-overlay" *ngIf="showDateRangeModal" (click)="closeDateRangeModal()">
     <div class="calendar-modal" (click)="$event.stopPropagation()">
       <div class="calendar-modal-header">
@@ -2607,6 +2630,7 @@
     </div>
   </div>
 
+  <!-- Statistics Modal -->
   <div class="stats-modal-overlay" *ngIf="showDateStatsModal" (click)="showDateStatsModal = false">
     <div class="stats-modal" (click)="$event.stopPropagation()">
       <div class="stats-modal-header">
