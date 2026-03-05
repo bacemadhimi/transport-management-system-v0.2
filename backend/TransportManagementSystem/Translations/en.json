@@ -473,7 +473,6 @@
   "ADDRESS_HINT": "Enter the full delivery address",
   "ADDRESS_LABEL": "Address",
   "LOCATION_NAME_HINT": "Saisir le nom du terminus",
-
   "DATE_FIRST_REGISTRATION_REQUIRED": "Required first registration date",
   "EMPTY_WEIGHT_REQUIRED": "The empty weight is required",
   "PHOTO_TRUCKv": "Add photos",
@@ -483,6 +482,5 @@
   "LOCATION_ADR_REQUIRED": "Address is required",
   "ADRESS_HINT": "Start typing to search for an address"
   
-
 
 }

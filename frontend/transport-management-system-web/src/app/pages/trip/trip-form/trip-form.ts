@@ -104,7 +104,8 @@ export class TripForm implements OnInit {
   convoyeurs: IConvoyeur[] = [];
   loadingConvoyeurs = false;
 
-
+  allowExceedMaxCapacity: boolean = false;
+  maxCapacityPercentage: number = 100;
   trucks: ITruck[] = [];
   availableTrucks: ITruck[] = [];
   unavailableTrucks: any[] = [];
@@ -305,7 +306,7 @@ selectedDateStats: any = {
 
 
     this.filteredClients = this.allClientsWithPendingOrders || [];
-
+    this.loadCapacitySettings();
     this.setupSubscriptions();
     this.loadConfiguration();
 
@@ -1808,6 +1809,9 @@ getSelectedConvoyeurInfo(): string {
         return;
       }
     }
+    if (!await this.validateCapacityWithSettings()) {
+     return;
+    } 
   }
 
   private async handleTrajectCreation(): Promise<number | null> {
@@ -1961,44 +1965,55 @@ getSelectedConvoyeurInfo(): string {
     }
   }
 
-  getCapacityAlert(): { message: string, color: string, icon: string, showAlert: boolean } {
-    const percentage = Number(this.calculateCapacityPercentage().toFixed(2));
-    const truckId = this.tripForm.get('truckId')?.value;
-    const truck = truckId ? this.trucks.find(t => t.id === truckId) : null;
+getCapacityAlert(): { message: string, color: string, icon: string, showAlert: boolean } {
+  const percentage = Number(this.calculateCapacityPercentage().toFixed(2));
+  const truckId = this.tripForm.get('truckId')?.value;
+  const truck = truckId ? this.trucks.find(t => t.id === truckId) : null;
+  const unit = this.loadingUnit;
 
-    const unit = this.loadingUnit;
-    const unitLabel = this.loadingUnit;
+  // Use the loaded settings
+  const allowExceed = this.allowExceedMaxCapacity;
+  const maxPercentage = this.maxCapacityPercentage;
 
-    if (percentage >= 100) {
+  if (percentage > maxPercentage) {
+    if (allowExceed) {
       return {
-        message: `Capacité dépassée ! ${percentage.toFixed(1)}%`,
-        color: '#ef4444',
-        icon: 'error',
-        showAlert: true
-      };
-    } else if (percentage >= 90) {
-      return {
-        message: `Capacité presque pleine ${percentage.toFixed(1)}%`,
+        message: `Dépassement autorisé ! ${percentage.toFixed(1)}% (max ${maxPercentage}%)`,
         color: '#f59e0b',
         icon: 'warning',
         showAlert: true
       };
-    } else if (percentage >= 70) {
-      return {
-        message: `Capacité élevée ${percentage.toFixed(1)}%`,
-        color: '#3b82f6',
-        icon: 'info',
-        showAlert: false
-      };
     } else {
       return {
-        message: `Capacité normale ${percentage.toFixed(1)}%`,
-        color: '#10b981',
-        icon: 'check_circle',
-        showAlert: false
+        message: `Dépassement interdit ! ${percentage.toFixed(1)}% (max ${maxPercentage}%)`,
+        color: '#ef4444',
+        icon: 'error',
+        showAlert: true
       };
     }
+  } else if (percentage >= 90) {
+    return {
+      message: `Capacité presque pleine ${percentage.toFixed(1)}%`,
+      color: '#f59e0b',
+      icon: 'warning',
+      showAlert: true
+    };
+  } else if (percentage >= 70) {
+    return {
+      message: `Capacité élevée ${percentage.toFixed(1)}%`,
+      color: '#3b82f6',
+      icon: 'info',
+      showAlert: false
+    };
+  } else {
+    return {
+      message: `Capacité normale ${percentage.toFixed(1)}%`,
+      color: '#10b981',
+      icon: 'check_circle',
+      showAlert: false
+    };
   }
+}
 
   private async validateCapacity(): Promise<boolean> {
     const percentage = Number(this.calculateCapacityPercentage().toFixed(2));
@@ -2088,104 +2103,200 @@ getSelectedConvoyeurInfo(): string {
     return true;
   }
 
-  private async checkCapacityBeforeAddingOrders(selectedWeight: number): Promise<boolean> {
-    const truckId = this.tripForm.get('truckId')?.value;
+private async checkCapacityBeforeAddingOrders(selectedWeight: number): Promise<boolean> {
+  const truckId = this.tripForm.get('truckId')?.value;
 
-    if (!truckId) {
-      await Swal.fire({
-        icon: 'warning',
-        title: 'Sélectionnez d\'abord un camion',
-        text: 'Veuillez sélectionner un camion avant d\'ajouter des commandes',
-        confirmButtonText: 'OK'
-      });
-      return false;
-    }
+  if (!truckId) {
+    await Swal.fire({
+      icon: 'warning',
+      title: 'Sélectionnez d\'abord un camion',
+      text: 'Veuillez sélectionner un camion avant d\'ajouter des commandes',
+      confirmButtonText: 'OK'
+    });
+    return false;
+  }
 
-    const truck = this.trucks.find(t => t.id === truckId);
-    if (!truck) {
-      return false;
-    }
+  const truck = this.trucks.find(t => t.id === truckId);
+  if (!truck) {
+    return false;
+  }
 
-    const currentWeight = this.calculateTotalWeight();
-    const additionalWeight = selectedWeight;
-    const totalWeightAfterAddition = currentWeight + additionalWeight;
-    const capacity = truck.typeTruck?.capacity || 0;
-    const percentageAfterAddition = (totalWeightAfterAddition / capacity) * 100;
+  const currentWeight = this.calculateTotalWeight();
+  const additionalWeight = selectedWeight;
+  const totalWeightAfterAddition = currentWeight + additionalWeight;
+  const capacity = truck.typeTruck?.capacity || 0;
+  const percentageAfterAddition = (totalWeightAfterAddition / capacity) * 100;
 
-    const unit = this.loadingUnit;
-    const unitLabelPlural = this.loadingUnit;
+  const unit = this.loadingUnit;
+  const unitLabelPlural = this.loadingUnit;
 
-    if (percentageAfterAddition > 100) {
-      const overage = totalWeightAfterAddition - capacity;
-      const overagePercentage = percentageAfterAddition - 100;
+  // Get settings from General Settings (from database)
+  const allowExceed = this.allowExceedMaxCapacity;
+  const maxPercentage = this.maxCapacityPercentage; // This is 80 from your DB
 
+  // If over 100% but exceed not allowed, block immediately
+  if (percentageAfterAddition > 100 && !allowExceed) {
+    const overage = totalWeightAfterAddition - capacity;
+    const overagePercentage = percentageAfterAddition - 100;
+    
+    await Swal.fire({
+      icon: 'error',
+      title: '⛔ DÉPASSEMENT DE CAPACITÉ INTERDIT',
+      html: `
+        <div style="text-align: left; padding: 10px;">
+          <p><strong>${truck.immatriculation} - ${this.getMarqueName(truck.marqueTruckId)}</strong></p>
+          <div style="background-color: #fee; padding: 15px; border-radius: 5px; margin: 10px 0;">
+            <p><strong>Capacité maximum:</strong> ${capacity} ${unitLabelPlural}</p>
+            <p><strong>Poids actuel:</strong> ${currentWeight.toFixed(2)} ${unitLabelPlural}</p>
+            <p><strong>Poids à ajouter:</strong> ${additionalWeight.toFixed(2)} ${unitLabelPlural}</p>
+            <p><strong>Total après ajout:</strong> ${totalWeightAfterAddition.toFixed(2)} ${unitLabelPlural}</p>
+            <p><strong>Dépassement:</strong> <span style="color: #ef4444; font-weight: bold;">
+              ${overage.toFixed(2)} ${unitLabelPlural} (${overagePercentage.toFixed(1)}%)
+            </span></p>
+          </div>
+          <p style="color: #ef4444; margin-top: 15px; font-weight: bold;">
+            ⚠️ Le dépassement de capacité n'est pas autorisé dans les paramètres généraux.
+          </p>
+          <p>Vous devez réduire la sélection ou modifier les paramètres.</p>
+        </div>
+      `,
+      confirmButtonText: 'Compris',
+      confirmButtonColor: '#ef4444'
+    });
+    
+    return false;
+  }
+
+  // Check against max percentage from database
+  if (percentageAfterAddition > maxPercentage) {
+    const maxAllowedWeight = capacity * (maxPercentage / 100);
+    const excess = totalWeightAfterAddition - maxAllowedWeight;
+    
+    let title = allowExceed ? '⚠️ DÉPASSEMENT DE LA LIMITE AUTORISÉE' : '⛔ DÉPASSEMENT DE LA LIMITE';
+    
+    const message = `
+      <div style="text-align: left; padding: 10px;">
+        <p><strong>${truck.immatriculation} - ${this.getMarqueName(truck.marqueTruckId)}</strong></p>
+        <div style="background-color: ${allowExceed ? '#fef3c7' : '#fee'}; padding: 15px; border-radius: 5px; margin: 10px 0;">
+          <p><strong>Capacité physique du camion:</strong> ${capacity} ${unitLabelPlural}</p>
+          <p><strong>Limite autorisée (${maxPercentage}%):</strong> ${maxAllowedWeight.toFixed(2)} ${unitLabelPlural}</p>
+          <p><strong>Poids actuel:</strong> ${currentWeight.toFixed(2)} ${unitLabelPlural}</p>
+          <p><strong>Poids à ajouter:</strong> ${additionalWeight.toFixed(2)} ${unitLabelPlural}</p>
+          <p><strong>Total après ajout:</strong> ${totalWeightAfterAddition.toFixed(2)} ${unitLabelPlural}</p>
+          <p><strong>Dépassement de la limite:</strong> <span style="color: ${allowExceed ? '#f59e0b' : '#ef4444'}; font-weight: bold;">
+            ${excess.toFixed(2)} ${unitLabelPlural}
+          </span></p>
+          <p><strong>Pourcentage total:</strong> ${percentageAfterAddition.toFixed(1)}% (limite: ${maxPercentage}%)</p>
+        </div>
+        <p style="color: ${allowExceed ? '#f59e0b' : '#ef4444'}; margin-top: 15px; font-weight: bold;">
+          ⚠️ Ce chargement dépasse la limite de ${maxPercentage}% autorisée dans les paramètres.
+        </p>
+        ${allowExceed ? `
+          <p>Voulez-vous quand même l'ajouter ?</p>
+        ` : `
+          <p>Vous devez réduire la sélection.</p>
+        `}
+      </div>
+    `;
+
+    if (allowExceed) {
       const result = await Swal.fire({
         icon: 'warning',
-        title: 'DÉPASSEMENT DE CAPACITÉ',
-        html: `
-          <div style="text-align: left; padding: 10px;">
-            <p><strong>${truck.immatriculation} - ${this.getMarqueName(truck.marqueTruckId)}</strong></p>
-            <div style="background-color: #fee; padding: 15px; border-radius: 5px; margin: 10px 0;">
-              <p><strong>Capacité maximum:</strong> ${capacity} ${unitLabelPlural}</p>
-              <p><strong>Poids actuel:</strong> ${currentWeight.toFixed(2)} ${unitLabelPlural}</p>
-              <p><strong>Poids à ajouter:</strong> ${additionalWeight.toFixed(2)} ${unitLabelPlural}</p>
-              <p><strong>Total après ajout:</strong> ${totalWeightAfterAddition.toFixed(2)} ${unitLabelPlural}</p>
-              <p><strong>Dépassement:</strong> <span style="color: #ef4444; font-weight: bold;">
-                ${overage.toFixed(2)} ${unitLabelPlural} (${overagePercentage.toFixed(1)}%)
-              </span></p>
-            </div>
-            <p style="color: #ef4444; font-weight: bold;">
-              ⚠️ Ces commandes dépassent la capacité du camion
-            </p>
-            <p>Voulez-vous quand même les ajouter ?</p>
-          </div>
-        `,
+        title: title,
+        html: message,
         showCancelButton: true,
         confirmButtonText: 'Oui, ajouter quand même',
-        cancelButtonText: 'Non, réduire la sélection',
-        confirmButtonColor: '#ef4444',
-        cancelButtonColor: '#6b7280'
-      });
-
-      return result.isConfirmed;
-    }
-
-    if (percentageAfterAddition >= 90) {
-      const remainingCapacity = capacity - totalWeightAfterAddition;
-      const remainingPercentage = 100 - percentageAfterAddition;
-
-      const result = await Swal.fire({
-        icon: 'warning',
-        title: 'Capacité presque pleine',
-        html: `
-          <div style="text-align: left; padding: 10px;">
-            <p><strong>${truck.immatriculation} - ${this.getMarqueName(truck.marqueTruckId)}</strong></p>
-            <div style="background-color: #fef3c7; padding: 15px; border-radius: 5px; margin: 10px 0;">
-              <p><strong>Capacité:</strong> ${capacity} ${unitLabelPlural}</p>
-              <p><strong>Utilisation actuelle:</strong> ${currentWeight.toFixed(2)} ${unitLabelPlural} (${(currentWeight/capacity*100).toFixed(1)}%)</p>
-              <p><strong>Ajout proposé:</strong> ${additionalWeight.toFixed(2)} ${unitLabelPlural}</p>
-              <p><strong>Total après ajout:</strong> ${totalWeightAfterAddition.toFixed(2)} ${unitLabelPlural}</p>
-              <p><strong>Utilisation après ajout:</strong> ${percentageAfterAddition.toFixed(1)}%</p>
-              <p><strong>Capacité restante:</strong> ${remainingCapacity.toFixed(2)} ${unitLabelPlural} (${remainingPercentage.toFixed(1)}%)</p>
-            </div>
-            <p style="color: #f59e0b; font-weight: bold;">
-              ⚠️ La capacité sera presque pleine
-            </p>
-            <p>Voulez-vous quand même ajouter ces commandes ?</p>
-          </div>
-        `,
-        showCancelButton: true,
-        confirmButtonText: 'Oui, ajouter',
         cancelButtonText: 'Non, réduire la sélection',
         confirmButtonColor: '#f59e0b',
         cancelButtonColor: '#6b7280'
       });
-
+      
       return result.isConfirmed;
+    } else {
+      await Swal.fire({
+        icon: 'error',
+        title: title,
+        html: message,
+        confirmButtonText: 'Compris',
+        confirmButtonColor: '#ef4444'
+      });
+      
+      return false;
     }
-
-    return true;
   }
+
+  // If over 100% but within max percentage (unlikely but possible)
+  if (percentageAfterAddition > 100) {
+    const overage = totalWeightAfterAddition - capacity;
+    const overagePercentage = percentageAfterAddition - 100;
+    
+    const result = await Swal.fire({
+      icon: 'warning',
+      title: 'DÉPASSEMENT DE CAPACITÉ',
+      html: `
+        <div style="text-align: left; padding: 10px;">
+          <p><strong>${truck.immatriculation} - ${this.getMarqueName(truck.marqueTruckId)}</strong></p>
+          <div style="background-color: #fef3c7; padding: 15px; border-radius: 5px; margin: 10px 0;">
+            <p><strong>Capacité maximum:</strong> ${capacity} ${unitLabelPlural}</p>
+            <p><strong>Poids actuel:</strong> ${currentWeight.toFixed(2)} ${unitLabelPlural}</p>
+            <p><strong>Poids à ajouter:</strong> ${additionalWeight.toFixed(2)} ${unitLabelPlural}</p>
+            <p><strong>Total après ajout:</strong> ${totalWeightAfterAddition.toFixed(2)} ${unitLabelPlural}</p>
+            <p><strong>Dépassement:</strong> <span style="color: #f59e0b; font-weight: bold;">
+              ${overage.toFixed(2)} ${unitLabelPlural} (${overagePercentage.toFixed(1)}%)
+            </span></p>
+          </div>
+          <p style="color: #f59e0b; margin-top: 15px; font-weight: bold;">
+            ⚠️ Ces commandes dépassent la capacité physique du camion
+          </p>
+          <p>Voulez-vous quand même les ajouter ?</p>
+        </div>
+      `,
+      showCancelButton: true,
+      confirmButtonText: 'Oui, ajouter quand même',
+      cancelButtonText: 'Non, réduire la sélection',
+      confirmButtonColor: '#f59e0b',
+      cancelButtonColor: '#6b7280'
+    });
+    
+    return result.isConfirmed;
+  }
+
+  if (percentageAfterAddition >= 90) {
+    const remainingCapacity = capacity - totalWeightAfterAddition;
+    const remainingPercentage = 100 - percentageAfterAddition;
+
+    const result = await Swal.fire({
+      icon: 'warning',
+      title: 'Capacité presque pleine',
+      html: `
+        <div style="text-align: left; padding: 10px;">
+          <p><strong>${truck.immatriculation} - ${this.getMarqueName(truck.marqueTruckId)}</strong></p>
+          <div style="background-color: #fef3c7; padding: 15px; border-radius: 5px; margin: 10px 0;">
+            <p><strong>Capacité:</strong> ${capacity} ${unitLabelPlural}</p>
+            <p><strong>Utilisation actuelle:</strong> ${currentWeight.toFixed(2)} ${unitLabelPlural} (${(currentWeight/capacity*100).toFixed(1)}%)</p>
+            <p><strong>Ajout proposé:</strong> ${additionalWeight.toFixed(2)} ${unitLabelPlural}</p>
+            <p><strong>Total après ajout:</strong> ${totalWeightAfterAddition.toFixed(2)} ${unitLabelPlural}</p>
+            <p><strong>Utilisation après ajout:</strong> ${percentageAfterAddition.toFixed(1)}%</p>
+            <p><strong>Capacité restante:</strong> ${remainingCapacity.toFixed(2)} ${unitLabelPlural} (${remainingPercentage.toFixed(1)}%)</p>
+          </div>
+          <p style="color: #f59e0b; font-weight: bold;">
+            ⚠️ La capacité sera presque pleine
+          </p>
+          <p>Voulez-vous quand même ajouter ces commandes ?</p>
+        </div>
+      `,
+      showCancelButton: true,
+      confirmButtonText: 'Oui, ajouter',
+      cancelButtonText: 'Non, réduire la sélection',
+      confirmButtonColor: '#f59e0b',
+      cancelButtonColor: '#6b7280'
+    });
+
+    return result.isConfirmed;
+  }
+
+  return true;
+}
 
   private showCapacitySummaryAfterAddition(addedWeight: number): void {
     const truckId = this.tripForm.get('truckId')?.value;
@@ -3871,18 +3982,21 @@ getSelectedConvoyeurInfo(): string {
     return truck?.typeTruck?.capacity || 0;
   }
 
-  getProgressBarColor(): string {
-    const percentage = Number(this.calculateCapacityPercentage().toFixed(2));
-    if (percentage >= 100) {
-      return '#ef4444';
-    } else if (percentage >= 90) {
-      return '#f59e0b';
-    } else if (percentage >= 70) {
-      return '#3b82f6';
-    } else {
-      return '#10b981';
-    }
+getProgressBarColor(): string {
+  const percentage = Number(this.calculateCapacityPercentage().toFixed(2));
+  const maxPercentage = this.maxCapacityPercentage;
+  const allowExceed = this.allowExceedMaxCapacity;
+
+  if (percentage > maxPercentage) {
+    return allowExceed ? '#f59e0b' : '#ef4444';
+  } else if (percentage >= 90) {
+    return '#f59e0b';
+  } else if (percentage >= 70) {
+    return '#3b82f6';
+  } else {
+    return '#10b981';
   }
+}
 
   calculateDeliveryPercentage(index: number): number {
     const truckId = this.tripForm.get('truckId')?.value;
@@ -7032,5 +7146,154 @@ getEntityName(entityId: number): string {
   if (!entityId) return '';
   const entity = this.geographicalEntities.find(e => e.id === entityId);
   return entity ? entity.name : 'Entité inconnue';
+}
+private async validateCapacityWithSettings(): Promise<boolean> {
+  const percentage = Number(this.calculateCapacityPercentage().toFixed(2));
+  const totalWeight = this.calculateTotalWeight();
+  const capacity = this.getSelectedTruckCapacity();
+  const truckId = this.tripForm.get('truckId')?.value;
+  const truck = truckId ? this.trucks.find(t => t.id === truckId) : null;
+  const unit = this.loadingUnit;
+
+  // Use the loaded settings
+  const allowExceed = this.allowExceedMaxCapacity;
+  const maxPercentage = this.maxCapacityPercentage;
+
+  // Calculate if current percentage exceeds allowed maximum
+  const isExceeded = percentage > maxPercentage;
+
+  if (isExceeded) {
+    const excess = totalWeight - (capacity * (maxPercentage / 100));
+    const excessPercentage = percentage - maxPercentage;
+
+    const truckName = truck ? `${truck.immatriculation} - ${this.getMarqueName(truck.marqueTruckId)}` : 'Camion sélectionné';
+    
+    let warningMessage = '';
+    if (allowExceed) {
+      warningMessage = `
+        <div style="text-align: left; padding: 10px;">
+          <p><strong>${truckName}</strong></p>
+          <p><strong>ATTENTION:</strong> La capacité maximale autorisée (${maxPercentage}%) est dépassée</p>
+          <hr style="margin: 10px 0;">
+          <div style="background-color: #fef3c7; padding: 15px; border-radius: 5px; margin: 10px 0;">
+            <p><strong>Capacité maximum du camion:</strong> ${capacity} ${unit}</p>
+            <p><strong>Capacité autorisée (${maxPercentage}%):</strong> ${(capacity * maxPercentage / 100).toFixed(2)} ${unit}</p>
+            <p><strong>Poids total des livraisons:</strong> ${totalWeight.toFixed(2)} ${unit}</p>
+            <p><strong>Dépassement:</strong> <span style="color: #f59e0b; font-weight: bold;">
+              ${excess.toFixed(2)} ${unit} (${excessPercentage.toFixed(1)}%)
+            </span></p>
+          </div>
+          <p style="color: #f59e0b; margin-top: 15px;">
+            ⚠️ Le paramètre "Autoriser le dépassement de capacité" est activé.
+          </p>
+          <p><strong>Voulez-vous continuer avec ce chargement ?</strong></p>
+        </div>
+      `;
+    } else {
+      warningMessage = `
+        <div style="text-align: left; padding: 10px;">
+          <p><strong>${truckName}</strong></p>
+          <p><strong>ALERTE SÉCURITÉ:</strong> La capacité maximale est dépassée</p>
+          <hr style="margin: 10px 0;">
+          <div style="background-color: #fee; padding: 15px; border-radius: 5px; margin: 10px 0;">
+            <p><strong>Capacité maximum:</strong> ${capacity} ${unit}</p>
+            <p><strong>Poids total des livraisons:</strong> ${totalWeight.toFixed(2)} ${unit}</p>
+            <p><strong>Dépassement:</strong> <span style="color: #ef4444; font-weight: bold;">
+              ${excess.toFixed(2)} ${unit} (${excessPercentage.toFixed(1)}%)
+            </span></p>
+          </div>
+          <p style="color: #ef4444; margin-top: 15px;">
+            ⚠️ Le dépassement de capacité n'est pas autorisé dans les paramètres.
+          </p>
+          <p><strong>Voulez-vous vraiment continuer ?</strong></p>
+        </div>
+      `;
+    }
+
+    const result = await Swal.fire({
+      icon: allowExceed ? 'warning' : 'error',
+      title: allowExceed ? '⚠️ DÉPASSEMENT DE CAPACITÉ AUTORISÉ' : '⛔ DÉPASSEMENT DE CAPACITÉ INTERDIT',
+      html: warningMessage,
+      showCancelButton: true,
+      confirmButtonText: allowExceed ? 'Oui, continuer' : 'Oui, continuer quand même',
+      cancelButtonText: 'Non, réviser',
+      confirmButtonColor: allowExceed ? '#f59e0b' : '#ef4444',
+      cancelButtonColor: '#6b7280',
+      reverseButtons: true,
+      allowOutsideClick: false
+    });
+
+    return result.isConfirmed;
+  }
+
+  if (percentage >= 90) {
+    const remainingCapacity = capacity - totalWeight;
+    const remainingPercentage = 100 - percentage;
+
+    const result = await Swal.fire({
+      icon: 'warning',
+      title: 'Capacité presque pleine',
+      html: `
+        <div style="text-align: left; padding: 10px;">
+          <p><strong>${truck ? `${truck.immatriculation} - ${this.getMarqueName(truck.marqueTruckId)}` : 'Camion sélectionné'}</strong></p>
+          <div style="background-color: #fef3c7; padding: 15px; border-radius: 5px; margin: 10px 0;">
+            <p><strong>Capacité:</strong> ${capacity} ${unit}</p>
+            <p><strong>Poids total:</strong> ${totalWeight.toFixed(2)} ${unit}</p>
+            <p><strong>Utilisation:</strong> ${percentage.toFixed(1)}%</p>
+            <p><strong>Capacité restante:</strong> ${remainingCapacity.toFixed(2)} ${unit} (${remainingPercentage.toFixed(1)}%)</p>
+          </div>
+          <p style="color: #f59e0b; font-weight: bold;">
+            ⚠️ La capacité est presque pleine
+          </p>
+          <p>Voulez-vous continuer avec ce chargement ?</p>
+        </div>
+      `,
+      showCancelButton: true,
+      confirmButtonText: 'Oui, continuer',
+      cancelButtonText: 'Non, réviser',
+      confirmButtonColor: '#f59e0b',
+      cancelButtonColor: '#6b7280'
+    });
+
+    return result.isConfirmed;
+  }
+
+  return true;
+}
+private loadCapacitySettings(): void {
+  this.http.getAllSettingsByType('TRIP').subscribe({
+    next: (settings) => {
+      // Find ALLOW_EXCEED_MAX_CAPACITY setting
+      const allowExceedSetting = settings.find(s => 
+        s.parameterCode.startsWith('ALLOW_EXCEED_MAX_CAPACITY=')
+      );
+      
+      if (allowExceedSetting) {
+        const value = allowExceedSetting.parameterCode.split('=')[1];
+        this.allowExceedMaxCapacity = value === 'true';
+      }
+      
+      // Find MAX_CAPACITY_PERCENTAGE setting
+      const maxPercentageSetting = settings.find(s => 
+        s.parameterCode.startsWith('MAX_CAPACITY_PERCENTAGE=')
+      );
+      
+      if (maxPercentageSetting) {
+        const value = maxPercentageSetting.parameterCode.split('=')[1];
+        this.maxCapacityPercentage = parseInt(value) || 100;
+      }
+      
+      console.log('✅ Capacity settings loaded:', {
+        allowExceed: this.allowExceedMaxCapacity,
+        maxPercentage: this.maxCapacityPercentage
+      });
+    },
+    error: (error) => {
+      console.error('Error loading capacity settings:', error);
+      // Default values
+      this.allowExceedMaxCapacity = false;
+      this.maxCapacityPercentage = 100;
+    }
+  });
 }
 }

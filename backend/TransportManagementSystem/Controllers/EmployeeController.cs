@@ -93,18 +93,17 @@ public class EmployeeController : ControllerBase
     public async Task<ActionResult<Employee>> GetEmployeeById(int id)
     {
         var employee = await dbContext.Employees
-             .AsNoTracking() // Read-only, no tracking overhead
+             .AsNoTracking() 
              .Where(e => e.Id == id)
-             .Include(e => e.TypeTruck) // Include only TypeTruck (single navigation)
-             .Include(e => (e as Driver).DriverGeographicalEntities) // Include collection
-                 .ThenInclude(dg => dg.GeographicalEntity) // Only necessary navigation
-                     .ThenInclude(g => g.Level) // Final navigation
-             .AsSplitQuery() // Prevent cartesian explosion
+             .Include(e => e.TypeTruck) 
+             .Include(e => (e as Driver).DriverGeographicalEntities) 
+             .ThenInclude(dg => dg.GeographicalEntity)
+             .ThenInclude(g => g.Level) 
+             .AsSplitQuery() 
              .FirstOrDefaultAsync();
 
         if (employee == null)
             return NotFound(new ApiResponse(false, $"Employé {id} non trouvé"));
-
         return Ok(new ApiResponse(true, "Employé récupéré avec succès", employee));
     }
 
