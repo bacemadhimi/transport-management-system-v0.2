@@ -482,8 +482,10 @@
   "LOCATION_ADRESS": "Nom personnalisé pour ce lieu",
   "LOCATION_ADRESSv1": "Addresse",
   "LOCATION_ADR_REQUIRED": "L'adresse est requise",
-  "ADRESS_HINT": "Commencez à taper pour rechercher une adresse"
-  
+  "ADRESS_HINT": "Commencez à taper pour rechercher une adresse",
+  "EMPLOYE_SUPPORT": "Type Supporté",
+  "LICENSE_ATTACHMENT_REQUIRED": "Le fichier de permis est obligatoire pour les chauffeurs et mécaniciens"
 
+  
 }
 

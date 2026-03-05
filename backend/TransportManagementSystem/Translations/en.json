@@ -480,7 +480,9 @@
   "LOCATION_ADRESS": "Custom name for this place",
   "LOCATION_ADRESSv1": "Address",
   "LOCATION_ADR_REQUIRED": "Address is required",
-  "ADRESS_HINT": "Start typing to search for an address"
-  
+  "ADRESS_HINT": "Start typing to search for an address",
+  "EMPLOYE_SUPPORT": "Supported Type",
+  "LICENSE_ATTACHMENT_REQUIRED": "The permit file is mandatory for drivers and mechanics"
 
+  
 }

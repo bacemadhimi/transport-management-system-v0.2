@@ -5,6 +5,7 @@ using System.Text.Json;
 using TransportManagementSystem.Data;
 using TransportManagementSystem.Entity;
 using TransportManagementSystem.Models;
+using TransportManagementSystem.Service;
 
 namespace TransportManagementSystem.Controllers;
 
@@ -27,12 +28,12 @@ public class EmployeeController : ControllerBase
     [HttpGet("PaginationAndSearch")]
     public async Task<IActionResult> GetEmployeeList([FromQuery] SearchOptions searchOption)
     {
-        // Base query: only enabled employees
+        
         var query = dbContext.Employees
             .AsNoTracking()
             .Where(x => x.IsEnable);
 
-        // Apply search filter (prefix search for indexing performance)
+    
         if (!string.IsNullOrWhiteSpace(searchOption.Search))
         {
             var search = searchOption.Search.Trim();
@@ -45,10 +46,10 @@ public class EmployeeController : ControllerBase
             );
         }
 
-        // Count total records (without Includes)
+   
         var total = await query.CountAsync();
 
-        // Apply pagination and projection
+      
         var data = await query
             .OrderByDescending(x => x.CreatedAt)
             .Skip(searchOption.PageIndex!.Value * searchOption.PageSize!.Value)
@@ -58,12 +59,12 @@ public class EmployeeController : ControllerBase
                 x.Id,
                 x.Name,
                 x.IdNumber, 
-                x.DrivingLicense,// Include ID number
+                x.DrivingLicense,
                 x.Email,
                 x.PhoneNumber,
                 x.EmployeeCategory,
-                TruckType = x.TypeTruck.Type,   // Include typeTruck type
-                x.AttachmentFileType,           // Include attachment file type
+                TruckType = x.TypeTruck.Type,   
+                x.AttachmentFileType,          
                 x.CreatedAt
             })
             .ToListAsync();
@@ -99,6 +100,10 @@ public class EmployeeController : ControllerBase
              .Include(e => (e as Driver).DriverGeographicalEntities) 
              .ThenInclude(dg => dg.GeographicalEntity)
              .ThenInclude(g => g.Level) 
+             .Include(e => e.TypeTruck)
+             .Include(e => (e as Driver).DriverGeographicalEntities) 
+                 .ThenInclude(dg => dg.GeographicalEntity) 
+                     .ThenInclude(g => g.Level) 
              .AsSplitQuery() 
              .FirstOrDefaultAsync();
 
@@ -107,7 +112,7 @@ public class EmployeeController : ControllerBase
         return Ok(new ApiResponse(true, "Employé récupéré avec succès", employee));
     }
 
-    /// Create a new employee with optional file upload
+
     [HttpPost]
     public async Task<ActionResult<Employee>> CreateEmployee([FromForm] CreateEmployeeRequest request)
     {
@@ -134,7 +139,6 @@ public class EmployeeController : ControllerBase
             return BadRequest(new ApiResponse(false, $"Le numéro d'identité '{request.IdNumber}' est déjà utilisé."));
         }
 
-        // Validate Geographical Entities if provided
         if (!string.IsNullOrEmpty(request.GeographicalEntities))
         {
             try
@@ -163,10 +167,10 @@ public class EmployeeController : ControllerBase
             }
         }
 
-        // Create the appropriate derived type based on EmployeeCategory
+       
         Employee employee = CreateEmployeeByCategory(request);
 
-        // Handle geographical entities for DRIVERS
+    
         if (request.EmployeeCategory?.ToUpper() == "DRIVER" && !string.IsNullOrEmpty(request.GeographicalEntities))
         {
             try
@@ -210,8 +214,39 @@ public class EmployeeController : ControllerBase
 
         dbContext.Employees.Add(employee);
         await dbContext.SaveChangesAsync();
+        if (employee.EmployeeCategory == "DRIVER")
+        {
+            var passwordHelper = new PasswordHelper();
 
-        // Load the created employee with relationships
+            var existingUser = await dbContext.Users
+                .FirstOrDefaultAsync(u => u.Email == employee.Email);
+
+            if (existingUser == null)
+            {
+                var driverGroup = await dbContext.UserGroups
+                    .FirstOrDefaultAsync(g => g.Name == "Driver");
+
+                var user = new User
+                {
+                    Name = employee.Name,
+                    Email = employee.Email,
+                    Phone = employee.PhoneNumber,
+                    Password = passwordHelper.HashPassword("12345"),
+                    UserGroup2Users = new List<UserGroup2User>()
+                };
+
+                if (driverGroup != null)
+                {
+                    user.UserGroup2Users.Add(new UserGroup2User
+                    {
+                        UserGroupId = driverGroup.Id
+                    });
+                }
+
+                dbContext.Users.Add(user);
+                await dbContext.SaveChangesAsync();
+            }
+        }
         var createdEmployee = await dbContext.Employees
             .Include(e => e.TypeTruck)
             .Include(e => (e as Driver).DriverGeographicalEntities)
@@ -243,7 +278,7 @@ public class EmployeeController : ControllerBase
             return NotFound(new ApiResponse(false, $"Employé {id} non trouvé"));
         }
 
-        // Check if category is changing
+     
         if (existingEmployee.EmployeeCategory != request.EmployeeCategory)
         {
             return BadRequest(new ApiResponse(false,
@@ -272,7 +307,7 @@ public class EmployeeController : ControllerBase
             }
         }
 
-        // Parse and validate Geographical Entities if provided
+       
         List<DriverGeographicalEntityDto>? geographicalEntities = null;
         if (!string.IsNullOrEmpty(request.GeographicalEntities))
         {
@@ -300,7 +335,7 @@ public class EmployeeController : ControllerBase
             }
         }
 
-        // Update common properties
+    
         existingEmployee.IdNumber = request.IdNumber;
         existingEmployee.Name = request.Name;
         existingEmployee.PhoneNumber = request.PhoneNumber;
@@ -313,22 +348,22 @@ public class EmployeeController : ControllerBase
         existingEmployee.EmployeeCategory = request.EmployeeCategory;
         existingEmployee.IsInternal = request.IsInternal;
 
-        // Handle geographical entities for DRIVERS
+        
         if (existingEmployee is Driver driver)
         {
-            // Update driver-specific properties
+           
             driver.Status = request.Status ?? driver.Status;
 
-            // Update geographical entities
+            
             if (geographicalEntities != null)
             {
-                // Remove old associations
+              
                 if (driver.DriverGeographicalEntities != null && driver.DriverGeographicalEntities.Any())
                 {
                     dbContext.DriverGeographicalEntities.RemoveRange(driver.DriverGeographicalEntities);
                 }
 
-                // Add new associations
+             
                 if (geographicalEntities.Any())
                 {
                     driver.DriverGeographicalEntities = geographicalEntities.Select(geoDto => new DriverGeographicalEntity
@@ -365,7 +400,7 @@ public class EmployeeController : ControllerBase
 
         await dbContext.SaveChangesAsync();
 
-        // Load updated employee with relationships
+       
         var updatedEmployee = await dbContext.Employees
             .Include(e => e.TypeTruck)
             .Include(e => (e as Driver).DriverGeographicalEntities)
@@ -375,7 +410,7 @@ public class EmployeeController : ControllerBase
 
         return Ok(new ApiResponse(true, "Employé mis à jour avec succès", updatedEmployee));
     }
-    /// Helper method to create the appropriate employee type
+  
     private Employee CreateEmployeeByCategory(CreateEmployeeRequest request)
     {
         Employee employee;
@@ -419,7 +454,7 @@ public class EmployeeController : ControllerBase
                 };
                 break;
 
-            default: // Regular employee
+            default:
                 employee = new Employee
                 {
                     IdNumber = request.IdNumber,
@@ -441,7 +476,7 @@ public class EmployeeController : ControllerBase
 
     private (bool IsValid, string ErrorMessage) ValidateFile(IFormFile file)
     {
-        const long maxFileSize = 5 * 1024 * 1024; // 5 MB
+        const long maxFileSize = 5 * 1024 * 1024; 
         var allowedExtensions = new[] { "jpg", "jpeg", "png", "pdf", "doc", "docx", "gif", "bmp" };
 
         if (file.Length > maxFileSize)
@@ -458,7 +493,7 @@ public class EmployeeController : ControllerBase
         return (true, "");
     }
 
-    /// Download employee's driving license attachment
+   
     [HttpGet("{id}/download-attachment")]
     public async Task<IActionResult> DownloadAttachment(int id)
     {
@@ -515,7 +550,7 @@ public class EmployeeController : ControllerBase
                 "Impossible de supprimer cet employé car il est associé à des voyages"));
         }
 
-        // Remove geographical entity associations for drivers
+       
         if (employee is Driver driver && driver.DriverGeographicalEntities != null && driver.DriverGeographicalEntities.Any())
         {
             dbContext.DriverGeographicalEntities.RemoveRange(driver.DriverGeographicalEntities);
@@ -528,7 +563,7 @@ public class EmployeeController : ControllerBase
         return Ok(new ApiResponse(true, $"Employé {id} a été désactivé avec succès"));
     }
 
-    // Add endpoint to get employees by category
+   
     [HttpGet("by-category/{category}")]
     public async Task<IActionResult> GetEmployeesByCategory(string category)
     {
@@ -544,7 +579,7 @@ public class EmployeeController : ControllerBase
         return Ok(employees);
     }
 
-    // GET: api/Employee/by-geographical-entity/{entityId}
+   
     [HttpGet("by-geographical-entity/{entityId}")]
     public async Task<IActionResult> GetDriversByGeographicalEntity(int entityId)
     {
@@ -562,7 +597,7 @@ public class EmployeeController : ControllerBase
         return Ok(drivers);
     }
 
-    // GET: api/Employee/with-coordinates
+  
     [HttpGet("with-coordinates")]
     public async Task<IActionResult> GetDriversWithCoordinates()
     {

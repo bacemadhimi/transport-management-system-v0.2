@@ -51,6 +51,6 @@ public class Employee
     [StringLength(50)]
     public string? EmployeeCategory { get; set; }
 
-    public bool IsInternal { get; set; } = true;
+    public bool IsInternal { get; set; }
     public virtual ICollection<DriverGeographicalEntity>? DriverGeographicalEntities { get; set; }
 }
