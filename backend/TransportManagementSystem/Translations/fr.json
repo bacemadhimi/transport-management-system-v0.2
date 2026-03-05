@@ -484,7 +484,6 @@
   "LOCATION_ADR_REQUIRED": "L'adresse est requise",
   "ADRESS_HINT": "Commencez à taper pour rechercher une adresse",
   "EMPLOYE_SUPPORT": "Type Supporté",
-  "LICENSE_ATTACHMENT_REQUIRED": "Le fichier de permis est obligatoire pour les chauffeurs et mécaniciens"
   "LICENSE_ATTACHMENT_REQUIRED": "Pièce jointe du permis requise",
   "CONVOYEUR_INFO": "Transporter Information",
   "SUPPORTED_FILE_TYPES": "Types de fichiers pris en charge"
