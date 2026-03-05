@@ -153,11 +153,12 @@ namespace TransportManagementSystem.Data
 
                     var superAdminUser = new User
                     {
+                        Name= "Super Admin",
                         Email = "superAdmin@gmail.com",
                         Password = passwordHelper.HashPassword("12345"),
                     };
                     var adminUser = new User
-                    {
+                    {   Name = "Admin",
                         Email = "admin@gmail.com",
                         Password = passwordHelper.HashPassword("12345")
                     };
@@ -485,6 +486,38 @@ namespace TransportManagementSystem.Data
                     dbContext.SaveChanges();
 
                     Console.WriteLine($"✔ {employees.Count} Employees (DRIVER) seedés !");
+        
+                    var passwordHelper = new PasswordHelper();
+
+                    foreach (var driver in employees.OfType<Driver>())
+                    {
+                        var existingUser = dbContext.Users
+                            .FirstOrDefault(u => u.Email == driver.Email);
+
+                        if (existingUser == null)
+                        {
+                            var user = new User
+                            {
+                                Name = driver.Name,
+                                Email = driver.Email,
+                                Phone = driver.PhoneNumber,
+                                Password = passwordHelper.HashPassword("12345"),
+                            };
+
+                            dbContext.Users.Add(user);
+                            dbContext.SaveChanges();
+
+                            dbContext.UserGroup2Users.Add(new UserGroup2User
+                            {
+                                UserId = user.Id,
+                                UserGroupId = driverGroup.Id
+                            });
+
+                            dbContext.SaveChanges();
+                        }
+                    }
+
+                    Console.WriteLine("✔ Users created for DRIVER employees!");
                 }
 
                 // ✅ Seed Trucks
