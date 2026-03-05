@@ -111,7 +111,8 @@ export class SettingsService {
       allowLoadLateOrders: this.getBooleanValue(settingsMap, 'ALLOW_LOAD_LATE_ORDERS', true),
       acceptOrdersWithoutAddress: this.getBooleanValue(settingsMap, 'ACCEPT_ORDERS_WITHOUT_ADDRESS', true),
       planningHorizon: this.getNumberValue(settingsMap, 'PLANNING_HORIZON', 30),
-      loadingUnit: this.getStringValue(settingsMap, 'LOADING_UNIT', 'palette')
+      loadingUnit: this.getStringValue(settingsMap, 'LOADING_UNIT', 'palette'),
+      allowMixingOrderTypes: this.getBooleanValue(settingsMap, 'ALLOW_MIXING_ORDER_TYPES', false)
     };
   }
 

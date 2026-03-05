@@ -31,6 +31,7 @@
                 <mat-checkbox formControlName="ALLOW_DELIVERY_DATE_EDIT">Autoriser la modification de la date de livraison</mat-checkbox>
                 <mat-checkbox formControlName="ALLOW_LOAD_LATE_ORDERS">Autoriser le chargement des commandes en retard</mat-checkbox>
                 <mat-checkbox formControlName="ACCEPT_ORDERS_WITHOUT_ADDRESS">Accepter les commandes sans adresse</mat-checkbox>
+                <mat-checkbox formControlName="ALLOW_MIXING_ORDER_TYPES" color="primary">Autoriser le mélange des types de commandes</mat-checkbox>
               </div>
             </div>
             <div class="form-fields-section flex-1">
@@ -196,15 +197,7 @@
             <!-- 3. Form Fields -->
             <div class="form-fields-section flex-1">
               <div class="form-fields-grid">
-                <div class="form-field-wrapper">
-                  <mat-form-field appearance="outline" class="full-width">
-                    <mat-label>Limite de modification (minutes)</mat-label>
-                    <input matInput type="number" formControlName="EDIT_TIME_LIMIT">
-                    <mat-icon matSuffix>timer</mat-icon>
-                  </mat-form-field>
-                  <mat-hint class="field-hint">Temps max pour modifier un voyage</mat-hint>
-                  <mat-error *ngIf="tripSettingsForm.get('EDIT_TIME_LIMIT')?.hasError('min')" class="field-error">Minimum 1 minute</mat-error>
-                </div>
+                
                 <div class="form-field-wrapper">
                   <mat-form-field appearance="outline" class="full-width">
                     <mat-label>Maximum voyages par jour</mat-label>
@@ -214,16 +207,7 @@
                   <mat-hint class="field-hint">Limite quotidienne de voyages</mat-hint>
                   <mat-error *ngIf="tripSettingsForm.get('MAX_TRIPS_PER_DAY')?.hasError('min')" class="field-error">Minimum 1 voyage</mat-error>
                 </div>
-                <div class="form-field-wrapper">
-                  <mat-form-field appearance="outline" class="full-width">
-                    <mat-label>Ordre des voyages</mat-label>
-                    <mat-select formControlName="TRIP_ORDER">
-                      <mat-option *ngFor="let option of tripOrderOptions" [value]="option">{{option}}</mat-option>
-                    </mat-select>
-                    <mat-icon matSuffix>sort</mat-icon>
-                  </mat-form-field>
-                  <mat-hint class="field-hint">Méthode d'ordonnancement</mat-hint>
-                </div>
+               
               </div>
             </div>
           </form>
