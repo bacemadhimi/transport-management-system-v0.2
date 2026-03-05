@@ -17,7 +17,12 @@ export interface ITruck {
   disabled?: boolean;
   tooltip?: string;
   availabilityMessage?: string;
-
+truckGeographicalEntities?: Array<{
+    id?: number;
+    truckId?: number;
+    geographicalEntityId: number;
+    geographicalEntity?: any;
+  }>;
   geographicalEntityIds?: number[];
   geographicalEntities?: IGeographicalEntity[];
   typeTruckId: number;

@@ -16,6 +16,7 @@ export interface IOrderSettings {
   acceptOrdersWithoutAddress: boolean;
   planningHorizon: number;
   loadingUnit: string;
+  allowMixingOrderTypes: boolean;
 }
 
 export interface ITripSettings {

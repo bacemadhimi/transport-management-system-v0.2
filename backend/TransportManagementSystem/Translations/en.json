@@ -483,6 +483,9 @@
   "ADRESS_HINT": "Start typing to search for an address",
   "EMPLOYE_SUPPORT": "Supported Type",
   "LICENSE_ATTACHMENT_REQUIRED": "The permit file is mandatory for drivers and mechanics"
+  "LICENSE_ATTACHMENT_REQUIRED": "License attachment required",
+  "CONVOYEUR_INFO": "Convoyeur Information",
+  "SUPPORTED_FILE_TYPES": "Supported file types"
 
   
 }

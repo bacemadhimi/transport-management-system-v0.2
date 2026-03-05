@@ -11,7 +11,12 @@ export interface IDriver extends IEmployee {
   cityId?: number;
   imageBase64?: string | null;
 
-
+  driverGeographicalEntities?: Array<{
+      id?: number;
+      driverId?: number;
+      geographicalEntityId: number;
+      geographicalEntity?: any;
+    }>;
   availabilityStatus?: 'available' | 'overtime' | 'exceeded' | 'conflict';
   availabilityMessage?: string;
   requiresApproval?: boolean;
