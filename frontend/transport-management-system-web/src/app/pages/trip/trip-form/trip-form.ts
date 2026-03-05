@@ -1513,52 +1513,154 @@ getSelectedConvoyeurInfo(): string {
     }, 0);
   }
 
-  async confirmAddOrders(): Promise<void> {
-    if (this.selectedOrdersCount === 0 || !this.selectedClient) return;
+async confirmAddOrders(): Promise<void> {
+  if (this.selectedOrdersCount === 0 || !this.selectedClient) return;
 
-    const selectedWeight = this.calculateSelectedWeight();
+  // 1. Vérification de la capacité (existante)
+  const selectedWeight = this.calculateSelectedWeight();
+  const capacityCheck = await this.checkCapacityBeforeAddingOrders(selectedWeight);
+  if (!capacityCheck) {
+    return;
+  }
 
-    const capacityCheck = await this.checkCapacityBeforeAddingOrders(selectedWeight);
-    if (!capacityCheck) {
-      return;
-    }
-
-    const totalOrders = this.clientPendingOrders.length;
-    const notSelectedCount = totalOrders - this.selectedOrdersCount;
-
-    if (notSelectedCount > 0) {
-      const result = await this.showPartialSelectionAlert(
-        this.selectedClient.name,
-        this.selectedOrdersCount,
-        notSelectedCount
-      );
-
-      if (result === 'cancel') {
-        return;
-      } else if (result === 'selectAll') {
-        this.selectAllOrders();
-
-        const newSelectedWeight = this.calculateSelectedWeight();
-        const newCapacityCheck = await this.checkCapacityBeforeAddingOrders(newSelectedWeight);
-        if (!newCapacityCheck) {
-          return;
-        }
-
-        this.addSelectedOrdersToDeliveries();
-        this.currentQuickAddStep = 3;
-        this.lastAddedOrdersCount = this.selectedOrdersCount;
-      } else if (result === 'continuePartial') {
-        this.addSelectedOrdersToDeliveries();
-        this.currentQuickAddStep = 3;
-        this.lastAddedOrdersCount = this.selectedOrdersCount;
+  // 2. NOUVELLE VÉRIFICATION : Mélange des types (AJOUTEZ CE BLOC)
+  if (!this.allowMixingOrderTypes && this.deliveries.length > 0) {
+    // Récupérer les types des commandes existantes
+    const existingTypes = new Set<string>();
+    this.deliveryControls.forEach(group => {
+      const orderId = group.get('orderId')?.value;
+      if (orderId) {
+        const order = this.allOrders.find(o => o.id === orderId);
+        const orderType = order?.type || 'Standard';
+        existingTypes.add(orderType);
       }
-    } else {
+    });
+
+    // Récupérer les types des nouvelles commandes
+    const newTypes = new Set<string>();
+    this.selectedOrders.forEach(orderId => {
+      const order = this.allOrders.find(o => o.id === orderId);
+      const orderType = order?.type || 'Standard';
+      newTypes.add(orderType);
+    });
+
+    // Vérifier si l'ajout créerait un mélange
+    const allTypes = new Set([...existingTypes, ...newTypes]);
+    
+    if (allTypes.size > 1) {
+      // Construire le message détaillé
+      const existingTypesList = Array.from(existingTypes).join(', ');
+      const newTypesList = Array.from(newTypes).join(', ');
+      
+      // Créer le breakdown des commandes par type pour les nouvelles commandes
+      const ordersByType = new Map<string, string[]>();
+      this.selectedOrders.forEach(orderId => {
+        const order = this.allOrders.find(o => o.id === orderId);
+        if (order) {
+          const type = order.type || 'Standard';
+          if (!ordersByType.has(type)) {
+            ordersByType.set(type, []);
+          }
+          ordersByType.get(type)!.push(order.reference);
+        }
+      });
+
+      let detailsHtml = '<div style="text-align: left; max-height: 300px; overflow-y: auto; margin-top: 15px;">';
+      ordersByType.forEach((references, type) => {
+        detailsHtml += `
+          <div style="margin-bottom: 10px; padding: 8px; background-color: #f3f4f6; border-radius: 4px;">
+            <strong style="color: #ef4444;">${type}:</strong>
+            <ul style="margin-top: 5px; margin-left: 20px;">
+              ${references.map(ref => `<li>${ref}</li>`).join('')}
+            </ul>
+          </div>
+        `;
+      });
+      detailsHtml += '</div>';
+
+      const result = await Swal.fire({
+        icon: 'warning',
+        title: '⚠️ Mélange de types non autorisé',
+        html: `
+          <div style="text-align: left; padding: 10px;">
+            <div style="margin-bottom: 15px;">
+              <p><strong>Types existants dans le voyage :</strong> <span style="color: #3b82f6;">${existingTypesList}</span></p>
+              <p><strong>Types des nouvelles commandes :</strong> <span style="color: #f59e0b;">${newTypesList}</span></p>
+            </div>
+            
+            <div style="background-color: #fee2e2; padding: 15px; border-radius: 8px; margin: 15px 0;">
+              <p style="margin: 0 0 10px 0; font-weight: 600; color: #991b1b;">Détail des nouvelles commandes :</p>
+              ${detailsHtml}
+            </div>
+            
+            <p style="color: #4b5563; margin: 15px 0;">
+              Le mélange des types de commandes n'est pas autorisé dans les paramètres généraux.
+            </p>
+            
+            <div style="background-color: #f3f4f6; padding: 15px; border-radius: 8px;">
+              <p style="margin: 0 0 8px 0; font-weight: 600;">Solutions possibles :</p>
+              <ul style="margin: 0; padding-left: 20px;">
+                <li>Ne sélectionner que des commandes du même type que celles déjà dans le voyage (${existingTypesList})</li>
+                <li>Supprimer d'abord les commandes existantes d'un autre type</li>
+                <li>Activer le paramètre "Autoriser le mélange des types de commandes" dans les paramètres généraux</li>
+              </ul>
+            </div>
+          </div>
+        `,
+        showCancelButton: true,
+        confirmButtonText: 'Modifier la sélection',
+        cancelButtonText: 'Annuler',
+        confirmButtonColor: '#3b82f6',
+        cancelButtonColor: '#6b7280',
+        width: '600px'
+      });
+
+      if (result.isConfirmed) {
+        // Rester sur l'étape de sélection
+        return;
+      } else {
+        // Annuler l'ajout
+        return;
+      }
+    }
+  }
+
+  // 3. Suite du traitement normal (si les vérifications sont passées)
+  const totalOrders = this.clientPendingOrders.length;
+  const notSelectedCount = totalOrders - this.selectedOrdersCount;
+
+  if (notSelectedCount > 0) {
+    const result = await this.showPartialSelectionAlert(
+      this.selectedClient.name,
+      this.selectedOrdersCount,
+      notSelectedCount
+    );
+
+    if (result === 'cancel') {
+      return;
+    } else if (result === 'selectAll') {
+      this.selectAllOrders();
+
+      const newSelectedWeight = this.calculateSelectedWeight();
+      const newCapacityCheck = await this.checkCapacityBeforeAddingOrders(newSelectedWeight);
+      if (!newCapacityCheck) {
+        return;
+      }
+
+      this.addSelectedOrdersToDeliveries();
+      this.currentQuickAddStep = 3;
+      this.lastAddedOrdersCount = this.selectedOrdersCount;
+    } else if (result === 'continuePartial') {
       this.addSelectedOrdersToDeliveries();
       this.currentQuickAddStep = 3;
       this.lastAddedOrdersCount = this.selectedOrdersCount;
     }
+  } else {
+    this.addSelectedOrdersToDeliveries();
+    this.currentQuickAddStep = 3;
+    this.lastAddedOrdersCount = this.selectedOrdersCount;
   }
-
+}
   private async showPartialSelectionAlert(
     clientName: string,
     selectedCount: number,
