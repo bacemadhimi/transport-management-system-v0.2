@@ -205,7 +205,7 @@
   "CREATE": "Créer",
   "LOCATION_UPDATED_SUCCESS": "terminus modifié avec succès",
   "LOCATION_UPDATE_FAILED": "Échec de la modification du terminus",
-  "CITY_CREATED_SUCCESS": "Ville créée avec succès",
+  "CITY_CREATED_SUCCESS": "Terminus créée avec succès",
   "CITY_CREATION_FAILED": "Erreur lors de la création d'une ville",
   "CONFIRM_DELETE_CITY": "Voulez-vous vraiment supprimer la ville \"{{name}}\" ?",
   "CITY_DELETED_SUCCESS": "Ville supprimée avec succès",
