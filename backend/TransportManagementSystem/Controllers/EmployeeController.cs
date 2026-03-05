@@ -65,7 +65,8 @@ public class EmployeeController : ControllerBase
                 x.EmployeeCategory,
                 TruckType = x.TypeTruck.Type,   
                 x.AttachmentFileType,          
-                x.CreatedAt
+                x.CreatedAt,
+                x.IsInternal
             })
             .ToListAsync();
 
