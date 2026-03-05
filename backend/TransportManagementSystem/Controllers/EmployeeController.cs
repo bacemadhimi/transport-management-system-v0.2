@@ -97,6 +97,10 @@ public class EmployeeController : ControllerBase
         var employee = await dbContext.Employees
              .AsNoTracking() 
              .Where(e => e.Id == id)
+             .Include(e => e.TypeTruck) 
+             .Include(e => (e as Driver).DriverGeographicalEntities) 
+             .ThenInclude(dg => dg.GeographicalEntity)
+             .ThenInclude(g => g.Level) 
              .Include(e => e.TypeTruck)
              .Include(e => (e as Driver).DriverGeographicalEntities) 
                  .ThenInclude(dg => dg.GeographicalEntity) 
@@ -106,7 +110,6 @@ public class EmployeeController : ControllerBase
 
         if (employee == null)
             return NotFound(new ApiResponse(false, $"Employé {id} non trouvé"));
-
         return Ok(new ApiResponse(true, "Employé récupéré avec succès", employee));
     }
 

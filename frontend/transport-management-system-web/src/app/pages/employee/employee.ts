@@ -92,6 +92,53 @@ export class Employee implements OnInit {
     }
   ];
 
+//   showCols = [
+//   { key: 'idNumber', label: this.t('CUSTOMER_REG_NUMBER') },
+//   { key: 'name', label: this.t('TABLE_NAME') },
+//   { key: 'email', label: this.t('Email') },
+//   { key: 'phoneNumber', label: this.t('TABLE_PHONE') },
+
+//   {
+//     key: 'drivingLicense',
+//     label: this.t('TABLE_LICENSE_NUMBER'),
+//     format: (row: IEmployee) => row.drivingLicense ? row.drivingLicense : '-'
+//   },
+//   {
+//   key: 'isInternal',
+//   label: this.t('INTERNAL_EMPLOYEE'),
+//   format: (row: IEmployee) => [true, 'true', 1].includes(row.isInternal) ? 'Oui' : 'Non'
+//  },
+//  { key: 'employeeCategory', label: this.t('CATEGORY_TABLE') },
+//  {
+//     key: 'truckType',
+//     label: this.t('TYPE_VEHICULE_LABEL'),
+//     format: (row: IEmployee) =>
+//       row.typeTruck ? `${row.typeTruck.type} (${row.typeTruck.capacity} ${row.typeTruck.unit})` : '-'
+//   },
+
+//   {
+//     key: 'attachment',
+//     label: this.t('TABLE_ATTACHMENT'),
+//     format: (row: IEmployee) => {
+//       if (row.attachmentFileType) {
+//         return `<span class="attachment-cell" data-employee-id="${row.id}">
+//                   ✓ ${row.attachmentFileType}
+//                   <span class="view-icon">👁️</span>
+//                 </span>`;
+//       }
+//       return '-';
+//     }
+//   },
+
+//   {
+//     key: 'Action',
+//     format: (row: IEmployee) =>
+//       row.isEnable
+//         ? [this.t('ACTION_EDIT'), this.t('ACTION_DISABLE')]
+//         : [this.t('ACTION_EDIT'), this.t('ACTION_ENABLE')]
+//   }
+// ];
+
   ngOnInit() {
     this.getLatestData();
     this.searchControl.valueChanges.pipe(debounceTime(250))
@@ -108,7 +155,7 @@ export class Employee implements OnInit {
       this.totalData = result.totalData;
     });
   }
-
+    
   toggleListe(checked: boolean) {
     this.showDisabled = checked;
     if (checked) this.loadDisabledEmployees();
@@ -160,13 +207,6 @@ export class Employee implements OnInit {
     });
     ref.afterClosed().subscribe(() => this.getLatestData());
   }
-
-
-
-
-
-
-
 
 
   delete(employee: IEmployee) {

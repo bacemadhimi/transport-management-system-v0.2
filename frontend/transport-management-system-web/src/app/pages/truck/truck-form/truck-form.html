@@ -263,7 +263,7 @@
           <mat-datepicker-toggle matSuffix [for]="pickerFirstReg"></mat-datepicker-toggle>
           <mat-datepicker #pickerFirstReg></mat-datepicker>
           <mat-error *ngIf="truckForm.get('dateOfFirstRegistration')?.hasError('required')">
-            {{ t('DATE_FIRST_REGISTRATION_REQUIRED') || 'Date de première immatriculation requise' }}
+            {{ t('DATE_FIRST_REGISTRATION_REQUIRED') }}
           </mat-error>
         </mat-form-field>
       </div>
@@ -282,7 +282,7 @@
             min="1"
           />
           <mat-error *ngIf="truckForm.get('emptyWeight')?.hasError('required')">
-            {{ t('EMPTY_WEIGHT_REQUIRED') || 'Le poids à vide est requis' }}
+            {{ t('EMPTY_WEIGHT_REQUIRED')}}
           </mat-error>
           <mat-error *ngIf="truckForm.get('emptyWeight')?.hasError('min')">
             Le poids doit être supérieur à 0
@@ -318,7 +318,7 @@
           [matTooltip]="canAddMorePhotos ? 'Ajouter des photos' : 'Limite maximale atteinte'"
         >
           <mat-icon>add_photo_alternate</mat-icon>
-          Ajouter des photos
+             {{ t('PHOTO_TRUCKv')}}
         </button>
         
         <button 
@@ -330,7 +330,7 @@
           matTooltip="Supprimer toutes les photos"
         >
           <mat-icon>delete_sweep</mat-icon>
-          Tout supprimer
+            {{ t('DELETE_PHOTO') }}
         </button>
       </div>
 

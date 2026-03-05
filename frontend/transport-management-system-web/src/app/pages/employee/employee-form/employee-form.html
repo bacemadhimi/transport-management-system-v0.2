@@ -332,7 +332,7 @@
         {{ t('UPLOAD_LICENSE_ATTACHMENT') }}
         <span class="required-star" *ngIf="isLicenseAttachmentRequired()">*</span>
       </label>
-      <p class="file-upload-info">{{ t('SUPPORTED_FILE_TYPES') || 'Type Supporté: JPG, JPEG, PNG, PDF, DOC, DOCX (Max 2 MB)' }}</p>
+      <p class="file-upload-info">{{ t('EMPLOYE_SUPPORT') }}</p>
 
       <div class="file-upload-container" (click)="triggerFileInput()" [class.has-file]="selectedFile || hasExistingFile">
         <input
@@ -382,7 +382,7 @@
 
       <p *ngIf="fileError" class="error-message">{{ fileError }}</p>
       <p *ngIf="isLicenseAttachmentRequired() && !selectedFile && !hasExistingFile && employeeForm.get('employeeCategory')?.touched" class="error-message">
-        {{ t('LICENSE_ATTACHMENT_REQUIRED') || 'Le fichier de permis est obligatoire pour les chauffeurs et mécaniciens' }}
+        {{ t('LICENSE_ATTACHMENT_REQUIRED') }}
       </p>
     </div>
   </div>
