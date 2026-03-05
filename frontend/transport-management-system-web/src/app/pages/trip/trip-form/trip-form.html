@@ -1896,12 +1896,12 @@
                                       let last = last;
                                       trackBy: trackByGroupId"
                       class="client-group-item-virtual"
-                      [class.expanded]="isGroupExpanded(group.customerId)"
+                      [class.expanded]="isCapacityGroupExpanded(group.customerId)"
                       [class.last-item]="last">
                     
 
                     <div class="client-group-header" 
-                        (click)="toggleGroupExpanded(group.customerId)">
+                        (click)="toggleCapacityGroupExpanded(group.customerId)">
                       
                       <div class="client-group-info">
                         <div class="client-group-name">
@@ -1933,12 +1933,12 @@
                       </div>
                       
                       <mat-icon class="expand-icon">
-                        {{ isGroupExpanded(group.customerId) ? 'expand_less' : 'expand_more' }}
+                        {{ isCapacityGroupExpanded(group.customerId) ? 'expand_less' : 'expand_more' }}
                       </mat-icon>
                     </div>
                     
 
-                    <div class="client-orders-details" *ngIf="isGroupExpanded(group.customerId)">
+                    <div class="client-orders-details" *ngIf="isCapacityGroupExpanded(group.customerId)">
                       <div class="orders-header">
                         <h6>Détail des commandes</h6>
                         <span class="orders-weight-total">
@@ -2311,9 +2311,9 @@
                       <div class="detail-item group-actions">
                         <button mat-icon-button color="primary" 
                                 type="button" 
-                                (click)="toggleGroupExpanded(group.customerId)"
+                                (click)="toggleCapacityGroupExpanded(group.customerId)"
                                 matTooltip="Voir les détails">
-                          <mat-icon>{{ isGroupExpanded(group.customerId) ? 'expand_less' : 'expand_more' }}</mat-icon>
+                          <mat-icon>{{ isCapacityGroupExpanded(group.customerId) ? 'expand_less' : 'expand_more' }}</mat-icon>
                         </button>
                         
                         <button mat-icon-button color="accent" 
@@ -2332,7 +2332,7 @@
                       </div>
                       
 
-                      <div class="group-orders-details" *ngIf="isGroupExpanded(group.customerId)">
+                      <div class="group-orders-details" *ngIf="isCapacityGroupExpanded(group.customerId)">
                         <div class="orders-title">
                           <mat-icon>inventory_2</mat-icon>
                           <span>Commandes de ce client ({{ group.orders.length }})</span>

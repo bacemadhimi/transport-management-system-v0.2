@@ -6025,18 +6025,6 @@ if (!this.allowMixingOrderTypes && this.deliveries.length > 0) {
     return indices;
   }
 
-  toggleGroupExpanded(customerId: number): void {
-    if (this.expandedGroups.has(customerId)) {
-      this.expandedGroups.delete(customerId);
-    } else {
-      this.expandedGroups.add(customerId);
-    }
-  }
-
-  isGroupExpanded(customerId: number): boolean {
-    return this.expandedGroups.has(customerId);
-  }
-
   calculateClientCapacityPercentage(customerId: number): number {
     const truckId = this.tripForm.get('truckId')?.value;
     if (!truckId) return 0;
@@ -7781,5 +7769,32 @@ private orderTypeValidator(): ValidationErrors | null {
   }
 
   return null;
+}
+expandedCapacityGroups: Set<number> = new Set();   
+toggleGroupExpanded(customerId: number): void {
+  if (this.expandedGroups.has(customerId)) {
+    this.expandedGroups.delete(customerId);
+  } else {
+    this.expandedGroups.add(customerId);
+  }
+ 
+}
+
+
+toggleCapacityGroupExpanded(customerId: number): void {
+  if (this.expandedCapacityGroups.has(customerId)) {
+    this.expandedCapacityGroups.delete(customerId);
+  } else {
+    this.expandedCapacityGroups.add(customerId);
+  }
+
+}
+
+isGroupExpanded(customerId: number): boolean {
+  return this.expandedGroups.has(customerId);
+}
+
+isCapacityGroupExpanded(customerId: number): boolean {
+  return this.expandedCapacityGroups.has(customerId);
 }
 }
