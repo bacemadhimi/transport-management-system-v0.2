@@ -26,16 +26,6 @@
       </mat-error>
     </mat-form-field>
 
-    <!-- Unité (Text input instead of select) -->
-    <mat-form-field class="w-full">
-      <mat-label>Unité</mat-label>
-      <input matInput formControlName="unit" placeholder="Ex: TONNE, KG, LITRE, M3, UNITE" />
-      <mat-hint>Exemples: TONNE, KG, LITRE, M3, UNITE</mat-hint>
-      <mat-error *ngIf="typeTruckForm.get('unit')?.hasError('required')">
-        L'unité est obligatoire
-      </mat-error>
-    </mat-form-field>
-
     <div class="flex justify-center mt-4 gap-2">
       <button
         mat-raised-button

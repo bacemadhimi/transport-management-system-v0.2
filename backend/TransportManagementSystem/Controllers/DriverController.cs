@@ -68,7 +68,7 @@ public class DriversController : ControllerBase
                 Id = d.TypeTruck.Id,
                 Type = d.TypeTruck.Type,
                 Capacity = d.TypeTruck.Capacity,
-                Unit = d.TypeTruck.Unit
+                
             } : null,
             DrivingLicenseAttachment = d.DrivingLicenseAttachment,
             AttachmentFileName = d.AttachmentFileName,
@@ -132,7 +132,7 @@ public class DriversController : ControllerBase
                 Id = driver.TypeTruck.Id,
                 Type = driver.TypeTruck.Type,
                 Capacity = driver.TypeTruck.Capacity,
-                Unit = driver.TypeTruck.Unit
+                
             } : null,
             DrivingLicenseAttachment = driver.DrivingLicenseAttachment,
             AttachmentFileName = driver.AttachmentFileName,
@@ -246,7 +246,7 @@ public class DriversController : ControllerBase
                 Id = createdDriver.TypeTruck.Id,
                 Type = createdDriver.TypeTruck.Type,
                 Capacity = createdDriver.TypeTruck.Capacity,
-                Unit = createdDriver.TypeTruck.Unit
+               
             } : null,
             IsEnable = createdDriver.IsEnable,
             EmployeeCategory = createdDriver.EmployeeCategory,
@@ -362,7 +362,7 @@ public class DriversController : ControllerBase
                 Id = updatedDriver.TypeTruck.Id,
                 Type = updatedDriver.TypeTruck.Type,
                 Capacity = updatedDriver.TypeTruck.Capacity,
-                Unit = updatedDriver.TypeTruck.Unit
+              
             } : null,
             IsEnable = updatedDriver.IsEnable,
             EmployeeCategory = updatedDriver.EmployeeCategory,
@@ -444,7 +444,7 @@ public class DriversController : ControllerBase
                 Id = d.TypeTruck.Id,
                 Type = d.TypeTruck.Type,
                 Capacity = d.TypeTruck.Capacity,
-                Unit = d.TypeTruck.Unit
+               
             } : null,
             IsEnable = d.IsEnable,
             EmployeeCategory = d.EmployeeCategory,
@@ -498,7 +498,7 @@ public class DriversController : ControllerBase
                 Id = d.TypeTruck.Id,
                 Type = d.TypeTruck.Type,
                 Capacity = d.TypeTruck.Capacity,
-                Unit = d.TypeTruck.Unit
+               
             } : null,
             IsEnable = d.IsEnable,
             EmployeeCategory = d.EmployeeCategory,

@@ -69,7 +69,7 @@ public class TypeTruckController : ControllerBase
         {
             Type = model.Type,
             Capacity = model.Capacity,
-            Unit = model.Unit
+          
         };
 
         await typeTruckRepository.AddAsync(typeTruck);
@@ -91,7 +91,7 @@ public class TypeTruckController : ControllerBase
 
         typeTruck.Type = model.Type;
         typeTruck.Capacity = model.Capacity;
-        typeTruck.Unit = model.Unit;
+
 
         typeTruckRepository.Update(typeTruck);
         await typeTruckRepository.SaveChangesAsync();

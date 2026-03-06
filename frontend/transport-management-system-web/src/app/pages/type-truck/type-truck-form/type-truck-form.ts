@@ -38,7 +38,7 @@ export class TypeTruckForm implements OnInit {
   typeTruckForm = this.fb.group({
     type: ['', [Validators.required]],
     capacity: [0, [Validators.required, Validators.min(0.1)]],
-    unit: ['', [Validators.required]]
+   
   });
 
   ngOnInit() {
@@ -48,7 +48,7 @@ export class TypeTruckForm implements OnInit {
         this.typeTruckForm.patchValue({
           type: typeTruck.type,
           capacity: typeTruck.capacity,
-          unit: typeTruck.unit
+         
         });
       });
     }
@@ -63,7 +63,7 @@ export class TypeTruckForm implements OnInit {
       id: this.data.typeTruckId || 0,
       type: this.typeTruckForm.value.type!,
       capacity: this.typeTruckForm.value.capacity!,
-      unit: this.typeTruckForm.value.unit!
+     
     };
 
     const request = this.data.typeTruckId
