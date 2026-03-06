@@ -164,30 +164,28 @@ public class OrdersController : ControllerBase
     [HttpGet]
     public async Task<IActionResult> GetOrders()
     {
-        var orders = await _orderRepository.Query()
-            .Include(o => o.Customer)
+        var orderDtos = await _orderRepository.Query()
             .OrderByDescending(o => o.CreatedDate)
+            .Select(o => new OrderDto
+            {
+                Id = o.Id,
+                CustomerId = o.CustomerId,
+                CustomerName = o.Customer.Name,
+                CustomerMatricule = o.Customer.Matricule,
+                Reference = o.Reference,
+                Type = o.Type,
+                Weight = o.Weight,
+                WeightUnit = o.WeightUnit,
+                Status = o.Status,
+                SourceSystem = o.SourceSystem == DataSource.QAD ? "QAD" : "TMS",
+                CreatedDate = o.CreatedDate,
+                DeliveryDate = o.DeliveryDate
+            })
+            .AsNoTracking()
             .ToListAsync();
-
-        var orderDtos = orders.Select(o => new OrderDto
-        {
-            Id = o.Id,
-            CustomerId = o.CustomerId,
-            CustomerName = o.Customer?.Name,
-            CustomerMatricule = o.Customer?.Matricule, 
-            Reference = o.Reference,
-            Type = o.Type,
-            Weight = o.Weight,
-            WeightUnit = o.WeightUnit,
-            Status = o.Status,
-            SourceSystem = o.SourceSystem == DataSource.QAD ? "QAD" : "TMS",
-            CreatedDate = o.CreatedDate,
-            DeliveryDate = o.DeliveryDate
-        }).ToList();
 
         return Ok(new ApiResponse(true, "Commandes récupérées avec succès", orderDtos));
     }
-
 
     [HttpGet("pending")]
     public async Task<IActionResult> GetPendingOrders()
