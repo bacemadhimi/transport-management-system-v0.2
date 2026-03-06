@@ -1,4 +1,4 @@
-import { Component, inject, OnInit } from '@angular/core';
+﻿import { Component, inject, OnInit } from '@angular/core';
 import { Http } from '../../services/http';
 import { Table } from '../../components/table/table';
 import { IFuelVendor } from '../../types/fuel-vendor';
@@ -38,11 +38,11 @@ import { CommonModule } from '@angular/common';
   styleUrls: ['./fuel-vendor.scss']
 })
 export class FuelVendor implements OnInit {
-      constructor(public auth: Auth) {}  
-    
+      constructor(public auth: Auth) {}
+
       getActions(row: any, actions: string[]) {
         const permittedActions: string[] = [];
-    
+
         for (const a of actions) {
           if (a === 'Modifier' && this.auth.hasPermission('FUEL_VENDOR_EDIT')) {
             permittedActions.push(a);
@@ -51,24 +51,24 @@ export class FuelVendor implements OnInit {
             permittedActions.push(a);
           }
         }
-    
+
         return permittedActions;
       }
-      
+
   httpService = inject(Http);
   pagedFuelVendorData!: PagedData<IFuelVendor>;
   totalData!: number;
-  
+
   filter: any = {
     pageIndex: 0,
     pageSize: 10
   };
-  
+
   searchControl = new FormControl('');
   readonly dialog = inject(MatDialog);
 
   showCols = [
-    
+
     { key: 'name', label: 'Nom du Fournisseur' },
     {
       key: 'Action',

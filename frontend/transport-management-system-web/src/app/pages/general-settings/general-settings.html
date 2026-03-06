@@ -1,66 +1,305 @@
-<div class="settings-page">
-  <div class="settings-header">
-    <h1 class="settings-title">Paramètres généraux</h1>
+<div class="settings-container p-6">
+  <!-- Header with actions -->
+  <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+    <h1 class="text-2xl font-bold">Paramètres Généraux</h1>
+  </div>
 
-    <div class="settings-header__actions">
-      <div class="filters-container">
-        <!-- Search field - searches in ParameterType, ParameterCode, Description -->
-        <mat-form-field appearance="outline" class="settings-search">
-          <mat-label>Rechercher</mat-label>
-          <input
-            matInput
-            type="text"
-            [formControl]="searchControl"
-            placeholder="Type, code ou description"
-          />
-          <mat-icon matSuffix>search</mat-icon>
-          <mat-hint>Recherche dans type, code et description</mat-hint>
-        </mat-form-field>
+  <!-- Loading State -->
+  <div *ngIf="isLoading" class="flex justify-center items-center py-12">
+    <mat-spinner diameter="40"></mat-spinner>
+  </div>
 
-        <!-- Type filter - exact match on ParameterType -->
-        <mat-form-field appearance="outline" class="settings-type-filter">
-          <mat-label>Filtrer par type</mat-label>
-          <mat-select [formControl]="typeControl">
-            <mat-option value="">Tous les types</mat-option>
-            <mat-option *ngFor="let type of parameterTypes" [value]="type">
-              {{ formatParameterType(type) }}
-            </mat-option>
-          </mat-select>
-          <mat-icon matSuffix>filter_list</mat-icon>
-          <mat-hint>Filtrage exact par type</mat-hint>
-        </mat-form-field>
-      </div>
+  <!-- 2-Column Grid Layout - Cards stretch to fill height -->
+  <div *ngIf="!isLoading" class="settings-grid">
+    
+    <!-- Left Column - Cards stretch vertically -->
+    <div class="left-column">
+      <!-- Order Settings Card -->
+      <mat-card class="settings-card fill-card">
+        <mat-card-header>
+          <mat-icon class="card-icon">shopping_cart</mat-icon>
+          <div class="card-header-text">
+            <mat-card-title>Paramètres des Commandes</mat-card-title>
+            <mat-card-subtitle>Configurez les comportements par défaut pour les commandes</mat-card-subtitle>
+          </div>
+        </mat-card-header>
+        <mat-card-content class="expand-content">
+          <form [formGroup]="orderSettingsForm" class="h-full flex flex-col">
+            <div class="checkboxes-section">
+              <div class="checkbox-grid">
+                <mat-checkbox formControlName="ALLOW_EDIT_ORDER">Autoriser la modification des commandes</mat-checkbox>
+                <mat-checkbox formControlName="ALLOW_DELIVERY_DATE_EDIT">Autoriser la modification de la date de livraison</mat-checkbox>
+                <mat-checkbox formControlName="ALLOW_LOAD_LATE_ORDERS">Autoriser le chargement des commandes en retard</mat-checkbox>
+                <mat-checkbox formControlName="ACCEPT_ORDERS_WITHOUT_ADDRESS">Accepter les commandes sans adresse</mat-checkbox>
+                <mat-checkbox formControlName="ALLOW_MIXING_ORDER_TYPES" color="primary">Autoriser le mélange des types de commandes</mat-checkbox>
+              </div>
+            </div>
+            <div class="form-fields-section flex-1">
+              <div class="form-fields-grid">
+                <div class="form-field-wrapper">
+                  <mat-form-field appearance="outline" class="full-width">
+                    <mat-label>Unité de chargement</mat-label>
+                    <mat-select formControlName="LOADING_UNIT">
+                      <mat-option *ngFor="let option of loadingUnitOptions" [value]="option">{{option}}</mat-option>
+                    </mat-select>
+                    <mat-icon matSuffix>arrow_drop_down</mat-icon>
+                  </mat-form-field>
+                  <mat-hint class="field-hint">Unité par défaut pour les chargements</mat-hint>
+                </div>
+                <div class="form-field-wrapper">
+                  <mat-form-field appearance="outline" class="full-width">
+                    <mat-label>Horizon de planification (jours)</mat-label>
+                    <input matInput type="number" formControlName="PLANNING_HORIZON">
+                    <mat-icon matSuffix>calendar_today</mat-icon>
+                  </mat-form-field>
+                  <mat-hint class="field-hint">Nombre de jours pour la planification</mat-hint>
+                  <mat-error *ngIf="orderSettingsForm.get('PLANNING_HORIZON')?.hasError('min')" class="field-error">Minimum 1 jour</mat-error>
+                  <mat-error *ngIf="orderSettingsForm.get('PLANNING_HORIZON')?.hasError('max')" class="field-error">Maximum 365 jours</mat-error>
+                </div>
+              </div>
+            </div>
+          </form>
+        </mat-card-content>
+        <mat-card-actions align="end">
+          <button mat-raised-button (click)="saveOrderSettings()" [disabled]="orderSettingsForm.invalid || isSaving" class="theme-primary-btn">
+            <mat-icon>save</mat-icon> Enregistrer
+          </button>
+        </mat-card-actions>
+      </mat-card>
 
-      <button *ngIf="auth.hasPermission('PARAMETER_ADD')" 
-              mat-flat-button 
-              color="primary"
-              class="settings-add-btn" 
-              (click)="add()">
-        <mat-icon>add</mat-icon>
-        Ajouter
-      </button>
+      <!-- Employee Categories Card -->
+      <mat-card class="settings-card fill-card">
+        <mat-card-header>
+          <mat-icon class="card-icon">badge</mat-icon>
+          <div class="card-header-text">
+            <mat-card-title>Catégories d'Employés</mat-card-title>
+            <mat-card-subtitle>Gérez les catégories d'employés ({{employeeCategories.length}})</mat-card-subtitle>
+          </div>
+        </mat-card-header>
+        <mat-card-content class="expand-content">
+          <div *ngIf="loadingCategories" class="flex justify-center items-center py-8"><mat-spinner diameter="30"></mat-spinner></div>
+          <div *ngIf="!loadingCategories" class="overflow-x-auto h-full">
+            <table mat-table [dataSource]="employeeCategories" class="w-full">
+              <ng-container matColumnDef="code">
+                <th mat-header-cell *matHeaderCellDef>Code</th>
+                <td mat-cell *matCellDef="let category"><span class="font-mono text-sm font-medium" [style.color]="'var(--primary-color)'">{{extractCode(category.parameterCode)}}</span></td>
+              </ng-container>
+              <ng-container matColumnDef="description">
+                <th mat-header-cell *matHeaderCellDef>Description</th>
+                <td mat-cell *matCellDef="let category">{{category.description}}</td>
+              </ng-container>
+              <ng-container matColumnDef="value">
+                <th mat-header-cell *matHeaderCellDef>Valeur</th>
+                <td mat-cell *matCellDef="let category"><span class="px-2 py-1 rounded-full text-xs" [style.background]="'rgba(var(--primary-color-rgb), 0.1)'" [style.color]="'var(--primary-color)'">{{extractValue(category.parameterCode)}}</span></td>
+              </ng-container>
+              <ng-container matColumnDef="actions">
+                <th mat-header-cell *matHeaderCellDef>Actions</th>
+                <td mat-cell *matCellDef="let category">
+                  <button mat-icon-button (click)="openEditParameterDialog(category)" matTooltip="Modifier" [style.color]="'var(--primary-color)'"><mat-icon>edit</mat-icon></button>
+                  <button mat-icon-button color="warn" (click)="deleteParameter(category)" matTooltip="Supprimer"><mat-icon>delete</mat-icon></button>
+                </td>
+              </ng-container>
+              <tr mat-header-row *matHeaderRowDef="employeeColumns"></tr>
+              <tr mat-row *matRowDef="let row; columns: employeeColumns;"></tr>
+              <tr class="mat-row" *matNoDataRow><td class="mat-cell text-center p-8" [attr.colspan]="employeeColumns.length"><div class="flex flex-col items-center gap-2" [style.color]="'var(--text-muted)'"><mat-icon class="text-4xl">badge</mat-icon><p class="text-lg font-medium">Aucune catégorie d'employé</p><p class="text-sm">Cliquez sur "Ajouter une catégorie" pour créer votre première catégorie</p></div></td></tr>
+            </table>
+          </div>
+        </mat-card-content>
+        <mat-card-actions align="end">
+          <button mat-raised-button (click)="openAddParameterDialog()" class="theme-primary-btn"><mat-icon>add</mat-icon> Nouvelle catégorie</button>
+        </mat-card-actions>
+      </mat-card>
+
+      <!-- Company Logo Section - MOVED HERE under Employee Categories -->
+      <mat-card class="settings-card fill-card">
+        <mat-card-header>
+          <mat-icon class="card-icon">business</mat-icon>
+          <div class="card-header-text">
+            <mat-card-title>Logo de l'entreprise</mat-card-title>
+            <mat-card-subtitle>Téléchargez le logo de votre entreprise</mat-card-subtitle>
+          </div>
+        </mat-card-header>
+        <mat-card-content class="expand-content">
+          <div class="company-logo-section">
+            <p class="upload-info">Format supporté: JPG, JPEG, PNG, GIF, BMP, SVG (Max 1 MB)</p>
+            <div class="logo-upload-container" (click)="triggerCompanyFileInput()" [class.has-logo]="companyLogoPreview">
+              <input #companyFileInput type="file" (change)="onCompanyFileSelected($event)" accept=".jpg,.jpeg,.png,.gif,.bmp,.svg" style="display: none" />
+              <div *ngIf="companyLogoPreview" class="logo-preview">
+                <img [src]="companyLogoPreview" alt="Company logo" class="preview-image" />
+                <div class="logo-actions"><button type="button" mat-icon-button color="warn" (click)="removeCompanyLogo(); $event.stopPropagation()" matTooltip="Supprimer"><mat-icon>delete</mat-icon></button></div>
+              </div>
+              <div *ngIf="!companyLogoPreview" class="logo-placeholder">
+                <mat-icon class="upload-icon">cloud_upload</mat-icon>
+                <p>Cliquez pour télécharger un logo</p>
+                <small>JPG, PNG, GIF, SVG (Max 1 MB)</small>
+              </div>
+            </div>
+            <p *ngIf="companyFileError" class="error-message">{{ companyFileError }}</p>
+            <div class="flex gap-2 mt-2">
+              <button mat-raised-button (click)="saveCompanyLogo()" [disabled]="isSavingLogo || !companyLogoPreview" class="theme-primary-btn"><mat-icon>save</mat-icon> Enregistrer le logo</button>
+              <button mat-raised-button *ngIf="hasCompanyLogo" (click)="removeCompanyLogo()" color="warn"><mat-icon>delete</mat-icon> Supprimer</button>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+
+    <!-- Right Column - Cards stretch vertically -->
+    <div class="right-column">
+      <!-- Trip Settings Card -->
+      <mat-card class="settings-card fill-card">
+        <mat-card-header>
+          <mat-icon class="card-icon">directions_bus</mat-icon>
+          <div class="card-header-text">
+            <mat-card-title>Paramètres des Voyages</mat-card-title>
+            <mat-card-subtitle>Configurez les comportements par défaut pour les voyages</mat-card-subtitle>
+          </div>
+        </mat-card-header>
+        <mat-card-content class="expand-content">
+          <form [formGroup]="tripSettingsForm" class="h-full flex flex-col">
+            <!-- 1. Trip Settings Checkboxes -->
+            <div class="checkboxes-section">
+              <div class="checkbox-grid">
+                <mat-checkbox formControlName="ALLOW_EDIT_TRIPS">Autoriser la modification des voyages</mat-checkbox>
+                <mat-checkbox formControlName="ALLOW_DELETE_TRIPS">Autoriser la suppression des voyages</mat-checkbox>
+                <mat-checkbox formControlName="REQUIRE_DELETE_CONFIRMATION">Exiger confirmation avant suppression</mat-checkbox>
+                <mat-checkbox formControlName="NOTIFY_ON_TRIP_EDIT">Notifier lors de la modification d'un voyage</mat-checkbox>
+                <mat-checkbox formControlName="NOTIFY_ON_TRIP_DELETE">Notifier lors de la suppression d'un voyage</mat-checkbox>
+                <mat-checkbox formControlName="LINK_DRIVER_TO_TRUCK">Le chauffeur doit correspondre au camion</mat-checkbox>
+              </div>
+            </div>
+            
+            <mat-divider class="my-2"></mat-divider>
+            
+            <!-- 2. Capacity Settings Section -->
+            <h3 class="section-title">Paramètres de capacité</h3>
+            <div class="capacity-settings">
+              <div class="checkbox-item">
+                <mat-checkbox formControlName="ALLOW_EXCEED_MAX_CAPACITY" color="primary">Autoriser le dépassement de capacité</mat-checkbox>
+                <mat-hint class="field-hint">Permettre aux chauffeurs de dépasser la capacité maximale des véhicules</mat-hint>
+              </div>
+              <div class="form-field-wrapper" *ngIf="showMaxCapacityField">
+                <mat-form-field appearance="outline" class="full-width">
+                  <mat-label>Pourcentage de dépassement maximum</mat-label>
+                  <input matInput type="number" formControlName="MAX_CAPACITY_PERCENTAGE" min="1" max="200" placeholder="Ex: 110" />
+                  <span matSuffix>%</span>
+                  <mat-icon matPrefix>speed</mat-icon>
+                  <mat-error *ngIf="tripSettingsForm.get('MAX_CAPACITY_PERCENTAGE')?.hasError('min')">Minimum 1%</mat-error>
+                  <mat-error *ngIf="tripSettingsForm.get('MAX_CAPACITY_PERCENTAGE')?.hasError('max')">Maximum 200%</mat-error>
+                </mat-form-field>
+                <mat-hint class="field-hint">Pourcentage maximum autorisé (ex: 110% = 10% de dépassement)</mat-hint>
+              </div>
+              <div class="info-message" *ngIf="!showMaxCapacityField"><mat-icon>info</mat-icon> <span>Capacité maximale fixée à 100% (dépassement non autorisé)</span></div>
+            </div>
+            
+            <mat-divider class="my-2"></mat-divider>
+            
+            <!-- 3. Form Fields -->
+            <div class="form-fields-section flex-1">
+              <div class="form-fields-grid">
+                
+                <div class="form-field-wrapper">
+                  <mat-form-field appearance="outline" class="full-width">
+                    <mat-label>Maximum voyages par jour</mat-label>
+                    <input matInput type="number" formControlName="MAX_TRIPS_PER_DAY">
+                    <mat-icon matSuffix>event_repeat</mat-icon>
+                  </mat-form-field>
+                  <mat-hint class="field-hint">Limite quotidienne de voyages</mat-hint>
+                  <mat-error *ngIf="tripSettingsForm.get('MAX_TRIPS_PER_DAY')?.hasError('min')" class="field-error">Minimum 1 voyage</mat-error>
+                </div>
+               
+              </div>
+            </div>
+          </form>
+        </mat-card-content>
+        <mat-card-actions align="end">
+          <button mat-raised-button (click)="saveTripSettings()" [disabled]="tripSettingsForm.invalid || isSaving" class="theme-primary-btn">
+            <mat-icon>save</mat-icon> Enregistrer les paramètres
+          </button>
+        </mat-card-actions>
+      </mat-card>
+
+      <!-- Geographical Levels Card -->
+      <mat-card class="settings-card fill-card">
+        <mat-card-header>
+          <mat-icon class="card-icon">layers</mat-icon>
+          <div class="card-header-text">
+            <mat-card-title>Niveaux Géographiques</mat-card-title>
+            <mat-card-subtitle>Configurez les niveaux hiérarchiques ({{geographicalLevels.length}}/5 maximum)</mat-card-subtitle>
+          </div>
+        </mat-card-header>
+        <mat-card-content class="expand-content">
+          <form [formGroup]="geographicalLevelsForm" class="h-full flex flex-col">
+            <div formArrayName="levels" class="levels-container flex-1">
+              <div *ngFor="let level of geographicalLevelsArray.controls; let i = index" [formGroupName]="i" class="level-item">
+                <div class="level-header">
+                  <span class="level-number">Niveau {{i + 1}}</span>
+                  <button mat-icon-button color="warn" type="button" (click)="removeGeographicalLevel(i)" matTooltip="Supprimer ce niveau"><mat-icon>delete</mat-icon></button>
+                </div>
+                <div class="level-form-grid">
+                  <mat-form-field appearance="outline" class="full-width">
+                    <mat-label>Nom du niveau</mat-label>
+                    <input matInput formControlName="name" placeholder="ex: Région, Gouvernorat">
+                    <mat-error *ngIf="level.get('name')?.hasError('required')">Le nom est requis</mat-error>
+                  </mat-form-field>
+                  <mat-form-field appearance="outline" class="full-width">
+                    <mat-label>Numéro de niveau</mat-label>
+                    <input matInput type="number" formControlName="levelNumber" readonly>
+                  </mat-form-field>
+                  <mat-checkbox formControlName="isMappable">Cartographiable</mat-checkbox>
+                  <mat-checkbox formControlName="isActive">Actif</mat-checkbox>
+                </div>
+              </div>
+              <button *ngIf="geographicalLevelsArray.length < 5" class="add-level-btn" type="button" (click)="addGeographicalLevel()"><mat-icon>add</mat-icon> Ajouter un niveau</button>
+              <div *ngIf="geographicalLevelsArray.length >= 5" class="info-message"><mat-icon>info</mat-icon> Maximum de 5 niveaux atteint</div>
+            </div>
+          </form>
+        </mat-card-content>
+        <mat-card-actions align="end">
+          <button mat-raised-button (click)="saveGeographicalLevels()" [disabled]="geographicalLevelsForm.invalid || isSavingGeographical" class="theme-primary-btn">
+            <mat-icon>save</mat-icon> Enregistrer
+          </button>
+        </mat-card-actions>
+      </mat-card>
     </div>
   </div>
 
-  <!-- Display current filters (optional) -->
-  <div class="active-filters" *ngIf="filter.parameterType || filter.search">
-    <span class="filter-label">Filtres actifs:</span>
-    <span class="filter-badge" *ngIf="filter.parameterType">
-      Type: {{ formatParameterType(filter.parameterType) }}
-      <mat-icon (click)="typeControl.setValue('')">close</mat-icon>
-    </span>
-    <span class="filter-badge" *ngIf="filter.search">
-      Recherche: "{{ filter.search }}"
-      <mat-icon (click)="searchControl.setValue('')">close</mat-icon>
-    </span>
+  <!-- Geographical Entities Card (Full Width) - Stretches to fill -->
+  <div *ngIf="!isLoading" class="mt-6">
+    <mat-card class="settings-card fill-card">
+      <mat-card-header>
+        <mat-icon class="card-icon">map</mat-icon>
+        <div class="card-header-text">
+          <mat-card-title>Entités Géographiques</mat-card-title>
+          <mat-card-subtitle>Gérez les entités avec leurs coordonnées ({{filteredEntities.length}})</mat-card-subtitle>
+        </div>
+      </mat-card-header>
+      <mat-card-content class="expand-content">
+        <div class="filter-section">
+          <mat-form-field appearance="outline" class="filter-select">
+            <mat-label>Filtrer par niveau</mat-label>
+            <mat-select [formControl]="entityLevelFilter">
+              <mat-option [value]="'all'">Tous les niveaux</mat-option>
+              <mat-option *ngFor="let level of geographicalLevels" [value]="level.id">{{level.name}} (Niveau {{level.levelNumber}})</mat-option>
+            </mat-select>
+          </mat-form-field>
+          <button mat-raised-button (click)="openAddEntityDialog()" class="theme-primary-btn" [disabled]="geographicalLevels.length === 0"><mat-icon>add_location</mat-icon> Nouvelle entité</button>
+        </div>
+        <div *ngIf="loadingEntities" class="flex justify-center items-center py-8"><mat-spinner diameter="30"></mat-spinner></div>
+        <div *ngIf="!loadingEntities" class="overflow-x-auto">
+          <table mat-table [dataSource]="filteredEntities" class="w-full">
+            <ng-container matColumnDef="name"><th mat-header-cell *matHeaderCellDef>Nom</th><td mat-cell *matCellDef="let entity">{{entity.name}}</td></ng-container>
+            <ng-container matColumnDef="level"><th mat-header-cell *matHeaderCellDef>Niveau</th><td mat-cell *matCellDef="let entity"><span class="level-badge" [style.background]="'rgba(var(--primary-color-rgb), 0.1)'" [style.color]="'var(--primary-color)'">{{getLevelName(entity.levelId)}}</span></td></ng-container>
+            <ng-container matColumnDef="parent"><th mat-header-cell *matHeaderCellDef>Parent</th><td mat-cell *matCellDef="let entity">{{entity.parentId ? getEntityName(entity.parentId) : '-'}}</td></ng-container>
+            <ng-container matColumnDef="coordinates"><th mat-header-cell *matHeaderCellDef>Coordonnées</th><td mat-cell *matCellDef="let entity"><div *ngIf="entity.latitude && entity.longitude; else noCoords"><span class="coords-badge" matTooltip="Latitude: {{entity.latitude}}, Longitude: {{entity.longitude}}"><mat-icon class="text-sm">location_on</mat-icon>{{entity.latitude | number:'1.4-4'}}, {{entity.longitude | number:'1.4-4'}}</span></div><ng-template #noCoords><span class="text-gray-400 text-sm">-</span></ng-template></td></ng-container>
+            <ng-container matColumnDef="status"><th mat-header-cell *matHeaderCellDef>Statut</th><td mat-cell *matCellDef="let entity"><span class="status-badge" [class.active]="entity.isActive" [class.inactive]="!entity.isActive">{{entity.isActive ? 'Actif' : 'Inactif'}}</span></td></ng-container>
+            <ng-container matColumnDef="actions"><th mat-header-cell *matHeaderCellDef>Actions</th><td mat-cell *matCellDef="let entity"><button mat-icon-button (click)="openEditEntityDialog(entity)" matTooltip="Modifier" [style.color]="'var(--primary-color)'"><mat-icon>edit</mat-icon></button><button mat-icon-button color="warn" (click)="deleteEntity(entity)" matTooltip="Supprimer"><mat-icon>delete</mat-icon></button></td></ng-container>
+            <tr mat-header-row *matHeaderRowDef="entityColumns"></tr>
+            <tr mat-row *matRowDef="let row; columns: entityColumns;"></tr>
+            <tr class="mat-row" *matNoDataRow><td class="mat-cell text-center p-8" [attr.colspan]="entityColumns.length"><div class="flex flex-col items-center gap-2" [style.color]="'var(--text-muted)'"><mat-icon class="text-4xl">map</mat-icon><p class="text-lg font-medium">Aucune entité géographique</p><p class="text-sm">Configurez d'abord des niveaux, puis ajoutez des entités</p></div></td></tr>
+          </table>
+        </div>
+      </mat-card-content>
+    </mat-card>
   </div>
-
-<app-table
-  [PagedData]="pagedParameterData"
-  [pageIndex]="filter.pageIndex ?? 0"
-  [pageSize]="filter.pageSize ?? 10"
-  [displayedColumns]="showCols"
-  (rowClick)="onRowClick($event)"
-  (onPageChange)="pageChange($event)">
-</app-table>
 </div>

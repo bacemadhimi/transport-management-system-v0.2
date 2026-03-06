@@ -1,30 +1,51 @@
-// types/general-settings.types.ts
+﻿
 
 export enum ParameterType {
-  GOVERNORATE = 'GOVERNORATE',
-  REGION = 'REGION',
-  ZONE = 'ZONE',
-  EMPLOYEE_CATEGORY = 'EMPLOYEE_CATEGORY',
   ORDER = 'ORDER',
-  TRIP = 'TRIP'
+  TRIP = 'TRIP',
+  EMPLOYEE_CATEGORY = 'EMPLOYEE_CATEGORY',
+  TRUCK_TYPE = 'TRUCK_TYPE',
+  TRUCK_BRAND = 'TRUCK_BRAND',
+  TRUCK_STATUS = 'TRUCK_STATUS'
 }
-export type TripOrderType = 'chronological' | 'alphabetical' | 'custom';
+
+export interface IOrderSettings {
+  allowEditOrder: boolean;
+  allowEditDeliveryDate: boolean;
+  allowLoadLateOrders: boolean;
+  acceptOrdersWithoutAddress: boolean;
+  planningHorizon: number;
+  loadingUnit: string;
+  allowMixingOrderTypes: boolean;
+}
+
+export interface ITripSettings {
+  allowEditTrips: boolean;
+  allowDeleteTrips: boolean;
+  editTimeLimit: number;
+  maxTripsPerDay: number;
+  tripOrder: TripOrderType;
+  requireDeleteConfirmation: boolean;
+  notifyOnTripEdit: boolean;
+  notifyOnTripDelete: boolean;
+  linkDriverToTruck: boolean;
+}
+
+export type TripOrderType = 'chronological' | 'priority' | 'geographical' | 'optimized';
+
 export interface IGeneralSettings {
   id: number;
-  parameterType: ParameterType;
+  parameterType: string;
   parameterCode: string;
-  value: string;
   description: string;
-  createdAt?: Date;
-  updatedAt?: Date;
+  logoBase64?: string;
 }
 
 export interface IGeneralSettingsDto {
-  id?: number;
-  parameterType: ParameterType;
+  parameterType: string;
   parameterCode: string;
-  value?: string;
   description: string;
+  logoBase64?: string;
 }
 
 export interface SearchOptions {
@@ -34,47 +55,31 @@ export interface SearchOptions {
   parameterType?: string;
 }
 
-// Order specific settings interface
-export interface IOrderSettings {
-  allowEditOrder: boolean;
-  allowEditDeliveryDate: boolean;
-  allowLoadLateOrders: boolean;
-  acceptOrdersWithoutAddress: boolean;
-  planningHorizon: number;
-  loadingUnit: string;
+export interface PagedData<T> {
+  data: T[];
+  totalData: number;
+  pageIndex: number;
+  pageSize: number;
 }
 
-// Trip specific settings interface
-export interface ITripSettings {
-  allowEditTrips: boolean;
-  allowDeleteTrips: boolean;
-  editTimeLimit: number;
-  maxTripsPerDay: number;
-  tripOrder: string;
-  requireDeleteConfirmation: boolean;
-  notifyOnTripEdit: boolean;
-  notifyOnTripDelete: boolean;
-  linkDriverToTruck: boolean;
+
+export interface IGeographicalLevel {
+  id: number;
+  name: string;
+  levelNumber: number;
+  isMappable: boolean;
+  isActive: boolean;
 }
 
-// Settings mapping keys
-export const ORDER_SETTING_KEYS = {
-  ALLOW_EDIT_ORDER: 'ALLOW_EDIT_ORDER',
-  ALLOW_DELIVERY_DATE_EDIT: 'ALLOW_DELIVERY_DATE_EDIT',
-  ALLOW_LOAD_LATE_ORDERS: 'ALLOW_LOAD_LATE_ORDERS',
-  ACCEPT_ORDERS_WITHOUT_ADDRESS: 'ACCEPT_ORDERS_WITHOUT_ADDRESS',
-  PLANNING_HORIZON: 'PLANNING_HORIZON',
-  LOADING_UNIT: 'LOADING_UNIT'
-} as const;
-
-export const TRIP_SETTING_KEYS = {
-  ALLOW_EDIT_TRIPS: 'ALLOW_EDIT_TRIPS',
-  ALLOW_DELETE_TRIPS: 'ALLOW_DELETE_TRIPS',
-  EDIT_TIME_LIMIT: 'EDIT_TIME_LIMIT',
-  MAX_TRIPS_PER_DAY: 'MAX_TRIPS_PER_DAY',
-  TRIP_ORDER: 'TRIP_ORDER',
-  REQUIRE_DELETE_CONFIRMATION: 'REQUIRE_DELETE_CONFIRMATION',
-  NOTIFY_ON_TRIP_EDIT: 'NOTIFY_ON_TRIP_EDIT',
-  NOTIFY_ON_TRIP_DELETE: 'NOTIFY_ON_TRIP_DELETE',
-  LINK_DRIVER_TO_TRUCK: 'LINK_DRIVER_TO_TRUCK'
-} as const;
+export interface IGeographicalEntity {
+  id: number;
+  name: string;
+  levelId: number;
+  level?: IGeographicalLevel;
+  parentId?: number;
+  latitude?: number;
+  longitude?: number;
+  isActive: boolean;
+  createdAt?: Date;
+  updatedAt?: Date;
+}

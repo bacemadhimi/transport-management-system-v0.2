@@ -1,5 +1,6 @@
-import { Component, OnInit, inject } from '@angular/core';
+﻿import { Component, OnInit, inject } from '@angular/core';
 import { Http } from '../../services/http';
+import { SettingsService } from '../../services/settings.service';
 import { Table } from '../../components/table/table';
 import { MatButtonModule } from '@angular/material/button';
 import { FormControl, FormsModule, ReactiveFormsModule } from '@angular/forms';
@@ -44,11 +45,12 @@ import { MatIconModule } from '@angular/material/icon';
 })
 export class Employee implements OnInit {
   constructor(public auth: Auth) {}
-  
+
   private translation = inject(Translation);
   t(key: string): string { return this.translation.t(key); }
 
   httpService = inject(Http);
+  settingsService = inject(SettingsService);
   pagedEmployeeData!: PagedData<IEmployee>;
   totalData!: number;
   router = inject(Router);
@@ -58,6 +60,8 @@ export class Employee implements OnInit {
   searchControl = new FormControl('');
   showDisabled: boolean = false;
 
+  loadingUnit: string = 'tonnes';
+
   showCols = [
     { key: 'idNumber', label: this.t('CUSTOMER_REG_NUMBER') },
     { key: 'name', label: this.t('TABLE_NAME') },
@@ -65,15 +69,18 @@ export class Employee implements OnInit {
     { key: 'phoneNumber', label: this.t('TABLE_PHONE') },
     { key: 'drivingLicense', label: this.t('TABLE_LICENSE_NUMBER')},
     { key: 'isInternal', label: this.t('INTERNAL_EMPLOYEE')},
-     { key: 'employeeCategory', label:this.t('CATEGORY_TABLE')},
+    { key: 'employeeCategory', label:this.t('CATEGORY_TABLE')},
     {
-      key: 'typeTruck',
+      key: 'truckType',
       label: this.t('TYPE_VEHICULE_LABEL'),
       format: (row: IEmployee) => {
-        if (row.typeTruck) {
-          return `${row.typeTruck.type} (${row.typeTruck.capacity} ${row.typeTruck.unit})`;
-        }
-        return '-';
+        if (!row.typeTruck) return '-';
+        
+        const capacity = row.typeTruck.capacity || 'N/A';
+
+        const unit =  this.loadingUnit || 'tonnes';
+        
+        return `${row.typeTruck.type || 'N/A'} (${capacity} ${unit})`;
       }
     },
     {
@@ -82,7 +89,7 @@ export class Employee implements OnInit {
       format: (row: IEmployee) => {
         if (row.attachmentFileType) {
           return `<span class="attachment-cell" data-employee-id="${row.id}">
-                    ✓ ${row.attachmentFileType} 
+                    ✓ ${row.attachmentFileType}
                     <span class="view-icon">👁️</span>
                   </span>`;
         }
@@ -99,7 +106,9 @@ export class Employee implements OnInit {
   ];
 
   ngOnInit() {
+    this.loadSettings();
     this.getLatestData();
+    
     this.searchControl.valueChanges.pipe(debounceTime(250))
       .subscribe((value: string | null) => {
         this.filter.search = value;
@@ -108,20 +117,46 @@ export class Employee implements OnInit {
       });
   }
 
+  private loadSettings(): void {
+    this.settingsService.getOrderSettings().subscribe({
+      next: (settings) => {
+        this.loadingUnit = settings.loadingUnit || 'tonnes';
+        console.log('✅ Loading unit from settings:', this.loadingUnit);
+      },
+      error: (err) => {
+        console.error('Error loading settings:', err);
+        this.loadingUnit = 'tonnes';
+      }
+    });
+
+    this.settingsService.orderSettings$.subscribe(settings => {
+      if (settings) {
+        this.loadingUnit = settings.loadingUnit || 'tonnes';
+        console.log('🔄 Loading unit updated:', this.loadingUnit);
+      }
+    });
+  }
+
   getLatestData() {
     this.httpService.getEmployeesList(this.filter).subscribe(result => {
       this.pagedEmployeeData = result;
       this.totalData = result.totalData;
     });
   }
-
+    
   toggleListe(checked: boolean) {
     this.showDisabled = checked;
-    if (checked) this.loadDisabledEmployees();
-    else this.loadActiveEmployees();
+    if (checked) {
+      this.filter.isEnable = false;
+      this.loadDisabledEmployees();
+    } else {
+      delete this.filter.isEnable;
+      this.loadActiveEmployees();
+    }
   }
 
   loadActiveEmployees() {
+    delete this.filter.isEnable;
     this.httpService.getEmployeesList(this.filter).subscribe(result => {
       this.pagedEmployeeData = result;
       this.totalData = result.totalData;
@@ -136,38 +171,40 @@ export class Employee implements OnInit {
     });
   }
 
-  add() { 
-    this.openDialog(); 
+  add() {
+    this.openDialog();
   }
 
-  
   edit(employee: IEmployee) {
-    const ref = this.dialog.open(EmployeeForm, { 
-      panelClass: 'm-auto', 
-      data: { employeeId: employee.id },
-      width: '650px',  
-      maxWidth: '95vw',
+    const ref = this.dialog.open(EmployeeForm, {
+      panelClass: 'm-auto',
+      data: { employeeId: employee.id, defaultUnit: this.loadingUnit },
+      width: '90vw',
+      maxWidth: '1200px',
+      minWidth: '400px',
+      height: 'auto',
       maxHeight: '90vh',
-      disableClose: false 
     });
     ref.afterClosed().subscribe(() => this.getLatestData());
   }
 
   openDialog() {
-    const ref = this.dialog.open(EmployeeForm, { 
-      panelClass: 'm-auto', 
-      data: {},
-      width: '650px',
-      maxWidth: '95vw',
-      maxHeight: '90vh'
+    const ref = this.dialog.open(EmployeeForm, {
+      data: { defaultUnit: this.loadingUnit },
+      panelClass: 'm-auto',
+      width: '90vw',
+      maxWidth: '1200px',
+      minWidth: '400px',
+      height: 'auto',
+      maxHeight: '90vh',
     });
     ref.afterClosed().subscribe(() => this.getLatestData());
   }
 
   delete(employee: IEmployee) {
-    if (confirm(`Voulez-vous vraiment supprimer l'employé ${employee.name}?`)) {
+    if (confirm(`${this.t('EMPLOYEE_DELETE_CONFIRM')} ${employee.name}?`)) {
       this.httpService.deleteEmployee(employee.id).subscribe(() => {
-        alert("Employé supprimé avec succès");
+        alert(this.t('EMPLOYEE_DELETE_SUCCESS'));
         this.getLatestData();
       });
     }
@@ -175,15 +212,14 @@ export class Employee implements OnInit {
 
   onRowClick(event: any) {
     console.log('Row clicked:', event);
-    
-    // Handle attachment column click
+
     if (event.column === 'attachment' && event.rowData.attachmentFileType) {
       this.viewAttachment(event.rowData);
       return;
     }
-    
+
     if (event.btn === this.t('ACTION_EDIT')) {
-        console.log('Edit action triggered for:', event.rowData);
+      console.log('Edit action triggered for:', event.rowData);
       this.edit(event.rowData);
     } else if (event.btn === this.t('ACTION_DISABLE')) {
       this.delete(event.rowData);
@@ -205,25 +241,21 @@ export class Employee implements OnInit {
 
   viewAttachment(employee: IEmployee) {
     if (!employee.id) return;
-    
+
     this.httpService.downloadEmployeeAttachment(employee.id).subscribe({
       next: (blob: Blob) => {
         const url = window.URL.createObjectURL(blob);
         const fileName = employee.attachmentFileName || `employee_${employee.id}_attachment.${employee.attachmentFileType}`;
-        
-        // Check if it's a viewable file (image or PDF)
+
         if (employee.attachmentFileType && ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'pdf'].includes(employee.attachmentFileType.toLowerCase())) {
-          // Open in new tab for viewing
           window.open(url, '_blank');
         } else {
-          // Download the file
           const link = document.createElement('a');
           link.href = url;
           link.download = fileName;
           link.click();
         }
-        
-        // Clean up
+
         setTimeout(() => window.URL.revokeObjectURL(url), 100);
       },
       error: (err) => {
@@ -246,7 +278,8 @@ export class Employee implements OnInit {
         'Email': emp.email,
         'Phone': emp.phoneNumber,
         'License': emp.drivingLicense,
-        'Truck Type': emp.typeTruck ? `${emp.typeTruck.type} (${emp.typeTruck.capacity} ${emp.typeTruck.unit})` : '-',
+        'Truck Type': emp.typeTruck ? 
+          `${emp.typeTruck.type} (${emp.typeTruck.capacity} ${ this.loadingUnit})` : '-',
         'Status': emp.isEnable ? 'Active' : 'Inactive'
       }))
     );
@@ -269,7 +302,8 @@ export class Employee implements OnInit {
         emp.email,
         emp.phoneNumber,
         emp.drivingLicense,
-        emp.typeTruck ? `${emp.typeTruck.type} (${emp.typeTruck.capacity} ${emp.typeTruck.unit})` : '-',
+        emp.typeTruck ? 
+          `${emp.typeTruck.type} (${emp.typeTruck.capacity} ${ this.loadingUnit})` : '-',
         emp.isEnable ? 'Active' : 'Inactive'
       ])
     ];
@@ -296,7 +330,8 @@ export class Employee implements OnInit {
         emp.email,
         emp.phoneNumber,
         emp.drivingLicense,
-        emp.typeTruck ? `${emp.typeTruck.type} (${emp.typeTruck.capacity} ${emp.typeTruck.unit})` : '-'
+        emp.typeTruck ? 
+          `${emp.typeTruck.type} (${emp.typeTruck.capacity} ${ this.loadingUnit})` : '-'
       ]);
     });
 

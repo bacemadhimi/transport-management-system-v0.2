@@ -1,4 +1,4 @@
-import { Component, inject, OnInit } from '@angular/core';
+﻿import { Component, inject, OnInit } from '@angular/core';
 import { Http } from '../../services/http';
 import { Table } from '../../components/table/table';
 import { MatButtonModule } from '@angular/material/button';
@@ -103,7 +103,7 @@ export class Categories implements OnInit {
       width: '500px',
       data: { categoryId: category.id }
     });
-    
+
     ref.afterClosed().subscribe(() => this.getLatestData());
   }
 

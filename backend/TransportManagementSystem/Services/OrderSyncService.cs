@@ -159,14 +159,10 @@ namespace TransportManagementSystem.Services
                         SourceSystem = DataSource.QAD,
                         ExternalId = externalId,
                         Matricule = externalId,
-                        Name = qc.Name1 ?? "N/A",
-                        Adress = qc.Street1 ?? "N/A",
-                        Gouvernorat = qc.City ?? "",
+                        Name = qc.Name1 ?? "N/A",                      
                         Phone = "",
-                        City = qc.CountryCode ?? "",
                         Email = "",
                         Contact = "",
-                        ZoneId = qc.ZoneId 
                     });
                 }
             }

@@ -1,4 +1,4 @@
-import { Component, ViewChild, OnInit, inject } from '@angular/core';
+﻿import { Component, ViewChild, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormControl } from '@angular/forms';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -103,7 +103,7 @@ export class HistoricTrip implements OnInit {
     const s = new Date(start);
     const e = new Date(end);
 
-    
+
     s.setHours(0, 0, 0, 0);
     e.setHours(23, 59, 59, 999);
     const truckFilter = (this.truckControl.value ?? '').toString().trim();
@@ -113,7 +113,7 @@ export class HistoricTrip implements OnInit {
       if (!trip.estimatedStartDate || !trip.estimatedEndDate) return false;
       const ts = new Date(trip.estimatedStartDate);
       const te = new Date(trip.estimatedEndDate);
-      
+
       if (!(ts >= s && te <= e)) return false;
 
       if (truckFilter && String(trip.truck).trim() !== truckFilter) return false;
@@ -123,13 +123,13 @@ export class HistoricTrip implements OnInit {
     });
 
     console.log('Filtered trips between', s.toISOString(), 'and', e.toISOString(), 'truck=', truckFilter || 'ALL', 'driver=', driverFilter || 'ALL', filtered);
-    
+
     this.visibleTrips = filtered;
     this.pageIndex = 0;
     this.updatePagedTrips();
   }
 
-  
+
   viewDetails(trip: any) {
     console.log('View trip details', trip);
   }
@@ -179,7 +179,7 @@ export class HistoricTrip implements OnInit {
     return this.pageIndex < this.totalPages - 1;
   }
 
-  
+
   exportCSV() {
     const rows: any[] = this.visibleTrips || [];
 

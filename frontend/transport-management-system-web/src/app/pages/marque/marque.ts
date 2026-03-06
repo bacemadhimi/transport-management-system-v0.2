@@ -1,4 +1,4 @@
-import { Component, inject, OnInit } from '@angular/core';
+﻿import { Component, inject, OnInit } from '@angular/core';
 import { Http } from '../../services/http';
 import { Table } from '../../components/table/table';
 import { IMarque } from '../../types/marque';
@@ -34,7 +34,7 @@ import Swal from 'sweetalert2';
   styleUrls: ['./marque.scss']
 })
 export class Marque implements OnInit {
-  constructor(public auth: Auth) {}  
+  constructor(public auth: Auth) {}
 
   getActions(row: any, actions: string[]) {
     const permittedActions: string[] = [];

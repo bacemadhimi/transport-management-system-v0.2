@@ -1,4 +1,4 @@
-
+﻿
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
@@ -59,7 +59,7 @@ export class NotificationService {
   markAllAsRead(): Observable<any> {
     return this.http.put(`${this.apiUrl}/mark-all-read`, {});
   }
-  // In your notification.service.ts
+
 deleteAllNotifications(): Observable<any> {
   return this.http.delete(`${this.apiUrl}/delete-all`);
 }

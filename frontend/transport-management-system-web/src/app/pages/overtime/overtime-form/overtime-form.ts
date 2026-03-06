@@ -1,4 +1,4 @@
-import { Component, inject, OnInit } from '@angular/core';
+﻿import { Component, inject, OnInit } from '@angular/core';
 import { FormBuilder, Validators, ReactiveFormsModule, FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
@@ -41,12 +41,12 @@ export class OvertimeForm implements OnInit {
   isSubmitting = false;
   showingAlert = false;
   drivers: IDriver[] = [];
-   
-    //Call the service to get translations for this page
+
+
    private translation = inject(Translation);
    t(key: string): string { return this.translation.t(key); }
-    //
-    
+
+
   overtimeForm = this.fb.group({
     driverId: this.fb.control<number | null>(null, [Validators.required]),
     isActive: this.fb.control<boolean>(true),
@@ -80,7 +80,7 @@ export class OvertimeForm implements OnInit {
 
   ngOnInit() {
     this.loadDrivers();
-    
+
     if (this.data.overtimeId) {
       this.loadOvertimeSetting(this.data.overtimeId);
     }
@@ -163,20 +163,20 @@ export class OvertimeForm implements OnInit {
 
   getErrorMessage(controlName: string): string {
     const control = this.overtimeForm.get(controlName);
-    
+
     if (control?.hasError('required')) {
       return `${this.getFieldLabel(controlName)} est obligatoire`;
     }
-    
+
     if (control?.hasError('min')) {
       return `${this.getFieldLabel(controlName)} doit être positif`;
     }
-    
+
     if (control?.hasError('max')) {
       const max = control.errors?.['max'].max;
       return `${this.getFieldLabel(controlName)} ne peut pas dépasser ${max}`;
     }
-    
+
     return '';
   }
 

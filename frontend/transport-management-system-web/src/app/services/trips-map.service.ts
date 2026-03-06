@@ -1,5 +1,4 @@
-
-import { Injectable, inject } from '@angular/core';
+﻿import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, map, forkJoin, catchError, of } from 'rxjs';
 import { environment } from '../../environments/environment.development';
@@ -7,7 +6,7 @@ import { ITrip, IDelivery, TripStatus, DeliveryStatus } from '../types/trip';
 import { ITruck } from '../types/truck';
 import { IDriver } from '../types/driver';
 import { ICustomer } from '../types/customer';
-import { IZone, TUNISIA_ZONES } from '../types/truck';
+import { IGeographicalEntity } from '../types/general-settings';
 
 export interface ITripWithDetails extends ITrip {
   truck?: ITruck;
@@ -17,28 +16,31 @@ export interface ITripWithDetails extends ITrip {
   progress?: number;
   statusLabel?: string;
   statusIcon?: string;
-  startZone?: IZone;
-  endZone?: IZone;
-  startZoneName?: string;
-  endZoneName?: string;
+  startEntity?: IGeographicalEntity;
+  endEntity?: IGeographicalEntity;
+  startEntityName?: string;
+  endEntityName?: string;
   startCoordinates?: { lat: number; lng: number };
   endCoordinates?: { lat: number; lng: number };
 }
 
 export interface IDeliveryWithDetails extends IDelivery {
   customer?: ICustomer;
-  zoneName?: string;
-  zoneId?: number;
-  zoneCoordinates?: { lat: number; lng: number };
+  entityName?: string;
+  entityId?: number;
+  entityCoordinates?: { lat: number; lng: number };
   statusColor?: string;
   statusLabel?: string;
   statusIcon?: string;
-  gouvernorat?: string;
+  levelName?: string;
+  levelNumber?: number;
 }
 
-export interface IZoneDeliveryStats {
-  zoneId: number;
-  zoneName: string;
+export interface IEntityDeliveryStats {
+  entityId: number;
+  entityName: string;
+  levelName: string;
+  levelNumber: number;
   total: number;
   planned: number;
   pending: number;
@@ -46,6 +48,8 @@ export interface IZoneDeliveryStats {
   delivered: number;
   failed: number;
   cancelled: number;
+  latitude?: number;
+  longitude?: number;
 }
 
 export const TRIP_STATUS_CONFIG: Record<TripStatus, { label: string; color: string; icon: string }> = {
@@ -73,43 +77,52 @@ export class TripsMapService {
   private http = inject(HttpClient);
   private apiUrl = environment.apiUrl;
 
-  private zoneById: Map<number, IZone> = new Map();
-  private zoneByName: Map<string, IZone> = new Map();
+  private entityById: Map<number, IGeographicalEntity> = new Map();
+  private levelsByEntityId: Map<number, { name: string; number: number }> = new Map();
 
-  constructor() {
-    TUNISIA_ZONES.forEach(zone => {
-      this.zoneById.set(zone.id, zone);
-      this.zoneByName.set(zone.name.toLowerCase(), zone);
-    });
-  }
 
-  /**
-   * Récupère les tournées avec tous les détails - PAS DE CACHE
-   */
   getTripsWithDetails(
     status?: string,
-    zoneName?: string,
+    entityName?: string,
     startDate?: string,
     endDate?: string
   ): Observable<ITripWithDetails[]> {
-    console.log('🌐 Chargement des données fraîches...');
-    
-    let zoneId: number | undefined;
-    if (zoneName && zoneName !== 'all') {
-      const zone = this.zoneByName.get(zoneName.toLowerCase());
-      zoneId = zone?.id;
-    }
+    console.log('🌐 Chargement des données...');
 
-    // Charger toutes les données en parallèle
     return forkJoin({
-      trips: this.getTripsFromApi(status, zoneId, startDate, endDate),
+      trips: this.getTripsFromApi(status, startDate, endDate),
       trucks: this.getTrucksFromApi(),
       drivers: this.getDriversFromApi(),
-      customers: this.getCustomersFromApi()
+      customers: this.getCustomersFromApi(),
+      geographicalEntities: this.getGeographicalEntitiesFromApi()
     }).pipe(
-      map(({ trips, trucks, drivers, customers }) => {
+      map(({ trips, trucks, drivers, customers, geographicalEntities }) => {
         console.log(`🔍 Enrichissement de ${trips.length} tournées...`);
-        return this.enrichTrips(trips, trucks, drivers, customers);
+
+
+        geographicalEntities.forEach(entity => {
+          if (entity.id) {
+            this.entityById.set(entity.id, entity);
+
+            if (entity.level) {
+              this.levelsByEntityId.set(entity.id, {
+                name: entity.level.name,
+                number: entity.level.levelNumber
+              });
+            }
+          }
+        });
+
+        let enrichedTrips = this.enrichTrips(trips, trucks, drivers, customers, geographicalEntities);
+
+
+        if (entityName && entityName !== 'all') {
+          enrichedTrips = enrichedTrips.filter(trip =>
+            trip.deliveries?.some(d => d.entityName === entityName)
+          );
+        }
+
+        return enrichedTrips;
       }),
       catchError(error => {
         console.error('Erreur chargement données:', error);
@@ -120,16 +133,14 @@ export class TripsMapService {
 
   private getTripsFromApi(
     status?: string,
-    zoneId?: number,
     startDate?: string,
     endDate?: string
   ): Observable<ITrip[]> {
     let params = new HttpParams();
-    
+
     if (startDate) params = params.set('startDate', startDate);
     if (endDate) params = params.set('endDate', endDate);
     if (status && status !== 'all') params = params.set('status', status);
-    if (zoneId) params = params.set('zoneId', zoneId.toString());
 
     return this.http.get<ITrip[]>(`${this.apiUrl}/api/Trips/list_filtered`, { params }).pipe(
       catchError(error => {
@@ -146,8 +157,15 @@ export class TripsMapService {
   }
 
   private getDriversFromApi(): Observable<IDriver[]> {
-    return this.http.get<IDriver[]>(`${this.apiUrl}/api/Driver/ListOfDrivers`).pipe(
-      catchError(() => of([]))
+    return this.http.get<IDriver[]>(`${this.apiUrl}/api/Drivers/list`).pipe(
+      map(drivers => drivers.map(driver => ({
+        ...driver,
+        employeeCategory: "DRIVER" as const
+      }))),
+      catchError(error => {
+        console.error('Error fetching drivers:', error);
+        return of([]);
+      })
     );
   }
 
@@ -157,67 +175,96 @@ export class TripsMapService {
     );
   }
 
+  private getGeographicalEntitiesFromApi(): Observable<IGeographicalEntity[]> {
+    return this.http.get<IGeographicalEntity[]>(`${this.apiUrl}/api/GeographicalEntities`).pipe(
+      catchError(() => of([]))
+    );
+  }
+
   private enrichTrips(
-    trips: ITrip[], 
-    trucks: ITruck[], 
-    drivers: IDriver[], 
-    customers: ICustomer[]
+    trips: ITrip[],
+    trucks: ITruck[],
+    drivers: IDriver[],
+    customers: ICustomer[],
+    geographicalEntities: IGeographicalEntity[]
   ): ITripWithDetails[] {
     const truckMap = new Map(trucks.map(t => [t.id, t]));
     const driverMap = new Map(drivers.map(d => [d.id, d]));
     const customerMap = new Map(customers.map(c => [c.id, c]));
+    const entityMap = new Map(geographicalEntities.map(e => [e.id, e]));
 
     return trips.map(trip => {
       const truck = truckMap.get(trip.truckId);
       const driver = driverMap.get(trip.driverId);
       const statusConfig = TRIP_STATUS_CONFIG[trip.tripStatus as TripStatus] || TRIP_STATUS_CONFIG[TripStatus.Planned];
-      
-      const startZone = truck?.zoneId ? this.zoneById.get(truck.zoneId) : undefined;
-      
+
+
+      const startEntityId = truck?.geographicalEntities?.[0]?.id;
+      const startEntity = startEntityId ? entityMap.get(startEntityId) : undefined;
+
       const deliveries = (trip.deliveries || []).map(delivery => {
         const customer = customerMap.get(delivery.customerId);
-        
-        let zoneName = 'Non assigné';
-        let zoneCoordinates = null;
-        
-        if (customer?.zoneId) {
-          const zone = this.zoneById.get(customer.zoneId);
-          if (zone) {
-            zoneName = zone.name;
-            zoneCoordinates = { lat: zone.latitude, lng: zone.longitude };
+
+        let entityName = 'Non assigné';
+        let entityCoordinates = null;
+        let entityId: number | undefined;
+        let levelName = '';
+        let levelNumber = 0;
+
+
+        if (customer?.geographicalEntities && customer.geographicalEntities.length > 0) {
+          const firstEntity = customer.geographicalEntities[0];
+          entityId = firstEntity.geographicalEntityId;
+          const entity = entityMap.get(entityId);
+          if (entity) {
+            entityName = entity.name;
+            entityCoordinates = entity.latitude && entity.longitude
+              ? { lat: entity.latitude, lng: entity.longitude }
+              : undefined;
+
+
+            if (entity.level) {
+              levelName = entity.level.name;
+              levelNumber = entity.level.levelNumber;
+            }
           }
         }
-        
+
         const deliveryStatusConfig = DELIVERY_STATUS_CONFIG[delivery.status as DeliveryStatus] || DELIVERY_STATUS_CONFIG[DeliveryStatus.Pending];
-        
+
         return {
           ...delivery,
           customer,
-          zoneName,
-          zoneId: customer?.zoneId,
-          zoneCoordinates,
-          gouvernorat: customer?.gouvernorat,
+          entityName,
+          entityId,
+          entityCoordinates,
+          levelName,
+          levelNumber,
           statusColor: deliveryStatusConfig.color,
           statusLabel: deliveryStatusConfig.label,
           statusIcon: deliveryStatusConfig.icon
         } as IDeliveryWithDetails;
       });
-      
-      const progress = deliveries.length > 0 
-        ? Math.round((deliveries.filter(d => d.status === DeliveryStatus.Delivered).length / deliveries.length) * 100) 
+
+      const progress = deliveries.length > 0
+        ? Math.round((deliveries.filter(d => d.status === DeliveryStatus.Delivered).length / deliveries.length) * 100)
         : 0;
-      
+
       return {
         ...trip,
         truck,
         driver,
         deliveries,
-        startZone,
-        endZone: startZone,
-        startZoneName: startZone?.name,
-        endZoneName: startZone?.name,
-        startCoordinates: startZone ? { lat: startZone.latitude, lng: startZone.longitude } : undefined,
-        endCoordinates: startZone ? { lat: startZone.latitude, lng: startZone.longitude } : undefined,
+        startEntity,
+        endEntity: startEntity,
+        startEntityName: startEntity?.name,
+        endEntityName: startEntity?.name,
+        startCoordinates: startEntity?.latitude && startEntity?.longitude
+          ? { lat: startEntity.latitude, lng: startEntity.longitude }
+          : undefined,
+        endCoordinates: startEntity?.latitude && startEntity?.longitude
+          ? { lat: startEntity.latitude, lng: startEntity.longitude }
+          : undefined,
         statusColor: statusConfig.color,
         statusLabel: statusConfig.label,
         statusIcon: statusConfig.icon,
@@ -225,51 +272,57 @@ export class TripsMapService {
       } as ITripWithDetails;
     });
   }
-  
-  getZoneDeliveryStats(trips: ITripWithDetails[]): IZoneDeliveryStats[] {
-    const statsMap = new Map<number, IZoneDeliveryStats>();
-    
-    TUNISIA_ZONES.forEach(zone => {
-      statsMap.set(zone.id, {
-        zoneId: zone.id,
-        zoneName: zone.name,
-        total: 0,
-        planned: 0,
-        pending: 0,
-        inProgress: 0,
-        delivered: 0,
-        failed: 0,
-        cancelled: 0
-      });
+
+  getEntityDeliveryStats(trips: ITripWithDetails[], geographicalEntities: IGeographicalEntity[]): IEntityDeliveryStats[] {
+    const statsMap = new Map<number, IEntityDeliveryStats>();
+
+
+    geographicalEntities.forEach(entity => {
+      if (entity.id) {
+        statsMap.set(entity.id, {
+          entityId: entity.id,
+          entityName: entity.name,
+          levelName: entity.level?.name || 'Niveau inconnu',
+          levelNumber: entity.level?.levelNumber || 0,
+          total: 0,
+          planned: 0,
+          pending: 0,
+          inProgress: 0,
+          delivered: 0,
+          failed: 0,
+          cancelled: 0,
+          latitude: entity.latitude,
+          longitude: entity.longitude
+        });
+      }
     });
-    
+
+
     trips.forEach(trip => {
       trip.deliveries?.forEach(delivery => {
-        if (delivery.zoneName && delivery.zoneName !== 'Non assigné') {
-          const zone = this.zoneByName.get(delivery.zoneName.toLowerCase());
-          if (zone) {
-            const stats = statsMap.get(zone.id);
-            if (stats) {
-              stats.total++;
-              
-              if (trip.tripStatus === TripStatus.Planned) {
-                stats.planned++;
-              }
-              
-              switch (delivery.status) {
-                case DeliveryStatus.Pending: stats.pending++; break;
-                case DeliveryStatus.EnRoute: 
-                case DeliveryStatus.Arrived: stats.inProgress++; break;
-                case DeliveryStatus.Delivered: stats.delivered++; break;
-                case DeliveryStatus.Failed: stats.failed++; break;
-                case DeliveryStatus.Cancelled: stats.cancelled++; break;
-              }
+        if (delivery.entityId) {
+          const stats = statsMap.get(delivery.entityId);
+          if (stats) {
+            stats.total++;
+
+            if (trip.tripStatus === TripStatus.Planned) {
+              stats.planned++;
+            }
+
+            switch (delivery.status) {
+              case DeliveryStatus.Pending: stats.pending++; break;
+              case DeliveryStatus.EnRoute:
+              case DeliveryStatus.Arrived: stats.inProgress++; break;
+              case DeliveryStatus.Delivered: stats.delivered++; break;
+              case DeliveryStatus.Failed: stats.failed++; break;
+              case DeliveryStatus.Cancelled: stats.cancelled++; break;
             }
           }
         }
       });
     });
-    
+
+
     return Array.from(statsMap.values()).filter(s => s.total > 0);
   }
 }

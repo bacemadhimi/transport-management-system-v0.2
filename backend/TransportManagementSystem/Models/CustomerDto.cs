@@ -1,17 +1,25 @@
 ﻿namespace TransportManagementSystem.Models
 {
+    public class CustomerGeographicalEntityDto
+    {
+        public int GeographicalEntityId { get; set; }
+        public string? GeographicalEntityName { get; set; }
+        public string? LevelName { get; set; }
+        public int LevelNumber { get; set; }
+        public decimal? Latitude { get; set; }
+        public decimal? Longitude { get; set; }
+    }
+
     public class CustomerDto
     {
         public int Id { get; set; }
-        public required string Name { get; set; }
+        public string Name { get; set; } = string.Empty;
         public string? Phone { get; set; }
-        public string? City { get; set; }
-        public required string Email { get; set; }
-        public required string Adress { get; set; }
-        public required string Matricule { get; set; }
-        public string? Gouvernorat { get; set; }
-        public required string Contact { get; set; }
-        public int? ZoneId { get; set; }
-        public string? SourceSystem { get; set; }
+        public string? PhoneCountry { get; set; }
+        public string? Email { get; set; }
+        public string Matricule { get; set; } = string.Empty;
+        public string? Contact { get; set; }
+        public string SourceSystem { get; set; } = "TMS";
+        public List<CustomerGeographicalEntityDto> GeographicalEntities { get; set; } = new();
     }
 }

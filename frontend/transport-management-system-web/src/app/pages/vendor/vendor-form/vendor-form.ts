@@ -1,4 +1,4 @@
-import { Component, ElementRef, inject, OnInit, ViewChild } from '@angular/core';
+﻿import { Component, ElementRef, inject, OnInit, ViewChild } from '@angular/core';
 import { FormBuilder, Validators, ReactiveFormsModule, FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
@@ -34,7 +34,7 @@ export class VendorForm implements OnInit {
   dialogRef = inject(MatDialogRef<VendorForm>);
   data = inject<{ vendorId?: number }>(MAT_DIALOG_DATA, { optional: true }) ?? {};
   @ViewChild('phoneInput') phoneInput!: ElementRef<HTMLInputElement>;
-  private iti: any; // intl-tel-input instance
+  private iti: any;
 
   isSubmitting = false;
 

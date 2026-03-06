@@ -1,8 +1,8 @@
-// traject.component.ts
+﻿
 import { Component, inject, OnInit } from '@angular/core';
 import { Http } from '../../services/http';
 import { Table } from '../../components/table/table';
-import { ITraject } from '../../types/traject'; 
+import { ITraject } from '../../types/traject';
 import { MatButtonModule } from '@angular/material/button';
 import { FormControl, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { MatDialog } from '@angular/material/dialog';
@@ -39,11 +39,11 @@ import { Auth } from '../../services/auth';
   styleUrls: ['./traject.scss']
 })
 export class TrajectComponent implements OnInit {
-      constructor(public auth: Auth) {}  
-    
+      constructor(public auth: Auth) {}
+
       getActions(row: any, actions: string[]) {
         const permittedActions: string[] = [];
-    
+
         for (const a of actions) {
           if (a === 'Modifier' && this.auth.hasPermission('TRAVEL_EDIT')) {
             permittedActions.push(a);
@@ -52,10 +52,10 @@ export class TrajectComponent implements OnInit {
             permittedActions.push(a);
           }
         }
-    
+
         return permittedActions;
       }
-      
+
   private sanitizer = inject(DomSanitizer);
   httpService = inject(Http);
   pagedTrajectData!: PagedData<ITraject>;
@@ -69,12 +69,12 @@ export class TrajectComponent implements OnInit {
   readonly dialog = inject(MatDialog);
 
   showCols = [
-   
-    { 
+
+    {
       key: 'name',
       label: 'Nom du traject'
     },
-    { 
+    {
       key: 'pointsCount',
       label: 'Nombre de points',
       format: (row: ITraject): SafeHtml => {
@@ -87,39 +87,39 @@ export class TrajectComponent implements OnInit {
       },
       html: true
     },
-    { 
+    {
       key: 'pointsPreview',
       label: 'Points de passage',
       format: (row: ITraject): SafeHtml => {
         const points = row.points || [];
         const sortedPoints = [...points].sort((a, b) => a.order - b.order);
         const previewPoints = sortedPoints.slice(0, 2);
-        
-        let previewHtml = previewPoints.map(point => 
+
+        let previewHtml = previewPoints.map(point =>
           `<div style="margin-bottom: 4px;">
             <span style="color: #666; font-size: 12px;">${point.order}.</span>
             <span style="margin-left: 4px;">${point.location}</span>
           </div>`
         ).join('');
-        
+
         if (points.length > 2) {
           previewHtml += `<div style="color: #666; font-size: 12px;">
             + ${points.length - 2} autres points
           </div>`;
         }
-        
+
         return this.sanitizer.bypassSecurityTrustHtml(previewHtml);
       },
       html: true
     },
-    { 
+    {
       key: 'estimatedStats',
       label: 'Estimations',
       format: (row: ITraject): SafeHtml => {
         const pointsCount = row.points?.length || 0;
-        const estimatedDistance = pointsCount * 10; // 10km par point
-        const estimatedDuration = pointsCount * 0.5; // 30min par point
-        
+        const estimatedDistance = pointsCount * 10;
+        const estimatedDuration = pointsCount * 0.5;
+
         return this.sanitizer.bypassSecurityTrustHtml(`
           <div>
             <div style="margin-bottom: 4px;">
@@ -183,7 +183,7 @@ export class TrajectComponent implements OnInit {
 
   delete(traject: ITraject) {
     const confirmation = confirm(`Voulez-vous vraiment supprimer le traject "${traject.name}" ?`);
-    
+
     if (confirmation) {
       this.httpService.deleteTraject(traject.id).subscribe({
         next: () => {
@@ -200,10 +200,10 @@ export class TrajectComponent implements OnInit {
 
   openDialog(): void {
     const ref = this.dialog.open(TrajectForm, {
-      width: '800px', 
-      maxWidth: '95vw', 
-      maxHeight: '90vh', 
-      panelClass: ['dialog-overlay', 'wide-dialog'], 
+      width: '800px',
+      maxWidth: '95vw',
+      maxHeight: '90vh',
+      panelClass: ['dialog-overlay', 'wide-dialog'],
       data: {}
     });
 
@@ -243,7 +243,7 @@ export class TrajectComponent implements OnInit {
         const pointsList = t.points?.sort((a, b) => a.order - b.order)
           .map(p => `${p.order}. ${p.location}`)
           .join('; ') || '';
-        
+
         return [
           t.id,
           t.name,

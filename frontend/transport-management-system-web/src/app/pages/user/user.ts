@@ -1,4 +1,4 @@
-
+﻿
 import { Component, inject, OnInit } from '@angular/core';
 import { Http } from '../../services/http';
 import { Table } from '../../components/table/table';
@@ -28,25 +28,25 @@ import { Translation } from '../../services/Translation';
 @Component({
   selector: 'app-user',
   imports: [
-    Table, 
+    Table,
     CommonModule,
-    MatButtonModule, 
-    FormsModule, 
-    ReactiveFormsModule, 
-    MatSelectModule, 
-    MatCardModule, 
-    MatInputModule, 
+    MatButtonModule,
+    FormsModule,
+    ReactiveFormsModule,
+    MatSelectModule,
+    MatCardModule,
+    MatInputModule,
     MatFormFieldModule
   ],
   templateUrl: './user.html',
   styleUrl: './user.scss'
 })
 export class User implements OnInit {
-      constructor(public auth: Auth) {}  
-    
+      constructor(public auth: Auth) {}
+
       getActions(row: any, actions: string[]) {
         const permittedActions: string[] = [];
-    
+
         for (const a of actions) {
           if (a === 'Modifier' && this.auth.hasPermission('USER_EDIT')) {
             permittedActions.push(a);
@@ -55,10 +55,10 @@ export class User implements OnInit {
             permittedActions.push(a);
           }
         }
-    
+
         return permittedActions;
       }
-      
+
   httpService = inject(Http);
   pagedUserData!: PagedData<IUser>;
   totalData!: number;
@@ -83,9 +83,9 @@ showCols = [
       return row.userGroups.map(g => g.name).join(', ');
     }
   },
-  { 
-    key: 'Action', 
-    format: () => ["Modifier", "Supprimer"] 
+  {
+    key: 'Action',
+    format: () => ["Modifier", "Supprimer"]
   }
 ];
 
@@ -139,10 +139,10 @@ showCols = [
 openDialog(): void {
   const ref = this.dialog.open(UserForm, {
     data: {},
-    width: '900px', 
+    width: '900px',
     maxWidth: '95vw',
-    height: 'auto', 
-    maxHeight: '90vh', 
+    height: 'auto',
+    maxHeight: '90vh',
     autoFocus: true,
     panelClass: 'user-form-dialog'
   });

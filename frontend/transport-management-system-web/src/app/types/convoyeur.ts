@@ -1,11 +1,16 @@
-export interface IConvoyeur {
-  id: number;
-  name: string;
-  permisNumber: string;
-  phone: string;
-  phoneCountry: string;
-  status: string;
-  idCamion: number;
-  zoneId: number;
-  cityId: number;
+﻿import { IEmployee } from "./employee";
+
+export interface IConvoyeur extends IEmployee {
+  employeeCategory: "CONVOYEUR";
+
+
+  matricule?: string;
+  status?: string;
+  zoneId?: number;
+  cityId?: number;
+
+
+
+
+
 }
