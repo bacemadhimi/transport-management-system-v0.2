@@ -387,9 +387,9 @@ namespace TransportManagementSystem.Data
                 {
                     var types = new List<TypeTruck>
                     {
-                        new TypeTruck { Type = "Poids lourd", Capacity = 33, Unit = "Palette" },
-                        new TypeTruck { Type = "Utilitaire", Capacity = 12, Unit = "Palette" },
-                        new TypeTruck { Type = "Camion moyen", Capacity = 20, Unit = "Palette" }
+                        new TypeTruck { Type = "Poids lourd", Capacity = 33 },
+                        new TypeTruck { Type = "Utilitaire", Capacity = 12},
+                        new TypeTruck { Type = "Camion moyen", Capacity = 20 }
                     };
 
                     dbContext.TypeTrucks.AddRange(types);

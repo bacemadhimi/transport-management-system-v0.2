@@ -268,7 +268,7 @@ public class TripsController : ControllerBase
                     Id = trip.Truck.TypeTruck.Id,
                     Type = trip.Truck.TypeTruck.Type,
                     Capacity = trip.Truck.TypeTruck.Capacity,
-                    Unit = trip.Truck.TypeTruck.Unit
+                   
                 } : null,
             } : null,
 
@@ -989,7 +989,7 @@ public class TripsController : ControllerBase
                     Id = trip.Truck.TypeTruck.Id,
                     Type = trip.Truck.TypeTruck.Type,
                     Capacity = trip.Truck.TypeTruck.Capacity,
-                    Unit = trip.Truck.TypeTruck.Unit
+                   
                 } : null,
             } : null,
 

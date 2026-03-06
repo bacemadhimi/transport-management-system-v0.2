@@ -122,7 +122,7 @@ get showCols() {
         if (!row.typeTruck) return 'N/A';
 
         const capacity = row.typeTruck.capacity || 'N/A';
-        const unit = row.typeTruck.unit || 'tonnes';
+        const unit = this.loadingUnit || 'palette';
         const unitLabel = this.getCapacityUnitLabel(unit);
 
         return this.sanitizer.bypassSecurityTrustHtml(`
@@ -437,7 +437,7 @@ private getCapacityUnitLabel(unit: string): string {
         r.immatriculation,
         this.getMarqueName(r.marqueTruckId),
         r.typeTruck?.capacity || '',
-        r.typeTruck?.unit || this.loadingUnit || '',
+        this.loadingUnit || '',
         r.technicalVisitDate ? new Date(r.technicalVisitDate).toLocaleDateString('fr-FR') : '',
         r.status,
         r.color,
@@ -463,7 +463,7 @@ private getCapacityUnitLabel(unit: string): string {
       Immatriculation: r.immatriculation,
       Marque: this.getMarqueName(r.marqueTruckId),
       Capacité: r.typeTruck?.capacity || '',
-      Unité: r.typeTruck?.unit || this.loadingUnit || '',
+      Unité:this.loadingUnit || '',
       'Date Visite': r.technicalVisitDate ? new Date(r.technicalVisitDate).toLocaleDateString('fr-FR') : '',
       Status: r.status,
       Couleur: r.color,
@@ -497,7 +497,7 @@ private getCapacityUnitLabel(unit: string): string {
       r.id,
       r.immatriculation,
       this.getMarqueName(r.marqueTruckId),
-      r.typeTruck ? `${r.typeTruck.capacity || ''} ${r.typeTruck.unit || ''}` : '',
+      r.typeTruck ? `${r.typeTruck.capacity || ''} ${this.loadingUnit || ''}` : '',
       r.technicalVisitDate ? new Date(r.technicalVisitDate).toLocaleDateString('fr-FR') : '',
       r.status,
       r.color,

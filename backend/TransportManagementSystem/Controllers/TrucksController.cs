@@ -88,7 +88,7 @@ public class TrucksController : ControllerBase
                 Id = t.TypeTruck.Id,
                 Type = t.TypeTruck.Type,
                 Capacity = t.TypeTruck.Capacity,
-                Unit = t.TypeTruck.Unit,
+                
             } : null,
             GeographicalEntities = t.TruckGeographicalEntities?
                 .Where(tg => tg.GeographicalEntity != null && tg.GeographicalEntity.IsActive)
@@ -142,7 +142,7 @@ public class TrucksController : ControllerBase
                 Id = truck.TypeTruck.Id,
                 Type = truck.TypeTruck.Type,
                 Capacity = truck.TypeTruck.Capacity,
-                Unit = truck.TypeTruck.Unit
+               
             } : null,
             GeographicalEntities = truck.TruckGeographicalEntities?
                 .Where(tg => tg.GeographicalEntity != null && tg.GeographicalEntity.IsActive)
@@ -242,7 +242,7 @@ public class TrucksController : ControllerBase
                 Id = createdTruck.TypeTruck.Id,
                 Type = createdTruck.TypeTruck.Type,
                 Capacity = createdTruck.TypeTruck.Capacity,
-                Unit = createdTruck.TypeTruck.Unit
+                
             } : null,
             GeographicalEntities = createdTruck.TruckGeographicalEntities?
                 .Where(tg => tg.GeographicalEntity != null && tg.GeographicalEntity.IsActive)
@@ -349,7 +349,7 @@ public class TrucksController : ControllerBase
                 Id = updatedTruck.TypeTruck.Id,
                 Type = updatedTruck.TypeTruck.Type,
                 Capacity = updatedTruck.TypeTruck.Capacity,
-                Unit = updatedTruck.TypeTruck.Unit
+                
             } : null,
             GeographicalEntities = updatedTruck.TruckGeographicalEntities?
                 .Where(tg => tg.GeographicalEntity != null && tg.GeographicalEntity.IsActive)
@@ -425,7 +425,7 @@ public class TrucksController : ControllerBase
                 Id = t.TypeTruck.Id,
                 Type = t.TypeTruck.Type,
                 Capacity = t.TypeTruck.Capacity,
-                Unit = t.TypeTruck.Unit
+               
             } : null,
             GeographicalEntities = t.TruckGeographicalEntities?
                 .Where(tg => tg.GeographicalEntity != null && tg.GeographicalEntity.IsActive)
@@ -507,7 +507,7 @@ public class TrucksController : ControllerBase
                             t.TypeTruck.Id,
                             t.TypeTruck.Type,
                             t.TypeTruck.Capacity,
-                            t.TypeTruck.Unit
+                           
                         } : null,
                         t.TypeTruckId,
                         t.Status,
@@ -593,7 +593,7 @@ public class TrucksController : ControllerBase
                 Id = t.TypeTruck.Id,
                 Type = t.TypeTruck.Type,
                 Capacity = t.TypeTruck.Capacity,
-                Unit = t.TypeTruck.Unit
+               
             } : null
         }).ToList();
 
