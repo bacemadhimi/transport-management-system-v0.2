@@ -48,12 +48,12 @@ export class GeneralSettings implements OnInit {
   httpService = inject(Http);
   readonly dialog = inject(MatDialog);
 
-  // Form Groups
+  
   orderSettingsForm!: FormGroup;
   tripSettingsForm!: FormGroup;
   geographicalLevelsForm!: FormGroup;
 
-  // Data Arrays
+
   orderSettings: IGeneralSettings[] = [];
   tripSettings: IGeneralSettings[] = [];
   employeeCategories: IGeneralSettings[] = [];
@@ -61,14 +61,14 @@ export class GeneralSettings implements OnInit {
   geographicalEntities: IGeographicalEntity[] = [];
   filteredEntities: IGeographicalEntity[] = [];
   
-  // Dynamic Units - Separate working copy from saved
-  savedUnits: string[] = []; // Units from database
-  workingUnits: string[] = []; // Units being edited (unsaved changes)
+
+  savedUnits: string[] = []; 
+  workingUnits: string[] = []; 
   
-  // For input
+
   unitInputControl = new FormControl('');
 
-  // Loading States
+
   isLoading = false;
   isSaving = false;
   loadingCategories = false;
@@ -77,23 +77,23 @@ export class GeneralSettings implements OnInit {
   isSavingLogo = false;
   isSavingUnits = false;
 
-  // Filters
+
   entityLevelFilter = new FormControl('all');
 
-  // For max capacity field visibility
+
   showMaxCapacityField = false;
 
-  // Table Columns
+
   employeeColumns: string[] = ['code', 'description', 'value', 'actions'];
   entityColumns: string[] = ['name', 'level', 'parent', 'coordinates', 'status', 'actions'];
 
-  // Logo upload properties
+ 
   @ViewChild('companyFileInput') companyFileInput!: ElementRef;
   companyLogoPreview: string | null = null;
   companyFileError: string | null = null;
   hasCompanyLogo = false;
 
-  // Control Maps
+
   private orderControlMap: { [key: string]: string } = {
     'ALLOW_EDIT_ORDER': 'ALLOW_EDIT_ORDER',
     'ALLOW_DELIVERY_DATE_EDIT': 'ALLOW_DELIVERY_DATE_EDIT',
@@ -158,7 +158,7 @@ export class GeneralSettings implements OnInit {
     });
   }
 
-  // Load units from settings
+ 
   loadUnits() {
     this.httpService.getAllSettingsByType('UNITS').subscribe({
       next: (settings) => {
@@ -179,7 +179,7 @@ export class GeneralSettings implements OnInit {
                   const units = JSON.parse(unitsJson);
                   if (Array.isArray(units)) {
                     this.savedUnits = units;
-                    this.workingUnits = [...units]; // Copy to working array
+                    this.workingUnits = [...units]; 
                   } else {
                     this.savedUnits = [];
                     this.workingUnits = [];
@@ -212,33 +212,33 @@ export class GeneralSettings implements OnInit {
     });
   }
 
-  // Add a new unit to working array (not saved yet)
+  
   addUnit(): void {
     const value = this.unitInputControl.value?.trim() || '';
     
     if (value && value.length > 0) {
-      // Check if unit already exists in working units
+     
       if (this.workingUnits.includes(value)) {
         this.showWarning(`L'unité "${value}" existe déjà`);
       } else {
-        // Add to working array only
+  
         this.workingUnits.push(value);
         console.log('Unit added to working:', this.workingUnits);
       }
     }
     
-    // Clear the input field
+   
     this.unitInputControl.setValue('');
   }
 
-  // Remove a unit from working array
+ 
   removeUnit(unit: string): void {
     const index = this.workingUnits.indexOf(unit);
     if (index >= 0) {
       this.workingUnits.splice(index, 1);
       console.log('Unit removed from working:', this.workingUnits);
       
-      // Update loading unit if needed
+   
       const loadingUnitControl = this.orderSettingsForm.get('LOADING_UNIT');
       if (loadingUnitControl && loadingUnitControl.value === unit) {
         if (this.workingUnits.length > 0) {
@@ -250,13 +250,13 @@ export class GeneralSettings implements OnInit {
     }
   }
 
-  // Cancel changes - revert to saved units
+ 
   cancelUnits() {
     this.workingUnits = [...this.savedUnits];
     this.showTemporarySuccess('Modifications annulées');
   }
 
-  // Save units to DB
+ 
   saveUnits() {
     if (this.workingUnits.length === 0) {
       this.showWarning('Ajoutez au moins une unité avant d\'enregistrer');
@@ -283,7 +283,7 @@ export class GeneralSettings implements OnInit {
           this.httpService.updateGeneralSettings(existingUnitSetting.id, updatePayload).subscribe({
             next: (response) => {
               this.isSavingUnits = false;
-              // Update saved units to match working units
+            
               this.savedUnits = [...this.workingUnits];
               this.showSuccess('Unités enregistrées avec succès');
             },
@@ -302,7 +302,7 @@ export class GeneralSettings implements OnInit {
           this.httpService.addGeneralSettings(createPayload).subscribe({
             next: (response) => {
               this.isSavingUnits = false;
-              // Update saved units to match working units
+             
               this.savedUnits = [...this.workingUnits];
               this.showSuccess('Unités enregistrées avec succès');
             },
@@ -320,7 +320,7 @@ export class GeneralSettings implements OnInit {
     });
   }
 
-  // Check if there are unsaved changes
+ 
   hasUnsavedChanges(): boolean {
     return JSON.stringify(this.savedUnits) !== JSON.stringify(this.workingUnits);
   }
@@ -556,7 +556,7 @@ export class GeneralSettings implements OnInit {
     return value.toString();
   }
 
-  // Logo upload methods
+ 
   onCompanyFileSelected(event: any) {
     const file: File = event.target.files[0];
 
@@ -709,7 +709,7 @@ export class GeneralSettings implements OnInit {
     });
   }
 
-  // Save methods
+ 
   saveOrderSettings() {
     if (this.orderSettingsForm.invalid) {
       this.showError('Veuillez corriger les erreurs dans le formulaire');
@@ -865,7 +865,7 @@ export class GeneralSettings implements OnInit {
     return descriptions[key] || key;
   }
 
-  // Dialog methods
+
   openAddParameterDialog(): void {
     const dialogRef = this.dialog.open(GeneralSettingsForm, {
       width: '600px',
@@ -998,7 +998,7 @@ export class GeneralSettings implements OnInit {
     });
   }
 
-  // Helper methods
+
   getLevelName(levelId: number): string {
     const level = this.geographicalLevels.find(l => l.id === levelId);
     return level ? `${level.name} (Niv. ${level.levelNumber})` : 'Inconnu';
@@ -1048,7 +1048,7 @@ export class GeneralSettings implements OnInit {
     });
   }
 
-  // Alert methods
+ 
   showSuccess(message: string) {
     Swal.fire({
       icon: 'success',
