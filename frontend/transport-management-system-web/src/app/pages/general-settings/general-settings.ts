@@ -60,6 +60,13 @@ export class GeneralSettings implements OnInit {
   geographicalLevels: IGeographicalLevel[] = [];
   geographicalEntities: IGeographicalEntity[] = [];
   filteredEntities: IGeographicalEntity[] = [];
+  
+  // Dynamic Units - Separate working copy from saved
+  savedUnits: string[] = []; // Units from database
+  workingUnits: string[] = []; // Units being edited (unsaved changes)
+  
+  // For input
+  unitInputControl = new FormControl('');
 
   // Loading States
   isLoading = false;
@@ -68,13 +75,10 @@ export class GeneralSettings implements OnInit {
   loadingEntities = false;
   isSavingGeographical = false;
   isSavingLogo = false;
+  isSavingUnits = false;
 
   // Filters
   entityLevelFilter = new FormControl('all');
-
-  // Options
-  loadingUnitOptions = ['palette', 'kg', 'tonne', 'm³'];
-  tripOrderOptions = ['chronologique', 'priorité', 'géographique', 'optimisé'];
 
   // For max capacity field visibility
   showMaxCapacityField = false;
@@ -100,23 +104,22 @@ export class GeneralSettings implements OnInit {
     'ALLOW_MIXING_ORDER_TYPES': 'ALLOW_MIXING_ORDER_TYPES'
   };
 
-private tripControlMap: { [key: string]: string } = {
-  'ALLOW_EDIT_TRIPS': 'ALLOW_EDIT_TRIPS',
-  'ALLOW_DELETE_TRIPS': 'ALLOW_DELETE_TRIPS',
-  'MAX_TRIPS_PER_DAY': 'MAX_TRIPS_PER_DAY',
-  'REQUIRE_DELETE_CONFIRMATION': 'REQUIRE_DELETE_CONFIRMATION',
-  'NOTIFY_ON_TRIP_EDIT': 'NOTIFY_ON_TRIP_EDIT',
-  'NOTIFY_ON_TRIP_DELETE': 'NOTIFY_ON_TRIP_DELETE',
-  'LINK_DRIVER_TO_TRUCK': 'LINK_DRIVER_TO_TRUCK',
-  'ALLOW_EXCEED_MAX_CAPACITY': 'ALLOW_EXCEED_MAX_CAPACITY',
-  'MAX_CAPACITY_PERCENTAGE': 'MAX_CAPACITY_PERCENTAGE',
-  
-};
-
+  private tripControlMap: { [key: string]: string } = {
+    'ALLOW_EDIT_TRIPS': 'ALLOW_EDIT_TRIPS',
+    'ALLOW_DELETE_TRIPS': 'ALLOW_DELETE_TRIPS',
+    'MAX_TRIPS_PER_DAY': 'MAX_TRIPS_PER_DAY',
+    'REQUIRE_DELETE_CONFIRMATION': 'REQUIRE_DELETE_CONFIRMATION',
+    'NOTIFY_ON_TRIP_EDIT': 'NOTIFY_ON_TRIP_EDIT',
+    'NOTIFY_ON_TRIP_DELETE': 'NOTIFY_ON_TRIP_DELETE',
+    'LINK_DRIVER_TO_TRUCK': 'LINK_DRIVER_TO_TRUCK',
+    'ALLOW_EXCEED_MAX_CAPACITY': 'ALLOW_EXCEED_MAX_CAPACITY',
+    'MAX_CAPACITY_PERCENTAGE': 'MAX_CAPACITY_PERCENTAGE',
+  };
 
   ngOnInit() {
     this.initForms();
     this.loadAllSettings();
+    this.loadUnits();
 
     this.entityLevelFilter.valueChanges.subscribe(levelId => {
       this.filterEntities(levelId);
@@ -124,56 +127,217 @@ private tripControlMap: { [key: string]: string } = {
   }
 
   initForms() {
-   
     this.orderSettingsForm = this.fb.group({
       ALLOW_EDIT_ORDER: [false],
       ALLOW_DELIVERY_DATE_EDIT: [false],
       ALLOW_LOAD_LATE_ORDERS: [false],
       ACCEPT_ORDERS_WITHOUT_ADDRESS: [false],
-      LOADING_UNIT: ['palette'],
+      LOADING_UNIT: ['', Validators.required],
       PLANNING_HORIZON: [30, [Validators.min(1), Validators.max(365)]],
       ALLOW_MIXING_ORDER_TYPES: [false]
     });
 
-   
-this.tripSettingsForm = this.fb.group({
-  ALLOW_EDIT_TRIPS: [false],
-  ALLOW_DELETE_TRIPS: [false],
-  MAX_TRIPS_PER_DAY: [10, [Validators.min(1)]],
-  REQUIRE_DELETE_CONFIRMATION: [true],
-  NOTIFY_ON_TRIP_EDIT: [false],
-  NOTIFY_ON_TRIP_DELETE: [false],
-  LINK_DRIVER_TO_TRUCK: [false],
-  ALLOW_EXCEED_MAX_CAPACITY: [false],
-  MAX_CAPACITY_PERCENTAGE: [{ value: 100, disabled: true }, [Validators.min(1), Validators.max(200)]],
-});
+    this.tripSettingsForm = this.fb.group({
+      ALLOW_EDIT_TRIPS: [false],
+      ALLOW_DELETE_TRIPS: [false],
+      MAX_TRIPS_PER_DAY: [10, [Validators.min(1)]],
+      REQUIRE_DELETE_CONFIRMATION: [true],
+      NOTIFY_ON_TRIP_EDIT: [false],
+      NOTIFY_ON_TRIP_DELETE: [false],
+      LINK_DRIVER_TO_TRUCK: [false],
+      ALLOW_EXCEED_MAX_CAPACITY: [false],
+      MAX_CAPACITY_PERCENTAGE: [{ value: 100, disabled: true }, [Validators.min(1), Validators.max(200)]],
+    });
 
-   
     this.geographicalLevelsForm = this.fb.group({
       levels: this.fb.array([])
     });
-
 
     this.tripSettingsForm.get('ALLOW_EXCEED_MAX_CAPACITY')?.valueChanges.subscribe(value => {
       this.onAllowExceedChange(value);
     });
   }
 
-onAllowExceedChange(allowExceed: boolean) {
-  console.log('onAllowExceedChange called with:', allowExceed);
-  const maxCapacityControl = this.tripSettingsForm.get('MAX_CAPACITY_PERCENTAGE');
-  
-  if (allowExceed) {
-    maxCapacityControl?.enable();
-    this.showMaxCapacityField = true;
-    console.log('Enabled percentage field');
-  } else {
-    maxCapacityControl?.disable();
-    this.showMaxCapacityField = false;
-    console.log('Disabled percentage field');
+  // Load units from settings
+  loadUnits() {
+    this.httpService.getAllSettingsByType('UNITS').subscribe({
+      next: (settings) => {
+        const unitSettings = settings.find(s => s.parameterType === 'UNITS');
+        
+        if (unitSettings) {
+          try {
+            const parameterCode = unitSettings.parameterCode;
+            
+            if (parameterCode.startsWith('AVAILABLE_UNITS=')) {
+              const unitsJson = parameterCode.substring('AVAILABLE_UNITS='.length);
+              
+              if (unitsJson === '[]') {
+                this.savedUnits = [];
+                this.workingUnits = [];
+              } else {
+                try {
+                  const units = JSON.parse(unitsJson);
+                  if (Array.isArray(units)) {
+                    this.savedUnits = units;
+                    this.workingUnits = [...units]; // Copy to working array
+                  } else {
+                    this.savedUnits = [];
+                    this.workingUnits = [];
+                  }
+                } catch (e) {
+                  console.error('Error parsing units JSON:', e);
+                  this.savedUnits = [];
+                  this.workingUnits = [];
+                }
+              }
+            } else {
+              this.savedUnits = [];
+              this.workingUnits = [];
+            }
+          } catch (e) {
+            console.error('Error processing unit settings:', e);
+            this.savedUnits = [];
+            this.workingUnits = [];
+          }
+        } else {
+          this.savedUnits = [];
+          this.workingUnits = [];
+        }
+      },
+      error: (error) => {
+        console.error('Error loading units:', error);
+        this.savedUnits = [];
+        this.workingUnits = [];
+      }
+    });
   }
-  maxCapacityControl?.updateValueAndValidity();
-}
+
+  // Add a new unit to working array (not saved yet)
+  addUnit(): void {
+    const value = this.unitInputControl.value?.trim() || '';
+    
+    if (value && value.length > 0) {
+      // Check if unit already exists in working units
+      if (this.workingUnits.includes(value)) {
+        this.showWarning(`L'unité "${value}" existe déjà`);
+      } else {
+        // Add to working array only
+        this.workingUnits.push(value);
+        console.log('Unit added to working:', this.workingUnits);
+      }
+    }
+    
+    // Clear the input field
+    this.unitInputControl.setValue('');
+  }
+
+  // Remove a unit from working array
+  removeUnit(unit: string): void {
+    const index = this.workingUnits.indexOf(unit);
+    if (index >= 0) {
+      this.workingUnits.splice(index, 1);
+      console.log('Unit removed from working:', this.workingUnits);
+      
+      // Update loading unit if needed
+      const loadingUnitControl = this.orderSettingsForm.get('LOADING_UNIT');
+      if (loadingUnitControl && loadingUnitControl.value === unit) {
+        if (this.workingUnits.length > 0) {
+          loadingUnitControl.setValue(this.workingUnits[0]);
+        } else {
+          loadingUnitControl.setValue('');
+        }
+      }
+    }
+  }
+
+  // Cancel changes - revert to saved units
+  cancelUnits() {
+    this.workingUnits = [...this.savedUnits];
+    this.showTemporarySuccess('Modifications annulées');
+  }
+
+  // Save units to DB
+  saveUnits() {
+    if (this.workingUnits.length === 0) {
+      this.showWarning('Ajoutez au moins une unité avant d\'enregistrer');
+      return;
+    }
+    
+    this.isSavingUnits = true;
+    
+    const unitsJson = JSON.stringify(this.workingUnits);
+    const parameterCode = `AVAILABLE_UNITS=${unitsJson}`;
+    
+    this.httpService.getAllSettingsByType('UNITS').subscribe({
+      next: (settings) => {
+        const existingUnitSetting = settings.find(s => s.parameterType === 'UNITS');
+        
+        if (existingUnitSetting) {
+          const updatePayload: any = {
+            id: existingUnitSetting.id,
+            parameterType: 'UNITS',
+            parameterCode: parameterCode,
+            description: 'Available units for loading and capacity'
+          };
+          
+          this.httpService.updateGeneralSettings(existingUnitSetting.id, updatePayload).subscribe({
+            next: (response) => {
+              this.isSavingUnits = false;
+              // Update saved units to match working units
+              this.savedUnits = [...this.workingUnits];
+              this.showSuccess('Unités enregistrées avec succès');
+            },
+            error: (error) => {
+              this.isSavingUnits = false;
+              this.handleError(error);
+            }
+          });
+        } else {
+          const createPayload: any = {
+            parameterType: 'UNITS',
+            parameterCode: parameterCode,
+            description: 'Available units for loading and capacity'
+          };
+          
+          this.httpService.addGeneralSettings(createPayload).subscribe({
+            next: (response) => {
+              this.isSavingUnits = false;
+              // Update saved units to match working units
+              this.savedUnits = [...this.workingUnits];
+              this.showSuccess('Unités enregistrées avec succès');
+            },
+            error: (error) => {
+              this.isSavingUnits = false;
+              this.handleError(error);
+            }
+          });
+        }
+      },
+      error: (error) => {
+        this.isSavingUnits = false;
+        this.handleError(error);
+      }
+    });
+  }
+
+  // Check if there are unsaved changes
+  hasUnsavedChanges(): boolean {
+    return JSON.stringify(this.savedUnits) !== JSON.stringify(this.workingUnits);
+  }
+
+  onAllowExceedChange(allowExceed: boolean) {
+    const maxCapacityControl = this.tripSettingsForm.get('MAX_CAPACITY_PERCENTAGE');
+    
+    if (allowExceed) {
+      maxCapacityControl?.enable();
+      this.showMaxCapacityField = true;
+    } else {
+      maxCapacityControl?.disable();
+      this.showMaxCapacityField = false;
+    }
+    maxCapacityControl?.updateValueAndValidity();
+  }
+
   loadAllSettings() {
     this.isLoading = true;
 
@@ -199,9 +363,7 @@ onAllowExceedChange(allowExceed: boolean) {
       }
     });
 
-    // Load company logo
     this.loadCompanyLogo();
-
     this.loadEmployeeCategories();
     this.loadGeographicalLevels();
   }
@@ -295,51 +457,48 @@ onAllowExceedChange(allowExceed: boolean) {
       const controlName = this.orderControlMap[key];
 
       if (controlName && this.orderSettingsForm.contains(controlName)) {
-        formValues[controlName] = this.parseSettingValue(value);
+        if (key === 'LOADING_UNIT') {
+          formValues[controlName] = value;
+        } else {
+          formValues[controlName] = this.parseSettingValue(value);
+        }
       }
     });
 
     this.orderSettingsForm.patchValue(formValues);
   }
 
-populateTripForm(settings: IGeneralSettings[]) {
-  const formValues: any = {};
+  populateTripForm(settings: IGeneralSettings[]) {
+    const formValues: any = {};
 
-  settings.forEach(setting => {
-    const [key, value] = this.parseParameterCode(setting.parameterCode);
-    
+    settings.forEach(setting => {
+      const [key, value] = this.parseParameterCode(setting.parameterCode);
 
-    switch(key) {
-      case 'ALLOW_EXCEED_MAX_CAPACITY':
-        formValues.ALLOW_EXCEED_MAX_CAPACITY = this.parseSettingValue(value);
-        console.log('Loaded ALLOW_EXCEED_MAX_CAPACITY:', value, '->', formValues.ALLOW_EXCEED_MAX_CAPACITY);
-        break;
+      switch(key) {
+        case 'ALLOW_EXCEED_MAX_CAPACITY':
+          formValues.ALLOW_EXCEED_MAX_CAPACITY = this.parseSettingValue(value);
+          break;
         
-      case 'MAX_CAPACITY_PERCENTAGE':
-        formValues.MAX_CAPACITY_PERCENTAGE = this.parseSettingValue(value);
-        console.log('Loaded MAX_CAPACITY_PERCENTAGE:', value, '->', formValues.MAX_CAPACITY_PERCENTAGE);
-        break;
+        case 'MAX_CAPACITY_PERCENTAGE':
+          formValues.MAX_CAPACITY_PERCENTAGE = this.parseSettingValue(value);
+          break;
         
-      default:
-       
-        const controlName = this.tripControlMap[key];
-        if (controlName && this.tripSettingsForm.contains(controlName)) {
-          formValues[controlName] = this.parseSettingValue(value);
-        }
-        break;
+        default:
+          const controlName = this.tripControlMap[key];
+          if (controlName && this.tripSettingsForm.contains(controlName)) {
+            formValues[controlName] = this.parseSettingValue(value);
+          }
+          break;
+      }
+    });
+
+    this.tripSettingsForm.patchValue(formValues);
+
+    const allowExceed = formValues['ALLOW_EXCEED_MAX_CAPACITY'];
+    if (allowExceed !== undefined) {
+      setTimeout(() => this.onAllowExceedChange(allowExceed));
     }
-  });
-
-  console.log('Final form values:', formValues);
-  this.tripSettingsForm.patchValue(formValues);
-  
-
-  const allowExceed = formValues['ALLOW_EXCEED_MAX_CAPACITY'];
-  if (allowExceed !== undefined) {
-    console.log('Setting allowExceed to:', allowExceed);
-    setTimeout(() => this.onAllowExceedChange(allowExceed));
   }
-}
 
   populateGeographicalLevelsForm(levels: IGeographicalLevel[]) {
     const levelsArray = this.geographicalLevelsForm.get('levels') as FormArray;
@@ -374,20 +533,27 @@ populateTripForm(settings: IGeneralSettings[]) {
     return parts.length === 2 ? parts[1] : '';
   }
 
-parseSettingValue(value: string): any {
-  if (value.toLowerCase() === 'true') return true;
-  if (value.toLowerCase() === 'false') return false;
-  
-  const num = Number(value);
-  if (!isNaN(num)) return num;
-  
-  return value;
-}
+  parseSettingValue(value: string): any {
+    if (value.toLowerCase() === 'true') return true;
+    if (value.toLowerCase() === 'false') return false;
+    
+    const num = Number(value);
+    if (!isNaN(num)) return num;
+    
+    return value;
+  }
 
   formatSettingValue(value: any): string {
-    if (typeof value === 'boolean') return value ? 'true' : 'false';
-    if (typeof value === 'number') return value.toString();
-    return value;
+    if (value === null || value === undefined) {
+      return '';
+    }
+    if (typeof value === 'boolean') {
+      return value ? 'true' : 'false';
+    }
+    if (typeof value === 'number') {
+      return value.toString();
+    }
+    return value.toString();
   }
 
   // Logo upload methods
@@ -404,7 +570,7 @@ parseSettingValue(value: string): any {
       return;
     }
 
-    const maxSize = 1024 * 1024; // 1MB
+    const maxSize = 1024 * 1024;
     if (file.size > maxSize) {
       this.companyFileError = 'La taille du fichier dépasse 1 MB. Veuillez choisir un fichier plus petit.';
       return;
@@ -424,82 +590,81 @@ parseSettingValue(value: string): any {
     this.companyFileInput.nativeElement.click();
   }
 
-removeCompanyLogo() {
-  if (this.hasCompanyLogo) {
-    Swal.fire({
-      title: 'Êtes-vous sûr?',
-      text: 'Voulez-vous vraiment supprimer le logo de l\'entreprise?',
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonColor: '#d33',
-      cancelButtonColor: '#3085d6',
-      confirmButtonText: 'Oui, supprimer!',
-      cancelButtonText: 'Annuler'
-    }).then((result) => {
-      if (result.isConfirmed) {
-        this.isSavingLogo = true;
+  removeCompanyLogo() {
+    if (this.hasCompanyLogo) {
+      Swal.fire({
+        title: 'Êtes-vous sûr?',
+        text: 'Voulez-vous vraiment supprimer le logo de l\'entreprise?',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6',
+        confirmButtonText: 'Oui, supprimer!',
+        cancelButtonText: 'Annuler'
+      }).then((result) => {
+        if (result.isConfirmed) {
+          this.isSavingLogo = true;
         
-        this.httpService.getAllSettingsByType('COMPANY').subscribe({
-          next: (settings) => {
-            const companyRecord = settings.find(s => 
-              s.parameterCode === 'COMPANY_LOGO'
-            );
+          this.httpService.getAllSettingsByType('COMPANY').subscribe({
+            next: (settings) => {
+              const companyRecord = settings.find(s => 
+                s.parameterCode === 'COMPANY_LOGO'
+              );
             
-            if (companyRecord) {
-        
-              const updateDto: any = {
-                id: companyRecord.id, 
-                parameterType: 'COMPANY',
-                parameterCode: 'COMPANY_LOGO',
-                description: 'Company logo',
-                logoBase64: null
-              };
+              if (companyRecord) {
+                const updateDto: any = {
+                  id: companyRecord.id, 
+                  parameterType: 'COMPANY',
+                  parameterCode: 'COMPANY_LOGO',
+                  description: 'Company logo',
+                  logoBase64: null
+                };
               
-              this.httpService.updateGeneralSettings(companyRecord.id, updateDto).subscribe({
-                next: () => {
-                  this.isSavingLogo = false;
-                  this.companyLogoPreview = null;
-                  this.hasCompanyLogo = false;
-                  this.companyFileError = null;
-                  if (this.companyFileInput) {
-                    this.companyFileInput.nativeElement.value = '';
+                this.httpService.updateGeneralSettings(companyRecord.id, updateDto).subscribe({
+                  next: () => {
+                    this.isSavingLogo = false;
+                    this.companyLogoPreview = null;
+                    this.hasCompanyLogo = false;
+                    this.companyFileError = null;
+                    if (this.companyFileInput) {
+                      this.companyFileInput.nativeElement.value = '';
+                    }
+                    Swal.fire({
+                      icon: 'success',
+                      title: 'Succès',
+                      text: 'Logo supprimé avec succès',
+                      timer: 2000,
+                      showConfirmButton: false
+                    });
+                  },
+                  error: (error) => {
+                    this.isSavingLogo = false;
+                    this.handleError(error);
                   }
-                  Swal.fire({
-                    icon: 'success',
-                    title: 'Succès',
-                    text: 'Logo supprimé avec succès',
-                    timer: 2000,
-                    showConfirmButton: false
-                  });
-                },
-                error: (error) => {
-                  this.isSavingLogo = false;
-                  this.handleError(error);
-                }
-              });
-            } else {
+                });
+              } else {
+                this.isSavingLogo = false;
+                this.showWarning('Aucun logo à supprimer');
+              }
+            },
+            error: (error) => {
               this.isSavingLogo = false;
-              this.showWarning('Aucun logo à supprimer');
+              this.handleError(error);
             }
-          },
-          error: (error) => {
-            this.isSavingLogo = false;
-            this.handleError(error);
-          }
-        });
-      }
-    });
-  } else {
-    // Just clear the preview if it's a new upload (not saved yet)
-    this.companyLogoPreview = null;
-    this.companyFileError = null;
-    this.hasCompanyLogo = false;
+          });
+        }
+      });
+    } else {
+      this.companyLogoPreview = null;
+      this.companyFileError = null;
+      this.hasCompanyLogo = false;
     
-    if (this.companyFileInput) {
-      this.companyFileInput.nativeElement.value = '';
+      if (this.companyFileInput) {
+        this.companyFileInput.nativeElement.value = '';
+      }
     }
   }
-}
+  
   saveCompanyLogo() {
     if (!this.companyLogoPreview) {
       this.showWarning('Veuillez sélectionner un logo à enregistrer');
@@ -510,7 +675,6 @@ removeCompanyLogo() {
 
     this.httpService.getAllSettingsByType('COMPANY').subscribe({
       next: (settings) => {
-        // Find existing company record
         let companyRecord = settings.find(s => 
           s.parameterCode === 'COMPANY_LOGO'
         );
@@ -630,32 +794,29 @@ removeCompanyLogo() {
     this.saveSettings(updates, 'Paramètres de voyage enregistrés avec succès');
   }
 
-saveSettings(updates: IGeneralSettings[], successMessage: string) {
-  const updatePromises = updates.map(setting => {
-    // For new records, don't include id field or set it to undefined
-    if (!setting.id || setting.id === 0) {
-      // Create a new object without the id field
-      const { id, ...newSetting } = setting;
-      return this.httpService.addGeneralSettings(newSetting).toPromise();
-    } else {
-      // For existing records, update with the full object including id
-      return this.httpService.updateGeneralSettings(setting.id, setting).toPromise();
-    }
-  });
-
-  Promise.all(updatePromises)
-    .then(() => {
-      this.showSuccess(successMessage);
-      this.loadAllSettings();
-    })
-    .catch((error) => {
-      console.error('Error saving settings:', error);
-      this.showError('Erreur lors de l\'enregistrement');
-    })
-    .finally(() => {
-      this.isSaving = false;
+  saveSettings(updates: IGeneralSettings[], successMessage: string) {
+    const updatePromises = updates.map(setting => {
+      if (!setting.id || setting.id === 0) {
+        const { id, ...newSetting } = setting;
+        return this.httpService.addGeneralSettings(newSetting).toPromise();
+      } else {
+        return this.httpService.updateGeneralSettings(setting.id, setting).toPromise();
+      }
     });
-}
+
+    Promise.all(updatePromises)
+      .then(() => {
+        this.showSuccess(successMessage);
+        this.loadAllSettings();
+      })
+      .catch((error) => {
+        console.error('Error saving settings:', error);
+        this.showError('Erreur lors de l\'enregistrement');
+      })
+      .finally(() => {
+        this.isSaving = false;
+      });
+  }
 
   saveGeographicalLevels() {
     if (this.geographicalLevelsForm.invalid) {
@@ -895,6 +1056,17 @@ saveSettings(updates: IGeneralSettings[], successMessage: string) {
       text: message,
       timer: 2000,
       showConfirmButton: false
+    });
+  }
+
+  showTemporarySuccess(message: string) {
+    Swal.fire({
+      icon: 'success',
+      title: message,
+      timer: 1000,
+      showConfirmButton: false,
+      toast: true,
+      position: 'top-end'
     });
   }
 

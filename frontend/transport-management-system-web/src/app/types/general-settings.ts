@@ -38,7 +38,7 @@ export interface IGeneralSettings {
   parameterType: string;
   parameterCode: string;
   description: string;
-  logoBase64?: string;
+  logoBase64?: string| null;
 }
 
 export interface IGeneralSettingsDto {
