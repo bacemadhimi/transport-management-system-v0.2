@@ -9,10 +9,10 @@
     <mat-spinner diameter="40"></mat-spinner>
   </div>
 
-  <!-- 2-Column Grid Layout - Cards stretch to fill height -->
+  <!-- 2-Column Grid Layout -->
   <div *ngIf="!isLoading" class="settings-grid">
     
-    <!-- Left Column - Cards stretch vertically -->
+    <!-- Left Column -->
     <div class="left-column">
       <!-- Order Settings Card -->
       <mat-card class="settings-card fill-card">
@@ -36,16 +36,20 @@
             </div>
             <div class="form-fields-section flex-1">
               <div class="form-fields-grid">
-                <div class="form-field-wrapper">
-                  <mat-form-field appearance="outline" class="full-width">
-                    <mat-label>Unité de chargement</mat-label>
-                    <mat-select formControlName="LOADING_UNIT">
-                      <mat-option *ngFor="let option of loadingUnitOptions" [value]="option">{{option}}</mat-option>
-                    </mat-select>
-                    <mat-icon matSuffix>arrow_drop_down</mat-icon>
-                  </mat-form-field>
-                  <mat-hint class="field-hint">Unité par défaut pour les chargements</mat-hint>
-                </div>
+              <div class="form-field-wrapper">
+                <mat-form-field appearance="outline" class="full-width">
+                  <mat-label>Unité de chargement</mat-label>
+                  <mat-select formControlName="LOADING_UNIT" required>
+                    <mat-option *ngFor="let unit of savedUnits" [value]="unit">{{unit}}</mat-option>
+                    <mat-option *ngIf="savedUnits.length === 0" disabled value="">Aucune unité disponible</mat-option>
+                  </mat-select>
+                  <mat-icon matSuffix>arrow_drop_down</mat-icon>
+                </mat-form-field>
+                <mat-hint class="field-hint">Unité par défaut pour les chargements</mat-hint>
+                <mat-error *ngIf="orderSettingsForm.get('LOADING_UNIT')?.hasError('required')" class="field-error">
+                  L'unité de chargement est requise
+                </mat-error>
+              </div>
                 <div class="form-field-wrapper">
                   <mat-form-field appearance="outline" class="full-width">
                     <mat-label>Horizon de planification (jours)</mat-label>
@@ -67,6 +71,84 @@
         </mat-card-actions>
       </mat-card>
 
+<!-- Unit Management Card - WITH SAVE BUTTON -->
+<mat-card class="settings-card fill-card">
+  <mat-card-header>
+    <mat-icon class="card-icon">straighten</mat-icon>
+    <div class="card-header-text">
+      <mat-card-title>Gestion des Unités</mat-card-title>
+      <mat-card-subtitle>Ajoutez des unités personnalisées pour la capacité de chargement</mat-card-subtitle>
+    </div>
+  </mat-card-header>
+  <mat-card-content class="expand-content">
+    <div class="unit-management-section">
+      <!-- Input field with Add button -->
+      <div class="add-unit-row">
+        <mat-form-field appearance="outline" class="unit-input">
+          <mat-label>Ajouter une nouvelle unité</mat-label>
+          <input
+            matInput
+            placeholder="Saisissez une unité"
+            [formControl]="unitInputControl"
+          />
+        </mat-form-field>
+        <button 
+          mat-raised-button 
+          color="primary" 
+          class="add-btn"
+          (click)="addUnit()"
+          [disabled]="!unitInputControl.value?.trim()">
+          <mat-icon>add</mat-icon>
+          Ajouter
+        </button>
+      </div>
+
+      <!-- Display working units (unsaved changes) -->
+      <div class="units-list" *ngIf="workingUnits.length > 0">
+        <div class="units-header">
+          <h4 class="units-subtitle">Unités disponibles:</h4>
+          <span class="badge" *ngIf="hasUnsavedChanges()" class="unsaved-badge">Non enregistré</span>
+        </div>
+        <div class="unit-chips">
+          <span class="unit-chip" *ngFor="let unit of workingUnits">
+            {{unit}}
+            <button class="remove-chip" (click)="removeUnit(unit)" matTooltip="Supprimer">
+              <mat-icon>close</mat-icon>
+            </button>
+          </span>
+        </div>
+      </div>
+      
+      <div class="no-units" *ngIf="workingUnits.length === 0">
+        <p>Aucune unité définie. Ajoutez des unités en utilisant le champ ci-dessus.</p>
+      </div>
+
+      <div class="info-text">
+        <mat-icon>info</mat-icon>
+        <span>Les unités sont modifiées localement. Cliquez sur "Enregistrer" pour sauvegarder dans la base de données.</span>
+      </div>
+    </div>
+  </mat-card-content>
+  
+  <!-- Action buttons -->
+  <mat-card-actions align="end" class="unit-actions">
+    <button 
+      mat-button 
+      (click)="cancelUnits()"
+      [disabled]="isSavingUnits || !hasUnsavedChanges()">
+      Annuler
+    </button>
+    <button 
+      mat-raised-button 
+      (click)="saveUnits()"
+      [disabled]="isSavingUnits || workingUnits.length === 0 || !hasUnsavedChanges()"
+      class="theme-primary-btn">
+      <mat-icon>save</mat-icon>
+      <span *ngIf="!isSavingUnits">Enregistrer les unités</span>
+      <span *ngIf="isSavingUnits">Enregistrement...</span>
+    </button>
+  </mat-card-actions>
+</mat-card>
       <!-- Employee Categories Card -->
       <mat-card class="settings-card fill-card">
         <mat-card-header>
@@ -110,7 +192,7 @@
         </mat-card-actions>
       </mat-card>
 
-      <!-- Company Logo Section - MOVED HERE under Employee Categories -->
+      <!-- Company Logo Section -->
       <mat-card class="settings-card fill-card">
         <mat-card-header>
           <mat-icon class="card-icon">business</mat-icon>
@@ -144,7 +226,7 @@
       </mat-card>
     </div>
 
-    <!-- Right Column - Cards stretch vertically -->
+    <!-- Right Column -->
     <div class="right-column">
       <!-- Trip Settings Card -->
       <mat-card class="settings-card fill-card">
@@ -157,7 +239,6 @@
         </mat-card-header>
         <mat-card-content class="expand-content">
           <form [formGroup]="tripSettingsForm" class="h-full flex flex-col">
-            <!-- 1. Trip Settings Checkboxes -->
             <div class="checkboxes-section">
               <div class="checkbox-grid">
                 <mat-checkbox formControlName="ALLOW_EDIT_TRIPS">Autoriser la modification des voyages</mat-checkbox>
@@ -171,7 +252,6 @@
             
             <mat-divider class="my-2"></mat-divider>
             
-            <!-- 2. Capacity Settings Section -->
             <h3 class="section-title">Paramètres de capacité</h3>
             <div class="capacity-settings">
               <div class="checkbox-item">
@@ -194,10 +274,8 @@
             
             <mat-divider class="my-2"></mat-divider>
             
-            <!-- 3. Form Fields -->
             <div class="form-fields-section flex-1">
               <div class="form-fields-grid">
-                
                 <div class="form-field-wrapper">
                   <mat-form-field appearance="outline" class="full-width">
                     <mat-label>Maximum voyages par jour</mat-label>
@@ -207,7 +285,6 @@
                   <mat-hint class="field-hint">Limite quotidienne de voyages</mat-hint>
                   <mat-error *ngIf="tripSettingsForm.get('MAX_TRIPS_PER_DAY')?.hasError('min')" class="field-error">Minimum 1 voyage</mat-error>
                 </div>
-               
               </div>
             </div>
           </form>
@@ -264,7 +341,7 @@
     </div>
   </div>
 
-  <!-- Geographical Entities Card (Full Width) - Stretches to fill -->
+  <!-- Geographical Entities Card -->
   <div *ngIf="!isLoading" class="mt-6">
     <mat-card class="settings-card fill-card">
       <mat-card-header>

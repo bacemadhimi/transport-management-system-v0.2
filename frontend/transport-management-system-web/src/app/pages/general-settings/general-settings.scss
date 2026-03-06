@@ -963,3 +963,127 @@ form,
   margin-top: 1rem !important;
   margin-bottom: 1rem !important;
 }
+.unit-management-section {
+  .add-unit-row {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    margin-bottom: 20px;
+    
+    .unit-input {
+      flex: 1;
+    }
+    
+    .add-btn {
+      height: 56px; // Match mat-form-field height
+      min-width: 120px;
+    }
+  }
+
+  .units-list {
+    margin-top: 16px;
+    margin-bottom: 16px;
+    
+    .units-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 12px;
+      
+      .units-subtitle {
+        font-size: 14px;
+        font-weight: 500;
+        color: #666;
+        margin: 0;
+      }
+      
+      .unsaved-badge {
+        background-color: #ff9800;
+        color: white;
+        font-size: 11px;
+        padding: 2px 8px;
+        border-radius: 12px;
+        font-weight: 500;
+      }
+    }
+    
+    .unit-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    
+    .unit-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 8px 4px 12px;
+      background-color: rgba(var(--primary-color-rgb), 0.1);
+      border-radius: 16px;
+      font-size: 13px;
+      color: var(--primary-color);
+      border: 1px solid rgba(var(--primary-color-rgb), 0.3);
+      
+      .remove-chip {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 18px;
+        height: 18px;
+        border: none;
+        background: none;
+        cursor: pointer;
+        color: var(--primary-color);
+        opacity: 0.7;
+        transition: opacity 0.2s;
+        padding: 0;
+        
+        &:hover {
+          opacity: 1;
+        }
+        
+        mat-icon {
+          font-size: 16px;
+          width: 16px;
+          height: 16px;
+        }
+      }
+    }
+  }
+
+  .no-units {
+    color: #999;
+    font-style: italic;
+    padding: 16px;
+    text-align: center;
+    background: #f9f9f9;
+    border-radius: 4px;
+    margin: 16px 0;
+  }
+
+  .info-text {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    color: #666;
+    font-size: 13px;
+    margin-top: 8px;
+    padding: 8px 12px;
+    background-color: #f9f9f9;
+    border-radius: 4px;
+    border-left: 3px solid var(--primary-color);
+    
+    mat-icon {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+      color: var(--primary-color);
+    }
+  }
+}
+
+.unit-actions {
+  display: flex;
+  gap: 8px;
+  padding: 16px;
+}
