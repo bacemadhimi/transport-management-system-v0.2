@@ -163,7 +163,7 @@
             </mat-option>
             
             <mat-option *ngFor="let type of typeTrucks" [value]="type.id">
-              {{ type.type }} ({{ type.capacity }} {{ type.unit }})
+              {{ type.type }} ({{ type.capacity }} {{ loadingUnit }})
             </mat-option>
           </mat-select>
           <mat-error *ngIf="truckForm.get('typeTruckId')?.invalid && truckForm.get('typeTruckId')?.touched">

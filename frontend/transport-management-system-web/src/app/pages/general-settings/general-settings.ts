@@ -798,6 +798,7 @@ export class GeneralSettings implements OnInit {
     const updatePromises = updates.map(setting => {
       if (!setting.id || setting.id === 0) {
         const { id, ...newSetting } = setting;
+        console.log(setting)
         return this.httpService.addGeneralSettings(newSetting).toPromise();
       } else {
         return this.httpService.updateGeneralSettings(setting.id, setting).toPromise();
