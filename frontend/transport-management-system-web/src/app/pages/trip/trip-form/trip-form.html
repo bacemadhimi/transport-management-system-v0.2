@@ -737,7 +737,7 @@
           <div class="traject-order-summary">
             <mat-icon>shopping_cart</mat-icon>
             <span>{{ getSelectedTrajectOrdersCount() }} {{ t('ORDERS_SELECTED') }}</span>
-            <button mat-raised-button color="primary" 
+            <button mat-raised-button class="theme-primary-btn" 
                     (click)="addSelectedTrajectOrders()"
                     [disabled]="getSelectedTrajectOrdersCount() === 0">
               <mat-icon>add</mat-icon>
@@ -853,7 +853,7 @@
             </div>
           </div>
           
-          <button mat-raised-button color="primary" 
+          <button mat-raised-button class="theme-primary-btn" 
                   (click)="addSelectedTrajectOrders()"
                   [disabled]="getSelectedTrajectOrdersCount() === 0">
             <mat-icon>add</mat-icon>
@@ -1122,7 +1122,7 @@
             <mat-icon>arrow_back</mat-icon>
             Retour
           </button>
-          <button type="button" mat-raised-button color="primary"
+          <button type="button" mat-raised-button class="theme-primary-btn"
                   (click)="confirmAddOrders()"
                   [disabled]="selectedOrdersCount === 0">
             <mat-icon>add</mat-icon>
@@ -1169,10 +1169,10 @@
             <mat-icon>add</mat-icon>
             Ajouter plus
           </button>
-          <button type="button" mat-raised-button color="primary"
+          <button type="button" mat-raised-button class="theme-primary-btn"
                   (click)="finishQuickAdd()">
             <mat-icon>done</mat-icon>
-            Valider
+            Ajouter au voyage et terminer
           </button>
         </div>
       </div>
@@ -2608,7 +2608,7 @@
             <mat-icon>clear</mat-icon>
             Effacer
           </button>
-          <button type="button" mat-raised-button color="primary" 
+          <button type="button" mat-raised-button class="theme-primary-btn" 
                   (click)="applyDateRange()"
                   [disabled]="calendarMode === 'range' && !selectedRangeStart">
             <mat-icon>check</mat-icon>
@@ -2741,7 +2741,7 @@
         <button type="button" mat-button (click)="showDateStatsModal = false">
           Fermer
         </button>
-        <button type="button" mat-raised-button color="primary" 
+        <button type="button" mat-raised-button class="theme-primary-btn" 
                 *ngIf="calendarMode === 'range' && isSelectingRange"
                 (click)="continueWithDateSelection()">
           <mat-icon>check</mat-icon>

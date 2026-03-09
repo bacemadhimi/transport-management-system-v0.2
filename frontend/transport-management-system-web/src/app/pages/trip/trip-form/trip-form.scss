@@ -15,6 +15,749 @@
   overflow-y: auto;
 }
 
+.theme-primary-btn {
+  background: var(--primary-gradient) !important;
+  color: white !important;
+  border-radius: 999px !important;
+  padding: 0 24px !important;
+  height: 44px !important;
+  font-weight: 500 !important;
+  box-shadow: 0 8px 16px rgba(var(--primary-color-rgb), 0.25) !important;
+  transition: all 0.2s ease !important;
+  border: none !important;
+
+  .mat-icon {
+    color: white !important;
+    margin-right: 4px;
+  }
+
+  &:hover:not(:disabled) {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 12px 24px rgba(var(--primary-color-rgb), 0.35) !important;
+  }
+
+  &:active:not(:disabled) {
+    transform: translateY(0) !important;
+  }
+
+  &:disabled {
+    opacity: 0.6 !important;
+    cursor: not-allowed !important;
+    box-shadow: none !important;
+  }
+}
+
+::ng-deep .mat-mdc-form-field {
+  &.mat-focused {
+    .mdc-notched-outline__leading,
+    .mdc-notched-outline__trailing,
+    .mdc-notched-outline__notch {
+      border-color: var(--primary-color) !important;
+      border-width: 2px !important;
+    }
+    
+    .mdc-floating-label {
+      color: var(--primary-color) !important;
+    }
+  }
+}
+
+
+::ng-deep .mat-mdc-checkbox.mat-primary {
+  --mdc-checkbox-selected-focus-icon-color: var(--primary-color);
+  --mdc-checkbox-selected-hover-icon-color: var(--primary-color);
+  --mdc-checkbox-selected-icon-color: var(--primary-color);
+  --mdc-checkbox-selected-pressed-icon-color: var(--primary-color);
+}
+
+
+::ng-deep .mat-mdc-radio-button.mat-primary {
+  --mdc-radio-selected-focus-icon-color: var(--primary-color);
+  --mdc-radio-selected-hover-icon-color: var(--primary-color);
+  --mdc-radio-selected-icon-color: var(--primary-color);
+  --mdc-radio-selected-pressed-icon-color: var(--primary-color);
+}
+
+
+::ng-deep .mat-mdc-select-arrow {
+  color: var(--primary-color) !important;
+}
+
+
+::ng-deep .mat-datepicker-toggle {
+  color: var(--primary-color) !important;
+}
+
+.status-workflow-section .status-indicator {
+  border-color: var(--primary-color) !important;
+  box-shadow: 0 2px 8px rgba(var(--primary-color-rgb), 0.1) !important;
+  
+  .status-icon {
+    color: var(--primary-color) !important;
+  }
+}
+
+.status-progress-bar .progress-steps .progress-step.active .step-circle {
+  background: var(--primary-color) !important;
+  border-color: var(--primary-color) !important;
+  box-shadow: 0 0 0 8px rgba(var(--primary-color-rgb), 0.2) !important;
+}
+
+.status-progress-bar .progress-steps .progress-step .step-label .current-badge {
+  background: var(--primary-color) !important;
+}
+
+.status-progress-bar .progress-steps .progress-step.completed .step-circle {
+  background: var(--primary-color) !important;
+  border-color: var(--primary-color) !important;
+}
+
+.status-progress-bar .progress-steps .progress-connector.active {
+  background: var(--primary-color) !important;
+}
+
+.capacity-section .capacity-info mat-icon {
+  color: var(--primary-color) !important;
+}
+
+.capacity-section .capacity-stats .capacity-percentage {
+  color: var(--primary-color) !important;
+}
+
+.capacity-progress .progress-fill {
+  background: var(--primary-gradient) !important;
+}
+
+.capacity-progress .threshold-marker .threshold-dot {
+  background: var(--primary-color) !important;
+}
+
+.client-card.selected {
+  border-color: var(--primary-color) !important;
+  background: linear-gradient(135deg, rgba(var(--primary-color-rgb), 0.05), white) !important;
+}
+
+.client-card .client-select-btn mat-icon {
+  color: var(--primary-color) !important;
+}
+
+
+.order-item.selected {
+  border-color: var(--primary-color) !important;
+  background: rgba(var(--primary-color-rgb), 0.05) !important;
+}
+
+.trip-id-badge {
+  background: var(--primary-gradient) !important;
+}
+
+.timeline-flow::before {
+  background: linear-gradient(to bottom, 
+    var(--primary-color) 0%, 
+    #8b5cf6 20%, 
+    #10b981 50%, 
+    #f59e0b 80%, 
+    #ef4444 100%) !important;
+}
+
+.start-step .step-marker {
+  background: var(--primary-gradient) !important;
+}
+
+.delivery-group-step .delivery-group-number {
+  background: var(--primary-gradient) !important;
+}
+
+.calendar-modal-header {
+  background: var(--primary-gradient) !important;
+}
+
+.calendar-grid .days-grid .day-cell.selected {
+  background: var(--primary-color) !important;
+}
+
+.calendar-grid .days-grid .day-cell.in-range {
+  background-color: rgba(var(--primary-color-rgb), 0.1) !important;
+}
+
+.calendar-actions button.mat-raised-button {
+  background: var(--primary-gradient) !important;
+}
+
+.level-badge {
+  background: rgba(var(--primary-color-rgb), 0.1);
+  color: var(--primary-color);
+}
+
+.info-message {
+  background: rgba(var(--primary-color-rgb), 0.1);
+  color: var(--primary-color);
+  
+  mat-icon {
+    color: var(--primary-color);
+  }
+}
+
+
+
+
+.capacity-progress .progress-bar .progress-fill {
+  
+  
+}
+
+
+.capacity-progress .threshold-marker .threshold-dot {
+  
+}
+
+
+.capacity-progress .threshold-marker .threshold-label {
+  color: var(--text-muted) !important; 
+}
+
+
+.capacity-progress .progress-legend .legend-item .legend-color {
+  &.green { background: #10b981 !important; }
+  &.blue { background: #3b82f6 !important; }
+  &.orange { background: #f59e0b !important; }
+  &.red { background: #ef4444 !important; }
+}
+
+
+
+
+.capacity-alert {
+  
+  
+  mat-icon {
+    
+  }
+  
+  span {
+    
+  }
+}
+
+
+.percentage-badge {
+  background: rgba(var(--primary-color-rgb), 0.1) !important;
+  color: var(--primary-color) !important;
+}
+
+
+.client-stat .percentage-badge.level-critical {
+  background: linear-gradient(135deg, #fee2e2, #fecaca) !important;
+  color: #dc2626 !important;
+  border: 1px solid #fca5a5 !important;
+}
+
+.client-stat .percentage-badge.level-warning {
+  background: linear-gradient(135deg, #fef3c7, #fde68a) !important;
+  color: #d97706 !important;
+  border: 1px solid #fbbf24 !important;
+}
+
+.client-stat .percentage-badge.level-high {
+  background: linear-gradient(135deg, #dbeafe, #bfdbfe) !important;
+  color: #1d4ed8 !important;
+  border: 1px solid #60a5fa !important;
+}
+
+.client-stat .percentage-badge.level-normal {
+  background: linear-gradient(135deg, #d1fae5, #a7f3d0) !important;
+  color: #059669 !important;
+  border: 1px solid #34d399 !important;
+}
+
+
+.capacity-warning-summary.warning-critical {
+  background: linear-gradient(135deg, #fee2e2, #fecaca) !important;
+  border: 1px solid #fecaca !important;
+  
+  .warning-icon {
+    color: #dc2626 !important;
+  }
+  
+  .warning-title {
+    color: #dc2626 !important;
+  }
+  
+  .warning-text {
+    color: #7f1d1d !important;
+  }
+}
+
+.capacity-warning-summary.warning-high {
+  background: linear-gradient(135deg, #fef3c7, #fde68a) !important;
+  border: 1px solid #fde68a !important;
+  
+  .warning-icon {
+    color: #d97706 !important;
+  }
+  
+  .warning-title {
+    color: #d97706 !important;
+  }
+  
+  .warning-text {
+    color: #92400e !important;
+  }
+}
+
+
+.client-progress .progress-bar-mini .progress-fill-mini {
+  
+}
+
+
+.client-progress .progress-percentage {
+  color: var(--primary-color) !important;
+}
+
+
+.capacity-section .capacity-info mat-icon {
+  color: var(--primary-color) !important;
+}
+
+
+.capacity-section .capacity-stats .capacity-percentage {
+  color: var(--primary-color) !important;
+}
+
+
+.capacity-total-summary .total-label mat-icon {
+  color: var(--primary-color) !important;
+}
+
+
+.capacity-total-summary .total-values .total-item .total-value {
+  
+  color: var(--text-primary) !important;
+}
+
+
+.capacity-section .progress-fill:not(.theme-aware) {
+  background: var(--progress-color, #10b981) !important;
+}
+
+
+.capacity-section .progress-fill {
+  background: var(--progress-color, #10b981) !important;
+}
+
+
+.capacity-section .threshold-dot,
+.capacity-section .legend-color,
+.capacity-section .capacity-alert mat-icon,
+.capacity-section .warning-icon {
+  transition: none !important; 
+}
+
+.client-card-virtual {
+  &::before {
+    background: var(--primary-gradient) !important;
+  }
+  
+  &:hover .client-card-footer .client-select-btn {
+    background: var(--primary-color) !important;
+  }
+  
+  &.selected {
+    border-color: var(--primary-color) !important;
+    
+    &::before {
+      background: var(--primary-gradient) !important;
+    }
+    
+    .client-name {
+      color: var(--primary-color) !important;
+    }
+  }
+}
+
+.client-card .client-select-btn mat-icon {
+  color: var(--primary-color) !important;
+}
+
+
+
+.grouped-delivery-header {
+  background: var(--primary-gradient) !important;
+  
+  .customer-icon {
+    background: rgba(255, 255, 255, 0.2) !important;
+    color: white !important;
+  }
+  
+  .group-stats .stat {
+    background: rgba(255, 255, 255, 0.2) !important;
+    
+    .stat-icon, .stat-text {
+      color: white !important;
+    }
+  }
+  
+  .group-stats .stat.sequence .stat-text {
+    background: rgba(255, 255, 255, 0.3) !important;
+    color: white !important;
+  }
+  
+  .expand-btn, .delete-btn {
+    color: white !important;
+    
+    &:hover {
+      background: rgba(255, 255, 255, 0.2) !important;
+    }
+  }
+  
+  .delete-btn:hover {
+    background: rgba(239, 68, 68, 0.8) !important;
+  }
+}
+
+
+.order-item-virtual {
+  .order-checkbox {
+    ::ng-deep .mat-checkbox-background {
+      background-color: var(--primary-color) !important;
+    }
+  }
+  
+  .order-info .order-weight {
+    color: var(--primary-color) !important;
+  }
+}
+
+
+.delivery-details {
+  .detail-item .detail-icon {
+    color: var(--primary-color) !important;
+  }
+}
+
+
+.virtual-scroll-info {
+  .scroll-info-item .info-icon {
+    color: var(--primary-color) !important;
+  }
+  
+  .scroll-actions button:hover {
+    color: var(--primary-color) !important;
+    border-color: var(--primary-color) !important;
+  }
+}
+
+
+.deliveries-section .delivery-stats .stat-item mat-icon {
+  color: var(--primary-color) !important;
+}
+
+
+.order-type-indicator {
+  mat-icon {
+    color: var(--primary-color) !important;
+  }
+  
+  &.success {
+    background: rgba(var(--primary-color-rgb), 0.1) !important;
+    color: var(--primary-color) !important;
+  }
+}
+
+
+.group-stats .stat.sequence .stat-text {
+  color: var(--primary-color) !important;
+  background: rgba(var(--primary-color-rgb), 0.1) !important;
+}
+
+
+.expand-btn:hover {
+  color: var(--primary-color) !important;
+  background: rgba(var(--primary-color-rgb), 0.1) !important;
+}
+
+
+
+
+.client-group-header .client-icon {
+  color: var(--primary-color) !important;
+}
+
+
+.percentage-badge {
+  background: rgba(var(--primary-color-rgb), 0.1) !important;
+  color: var(--primary-color) !important;
+}
+
+
+.client-progress .progress-percentage {
+  color: var(--primary-color) !important;
+}
+
+
+.capacity-total-summary .total-label mat-icon {
+  color: var(--primary-color) !important;
+}
+
+
+
+
+.step-badge.delivery-group-badge {
+  background: rgba(var(--primary-color-rgb), 0.1) !important;
+  color: var(--primary-color) !important;
+  border-color: rgba(var(--primary-color-rgb), 0.2) !important;
+}
+
+
+.step-details .detail-item .detail-icon.client-icon,
+.step-details .detail-item .detail-icon.order-icon,
+.step-details .detail-item .detail-icon.location-icon {
+  color: var(--primary-color) !important;
+}
+
+
+.group-orders-details .orders-title mat-icon {
+  color: var(--primary-color) !important;
+}
+
+
+.drag-handle:hover {
+  color: var(--primary-color) !important;
+}
+
+
+.step-connector .connector-label .drag-hint mat-icon {
+  color: var(--primary-color) !important;
+}
+
+
+.customer-name {
+  color: white !important; 
+}
+
+
+:not(.grouped-delivery-header) .customer-name {
+  color: var(--text-primary) !important;
+}
+
+
+.client-name-container .client-name {
+  color: var(--text-primary) !important;
+}
+
+
+.timeline-step-virtual .step-title .client-name {
+  color: var(--text-primary) !important;
+}
+
+
+
+
+
+.grouped-delivery-header .customer-details .customer-name {
+  color: white !important;
+  font-weight: 600 !important;
+}
+
+
+.client-card .client-name,
+.client-card-virtual .client-name,
+.client-item .client-name {
+  color: var(--text-primary) !important;
+}
+
+
+.client-card.selected .client-name,
+.client-card-virtual.selected .client-name {
+  color: var(--primary-color) !important;
+  font-weight: 700 !important;
+}
+
+
+.trips-add-btn {
+  background: var(--primary-gradient) !important;
+  color: white !important;
+  border-radius: 999px !important;
+  padding: 0.75rem 1.5rem !important;
+  font-weight: 500 !important;
+  box-shadow: 0 8px 16px rgba(var(--primary-color-rgb), 0.25) !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.5rem !important;
+  border: none !important;
+  transition: all 0.2s ease !important;
+
+  .mat-icon {
+    color: white !important;
+  }
+
+  &:hover:not(:disabled) {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 12px 24px rgba(var(--primary-color-rgb), 0.35) !important;
+  }
+
+  &:active:not(:disabled) {
+    transform: translateY(0) !important;
+  }
+
+  &:disabled {
+    opacity: 0.6 !important;
+    cursor: not-allowed !important;
+    box-shadow: none !important;
+  }
+}
+
+
+.form-footer-simple .save-btn {
+  background: var(--primary-gradient) !important;
+  color: white !important;
+  border-radius: 999px !important;
+  padding: 0.625rem 2rem !important;
+  font-weight: 600 !important;
+  min-width: 140px !important;
+  box-shadow: 0 8px 16px rgba(var(--primary-color-rgb), 0.25) !important;
+  border: none !important;
+  transition: all 0.2s ease !important;
+
+  .mat-icon {
+    color: white !important;
+  }
+
+  .loading-icon {
+    animation: spin 1s linear infinite;
+  }
+
+  &:hover:not(:disabled) {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 12px 24px rgba(var(--primary-color-rgb), 0.35) !important;
+  }
+
+  &:active:not(:disabled) {
+    transform: translateY(0) !important;
+  }
+
+  &:disabled {
+    opacity: 0.6 !important;
+    cursor: not-allowed !important;
+    box-shadow: none !important;
+  }
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+
+.draft-status {
+  background: linear-gradient(135deg, rgba(var(--primary-color-rgb), 0.08), rgba(var(--primary-color-rgb), 0.03)) !important;
+  border: 1px solid rgba(var(--primary-color-rgb), 0.2) !important;
+  border-radius: 8px !important;
+  margin: 16px 0 !important;
+  padding: 12px 16px !important;
+  box-shadow: 0 2px 8px rgba(var(--primary-color-rgb), 0.1) !important;
+}
+
+.draft-status-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.draft-icon {
+  color: var(--primary-color) !important;
+  font-size: 24px !important;
+  width: 24px !important;
+  height: 24px !important;
+}
+
+.draft-text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.draft-title {
+  font-weight: 600 !important;
+  color: var(--primary-color) !important;
+  font-size: 14px !important;
+  margin-bottom: 2px !important;
+}
+
+.draft-hint {
+  font-size: 12px !important;
+  color: var(--text-muted) !important;
+}
+
+.draft-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.draft-actions button {
+  &.mat-button {
+    color: var(--text-secondary) !important;
+    
+    &:hover {
+      background: rgba(var(--primary-color-rgb), 0.1) !important;
+      color: var(--primary-color) !important;
+    }
+    
+    &[color="warn"] {
+      color: #ef4444 !important;
+      
+      &:hover {
+        background: rgba(239, 68, 68, 0.1) !important;
+      }
+    }
+  }
+}
+
+
+.draft-actions button:first-child {
+  mat-icon {
+    color: var(--primary-color) !important;
+  }
+  
+  &:hover {
+    mat-icon {
+      color: var(--primary-color) !important;
+    }
+  }
+}
+
+
+.draft-actions button:last-child {
+  mat-icon {
+    color: #ef4444 !important;
+  }
+}
+
+
+@keyframes draftPulse {
+  0% {
+    box-shadow: 0 2px 8px rgba(var(--primary-color-rgb), 0.1);
+  }
+  50% {
+    box-shadow: 0 4px 16px rgba(var(--primary-color-rgb), 0.2);
+  }
+  100% {
+    box-shadow: 0 2px 8px rgba(var(--primary-color-rgb), 0.1);
+  }
+}
+
+.draft-status {
+  animation: draftPulse 2s infinite ease-in-out;
+}
+
+
+.draft-status:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(var(--primary-color-rgb), 0.15) !important;
+  border-color: rgba(var(--primary-color-rgb), 0.3) !important;
+  transition: all 0.3s ease;
+}
 .trip-form-card {
   border-radius: 1.75rem;
   box-shadow: 0 25px 55px rgba(15, 23, 42, 0.12);
@@ -13155,7 +13898,7 @@ svg {
   pointer-events: auto !important;
 }
 
-/* FIX URGENT POUR LES BOUTONS NON-CLIQUABLES */
+
 .order-item-virtual,
 .client-card-virtual,
 .grouped-delivery-card-virtual,
@@ -13170,19 +13913,19 @@ svg {
   pointer-events: none;
 }
 
-/* Force tous les boutons à être cliquables */
+
 button, [mat-icon-button], .mat-button-wrapper {
   pointer-events: auto !important;
   z-index: 100 !important;
   position: relative !important;
 }
 
-/* Garantit que les boutons sont au-dessus */
+
 .remove-btn, .delete-btn, .order-actions, .group-actions {
   z-index: 101 !important;
 }
 
-/* Styles for the filter info option in dropdown */
+
 .filter-info-option {
   height: auto !important;
   min-height: 60px !important;
@@ -13247,7 +13990,7 @@ button, [mat-icon-button], .mat-button-wrapper {
   font-weight: 500;
 }
 
-/* Styles for the filter info option in dropdown */
+
 .filter-info-option {
   height: auto !important;
   min-height: 60px !important;
@@ -13552,7 +14295,7 @@ button, [mat-icon-button], .mat-button-wrapper {
   }
 }
 
-/* Virtual Scroll Viewports */
+
 .left-virtual-viewport,
 .right-virtual-viewport {
   height: 100%;
@@ -13564,12 +14307,12 @@ button, [mat-icon-button], .mat-button-wrapper {
   padding: 16px;
 }
 
-/* Adjust main layout for virtual scrolling */
+
 .main-layout {
   display: flex;
   gap: 2rem;
   margin-bottom: 2rem;
-  height: 70vh; /* Adjust based on your needs */
+  height: 70vh; 
 }
 
 .left-section,
@@ -13587,7 +14330,7 @@ button, [mat-icon-button], .mat-button-wrapper {
   flex: 0 0 40%;
 }
 
-/* Virtual Scroll Info */
+
 .virtual-scroll-info {
   padding: 12px 16px;
   background: #f8fafc;
@@ -13649,7 +14392,7 @@ button, [mat-icon-button], .mat-button-wrapper {
   }
 }
 
-/* Scrollbar styling */
+
 .left-virtual-viewport::-webkit-scrollbar,
 .right-virtual-viewport::-webkit-scrollbar {
   width: 8px;
@@ -13698,7 +14441,7 @@ button, [mat-icon-button], .mat-button-wrapper {
 
 .client-card-virtual {
   height: 180px;
-  /* Garder les styles existants de votre carte */
+  
 }
 
 .trip-form-wrapper {
@@ -13926,7 +14669,7 @@ button, [mat-icon-button], .mat-button-wrapper {
   }
 }
 
-/* Compactage des autres sections */
+
 .location-section {
   margin-bottom: 1rem !important;
   
@@ -14003,7 +14746,7 @@ button, [mat-icon-button], .mat-button-wrapper {
   padding: 1rem !important;
 }
 
-/* Ajustements responsive */
+
 @media (max-width: 1024px) {
   .main-layout {
     flex-direction: column;
@@ -14043,7 +14786,7 @@ button, [mat-icon-button], .mat-button-wrapper {
   }
 }
 
-/* Suppression des espaces blancs supplémentaires */
+
 :host {
   padding: 0.75rem !important;
   background: radial-gradient(circle at top, #f7fbff 0, #eef2f7 60%);
@@ -14077,7 +14820,7 @@ button, [mat-icon-button], .mat-button-wrapper {
   padding-top: 1rem;
 }
 
-/* Optimisation du scroll */
+
 .left-virtual-viewport,
 .right-virtual-viewport {
   max-height: calc(100vh - 300px) !important;
@@ -14104,12 +14847,12 @@ button, [mat-icon-button], .mat-button-wrapper {
   width: 60px;
 }
 
-/* Remove blue bar */
+
 .weather-section::before {
   display: none !important;
 }
 
-/* Compact weather container */
+
 .weather-compact {
   padding: 4px !important;
   margin: 0 !important;
@@ -14125,7 +14868,7 @@ button, [mat-icon-button], .mat-button-wrapper {
   height: 100%;
 }
 
-/* Compact weather location */
+
 .weather-location-mini {
   flex: 1;
   min-width: 0;
@@ -14138,7 +14881,7 @@ button, [mat-icon-button], .mat-button-wrapper {
   gap: 4px;
 }
 
-/* Compact location header */
+
 .location-header-mini {
   display: flex;
   align-items: center;
@@ -14183,7 +14926,7 @@ button, [mat-icon-button], .mat-button-wrapper {
   text-overflow: ellipsis;
 }
 
-/* Compact weather display */
+
 .weather-display-mini {
   display: flex;
   flex-direction: column;
@@ -14215,7 +14958,7 @@ button, [mat-icon-button], .mat-button-wrapper {
   object-fit: contain;
 }
 
-/* Compact weather stats */
+
 .weather-stats-mini {
   display: flex;
   flex-direction: column;
@@ -14258,7 +15001,7 @@ button, [mat-icon-button], .mat-button-wrapper {
   margin-top: 2px;
 }
 
-/* Compact separator */
+
 .weather-separator-mini {
   flex: 0 0 40px;
   display: flex;
@@ -14307,22 +15050,22 @@ button, [mat-icon-button], .mat-button-wrapper {
   font-weight: 500;
 }
 
-/* Remove feels-like to save space */
+
 .feels-like {
   display: none;
 }
 
-/* Remove precipitation display unless critical */
+
 .weather-stats-mini .stat-item-mini:nth-child(3) {
   display: none;
 }
 
-/* Only show precipitation if > 5mm (rainy conditions) */
+
 .weather-location-mini .stat-row .stat-item-mini:last-child {
   display: none;
 }
 
-/* Responsive adjustments */
+
 @media (max-width: 768px) {
   .weather-row {
     flex-direction: column;
@@ -14345,13 +15088,13 @@ button, [mat-icon-button], .mat-button-wrapper {
   }
 }
 
-/* Hover effects for better UX */
+
 .weather-location-mini:hover {
   border-color: #cbd5e1;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
-/* Animation for temperature change */
+
 @keyframes tempChange {
   0% { transform: scale(1); }
   50% { transform: scale(1.05); }
@@ -14362,7 +15105,7 @@ button, [mat-icon-button], .mat-button-wrapper {
   animation: tempChange 0.5s ease;
 }
 
-/* Weather Section - Increased Height */
+
 .weather-section {
   margin: 1rem 0 !important;
   padding: 1rem !important;
@@ -14376,12 +15119,12 @@ button, [mat-icon-button], .mat-button-wrapper {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
-/* Remove blue bar */
+
 .weather-section::before {
   display: none !important;
 }
 
-/* Weather header */
+
 .weather-header {
   display: flex;
   justify-content: space-between;
@@ -14406,7 +15149,7 @@ button, [mat-icon-button], .mat-button-wrapper {
   font-size: 1.25rem;
 }
 
-/* Weather loading */
+
 .weather-loading {
   display: flex;
   flex-direction: column;
@@ -14421,13 +15164,13 @@ button, [mat-icon-button], .mat-button-wrapper {
   margin-bottom: 0.5rem;
 }
 
-/* Weather compact container */
+
 .weather-compact {
   height: 110px !important;
   margin-bottom: 0.75rem;
 }
 
-/* Weather row layout */
+
 .weather-row {
   display: flex;
   align-items: stretch;
@@ -14435,7 +15178,7 @@ button, [mat-icon-button], .mat-button-wrapper {
   height: 100%;
 }
 
-/* Weather location mini */
+
 .weather-location-mini {
   flex: 1;
   min-width: 0;
@@ -14456,7 +15199,7 @@ button, [mat-icon-button], .mat-button-wrapper {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
-/* Location header mini */
+
 .location-header-mini {
   display: flex;
   align-items: center;
@@ -14502,7 +15245,7 @@ button, [mat-icon-button], .mat-button-wrapper {
   text-overflow: ellipsis;
 }
 
-/* Weather display mini */
+
 .weather-display-mini {
   display: flex;
   flex-direction: column;
@@ -14534,7 +15277,7 @@ button, [mat-icon-button], .mat-button-wrapper {
   filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
 }
 
-/* Weather stats mini */
+
 .weather-stats-mini {
   margin-top: auto;
 }
@@ -14581,7 +15324,7 @@ button, [mat-icon-button], .mat-button-wrapper {
   text-overflow: ellipsis;
 }
 
-/* Weather separator mini */
+
 .weather-separator-mini {
   flex: 0 0 70px;
   display: flex;
@@ -14637,7 +15380,7 @@ button, [mat-icon-button], .mat-button-wrapper {
   border: 1px solid #e2e8f0;
 }
 
-/* Weather Capacity Row - Single line with truck capacity */
+
 .weather-capacity-row {
   display: flex;
   align-items: center;
@@ -14658,7 +15401,7 @@ button, [mat-icon-button], .mat-button-wrapper {
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
 }
 
-/* Capacity Display */
+
 .capacity-display {
   display: flex;
   align-items: center;
@@ -14887,7 +15630,7 @@ button, [mat-icon-button], .mat-button-wrapper {
   min-width: 0;
 }
 
-/* Responsive */
+
 @media (max-width: 768px) {
   .trip-row {
     flex-direction: column;
@@ -14898,12 +15641,12 @@ button, [mat-icon-button], .mat-button-wrapper {
   }
 }
 
-/* Make all trip fields have the same width */
+
 .trip-field {
   width: 100%;
 }
 
-/* Ensure trip rows are properly laid out with 3 fields per line */
+
 .trip-row {
   display: flex;
   flex-wrap: wrap;
@@ -14911,7 +15654,7 @@ button, [mat-icon-button], .mat-button-wrapper {
   margin-bottom: 16px;
 }
 
-/* Each form field takes 1/3 of the width minus gaps */
+
 .trip-row .mat-form-field,
 .trip-row .zone-filter-container {
   flex: 1 1 calc(33.333% - 11px);
@@ -14920,20 +15663,20 @@ button, [mat-icon-button], .mat-button-wrapper {
   box-sizing: border-box;
 }
 
-/* For the zone filter container specifically */
+
 .zone-filter-container {
   display: flex;
   align-items: center;
   gap: 8px;
 }
 
-/* Ensure zone filter mat-form-field takes full width */
+
 .zone-filter-container .mat-form-field {
   flex: 1;
   min-width: 0;
 }
 
-/* Adjust search-and-filter-row to match */
+
 .search-and-filter-row {
   display: flex;
   flex-wrap: wrap;
@@ -14941,19 +15684,19 @@ button, [mat-icon-button], .mat-button-wrapper {
   width: 100%;
 }
 
-/* Make all form fields have consistent appearance */
+
 .mat-form-field {
   width: 100%;
   box-sizing: border-box;
 }
 
-/* For the clear button in zone filter */
+
 .clear-zone-filter-btn {
   flex-shrink: 0;
   margin-top: 8px;
 }
 
-/* Tablet: 2 fields per row */
+
 @media (max-width: 1024px) {
   .trip-row .mat-form-field,
   .trip-row .zone-filter-container {
@@ -14962,7 +15705,7 @@ button, [mat-icon-button], .mat-button-wrapper {
   }
 }
 
-/* Mobile: 1 field per row */
+
 @media (max-width: 768px) {
   .trip-row .mat-form-field,
   .trip-row .zone-filter-container {
@@ -14981,7 +15724,7 @@ button, [mat-icon-button], .mat-button-wrapper {
   }
 }
 
-/* Strict 3-column grid */
+
 .trip-row {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -14989,12 +15732,12 @@ button, [mat-icon-button], .mat-button-wrapper {
   margin-bottom: 16px;
 }
 
-/* Ensure all items span one column */
+
 .trip-row > * {
   grid-column: span 1;
 }
 
-/* Zone filter container adjustment for grid */
+
 .zone-filter-container {
   display: flex;
   align-items: center;
@@ -15006,7 +15749,7 @@ button, [mat-icon-button], .mat-button-wrapper {
   min-width: 0;
 }
 
-/* Responsive for grid */
+
 @media (max-width: 1024px) {
   .trip-row {
     grid-template-columns: repeat(2, 1fr);
@@ -15019,7 +15762,7 @@ button, [mat-icon-button], .mat-button-wrapper {
   }
 }
 
-/* Ensure trip rows are properly laid out with 3 fields per line */
+
 .trip-row {
   display: flex;
   flex-wrap: wrap;
@@ -15028,7 +15771,7 @@ button, [mat-icon-button], .mat-button-wrapper {
   width: 100%;
 }
 
-/* Each form field takes 1/3 of the width minus gaps */
+
 .trip-row > .mat-form-field,
 .trip-row > .zone-filter-container {
   flex: 1 1 calc(33.333% - 11px);
@@ -15037,32 +15780,32 @@ button, [mat-icon-button], .mat-button-wrapper {
   box-sizing: border-box;
 }
 
-/* For the zone filter container specifically */
+
 .zone-filter-container {
   display: flex;
   align-items: flex-start;
   gap: 8px;
 }
 
-/* Ensure zone filter mat-form-field takes full width */
+
 .zone-filter-container .mat-form-field {
   flex: 1;
   min-width: 0;
 }
 
-/* Make all form fields have consistent appearance */
+
 .trip-row .mat-form-field {
   width: 100%;
   box-sizing: border-box;
 }
 
-/* For the clear button in zone filter */
+
 .clear-zone-filter-btn {
   flex-shrink: 0;
   margin-top: 6px;
 }
 
-/* Responsive adjustments */
+
 @media (max-width: 1024px) {
   .trip-row > .mat-form-field,
   .trip-row > .zone-filter-container {
@@ -15089,7 +15832,7 @@ button, [mat-icon-button], .mat-button-wrapper {
   }
 }
 
-/* Configuration du Trajet - Align radio buttons in one line */
+
 .traject-choice {
   margin-bottom: 1.5rem;
 }
@@ -15106,7 +15849,7 @@ button, [mat-icon-button], .mat-button-wrapper {
   min-width: 250px;
 }
 
-/* Adjust radio button styling for inline layout */
+
 ::ng-deep .traject-choice .mat-mdc-radio-button {
   width: auto;
   
@@ -15135,7 +15878,7 @@ button, [mat-icon-button], .mat-button-wrapper {
   }
 }
 
-/* Adjust option content for inline layout */
+
 .option-content {
   display: flex;
   align-items: center;
@@ -15168,7 +15911,7 @@ button, [mat-icon-button], .mat-button-wrapper {
   }
 }
 
-/* Responsive adjustments */
+
 @media (max-width: 768px) {
   .radio-options-row {
     flex-direction: column;
@@ -15198,7 +15941,7 @@ button, [mat-icon-button], .mat-button-wrapper {
   }
 }
 
-/* Section unifiée pour la première ligne */
+
 .unified-first-line-section {
   margin-bottom: 1.5rem;
 }
@@ -15210,13 +15953,13 @@ button, [mat-icon-button], .mat-button-wrapper {
   align-items: start;
 }
 
-/* Wrapper pour la carte de dates */
+
 .date-card-wrapper {
   position: relative;
   height: 100%;
 }
 
-/* Style de la date en carte */
+
 .date-card-wrapper .unified-date-section {
   height: 100%;
   background: white;
@@ -15318,7 +16061,7 @@ button, [mat-icon-button], .mat-button-wrapper {
   color: #94a3b8;
 }
 
-/* Séparateur entre les dates */
+
 .date-card-wrapper .date-range-separator {
   color: #94a3b8;
   flex-shrink: 0;
@@ -15328,7 +16071,7 @@ button, [mat-icon-button], .mat-button-wrapper {
   font-size: 1.25rem;
 }
 
-/* Durée */
+
 .date-card-wrapper .date-range-duration {
   text-align: center;
   font-size: 0.75rem;
@@ -15365,7 +16108,7 @@ button, [mat-icon-button], .mat-button-wrapper {
   line-height: 1.2;
 }
 
-/* Checkbox centré en dessous */
+
 .same-location-checkbox-unified {
   display: flex;
   justify-content: center;
@@ -15378,7 +16121,7 @@ button, [mat-icon-button], .mat-button-wrapper {
   border: 1px solid #e2e8f0;
 }
 
-/* Responsive */
+
 @media (max-width: 1200px) {
   .unified-first-line-grid {
     grid-template-columns: 1fr 1fr;
@@ -15418,7 +16161,7 @@ button, [mat-icon-button], .mat-button-wrapper {
   }
 }
 
-/* Styles pour les cartes de localisation dans la grille */
+
 .unified-first-line-grid .location-card {
   height: 100%;
   background: white;
@@ -15494,7 +16237,7 @@ button, [mat-icon-button], .mat-button-wrapper {
   padding: 0;
 }
 
-/* Animation pour le changement de date */
+
 @keyframes dateChange {
   0% { transform: scale(1); }
   50% { transform: scale(1.05); }
@@ -15679,27 +16422,27 @@ button, [mat-icon-button], .mat-button-wrapper {
   }
 }
 
-/* ===== TRAJECT SELECT - FIX DROPDOWN SIZE ===== */
 
-/* Target the traject selection dropdown specifically */
+
+
 .traject-selection .traject-field {
   max-width: 400px;
 }
 
-/* Target the panel that opens for traject selection */
+
 ::ng-deep .traject-select-panel {
   max-width: 450px !important;
   min-width: 300px !important;
   max-height: 350px !important;
 }
 
-/* Style the options more compactly */
+
 ::ng-deep .traject-select-panel .mat-mdc-option {
   min-height: 48px !important;
   padding: 8px 16px !important;
 }
 
-/* Make the option content more compact */
+
 ::ng-deep .traject-select-panel .traject-option {
   padding: 4px 0 !important;
 }
@@ -15714,7 +16457,7 @@ button, [mat-icon-button], .mat-button-wrapper {
   gap: 8px !important;
 }
 
-/* Make the loading state compact */
+
 ::ng-deep .traject-select-panel .loading-trajects {
   padding: 12px !important;
   gap: 8px !important;
@@ -15729,20 +16472,20 @@ button, [mat-icon-button], .mat-button-wrapper {
   }
 }
 
-/* For the "Aucun" option */
+
 ::ng-deep .traject-select-panel .mat-mdc-option:first-child {
   font-size: 0.85rem !important;
   color: #64748b !important;
 }
 
-/* If you want to make the field itself smaller too */
+
 .traject-field {
   &.full-width {
     max-width: 400px;
   }
 }
 
-/* Ultra-compact version */
+
 ::ng-deep .traject-select-panel {
   max-width: 380px !important;
   min-width: 280px !important;
@@ -15762,7 +16505,7 @@ button, [mat-icon-button], .mat-button-wrapper {
   font-size: 0.65rem !important;
 }
 
-/* ===== ENHANCED TRAJECT SELECTED DISPLAY ===== */
+
 
 .selected-traject-preview {
   margin-top: 1rem;
@@ -16221,7 +16964,7 @@ button, [mat-icon-button], .mat-button-wrapper {
   }
 }
 
-/* ===== ENHANCED TRAJECT SELECTED DISPLAY WITH ICON FIXES ===== */
+
 
 .selected-traject-preview {
   margin-top: 1rem;
@@ -17164,7 +17907,7 @@ mat-error {
   }
 }
 
-/* Main layout - Fix right side scrolling */
+
 .main-layout {
   display: flex;
   gap: 2rem;
@@ -17335,7 +18078,7 @@ mat-error {
   margin-left: 4px;
 }
 
-/* Fix for Convoyeur dropdown alignment and add divider lines */
+
 .trip-row {
   display: flex;
   gap: 1.25rem;
@@ -17344,7 +18087,7 @@ mat-error {
   align-items: center;
 }
 
-/* Add divider line between sections */
+
 .trip-row:not(:last-child)::after {
   content: '';
   position: absolute;
@@ -17359,7 +18102,7 @@ mat-error {
     transparent 100%);
 }
 
-/* Ensure all form fields in the row have equal height and alignment */
+
 .trip-field {
   flex: 1;
   min-width: 0;
@@ -17376,7 +18119,7 @@ mat-error {
   }
 }
 
-/* Special styling for the convoyeur field to ensure proper alignment */
+
 .trip-field:last-child {
   ::ng-deep .mat-mdc-select-value {
     padding-top: 0;
@@ -17384,19 +18127,19 @@ mat-error {
   }
 }
 
-/* Fix for the convoyeur select trigger alignment */
+
 .trip-field .mat-mdc-select-trigger {
   display: flex;
   align-items: center;
   width: 100%;
 }
 
-/* Ensure consistent padding for all selects */
+
 ::ng-deep .mat-mdc-select-value {
   padding: 0 8px;
 }
 
-/* Responsive adjustments */
+
 @media (max-width: 768px) {
   .trip-row {
     flex-direction: column;
@@ -17412,7 +18155,7 @@ mat-error {
   }
 }
 
-/* Add a subtle visual separator for the convoyeur section */
+
 .trip-row:last-child {
   margin-bottom: 1rem;
   
@@ -17433,7 +18176,7 @@ mat-error {
   }
 }
 
-/* Alternative: Add a visible divider between fields in the same row */
+
 .trip-row .trip-field:not(:last-child)::after {
   content: '';
   position: absolute;
@@ -17445,12 +18188,12 @@ mat-error {
   background: #e2e8f0;
 }
 
-/* Ensure the convoyeur dropdown has proper spacing */
+
 .trip-field .mat-mdc-select {
   padding: 8px 0;
 }
 
-/* Fix for mobile where the vertical dividers don't make sense */
+
 @media (max-width: 768px) {
   .trip-row .trip-field:not(:last-child)::after,
   .trip-row:last-child .trip-field:last-child::before {
@@ -17458,7 +18201,7 @@ mat-error {
   }
 }
 
-/* Fix dropdown panel alignment for convoyeur */
+
 ::ng-deep .cdk-overlay-pane .mat-mdc-select-panel {
   min-width: calc(100% + 32px) !important;
   margin-left: -16px !important;
@@ -17466,7 +18209,7 @@ mat-error {
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15) !important;
 }
 
-/* Ensure the convoyeur option has proper padding */
+
 ::ng-deep .mat-mdc-option {
   min-height: 48px !important;
   padding: 0 16px !important;
@@ -17474,17 +18217,17 @@ mat-error {
   align-items: center !important;
 }
 
-/* Fix for Convoyeur dropdown alignment */
+
 .trip-field:has([formControlName="convoyeurId"]) {
   position: relative;
 }
 
-/* Ensure the convoyeur select trigger displays properly */
+
 .trip-field [formControlName="convoyeurId"] {
   width: 100%;
 }
 
-/* Fix for the convoyeur dropdown options display */
+
 ::ng-deep .mat-mdc-select-panel.convoyeur-select-panel {
   min-width: 100% !important;
   max-width: 300px !important;
@@ -17493,7 +18236,7 @@ mat-error {
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15) !important;
 }
 
-/* Style the convoyeur options properly */
+
 ::ng-deep .convoyeur-option {
   display: flex !important;
   align-items: center !important;
@@ -17512,13 +18255,13 @@ mat-error {
   background-color: #f1f5f9 !important;
 }
 
-/* Fix for the "-- Aucun convoyeur --" option */
+
 ::ng-deep .convoyeur-option-placeholder {
   color: #94a3b8 !important;
   font-style: italic !important;
 }
 
-/* Add a visible divider line specifically for the convoyeur row */
+
 .trip-row:last-child {
   border-top: 2px solid #e2e8f0;
   padding-top: 1rem;
@@ -17526,28 +18269,28 @@ mat-error {
   position: relative;
 }
 
-/* Alternative: Add a subtle background to the convoyeur row */
+
 .trip-row:last-child {
   background: linear-gradient(to right, #f8fafc, transparent);
   padding: 1rem;
   border-radius: 8px;
 }
 
-/* Ensure the convoyeur dropdown has proper spacing from the trigger */
+
 ::ng-deep .mat-mdc-select-trigger {
   min-height: 24px;
   display: flex;
   align-items: center;
 }
 
-/* Fix for the convoyeur select value display */
+
 .trip-field .mat-mdc-select-value {
   display: flex;
   align-items: center;
   height: 100%;
 }
 
-/* Add a clear visual separator with a line and icon */
+
 .trip-row:last-child {
   position: relative;
   margin-top: 1.5rem;
@@ -17569,7 +18312,7 @@ mat-error {
   border-radius: 2px;
 }
 
-/* Add a label to the separator if desired */
+
 .trip-row:last-child::after {
   content: 'Informations du trajet';
   position: absolute;
@@ -17586,7 +18329,7 @@ mat-error {
   white-space: nowrap;
 }
 
-/* Make the convoyeur field stand out slightly */
+
 .trip-field:has([formControlName="convoyeurId"]) {
   background: rgba(99, 102, 241, 0.02);
   border-radius: 8px;
@@ -17597,21 +18340,21 @@ mat-error {
   background: rgba(99, 102, 241, 0.05);
 }
 
-/* Fix for the dropdown panel position */
+
 ::ng-deep .cdk-overlay-pane:has(.convoyeur-select-panel) {
   transform: translateY(4px) !important;
 }
 
-/* Ensure the convoyeur options have proper text alignment */
+
 ::ng-deep .mat-mdc-option .mdc-list-item__primary-text {
   display: flex !important;
   align-items: center !important;
   width: 100% !important;
 }
 
-/* ===== FIX FOR DRIVER AND TRUCK DROPDOWN DIVIDERS ===== */
 
-/* Remove all borders/divider lines from ALL dropdown options */
+
+
 ::ng-deep .mat-mdc-option {
   border-bottom: none !important;
   border-top: none !important;
@@ -17619,32 +18362,32 @@ mat-error {
   box-shadow: none !important;
 }
 
-/* Remove any pseudo-elements that might create lines */
+
 ::ng-deep .mat-mdc-option::before,
 ::ng-deep .mat-mdc-option::after {
   display: none !important;
   content: none !important;
 }
 
-/* Specifically target driver options */
+
 ::ng-deep .driver-option-with-details {
   border-bottom: none !important;
   border-top: none !important;
 }
 
-/* Specifically target truck options */
+
 ::ng-deep .truck-option {
   border-bottom: none !important;
   border-top: none !important;
 }
 
-/* Remove borders from mat-optgroup as well */
+
 ::ng-deep .mat-mdc-optgroup {
   border-bottom: none !important;
   border-top: none !important;
 }
 
-/* Ensure mat-optgroup labels don't have borders */
+
 ::ng-deep .mat-mdc-optgroup-label {
   border-bottom: none !important;
   border-top: none !important;
@@ -17655,12 +18398,12 @@ mat-error {
   margin: 0 !important;
 }
 
-/* Remove any border from the last option */
+
 ::ng-deep .mat-mdc-option:last-child {
   border-bottom: none !important;
 }
 
-/* Fix for the dropdown panel container */
+
 ::ng-deep .mat-mdc-select-panel {
   border-radius: 8px !important;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15) !important;
@@ -17670,42 +18413,42 @@ mat-error {
   overflow-y: auto !important;
 }
 
-/* Add a subtle separator between option groups instead of lines */
+
 ::ng-deep .mat-mdc-optgroup:not(:last-child) {
   border-bottom: 1px solid #f1f5f9 !important;
   margin-bottom: 4px !important;
   padding-bottom: 4px !important;
 }
 
-/* Remove borders from within the options */
+
 ::ng-deep .mat-mdc-option .mdc-list-item__primary-text {
   border-bottom: none !important;
 }
 
-/* Fix for the driver option with details */
+
 ::ng-deep .driver-option-with-details {
   padding: 4px 0 !important;
 }
 
-/* Fix for the truck option */
+
 ::ng-deep .truck-option {
   padding: 8px 4px !important;
 }
 
-/* Ensure no borders on hover */
+
 ::ng-deep .mat-mdc-option:hover {
   background-color: #f1f5f9 !important;
   border-bottom: none !important;
 }
 
-/* Fix for selected state */
+
 ::ng-deep .mat-mdc-option.mat-mdc-option-active,
 ::ng-deep .mat-mdc-option.mat-mdc-selected {
   background-color: #eff6ff !important;
   border-bottom: none !important;
 }
 
-/* Remove any borders from filter sections inside dropdowns */
+
 ::ng-deep .filter-date-info,
 ::ng-deep .filter-zone-info,
 ::ng-deep .filter-summary,
@@ -17714,29 +18457,29 @@ mat-error {
   border-bottom: 1px solid #e2e8f0 !important;
 }
 
-/* But remove borders from the actual options */
+
 ::ng-deep .mat-mdc-option .filter-date-info,
 ::ng-deep .mat-mdc-option .filter-zone-info {
   border-bottom: none !important;
 }
 
-/* Fix for the special filter info options that are disabled */
+
 ::ng-deep .filter-info-option {
   border-bottom: 1px solid #e2e8f0 !important;
 }
 
-/* Ensure the dropdown has proper spacing */
+
 ::ng-deep .cdk-overlay-pane .mat-mdc-select-panel {
   transform: translateY(4px) !important;
 }
 
-/* Override any Material Design default borders */
+
 ::ng-deep .mat-mdc-option {
   --mdc-list-list-item-one-line-container-height: 48px;
   --mdc-list-list-item-label-text-color: #1e293b;
 }
 
-/* Fix for the "Chauffeurs disponibles" group header */
+
 ::ng-deep .mat-mdc-optgroup-label {
   background-color: #f8fafc !important;
   color: #475569 !important;
@@ -17748,17 +18491,17 @@ mat-error {
   border-bottom: 1px solid #e2e8f0 !important;
 }
 
-/* Fix for the "Chauffeurs indisponibles" group header */
+
 ::ng-deep .mat-mdc-optgroup:has(.unavailable) .mat-mdc-optgroup-label {
   color: #ef4444 !important;
 }
 
-/* Ensure options within groups have no borders */
+
 ::ng-deep .mat-mdc-optgroup .mat-mdc-option {
   border-bottom: none !important;
 }
 
-/* Keep group separators but remove option dividers */
+
 ::ng-deep .mat-mdc-optgroup:not(:last-child) {
   border-bottom: 1px solid #f1f5f9 !important;
   margin-bottom: 8px !important;
@@ -17771,7 +18514,7 @@ mat-error {
   padding: 8px 16px !important;
 }
 
-/* Add a small visual indicator for available vs unavailable */
+
 ::ng-deep .mat-mdc-optgroup:has(.unavailable) .mat-mdc-optgroup-label {
   color: #ef4444 !important;
 }
@@ -17779,9 +18522,9 @@ mat-error {
 ::ng-deep .mat-mdc-optgroup:has(.available) .mat-mdc-optgroup-label {
   color: #10b981 !important;
 }
-/* ===== ULTIMATE FIX FOR DRIVER AND TRUCK DROPDOWN DIVIDERS ===== */
 
-/* Force remove ALL borders from ALL dropdown options */
+
+
 ::ng-deep .mat-mdc-option {
   border: none !important;
   border-bottom: none !important;
@@ -17793,7 +18536,7 @@ mat-error {
   background-image: none !important;
 }
 
-/* Remove any pseudo-elements that might create lines */
+
 ::ng-deep .mat-mdc-option::before,
 ::ng-deep .mat-mdc-option::after {
   display: none !important;
@@ -17801,33 +18544,33 @@ mat-error {
   border: none !important;
 }
 
-/* Specifically target driver options */
+
 ::ng-deep .driver-option-with-details {
   border: none !important;
   border-bottom: none !important;
   border-top: none !important;
 }
 
-/* Specifically target truck options */
+
 ::ng-deep .truck-option {
   border: none !important;
   border-bottom: none !important;
   border-top: none !important;
 }
 
-/* Remove borders from the driver secondary info section */
+
 ::ng-deep .driver-secondary-info {
   border: none !important;
   border-bottom: none !important;
 }
 
-/* Remove borders from the truck details section */
+
 ::ng-deep .truck-details {
   border: none !important;
   border-bottom: none !important;
 }
 
-/* Target the Material Design internal elements that might have borders */
+
 ::ng-deep .mat-mdc-option .mdc-list-item__primary-text {
   border: none !important;
 }
@@ -17836,7 +18579,7 @@ mat-error {
   border: none !important;
 }
 
-/* Remove any borders from the parent container */
+
 ::ng-deep .cdk-overlay-pane .mat-mdc-select-panel {
   border: 1px solid #e2e8f0 !important;
 }
@@ -17845,19 +18588,19 @@ mat-error {
   border: none !important;
 }
 
-/* Target the specific dropdown panels */
+
 ::ng-deep .driver-select-panel .mat-mdc-option,
 ::ng-deep .truck-select-panel .mat-mdc-option {
   border: none !important;
   border-bottom: none !important;
 }
 
-/* Remove any background images that might create lines */
+
 ::ng-deep .mat-mdc-option {
   background-image: none !important;
 }
 
-/* Force override on hover and active states */
+
 ::ng-deep .mat-mdc-option:hover,
 ::ng-deep .mat-mdc-option:focus,
 ::ng-deep .mat-mdc-option:active,
@@ -17869,14 +18612,14 @@ mat-error {
   background-image: none !important;
 }
 
-/* Remove any borders from the optgroup container */
+
 ::ng-deep .mat-mdc-optgroup {
   border: none !important;
   border-bottom: none !important;
   border-top: none !important;
 }
 
-/* Style the optgroup labels but WITHOUT borders */
+
 ::ng-deep .mat-mdc-optgroup-label {
   border: none !important;
   border-bottom: none !important;
@@ -17891,34 +18634,34 @@ mat-error {
   letter-spacing: 0.5px !important;
 }
 
-/* Keep a subtle separator BETWEEN groups, not between options */
+
 ::ng-deep .mat-mdc-optgroup:not(:last-child) {
   border-bottom: 1px solid #f1f5f9 !important;
   margin-bottom: 4px !important;
   padding-bottom: 4px !important;
 }
 
-/* Remove any borders from filter sections inside dropdowns */
+
 ::ng-deep .filter-date-info,
 ::ng-deep .filter-zone-info,
 ::ng-deep .filter-summary,
 ::ng-deep .entity-filter-row,
 ::ng-deep .date-zone-filter-info {
-  border-bottom: 1px solid #e2e8f0 !important; /* Keep these as section separators */
+  border-bottom: 1px solid #e2e8f0 !important; 
 }
 
-/* But ensure the options themselves have no borders */
+
 ::ng-deep .mat-mdc-option .filter-date-info,
 ::ng-deep .mat-mc-option .filter-zone-info {
   border-bottom: none !important;
 }
 
-/* Target any Material Design internal borders */
+
 ::ng-deep .mat-mdc-option .mat-pseudo-checkbox {
   border: none !important;
 }
 
-/* Force remove all borders with highest specificity */
+
 ::ng-deep body .mat-mdc-option,
 ::ng-deep html .mat-mdc-option,
 ::ng-deep .mat-mdc-select-panel .mat-mdc-option {
@@ -17929,7 +18672,7 @@ mat-error {
   border-right: 0 !important;
 }
 
-/* Add a small bottom margin between options for better readability (optional) */
+
 ::ng-deep .mat-mdc-option {
   margin-bottom: 2px !important;
 }
@@ -17938,7 +18681,7 @@ mat-error {
   margin-bottom: 0 !important;
 }
 
-/* Ensure the dropdown panel has a clean look */
+
 ::ng-deep .mat-mdc-select-panel {
   border-radius: 8px !important;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15) !important;
@@ -17947,26 +18690,26 @@ mat-error {
   border: 1px solid #e2e8f0 !important;
 }
 
-/* Specific fix for the "Chauffeurs disponibles" group */
+
 ::ng-deep .mat-mdc-optgroup[label="Chauffeurs disponibles"] .mat-mdc-option {
   border: none !important;
 }
 
-/* Specific fix for the "Chauffeurs indisponibles" group */
+
 ::ng-deep .mat-mdc-optgroup[label="Chauffeurs indisponibles"] .mat-mdc-option {
   border: none !important;
 }
 
-/* Specific fix for the "Camions disponibles" group */
+
 ::ng-deep .mat-mdc-optgroup[label="Camions disponibles"] .mat-mdc-option {
   border: none !important;
 }
 
-/* Specific fix for the "Camions indisponibles" group */
+
 ::ng-deep .mat-mdc-optgroup[label="Camions indisponibles"] .mat-mdc-option {
   border: none !important;
 }
-/* Add to your global styles.css or styles.scss */
+
 .mat-mdc-option {
   border: none !important;
   border-bottom: none !important;
@@ -17981,7 +18724,7 @@ mat-error {
 .truck-option {
   border: none !important;
 }
-/* Enhanced Quick Add Section - Market Style */
+
 .quick-add-section {
   background: linear-gradient(135deg, #ffffff 0%, #fafbfc 100%);
   border-radius: 16px;
@@ -18065,7 +18808,7 @@ mat-error {
   }
 }
 
-/* Search & Filter Bar - Market Style */
+
 .search-and-filter-row {
   display: flex;
   align-items: center;
@@ -18154,7 +18897,7 @@ mat-error {
   }
 }
 
-/* Market-Style Client Cards Grid */
+
 .client-virtual-scroll-container {
   height: 520px;
   border: 1px solid #e9edf4;
@@ -18184,7 +18927,7 @@ mat-error {
   }
 }
 
-/* Enhanced Client Card - Inspired by Market Offers */
+
 .client-card-virtual {
   height: auto;
   min-height: 130px;
@@ -18355,7 +19098,7 @@ mat-error {
   }
 }
 
-/* Virtual Scroll Info - Market Style */
+
 .client-virtual-scroll-info {
   padding: 12px 16px;
   background: #f8fafc;
@@ -18407,7 +19150,7 @@ mat-error {
   }
 }
 
-/* No Results State - Market Style */
+
 .no-results {
   text-align: center;
   padding: 48px 24px;
@@ -18489,7 +19232,7 @@ mat-error {
   }
 }
 
-/* Step 2: Order Selection - Market Style */
+
 .order-selection-step {
   .selected-client-header {
     display: flex;
@@ -18740,7 +19483,7 @@ mat-error {
   }
 }
 
-/* Step 3: Confirmation - Market Style */
+
 .confirmation-step {
   .confirmation-header {
     text-align: center;
@@ -18867,7 +19610,7 @@ mat-error {
   }
 }
 
-/* Quick Add Title - Market Style */
+
 .quick-add-title {
   margin: 0 0 1.25rem 0;
 
