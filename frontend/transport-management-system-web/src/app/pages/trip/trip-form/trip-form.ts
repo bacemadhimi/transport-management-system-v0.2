@@ -4172,36 +4172,94 @@ getProgressBarColor(): string {
     }
   }
 
-  private loadAllDrivers(): Promise<void> {
-    return new Promise((resolve, reject) => {
-      this.loadingDrivers = true;
-      this.http.getDrivers().subscribe({
-        next: (drivers) => {
-          this.drivers = drivers;
-          this.driverTruckMap.clear();
-          drivers.forEach(driver => {
-            if (driver.idCamion) {
-              this.driverTruckMap.set(driver.id, driver.idCamion);
-            }
-          });
+private loadAllDrivers(): Promise<void> {
+  return new Promise((resolve, reject) => {
+    this.loadingDrivers = true;
+    this.http.getDrivers().subscribe({
+      next: (drivers) => {
+        // Store full drivers with ALL data including geographical entities
+        this.drivers = drivers.map(driver => {
+          // Create a copy with the proper IDriver type
+          const enhancedDriver: IDriver = {
+            ...driver,
+            // Map geographicalEntities to driverGeographicalEntities
+            driverGeographicalEntities: this.mapGeographicalEntities(driver.geographicalEntities),
+            // Keep original for backward compatibility
+            geographicalEntities: driver.geographicalEntities || []
+          };
+          
+          return enhancedDriver;
+        });
+        
+        console.log('✅ Full drivers loaded with geo entities:', 
+          this.drivers.map(d => ({
+            id: d.id,
+            name: d.name,
+            geoCount: d.driverGeographicalEntities?.length || 0,
+            originalGeoCount: d.geographicalEntities?.length || 0
+          }))
+        );
 
-          console.log('🚛 Mapping chauffeur-camion:',
-            Array.from(this.driverTruckMap.entries())
-          );
+        this.driverTruckMap.clear();
+        drivers.forEach(driver => {
+          if (driver.idCamion) {
+            this.driverTruckMap.set(driver.id, driver.idCamion);
+          }
+        });
 
-          this.loadingDrivers = false;
-          resolve();
-        },
-        error: (error) => {
-          console.error('Error loading drivers:', error);
-          this.snackBar.open('Erreur lors du chargement des chauffeurs', 'Fermer', { duration: 3000 });
-          this.loadingDrivers = false;
-          reject(error);
-        }
-      });
+        this.loadingDrivers = false;
+        resolve();
+      },
+      error: (error) => {
+        console.error('Error loading drivers:', error);
+        this.snackBar.open('Erreur lors du chargement des chauffeurs', 'Fermer', { duration: 3000 });
+        this.loadingDrivers = false;
+        reject(error);
+      }
     });
-  }
+  });
+}
 
+private mapGeographicalEntities(entities?: any[]): Array<{
+  id?: number;
+  driverId?: number;
+  geographicalEntityId: number;
+  geographicalEntity?: any;
+}> {
+  if (!entities || !Array.isArray(entities)) {
+    return [];
+  }
+  
+  return entities.map(entity => {
+    // Case 1: Entity is already in the correct format with geographicalEntityId at root
+    if (entity.geographicalEntityId !== undefined) {
+      return {
+        geographicalEntityId: entity.geographicalEntityId,
+        geographicalEntity: entity.geographicalEntity || entity,
+        id: entity.id,
+        driverId: entity.driverId
+      };
+    }
+    
+    // Case 2: Entity has the ID inside a nested object
+    if (entity.geographicalEntity && entity.geographicalEntity.geographicalEntityId !== undefined) {
+      return {
+        geographicalEntityId: entity.geographicalEntity.geographicalEntityId,
+        geographicalEntity: entity.geographicalEntity,
+        id: entity.id,
+        driverId: entity.driverId
+      };
+    }
+    
+    // Case 3: Entity is IGeographicalEntity format (from your API)
+    return {
+      geographicalEntityId: entity.geographicalEntityId || entity.id,
+      geographicalEntity: entity,
+      id: undefined,
+      driverId: undefined
+    };
+  });
+}
   getCurrentDriverName(): string {
     const driverId = this.tripForm.get('driverId')?.value;
     if (!driverId) return '';
@@ -4627,29 +4685,65 @@ loadAvailableDrivers(date: Date | null): void {
     }
   });
 }
-  private handleDriverLoadError(date: Date, excludeTripId?: number): void {
-    console.error('Driver load error - Date:', date, 'ExcludeTrip:', excludeTripId);
+private handleDriverLoadError(date: Date, excludeTripId?: number): void {
+  console.error('Driver load error - Date:', date, 'ExcludeTrip:', excludeTripId);
 
-    if (date) {
-      const dateStr = this.formatDateForAPI(date);
+  if (date) {
+    const dateStr = this.formatDateForAPI(date);
 
-      this.http.getAvailableDriversByDateAndZone(dateStr, undefined, excludeTripId).subscribe({
-        next: (response: any) => {
-          this.processDriverResponse(response, date);
-        },
-        error: (fallbackError) => {
-          console.error('Fallback also failed:', fallbackError);
-          this.availableDrivers = [...this.drivers];
-          this.unavailableDrivers = [];
-        }
-      });
-    } else {
-      this.availableDrivers = [...this.drivers];
-      this.unavailableDrivers = [];
-    }
+    this.http.getAvailableDriversByDateAndZone(dateStr, undefined, excludeTripId).subscribe({
+      next: (response: any) => {
+        // Same merging logic as in processDriverResponse
+        this.availableDrivers = (response.availableDrivers || []).map((apiDriver: any) => {
+          const fullDriver = this.drivers.find(d => d.id === apiDriver.driverId);
+          
+          const baseDriver: IDriver = {
+            id: apiDriver.driverId,
+            name: apiDriver.driverName,
+            idNumber: apiDriver.idNumber || '',
+            email: apiDriver.email || '',
+            phoneNumber: apiDriver.phone || '',
+            phoneCountry: apiDriver.phoneCountry || '+216',
+            drivingLicense: apiDriver.permisNumber || '',
+            employeeCategory: 'DRIVER',
+            isInternal: apiDriver.isInternal || false,
+            isEnable: true,
+            status: apiDriver.status || 'active',
+            idCamion: apiDriver.idCamion || null,
+            zoneId: apiDriver.zoneId || null,
+            zoneName: apiDriver.zoneName || '',
+            // Map from geographicalEntities to driverGeographicalEntities
+            driverGeographicalEntities: fullDriver ? 
+              this.mapGeographicalEntities(fullDriver.geographicalEntities) : [],
+            geographicalEntities: fullDriver?.geographicalEntities || [],
+            availabilityStatus: undefined,
+            availabilityMessage: undefined,
+            requiresApproval: undefined,
+            totalHours: undefined
+          };
+
+          return baseDriver;
+        });
+
+        this.unavailableDrivers = response.unavailableDrivers || [];
+        this.filteredAvailableDrivers = [...this.availableDrivers];
+        this.filterDriversByEntity();
+      },
+      error: (fallbackError) => {
+        console.error('Fallback also failed:', fallbackError);
+        this.availableDrivers = [...this.drivers];
+        this.unavailableDrivers = [];
+        this.filteredAvailableDrivers = [...this.availableDrivers];
+      }
+    });
+  } else {
+    this.availableDrivers = [...this.drivers];
+    this.unavailableDrivers = [];
+    this.filteredAvailableDrivers = [...this.availableDrivers];
   }
-
+}
 private processDriverResponse(response: any, date: Date): void {
+  // Clear existing availability status
   this.availableDrivers.forEach(driver => {
     driver.availabilityStatus = undefined;
     driver.availabilityMessage = undefined;
@@ -4657,24 +4751,40 @@ private processDriverResponse(response: any, date: Date): void {
     driver.totalHours = undefined;
   });
 
-  this.availableDrivers = (response.availableDrivers || []).map((apiDriver: any) => ({
-    id: apiDriver.driverId,
-    name: apiDriver.driverName,
-    permisNumber: apiDriver.permisNumber || '',
-    phone: apiDriver.phone || '',
-    email: apiDriver.email || '',
-    phoneCountry: apiDriver.phoneCountry || '+216',
-    status: apiDriver.status || 'active',
-    idCamion: apiDriver.idCamion || null,
-    isActive: true,
-    zoneId: apiDriver.zoneId || null,
-    zoneName: apiDriver.zoneName || '',
-    driverGeographicalEntities: apiDriver.driverGeographicalEntities || [], 
-    availabilityStatus: undefined,
-    availabilityMessage: undefined,
-    requiresApproval: undefined,
-    totalHours: undefined
-  }));
+  // Map available drivers from response
+  this.availableDrivers = (response.availableDrivers || []).map((apiDriver: any) => {
+    // Find the full driver data from this.drivers (which has geographical entities)
+    const fullDriver = this.drivers.find(d => d.id === apiDriver.driverId);
+    
+    // Base driver object from API response
+    const baseDriver: IDriver = {
+      id: apiDriver.driverId,
+      name: apiDriver.driverName,
+      idNumber: apiDriver.idNumber || '',
+      email: apiDriver.email || '',
+      phoneNumber: apiDriver.phone || '',
+      phoneCountry: apiDriver.phoneCountry || '+216',
+      drivingLicense: apiDriver.permisNumber || '',
+      employeeCategory: 'DRIVER',
+      isInternal: apiDriver.isInternal || false,
+      isEnable: true,
+      status: apiDriver.status || 'active',
+      idCamion: apiDriver.idCamion || null,
+      zoneId: apiDriver.zoneId || null,
+      zoneName: apiDriver.zoneName || '',
+      // Map from geographicalEntities to driverGeographicalEntities
+      driverGeographicalEntities: fullDriver ? 
+        this.mapGeographicalEntities(fullDriver.geographicalEntities) : [],
+      // Keep original for backward compatibility
+      geographicalEntities: fullDriver?.geographicalEntities || [],
+      availabilityStatus: undefined,
+      availabilityMessage: undefined,
+      requiresApproval: undefined,
+      totalHours: undefined
+    };
+
+    return baseDriver;
+  });
 
   this.unavailableDrivers = response.unavailableDrivers || [];
   this.filteredAvailableDrivers = [...this.availableDrivers];
