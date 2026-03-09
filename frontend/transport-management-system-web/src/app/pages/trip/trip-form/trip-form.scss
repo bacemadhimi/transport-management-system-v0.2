@@ -353,6 +353,226 @@
 .capacity-section .warning-icon {
   transition: none !important; /* Prevent theme transitions from affecting colors */
 }
+/* Client cards in quick add - already using theme from earlier */
+.client-card-virtual {
+  &::before {
+    background: var(--primary-gradient) !important;
+  }
+  
+  &:hover .client-card-footer .client-select-btn {
+    background: var(--primary-color) !important;
+  }
+  
+  &.selected {
+    border-color: var(--primary-color) !important;
+    
+    &::before {
+      background: var(--primary-gradient) !important;
+    }
+    
+    .client-name {
+      color: var(--primary-color) !important;
+    }
+  }
+}
+
+.client-card .client-select-btn mat-icon {
+  color: var(--primary-color) !important;
+}
+/* ===== DELIVERY CUSTOMER CARDS - FOLLOW THEME ===== */
+
+/* Grouped delivery header - use theme gradient */
+.grouped-delivery-header {
+  background: var(--primary-gradient) !important;
+  
+  .customer-icon {
+    background: rgba(255, 255, 255, 0.2) !important;
+    color: white !important;
+  }
+  
+  .group-stats .stat {
+    background: rgba(255, 255, 255, 0.2) !important;
+    
+    .stat-icon, .stat-text {
+      color: white !important;
+    }
+  }
+  
+  .group-stats .stat.sequence .stat-text {
+    background: rgba(255, 255, 255, 0.3) !important;
+    color: white !important;
+  }
+  
+  .expand-btn, .delete-btn {
+    color: white !important;
+    
+    &:hover {
+      background: rgba(255, 255, 255, 0.2) !important;
+    }
+  }
+  
+  .delete-btn:hover {
+    background: rgba(239, 68, 68, 0.8) !important;
+  }
+}
+
+/* Order items in delivery section */
+.order-item-virtual {
+  .order-checkbox {
+    ::ng-deep .mat-checkbox-background {
+      background-color: var(--primary-color) !important;
+    }
+  }
+  
+  .order-info .order-weight {
+    color: var(--primary-color) !important;
+  }
+}
+
+/* Delivery details section */
+.delivery-details {
+  .detail-item .detail-icon {
+    color: var(--primary-color) !important;
+  }
+}
+
+/* Virtual scroll info icons */
+.virtual-scroll-info {
+  .scroll-info-item .info-icon {
+    color: var(--primary-color) !important;
+  }
+  
+  .scroll-actions button:hover {
+    color: var(--primary-color) !important;
+    border-color: var(--primary-color) !important;
+  }
+}
+
+/* Delivery stats in header */
+.deliveries-section .delivery-stats .stat-item mat-icon {
+  color: var(--primary-color) !important;
+}
+
+/* Order type indicator */
+.order-type-indicator {
+  mat-icon {
+    color: var(--primary-color) !important;
+  }
+  
+  &.success {
+    background: rgba(var(--primary-color-rgb), 0.1) !important;
+    color: var(--primary-color) !important;
+  }
+}
+
+/* Sequence badge */
+.group-stats .stat.sequence .stat-text {
+  color: var(--primary-color) !important;
+  background: rgba(var(--primary-color-rgb), 0.1) !important;
+}
+
+/* Expand button hover */
+.expand-btn:hover {
+  color: var(--primary-color) !important;
+  background: rgba(var(--primary-color-rgb), 0.1) !important;
+}
+
+/* ===== DELIVERY GROUP CARDS IN CAPACITY SECTION ===== */
+
+/* Client group header icons */
+.client-group-header .client-icon {
+  color: var(--primary-color) !important;
+}
+
+/* Percentage badges in capacity */
+.percentage-badge {
+  background: rgba(var(--primary-color-rgb), 0.1) !important;
+  color: var(--primary-color) !important;
+}
+
+/* Progress percentage text */
+.client-progress .progress-percentage {
+  color: var(--primary-color) !important;
+}
+
+/* Total summary icons */
+.capacity-total-summary .total-label mat-icon {
+  color: var(--primary-color) !important;
+}
+
+/* ===== DELIVERY GROUPS IN TIMELINE ===== */
+
+/* Timeline step badges */
+.step-badge.delivery-group-badge {
+  background: rgba(var(--primary-color-rgb), 0.1) !important;
+  color: var(--primary-color) !important;
+  border-color: rgba(var(--primary-color-rgb), 0.2) !important;
+}
+
+/* Detail icons in timeline */
+.step-details .detail-item .detail-icon.client-icon,
+.step-details .detail-item .detail-icon.order-icon,
+.step-details .detail-item .detail-icon.location-icon {
+  color: var(--primary-color) !important;
+}
+
+/* Group orders details title */
+.group-orders-details .orders-title mat-icon {
+  color: var(--primary-color) !important;
+}
+
+/* Drag handle on hover */
+.drag-handle:hover {
+  color: var(--primary-color) !important;
+}
+
+/* Timeline connector label drag hint */
+.step-connector .connector-label .drag-hint mat-icon {
+  color: var(--primary-color) !important;
+}
+
+/* ===== CUSTOMER NAMES IN DELIVERY SECTION ===== */
+.customer-name {
+  color: white !important; /* Keep white on gradient background */
+}
+
+/* For customer names outside the gradient header */
+:not(.grouped-delivery-header) .customer-name {
+  color: var(--text-primary) !important;
+}
+
+/* Customer names in capacity section */
+.client-name-container .client-name {
+  color: var(--text-primary) !important;
+}
+
+/* Customer names in timeline */
+.timeline-step-virtual .step-title .client-name {
+  color: var(--text-primary) !important;
+}
+
+/* ===== FIX FOR THE SPECIFIC CUSTOMERS YOU MENTIONED ===== */
+/* "Magasin General 744" and "Monoprix Tunisie 1401" */
+
+/* If they appear in grouped-delivery-header, they're already white */
+.grouped-delivery-header .customer-details .customer-name {
+  color: white !important;
+  font-weight: 600 !important;
+}
+
+/* If they appear elsewhere */
+.client-card .client-name,
+.client-card-virtual .client-name,
+.client-item .client-name {
+  color: var(--text-primary) !important;
+}
+
+/* Selected state for client cards */
+.client-card.selected .client-name,
+.client-card-virtual.selected .client-name {
+  color: var(--primary-color) !important;
+  font-weight: 700 !important;
+}
 .trip-form-card {
   border-radius: 1.75rem;
   box-shadow: 0 25px 55px rgba(15, 23, 42, 0.12);
