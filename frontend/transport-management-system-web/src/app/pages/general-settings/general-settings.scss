@@ -1087,3 +1087,255 @@ form,
   gap: 8px;
   padding: 16px;
 }
+/* ===== CHECKBOXES - FOLLOW THEME ===== */
+
+::ng-deep .settings-container .mat-mdc-checkbox.mat-primary {
+  --mdc-checkbox-selected-focus-icon-color: var(--primary-color) !important;
+  --mdc-checkbox-selected-hover-icon-color: var(--primary-color) !important;
+  --mdc-checkbox-selected-icon-color: var(--primary-color) !important;
+  --mdc-checkbox-selected-pressed-icon-color: var(--primary-color) !important;
+  --mdc-checkbox-unselected-focus-icon-color: var(--text-muted) !important;
+  --mdc-checkbox-unselected-hover-icon-color: var(--primary-color) !important;
+
+  .mdc-checkbox__background {
+    border-color: var(--border-color) !important;
+  }
+
+  &.mat-mdc-checkbox-checked {
+    .mdc-checkbox__background {
+      background-color: var(--primary-color) !important;
+      border-color: var(--primary-color) !important;
+    }
+  }
+
+  .mat-ripple-element {
+    background-color: rgba(var(--primary-color-rgb), 0.1) !important;
+  }
+}
+
+/* Checkboxes in the settings cards */
+.settings-card {
+  .checkbox-grid .mat-mdc-checkbox {
+    .mdc-label {
+      color: var(--text-secondary) !important;
+    }
+
+    &.mat-mdc-checkbox-checked .mdc-label {
+      color: var(--primary-color) !important;
+      font-weight: 500 !important;
+    }
+  }
+}
+
+/* ===== RADIO BUTTONS - FOLLOW THEME ===== */
+
+::ng-deep .settings-container .mat-mdc-radio-button.mat-primary {
+  --mdc-radio-selected-focus-icon-color: var(--primary-color) !important;
+  --mdc-radio-selected-hover-icon-color: var(--primary-color) !important;
+  --mdc-radio-selected-icon-color: var(--primary-color) !important;
+  --mdc-radio-selected-pressed-icon-color: var(--primary-color) !important;
+  --mdc-radio-unselected-focus-icon-color: var(--text-muted) !important;
+  --mdc-radio-unselected-hover-icon-color: var(--primary-color) !important;
+
+  .mdc-radio__outer-circle {
+    border-color: var(--border-color) !important;
+  }
+
+  &.mat-mdc-radio-checked {
+    .mdc-radio__outer-circle {
+      border-color: var(--primary-color) !important;
+      border-width: 2px !important;
+    }
+
+    .mdc-radio__inner-circle {
+      border-color: var(--primary-color) !important;
+      background-color: var(--primary-color) !important;
+      transform: scale(0.5) !important;
+    }
+
+    .mdc-label {
+      color: var(--primary-color) !important;
+      font-weight: 500 !important;
+    }
+  }
+
+  &:hover .mdc-radio__outer-circle {
+    border-color: var(--primary-color) !important;
+  }
+
+  .mat-ripple-element {
+    background-color: rgba(var(--primary-color-rgb), 0.1) !important;
+  }
+
+  .mdc-label {
+    color: var(--text-secondary) !important;
+    font-size: 0.95rem !important;
+  }
+}
+
+/* For the geographical levels section if you have radio buttons there */
+::ng-deep .levels-container .mat-mdc-radio-button.mat-primary {
+  margin-right: 1rem;
+  
+  &:last-child {
+    margin-right: 0;
+  }
+}
+
+/* For the trajectory mode selection if present */
+::ng-deep .traject-choice .mat-mdc-radio-button.mat-primary {
+  .mat-mdc-radio-label {
+    border: 2px solid var(--border-color) !important;
+    border-radius: 0.75rem !important;
+    padding: 1rem !important;
+    transition: all 0.3s ease !important;
+  }
+
+  &.mat-mdc-radio-checked .mat-mdc-radio-label {
+    border-color: var(--primary-color) !important;
+    background: rgba(var(--primary-color-rgb), 0.05) !important;
+    box-shadow: 0 4px 12px rgba(var(--primary-color-rgb), 0.1) !important;
+  }
+
+  .option-icon {
+    color: var(--primary-color) !important;
+  }
+}
+
+/* ===== ULTIMATE OVERRIDE FOR MATERIAL DESIGN ===== */
+
+/* Force override on the native Material Design elements */
+::ng-deep .settings-container {
+  .mat-primary .mdc-checkbox .mdc-checkbox__native-control:enabled:checked ~ .mdc-checkbox__background {
+    background-color: var(--primary-color) !important;
+    border-color: var(--primary-color) !important;
+  }
+
+  .mat-primary .mdc-radio .mdc-radio__native-control:enabled:checked + .mdc-radio__background .mdc-radio__outer-circle {
+    border-color: var(--primary-color) !important;
+  }
+
+  .mat-primary .mdc-radio .mdc-radio__native-control:enabled:checked + .mdc-radio__background .mdc-radio__inner-circle {
+    border-color: var(--primary-color) !important;
+    background-color: var(--primary-color) !important;
+  }
+}
+
+/* ===== UNIT MANAGEMENT SECTION CHECKBOXES ===== */
+
+.unit-management-section {
+  .mat-mdc-checkbox.mat-primary {
+    .mdc-checkbox__background {
+      border-color: var(--border-color) !important;
+    }
+
+    &.mat-mdc-checkbox-checked .mdc-checkbox__background {
+      background-color: var(--primary-color) !important;
+      border-color: var(--primary-color) !important;
+    }
+  }
+}
+
+/* ===== EMPLOYEE CATEGORIES TABLE CHECKBOXES ===== */
+
+.mat-mdc-table .mat-mdc-checkbox.mat-primary {
+  .mdc-checkbox__background {
+    border-color: var(--border-color) !important;
+  }
+
+  &.mat-mdc-checkbox-checked .mdc-checkbox__background {
+    background-color: var(--primary-color) !important;
+    border-color: var(--primary-color) !important;
+  }
+}
+
+/* ===== GEOGRAPHICAL LEVELS CHECKBOXES ===== */
+
+.level-item {
+  .mat-mdc-checkbox.mat-primary {
+    .mdc-checkbox__background {
+      border-color: var(--border-color) !important;
+    }
+
+    &.mat-mdc-checkbox-checked .mdc-checkbox__background {
+      background-color: var(--primary-color) !important;
+      border-color: var(--primary-color) !important;
+    }
+
+    .mdc-label {
+      color: var(--text-secondary) !important;
+      font-size: 0.9rem !important;
+    }
+  }
+}
+
+/* ===== GEOGRAPHICAL ENTITIES FILTER CHECKBOXES ===== */
+
+.filter-section {
+  .mat-mdc-checkbox.mat-primary {
+    .mdc-checkbox__background {
+      border-color: var(--border-color) !important;
+    }
+
+    &.mat-mdc-checkbox-checked .mdc-checkbox__background {
+      background-color: var(--primary-color) !important;
+      border-color: var(--primary-color) !important;
+    }
+  }
+}
+
+/* ===== COMPANY LOGO SECTION CHECKBOX (if any) ===== */
+
+.company-logo-section {
+  .mat-mdc-checkbox.mat-primary {
+    .mdc-checkbox__background {
+      border-color: var(--border-color) !important;
+    }
+
+    &.mat-mdc-checkbox-checked .mdc-checkbox__background {
+      background-color: var(--primary-color) !important;
+      border-color: var(--primary-color) !important;
+    }
+
+    .mdc-label {
+      color: var(--text-primary) !important;
+    }
+  }
+}
+
+/* ===== DARK MODE SUPPORT ===== */
+
+@media (prefers-color-scheme: dark) {
+  ::ng-deep .settings-container {
+    .mat-mdc-checkbox.mat-primary .mdc-checkbox__background,
+    .mat-mdc-radio-button.mat-primary .mdc-radio__outer-circle {
+      border-color: rgba(255, 255, 255, 0.2) !important;
+    }
+
+    .mat-mdc-checkbox.mat-primary .mdc-label,
+    .mat-mdc-radio-button.mat-primary .mdc-label {
+      color: #e2e8f0 !important;
+    }
+  }
+}
+
+/* ===== ANIMATIONS ===== */
+
+.mat-mdc-checkbox.mat-primary,
+.mat-mdc-radio-button.mat-primary {
+  .mdc-checkbox__background,
+  .mdc-radio__outer-circle,
+  .mdc-radio__inner-circle {
+    transition: all 0.2s ease !important;
+  }
+}
+
+/* ===== FOCUS STATES ===== */
+
+::ng-deep .settings-container {
+  .mat-mdc-checkbox.cdk-focused .mdc-checkbox__background,
+  .mat-mdc-radio-button.cdk-focused .mdc-radio__outer-circle {
+    border-color: var(--primary-color) !important;
+    box-shadow: 0 0 0 2px rgba(var(--primary-color-rgb), 0.2) !important;
+  }
+}

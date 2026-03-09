@@ -111,7 +111,7 @@ export class TripForm implements OnInit {
   availableTrucks: ITruck[] = [];
   unavailableTrucks: any[] = [];
   loadingAvailableTrucks = false;
-
+  private lastLoadedDriverDate: Date | null = null;
   customers: ICustomer[] = [];
   allOrders: IOrder[] = [];
   ordersForQuickAdd: IOrder[] = [];
@@ -710,6 +710,7 @@ private loadAllTrucks(): void {
 
   this.http.getTrucks().subscribe({
     next: (trucks: ITruck[]) => {
+      console.log(trucks);
       this.trucks = trucks
         .filter(truck => truck.isEnable)
         .map(truck => ({
@@ -777,7 +778,7 @@ private processTruckResponse(response: any, date: Date): void {
           capacity: typeTruckData.capacity,
           unit: typeTruckData.unit
         } : null,
-        truckGeographicalEntities: apiTruck.truckGeographicalEntities || [] // Add this line
+        truckGeographicalEntities: apiTruck.geographicalEntities || []
       };
     });
   }
@@ -800,7 +801,7 @@ private processTruckResponse(response: any, date: Date): void {
         tooltip: `Indisponible le ${this.formatDateForDisplay(date)} - ${truck.reason || 'Raison inconnue'}`,
         isAvailable: false,
         zoneId: truck.ZoneId || truck.zoneId || null,
-        truckGeographicalEntities: truck.truckGeographicalEntities || [] // Add this line
+        truckGeographicalEntities: truck.geographicalEntities || [] 
       };
     });
   }
@@ -810,7 +811,7 @@ private processTruckResponse(response: any, date: Date): void {
   }
 
   this.trucks = [...this.availableTrucks, ...this.unavailableTrucks];
-  this.filteredAvailableTrucks = [...this.availableTrucks]; // Add this line
+  this.filteredAvailableTrucks = [...this.availableTrucks]; 
 
   console.log('📊 Final state:', {
     availableCount: this.availableTrucks.length,
@@ -1516,16 +1517,16 @@ getSelectedConvoyeurInfo(): string {
 async confirmAddOrders(): Promise<void> {
   if (this.selectedOrdersCount === 0 || !this.selectedClient) return;
 
-  // 1. Vérification de la capacité (existante)
+  
   const selectedWeight = this.calculateSelectedWeight();
   const capacityCheck = await this.checkCapacityBeforeAddingOrders(selectedWeight);
   if (!capacityCheck) {
     return;
   }
 
-  // 2. NOUVELLE VÉRIFICATION : Mélange des types (AJOUTEZ CE BLOC)
+  
   if (!this.allowMixingOrderTypes && this.deliveries.length > 0) {
-    // Récupérer les types des commandes existantes
+
     const existingTypes = new Set<string>();
     this.deliveryControls.forEach(group => {
       const orderId = group.get('orderId')?.value;
@@ -1536,7 +1537,7 @@ async confirmAddOrders(): Promise<void> {
       }
     });
 
-    // Récupérer les types des nouvelles commandes
+  
     const newTypes = new Set<string>();
     this.selectedOrders.forEach(orderId => {
       const order = this.allOrders.find(o => o.id === orderId);
@@ -1544,15 +1545,15 @@ async confirmAddOrders(): Promise<void> {
       newTypes.add(orderType);
     });
 
-    // Vérifier si l'ajout créerait un mélange
+  
     const allTypes = new Set([...existingTypes, ...newTypes]);
     
     if (allTypes.size > 1) {
-      // Construire le message détaillé
+      
       const existingTypesList = Array.from(existingTypes).join(', ');
       const newTypesList = Array.from(newTypes).join(', ');
       
-      // Créer le breakdown des commandes par type pour les nouvelles commandes
+     
       const ordersByType = new Map<string, string[]>();
       this.selectedOrders.forEach(orderId => {
         const order = this.allOrders.find(o => o.id === orderId);
@@ -1616,16 +1617,16 @@ async confirmAddOrders(): Promise<void> {
       });
 
       if (result.isConfirmed) {
-        // Rester sur l'étape de sélection
+     
         return;
       } else {
-        // Annuler l'ajout
+      
         return;
       }
     }
   }
 
-  // 3. Suite du traitement normal (si les vérifications sont passées)
+ 
   const totalOrders = this.clientPendingOrders.length;
   const notSelectedCount = totalOrders - this.selectedOrdersCount;
 
@@ -2096,7 +2097,7 @@ getCapacityAlert(): { message: string, color: string, icon: string, showAlert: b
   const truck = truckId ? this.trucks.find(t => t.id === truckId) : null;
   const unit = this.loadingUnit;
 
-  // Use the loaded settings
+ 
   const allowExceed = this.allowExceedMaxCapacity;
   const maxPercentage = this.maxCapacityPercentage;
 
@@ -2255,11 +2256,11 @@ private async checkCapacityBeforeAddingOrders(selectedWeight: number): Promise<b
   const unit = this.loadingUnit;
   const unitLabelPlural = this.loadingUnit;
 
-  // Get settings from General Settings (from database)
+  
   const allowExceed = this.allowExceedMaxCapacity;
-  const maxPercentage = this.maxCapacityPercentage; // This is 80 from your DB
+  const maxPercentage = this.maxCapacityPercentage; 
 
-  // If over 100% but exceed not allowed, block immediately
+
   if (percentageAfterAddition > 100 && !allowExceed) {
     const overage = totalWeightAfterAddition - capacity;
     const overagePercentage = percentageAfterAddition - 100;
@@ -2292,7 +2293,7 @@ private async checkCapacityBeforeAddingOrders(selectedWeight: number): Promise<b
     return false;
   }
 
-  // Check against max percentage from database
+ 
   if (percentageAfterAddition > maxPercentage) {
     const maxAllowedWeight = capacity * (maxPercentage / 100);
     const excess = totalWeightAfterAddition - maxAllowedWeight;
@@ -2350,7 +2351,7 @@ private async checkCapacityBeforeAddingOrders(selectedWeight: number): Promise<b
     }
   }
 
-  // If over 100% but within max percentage (unlikely but possible)
+
   if (percentageAfterAddition > 100) {
     const overage = totalWeightAfterAddition - capacity;
     const overagePercentage = percentageAfterAddition - 100;
@@ -4171,36 +4172,94 @@ getProgressBarColor(): string {
     }
   }
 
-  private loadAllDrivers(): Promise<void> {
-    return new Promise((resolve, reject) => {
-      this.loadingDrivers = true;
-      this.http.getDrivers().subscribe({
-        next: (drivers) => {
-          this.drivers = drivers;
-          this.driverTruckMap.clear();
-          drivers.forEach(driver => {
-            if (driver.idCamion) {
-              this.driverTruckMap.set(driver.id, driver.idCamion);
-            }
-          });
+private loadAllDrivers(): Promise<void> {
+  return new Promise((resolve, reject) => {
+    this.loadingDrivers = true;
+    this.http.getDrivers().subscribe({
+      next: (drivers) => {
+        
+        this.drivers = drivers.map(driver => {
+          
+          const enhancedDriver: IDriver = {
+            ...driver,
+           
+            driverGeographicalEntities: this.mapGeographicalEntities(driver.geographicalEntities),
+            
+            geographicalEntities: driver.geographicalEntities || []
+          };
+          
+          return enhancedDriver;
+        });
+        
+        console.log('✅ Full drivers loaded with geo entities:', 
+          this.drivers.map(d => ({
+            id: d.id,
+            name: d.name,
+            geoCount: d.driverGeographicalEntities?.length || 0,
+            originalGeoCount: d.geographicalEntities?.length || 0
+          }))
+        );
 
-          console.log('🚛 Mapping chauffeur-camion:',
-            Array.from(this.driverTruckMap.entries())
-          );
+        this.driverTruckMap.clear();
+        drivers.forEach(driver => {
+          if (driver.idCamion) {
+            this.driverTruckMap.set(driver.id, driver.idCamion);
+          }
+        });
 
-          this.loadingDrivers = false;
-          resolve();
-        },
-        error: (error) => {
-          console.error('Error loading drivers:', error);
-          this.snackBar.open('Erreur lors du chargement des chauffeurs', 'Fermer', { duration: 3000 });
-          this.loadingDrivers = false;
-          reject(error);
-        }
-      });
+        this.loadingDrivers = false;
+        resolve();
+      },
+      error: (error) => {
+        console.error('Error loading drivers:', error);
+        this.snackBar.open('Erreur lors du chargement des chauffeurs', 'Fermer', { duration: 3000 });
+        this.loadingDrivers = false;
+        reject(error);
+      }
     });
-  }
+  });
+}
 
+private mapGeographicalEntities(entities?: any[]): Array<{
+  id?: number;
+  driverId?: number;
+  geographicalEntityId: number;
+  geographicalEntity?: any;
+}> {
+  if (!entities || !Array.isArray(entities)) {
+    return [];
+  }
+  
+  return entities.map(entity => {
+   
+    if (entity.geographicalEntityId !== undefined) {
+      return {
+        geographicalEntityId: entity.geographicalEntityId,
+        geographicalEntity: entity.geographicalEntity || entity,
+        id: entity.id,
+        driverId: entity.driverId
+      };
+    }
+    
+   
+    if (entity.geographicalEntity && entity.geographicalEntity.geographicalEntityId !== undefined) {
+      return {
+        geographicalEntityId: entity.geographicalEntity.geographicalEntityId,
+        geographicalEntity: entity.geographicalEntity,
+        id: entity.id,
+        driverId: entity.driverId
+      };
+    }
+    
+    
+    return {
+      geographicalEntityId: entity.geographicalEntityId || entity.id,
+      geographicalEntity: entity,
+      id: undefined,
+      driverId: undefined
+    };
+  });
+}
   getCurrentDriverName(): string {
     const driverId = this.tripForm.get('driverId')?.value;
     if (!driverId) return '';
@@ -4626,29 +4685,65 @@ loadAvailableDrivers(date: Date | null): void {
     }
   });
 }
-  private handleDriverLoadError(date: Date, excludeTripId?: number): void {
-    console.error('Driver load error - Date:', date, 'ExcludeTrip:', excludeTripId);
+private handleDriverLoadError(date: Date, excludeTripId?: number): void {
+  console.error('Driver load error - Date:', date, 'ExcludeTrip:', excludeTripId);
 
-    if (date) {
-      const dateStr = this.formatDateForAPI(date);
+  if (date) {
+    const dateStr = this.formatDateForAPI(date);
 
-      this.http.getAvailableDriversByDateAndZone(dateStr, undefined, excludeTripId).subscribe({
-        next: (response: any) => {
-          this.processDriverResponse(response, date);
-        },
-        error: (fallbackError) => {
-          console.error('Fallback also failed:', fallbackError);
-          this.availableDrivers = [...this.drivers];
-          this.unavailableDrivers = [];
-        }
-      });
-    } else {
-      this.availableDrivers = [...this.drivers];
-      this.unavailableDrivers = [];
-    }
+    this.http.getAvailableDriversByDateAndZone(dateStr, undefined, excludeTripId).subscribe({
+      next: (response: any) => {
+        
+        this.availableDrivers = (response.availableDrivers || []).map((apiDriver: any) => {
+          const fullDriver = this.drivers.find(d => d.id === apiDriver.driverId);
+          
+          const baseDriver: IDriver = {
+            id: apiDriver.driverId,
+            name: apiDriver.driverName,
+            idNumber: apiDriver.idNumber || '',
+            email: apiDriver.email || '',
+            phoneNumber: apiDriver.phone || '',
+            phoneCountry: apiDriver.phoneCountry || '+216',
+            drivingLicense: apiDriver.permisNumber || '',
+            employeeCategory: 'DRIVER',
+            isInternal: apiDriver.isInternal || false,
+            isEnable: true,
+            status: apiDriver.status || 'active',
+            idCamion: apiDriver.idCamion || null,
+            zoneId: apiDriver.zoneId || null,
+            zoneName: apiDriver.zoneName || '',
+          
+            driverGeographicalEntities: fullDriver ? 
+              this.mapGeographicalEntities(fullDriver.geographicalEntities) : [],
+            geographicalEntities: fullDriver?.geographicalEntities || [],
+            availabilityStatus: undefined,
+            availabilityMessage: undefined,
+            requiresApproval: undefined,
+            totalHours: undefined
+          };
+
+          return baseDriver;
+        });
+
+        this.unavailableDrivers = response.unavailableDrivers || [];
+        this.filteredAvailableDrivers = [...this.availableDrivers];
+        this.filterDriversByEntity();
+      },
+      error: (fallbackError) => {
+        console.error('Fallback also failed:', fallbackError);
+        this.availableDrivers = [...this.drivers];
+        this.unavailableDrivers = [];
+        this.filteredAvailableDrivers = [...this.availableDrivers];
+      }
+    });
+  } else {
+    this.availableDrivers = [...this.drivers];
+    this.unavailableDrivers = [];
+    this.filteredAvailableDrivers = [...this.availableDrivers];
   }
-
+}
 private processDriverResponse(response: any, date: Date): void {
+
   this.availableDrivers.forEach(driver => {
     driver.availabilityStatus = undefined;
     driver.availabilityMessage = undefined;
@@ -4656,24 +4751,40 @@ private processDriverResponse(response: any, date: Date): void {
     driver.totalHours = undefined;
   });
 
-  this.availableDrivers = (response.availableDrivers || []).map((apiDriver: any) => ({
-    id: apiDriver.driverId,
-    name: apiDriver.driverName,
-    permisNumber: apiDriver.permisNumber || '',
-    phone: apiDriver.phone || '',
-    email: apiDriver.email || '',
-    phoneCountry: apiDriver.phoneCountry || '+216',
-    status: apiDriver.status || 'active',
-    idCamion: apiDriver.idCamion || null,
-    isActive: true,
-    zoneId: apiDriver.zoneId || null,
-    zoneName: apiDriver.zoneName || '',
-    driverGeographicalEntities: apiDriver.driverGeographicalEntities || [], // Add this line
-    availabilityStatus: undefined,
-    availabilityMessage: undefined,
-    requiresApproval: undefined,
-    totalHours: undefined
-  }));
+  
+  this.availableDrivers = (response.availableDrivers || []).map((apiDriver: any) => {
+    
+    const fullDriver = this.drivers.find(d => d.id === apiDriver.driverId);
+    
+    
+    const baseDriver: IDriver = {
+      id: apiDriver.driverId,
+      name: apiDriver.driverName,
+      idNumber: apiDriver.idNumber || '',
+      email: apiDriver.email || '',
+      phoneNumber: apiDriver.phone || '',
+      phoneCountry: apiDriver.phoneCountry || '+216',
+      drivingLicense: apiDriver.permisNumber || '',
+      employeeCategory: 'DRIVER',
+      isInternal: apiDriver.isInternal || false,
+      isEnable: true,
+      status: apiDriver.status || 'active',
+      idCamion: apiDriver.idCamion || null,
+      zoneId: apiDriver.zoneId || null,
+      zoneName: apiDriver.zoneName || '',
+      
+      driverGeographicalEntities: fullDriver ? 
+        this.mapGeographicalEntities(fullDriver.geographicalEntities) : [],
+      
+      geographicalEntities: fullDriver?.geographicalEntities || [],
+      availabilityStatus: undefined,
+      availabilityMessage: undefined,
+      requiresApproval: undefined,
+      totalHours: undefined
+    };
+
+    return baseDriver;
+  });
 
   this.unavailableDrivers = response.unavailableDrivers || [];
   this.filteredAvailableDrivers = [...this.availableDrivers];
@@ -5007,23 +5118,26 @@ private processDriverResponse(response: any, date: Date): void {
            date1.getDate() === date2.getDate();
   }
 
-  selectDate(day: Date | null): void {
-    if (!day || this.isDayDisabled(day)) return;
+selectDate(day: Date | null): void {
+  if (!day || this.isDayDisabled(day)) return;
 
-    this.loadDateStats(day);
+ 
+  this.loadAvailableDrivers(day);
+  
+ 
+  this.loadDateStats(day);
 
-    if (this.calendarMode === 'single') {
-      if (this.selectedDateField === 'start') {
-        this.estimatedStartDateControl?.setValue(day);
-        this.estimatedEndDateControl?.setValue(new Date(day));
-      } else if (this.selectedDateField === 'end') {
-        this.estimatedEndDateControl?.setValue(day);
-      }
-    } else if (this.calendarMode === 'range') {
-      this.selectDateRange(day);
+  if (this.calendarMode === 'single') {
+    if (this.selectedDateField === 'start') {
+      this.estimatedStartDateControl?.setValue(day);
+      this.estimatedEndDateControl?.setValue(new Date(day));
+    } else if (this.selectedDateField === 'end') {
+      this.estimatedEndDateControl?.setValue(day);
     }
+  } else if (this.calendarMode === 'range') {
+    this.selectDateRange(day);
   }
-
+}
   calculateRangeDuration(start: Date, end: Date): number {
     const diffTime = Math.abs(end.getTime() - start.getTime());
     return Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
@@ -5248,142 +5362,261 @@ private processDriverResponse(response: any, date: Date): void {
     }
   }
 
-  private async loadDateStats(date: Date): Promise<void> {
-    if (!date) return;
+private async loadDateStats(date: Date): Promise<void> {
+  if (!date) return;
 
-    this.dateStatsLoading = true;
+  this.dateStatsLoading = true;
 
-    const dateStr = this.datePipe.transform(date, 'yyyy-MM-dd') || '';
+  const dateStr = this.datePipe.transform(date, 'yyyy-MM-dd') || '';
 
-    try {
-      const response = await this.http.getDateStatistics(dateStr).toPromise();
+  try {
+  
+    const response = await this.http.getDateStatistics(dateStr).toPromise();
 
-      if (response && response.success) {
-        const data = response.data;
-
-        this.selectedDateStats = {
-          date: date,
-          totalClients: data.summary?.totalClients || 0,
-          totalOrders: data.summary?.totalOrdersReady || 0,
-          plannedTrips: data.summary?.plannedTrips || 0,
-          availableDrivers: data.summary?.disponibleDrivers || 0,
-          allReadyOrders: data.summary?.allReadyOrders || 0,
-          ordersInTrips: data.summary?.ordersInTrips || 0,
-          weightInTrips: data.summary?.weightInTrips || 0,
-          assignedDrivers: data.summary?.disponibleDrivers || 0,
-          availableTrucks: data.summary?.disponibleTrucks || 0,
-          isWeekend: data.isWeekend || false,
-          dayOfWeek: data.dayOfWeek || '',
-          recommendations: data.recommendations || [],
-          clients: data.clients || [],
-          plannedTripsDetails: data.plannedTripsDetails || [],
-          resourceStatus: data.resourceStatus || {
-            driversAvailable: 0,
-            driversNeeded: 0,
-            driversShortage: 0,
-            trucksAvailable: 0,
-            trucksNeeded: 0,
-            trucksShortage: 0
-          }
-        };
-      }
-    } catch (error) {
-      console.error('Erreur lors du chargement des statistiques:', error);
-
-      this.loadLocalDateStats(date);
-    } finally {
-      this.dateStatsLoading = false;
-      this.showDateStatsModal = true;
+    
+    if (!this.areDriversLoadedForDate(date)) {
+      await this.loadAvailableDriversForDate(date);
     }
+
+   
+    const availableDriversCount = this.availableDrivers.length;
+    const driversForDate = this.availableDrivers;
+    
+    
+    const availableTrucksCount = await this.getAvailableTrucksForDate(date);
+
+    if (response && response.success) {
+      const data = response.data;
+      
+      this.selectedDateStats = {
+        date: date,
+        totalClients: data.summary?.totalClients || 0,
+        totalOrders: data.summary?.totalOrdersReady || 0,
+        plannedTrips: data.summary?.plannedTrips || 0,
+       
+        availableDrivers: availableDriversCount,
+        allReadyOrders: data.summary?.allReadyOrders || 0,
+        ordersInTrips: data.summary?.ordersInTrips || 0,
+        weightInTrips: data.summary?.weightInTrips || 0,
+        assignedDrivers: data.summary?.disponibleDrivers || 0,
+        availableTrucks: availableTrucksCount,
+        isWeekend: data.isWeekend || false,
+        dayOfWeek: data.dayOfWeek || '',
+        recommendations: this.generateLocalRecommendations(
+          data.summary?.totalOrdersReady || 0,
+          data.summary?.plannedTrips || 0,
+          availableDriversCount,
+          availableTrucksCount
+        ),
+        clients: data.clients || [],
+        plannedTripsDetails: data.plannedTripsDetails || [],
+        resourceStatus: {
+          driversAvailable: availableDriversCount,
+          driversNeeded: data.resourceStatus?.driversNeeded || 
+                         (this.deliveries.length > 0 ? 1 : 0),
+          driversShortage: Math.max(0, 
+            (data.resourceStatus?.driversNeeded || (this.deliveries.length > 0 ? 1 : 0)) - 
+            availableDriversCount
+          ),
+          trucksAvailable: availableTrucksCount,
+          trucksNeeded: data.resourceStatus?.trucksNeeded || 
+                       (this.deliveries.length > 0 ? 1 : 0),
+          trucksShortage: Math.max(0, 
+            (data.resourceStatus?.trucksNeeded || (this.deliveries.length > 0 ? 1 : 0)) - 
+            availableTrucksCount
+          )
+        }
+      };
+      
+      console.log(`Stats for ${dateStr}:`, {
+        availableDrivers: availableDriversCount,
+        availableTrucks: availableTrucksCount,
+        totalOrders: data.summary?.totalOrdersReady
+      });
+    }
+  } catch (error) {
+    console.error('Erreur lors du chargement des statistiques:', error);
+    
+    await this.loadLocalDateStatsWithDrivers(date);
+  } finally {
+    this.dateStatsLoading = false;
+    this.showDateStatsModal = true;
   }
+}
+private areDriversLoadedForDate(date: Date): boolean {
+  return this.lastLoadedDriverDate !== null && 
+         this.isSameDay(this.lastLoadedDriverDate, date) &&
+         this.availableDrivers.length > 0;
+}
 
-  private loadLocalDateStats(date: Date): void {
-    const dateStr = this.datePipe.transform(date, 'yyyy-MM-dd') || '';
+private loadAvailableDriversForDate(date: Date): Promise<void> {
+  return new Promise((resolve) => {
+    if (this.areDriversLoadedForDate(date)) {
+      resolve();
+      return;
+    }
 
-    const clientsWithOrders = this.customers.filter(customer =>
-      this.getClientPendingOrdersCount(customer.id) > 0
-    );
+    const dateStr = this.formatDateForAPI(date);
+    const excludeTripId = this.tripId || this.tripId;
 
-    const assignedOrderIds: number[] = [];
+    this.loadingAvailableDrivers = true;
 
-    this.deliveryControls.forEach(delivery => {
-      const orderId = delivery.get('orderId')?.value;
-      if (orderId) {
-        assignedOrderIds.push(orderId);
+    this.http.getAvailableDriversByDateAndZone(dateStr, undefined, excludeTripId).subscribe({
+      next: (response: any) => {
+        this.processDriverResponse(response, date);
+        this.filteredAvailableDrivers = [...this.availableDrivers];
+        this.filterDriversByEntity();
+        this.loadingAvailableDrivers = false;
+        this.lastLoadedDriverDate = date;
+        console.log(`Drivers loaded for ${dateStr}:`, this.availableDrivers.length);
+        resolve();
+      },
+      error: (error) => {
+        console.error('Error loading available drivers:', error);
+        this.handleDriverLoadError(date, excludeTripId);
+        this.loadingAvailableDrivers = false;
+        this.lastLoadedDriverDate = date;
+        resolve(); 
       }
     });
+  });
+}
 
-    const ordersNotAssigned = this.ordersForQuickAdd.filter(order =>
-      !assignedOrderIds.includes(order.id)
-    );
+private getAvailableTrucksForDate(date: Date): Promise<number> {
+  return new Promise((resolve) => {
+    const dateStr = this.formatDateForAPI(date);
+    const excludeTripId = this.tripId;
 
-    const clientsWithOrdersNotAssigned = this.customers.filter(customer =>
-      ordersNotAssigned.some(order => order.customerId === customer.id)
-    );
-
-    this.selectedDateStats = {
-      date: date,
-      totalClients: clientsWithOrdersNotAssigned.length,
-      totalOrders: ordersNotAssigned.length,
-      plannedTrips: this.deliveries.length > 0 ? 1 : 0,
-      availableDrivers: this.availableDrivers.length,
-      allReadyOrders: this.ordersForQuickAdd.length,
-      ordersInTrips: this.deliveries.length,
-      weightInTrips: this.calculateTotalWeight(),
-      assignedDrivers: this.tripForm.get('driverId')?.value ? 1 : 0,
-      availableTrucks: this.trucks.filter(t => t.status === 'Disponible').length,
-      isWeekend: date.getDay() === 0 || date.getDay() === 6,
-      dayOfWeek: this.getDayName(date),
-      recommendations: this.generateLocalRecommendations(
-        ordersNotAssigned.length,
-        this.deliveries.length,
-        this.availableDrivers.length
-      ),
-      clients: clientsWithOrdersNotAssigned.map(c => ({
-        id: c.id,
-        name: c.name,
-        ordersCount: ordersNotAssigned.filter(o => o.customerId === c.id).length
-      })),
-      plannedTripsDetails: this.deliveries.length > 0 ? [{
-        id: this.tripId || 0,
-        tripReference: this.tripForm.get('tripReference')?.value || 'Nouveau',
-        deliveriesCount: this.deliveries.length,
-        ordersCount: this.deliveries.length,
-        totalWeight: this.calculateTotalWeight()
-      }] : [],
-      resourceStatus: {
-        driversAvailable: this.availableDrivers.length,
-        driversNeeded: this.deliveries.length > 0 ? 1 : 0,
-        driversShortage: Math.max(0, (this.deliveries.length > 0 ? 1 : 0) - this.availableDrivers.length),
-        trucksAvailable: this.trucks.filter(t => t.status === 'Disponible').length,
-        trucksNeeded: this.deliveries.length > 0 ? 1 : 0,
-        trucksShortage: Math.max(0, (this.deliveries.length > 0 ? 1 : 0) - this.trucks.filter(t => t.status === 'Disponible').length)
+    this.http.getAvailableTrucksByDate(dateStr, excludeTripId).subscribe({
+      next: (response: any) => {
+        const availableCount = response.data?.availableTrucks?.length || 0;
+        console.log(`Trucks loaded for ${dateStr}:`, availableCount);
+        resolve(availableCount);
+      },
+      error: (error) => {
+        console.error('Error loading trucks:', error);
+     
+        const enabledTrucks = this.trucks.filter(t => t.isEnable).length;
+        resolve(enabledTrucks);
       }
-    };
+    });
+  });
+}
+
+private async loadLocalDateStatsWithDrivers(date: Date): Promise<void> {
+
+  if (!this.areDriversLoadedForDate(date)) {
+    await this.loadAvailableDriversForDate(date);
   }
+
+  const clientsWithOrders = this.customers.filter(customer =>
+    this.getClientPendingOrdersCount(customer.id) > 0
+  );
+
+  const assignedOrderIds: number[] = [];
+  this.deliveryControls.forEach(delivery => {
+    const orderId = delivery.get('orderId')?.value;
+    if (orderId) {
+      assignedOrderIds.push(orderId);
+    }
+  });
+
+  const ordersNotAssigned = this.ordersForQuickAdd.filter(order =>
+    !assignedOrderIds.includes(order.id)
+  );
+
+  const clientsWithOrdersNotAssigned = this.customers.filter(customer =>
+    ordersNotAssigned.some(order => order.customerId === customer.id)
+  );
+
+ 
+  const availableTrucksCount = await this.getAvailableTrucksForDate(date);
+
+  this.selectedDateStats = {
+    date: date,
+    totalClients: clientsWithOrdersNotAssigned.length,
+    totalOrders: ordersNotAssigned.length,
+    plannedTrips: this.deliveries.length > 0 ? 1 : 0,
+    availableDrivers: this.availableDrivers.length,
+    allReadyOrders: this.ordersForQuickAdd.length,
+    ordersInTrips: this.deliveries.length,
+    weightInTrips: this.calculateTotalWeight(),
+    assignedDrivers: this.tripForm.get('driverId')?.value ? 1 : 0,
+    availableTrucks: availableTrucksCount,
+    isWeekend: date.getDay() === 0 || date.getDay() === 6,
+    dayOfWeek: this.getDayName(date),
+    recommendations: this.generateLocalRecommendations(
+      ordersNotAssigned.length,
+      this.deliveries.length,
+      this.availableDrivers.length,
+      availableTrucksCount
+    ),
+    clients: clientsWithOrdersNotAssigned.map(c => ({
+      id: c.id,
+      name: c.name,
+      ordersCount: ordersNotAssigned.filter(o => o.customerId === c.id).length
+    })),
+    plannedTripsDetails: this.deliveries.length > 0 ? [{
+      id: this.tripId || 0,
+      tripReference: this.tripForm.get('tripReference')?.value || 'Nouveau',
+      deliveriesCount: this.deliveries.length,
+      ordersCount: this.deliveries.length,
+      totalWeight: this.calculateTotalWeight()
+    }] : [],
+    resourceStatus: {
+      driversAvailable: this.availableDrivers.length,
+      driversNeeded: this.deliveries.length > 0 ? 1 : 0,
+      driversShortage: Math.max(0, (this.deliveries.length > 0 ? 1 : 0) - this.availableDrivers.length),
+      trucksAvailable: availableTrucksCount,
+      trucksNeeded: this.deliveries.length > 0 ? 1 : 0,
+      trucksShortage: Math.max(0, (this.deliveries.length > 0 ? 1 : 0) - availableTrucksCount)
+    }
+  };
+}
 
   private getDayName(date: Date): string {
     const days = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
     return days[date.getDay()];
   }
 
-  private generateLocalRecommendations(ordersReady: number, plannedTrips: number, availableDrivers: number): string[] {
-    const recommendations: string[] = [];
+private generateLocalRecommendations(
+  ordersReady: number, 
+  plannedTrips: number, 
+  availableDrivers: number,
+  availableTrucks: number
+): string[] {
+  const recommendations: string[] = [];
 
-    if (ordersReady > 0 && plannedTrips === 0) {
-      recommendations.push(`${ordersReady} commande(s) prête(s) - Créez un nouveau voyage`);
-    }
-
-    if (availableDrivers === 0 && plannedTrips > 0) {
-      recommendations.push('Aucun chauffeur disponible');
-    }
-
-    if (recommendations.length === 0) {
-      recommendations.push('Statistiques locales chargées');
-    }
-
-    return recommendations;
+  if (ordersReady > 0 && plannedTrips === 0) {
+    recommendations.push(`⚙️ ${ordersReady} commande(s) prête(s) - Créez un nouveau voyage`);
   }
+
+  if (availableDrivers === 0 && plannedTrips > 0) {
+    recommendations.push('⚠️ Aucun chauffeur disponible pour le voyage planifié');
+  } else if (availableDrivers === 0) {
+    recommendations.push('⚠️ Aucun chauffeur disponible - Vérifiez les disponibilités');
+  }
+
+  if (availableTrucks === 0 && plannedTrips > 0) {
+    recommendations.push('⚠️ Aucun camion disponible pour le voyage planifié');
+  } else if (availableTrucks === 0) {
+    recommendations.push('⚠️ Aucun camion disponible - Vérifiez le parc');
+  }
+
+  if (availableDrivers > 0 && availableTrucks > 0 && ordersReady > 0 && plannedTrips === 0) {
+    recommendations.push(`💡 ${availableDrivers} chauffeur(s) et ${availableTrucks} camion(s) disponible(s) pour ${ordersReady} commande(s)`);
+  }
+
+  if (ordersReady > 100) {
+    recommendations.push(`🔒 Charge globale élevée: ${ordersReady} commandes en attente au total`);
+  }
+
+  if (recommendations.length === 0) {
+    recommendations.push('✅ Tout est prêt pour la planification');
+  }
+
+  return recommendations;
+}
 
   continueWithDateSelection(): void {
     if (!this.selectedDateStats.date) return;
@@ -5905,7 +6138,7 @@ clearFilters(): void {
     const customer = this.selectedClient;
     if (!customer) return;
 if (!this.allowMixingOrderTypes && this.deliveries.length > 0) {
-    // Récupérer le type des commandes existantes
+   
     const existingTypes = new Set<string>();
     this.deliveryControls.forEach(group => {
       const orderId = group.get('orderId')?.value;
@@ -5915,14 +6148,14 @@ if (!this.allowMixingOrderTypes && this.deliveries.length > 0) {
       }
     });
 
-    // Vérifier les nouvelles commandes
+
     const newTypes = new Set<string>();
     this.selectedOrders.forEach(orderId => {
       const order = this.allOrders.find(o => o.id === orderId);
       if (order?.type) newTypes.add(order.type);
     });
 
-    // Vérifier si les types sont compatibles
+    
     const allTypes = new Set([...existingTypes, ...newTypes]);
     if (allTypes.size > 1) {
       Swal.fire({
@@ -7289,7 +7522,7 @@ shouldShowWeatherPrompt(): boolean {
   return hasLocations && weatherNotLoaded;
 }
 
-getEntityName(entityId: number): string {
+getEntityName(entityId: number | undefined): string {
   if (!entityId) return '';
   const entity = this.geographicalEntities.find(e => e.id === entityId);
   return entity ? entity.name : 'Entité inconnue';
@@ -7302,11 +7535,11 @@ private async validateCapacityWithSettings(): Promise<boolean> {
   const truck = truckId ? this.trucks.find(t => t.id === truckId) : null;
   const unit = this.loadingUnit;
 
-  // Use the loaded settings
+
   const allowExceed = this.allowExceedMaxCapacity;
   const maxPercentage = this.maxCapacityPercentage;
 
-  // Calculate if current percentage exceeds allowed maximum
+  
   const isExceeded = percentage > maxPercentage;
 
   if (isExceeded) {
@@ -7410,7 +7643,7 @@ private async validateCapacityWithSettings(): Promise<boolean> {
 private loadCapacitySettings(): void {
   this.http.getAllSettingsByType('TRIP').subscribe({
     next: (settings) => {
-      // Find ALLOW_EXCEED_MAX_CAPACITY setting
+  
       const allowExceedSetting = settings.find(s => 
         s.parameterCode.startsWith('ALLOW_EXCEED_MAX_CAPACITY=')
       );
@@ -7420,7 +7653,7 @@ private loadCapacitySettings(): void {
         this.allowExceedMaxCapacity = value === 'true';
       }
       
-      // Find MAX_CAPACITY_PERCENTAGE setting
+    
       const maxPercentageSetting = settings.find(s => 
         s.parameterCode.startsWith('MAX_CAPACITY_PERCENTAGE=')
       );
@@ -7437,23 +7670,23 @@ private loadCapacitySettings(): void {
     },
     error: (error) => {
       console.error('Error loading capacity settings:', error);
-      // Default values
+  
       this.allowExceedMaxCapacity = false;
       this.maxCapacityPercentage = 100;
     }
   });
 }
-// Filter drivers by geographical entity
+
 filterDriversByEntity(): void {
   const entityId = this.driverEntityFilterControl.value;
-  
+  console.log(entityId)
   if (!entityId) {
     this.filteredAvailableDrivers = [...this.availableDrivers];
     return;
   }
-  
+  console.log(this.filteredAvailableDrivers)
   this.filteredAvailableDrivers = this.availableDrivers.filter(driver => {
-    // Check if driver has the selected geographical entity through DriverGeographicalEntities
+    
     return driver.driverGeographicalEntities?.some(
       ge => ge.geographicalEntityId === entityId
     );
@@ -7462,7 +7695,7 @@ filterDriversByEntity(): void {
   console.log(`Filtered drivers by entity ${entityId}: ${this.filteredAvailableDrivers.length} drivers`);
 }
 
-// Filter trucks by geographical entity
+
 filterTrucksByEntity(): void {
   const entityId = this.truckEntityFilterControl.value;
   
@@ -7472,7 +7705,7 @@ filterTrucksByEntity(): void {
   }
   
   this.filteredAvailableTrucks = this.availableTrucks.filter(truck => {
-    // Check if truck has the selected geographical entity through TruckGeographicalEntities
+
     return truck.truckGeographicalEntities?.some(
       ge => ge.geographicalEntityId === entityId
     );
@@ -7480,11 +7713,7 @@ filterTrucksByEntity(): void {
   
   console.log(`Filtered trucks by entity ${entityId}: ${this.filteredAvailableTrucks.length} trucks`);
 }
-// Dans la classe TripForm, ajoutez ces méthodes:
 
-/**
- * Vérifie s'il y a plusieurs types de commandes
- */
 hasMultipleOrderTypes(): boolean {
   const types = new Set<string>();
   
@@ -7492,7 +7721,7 @@ hasMultipleOrderTypes(): boolean {
     const orderId = group.get('orderId')?.value;
     if (orderId && orderId !== '') {
       const order = this.allOrders.find(o => o.id === orderId);
-      // Si le type est undefined ou null, on le traite comme "Standard"
+
       const orderType = order?.type || 'Standard';
       types.add(orderType);
       console.log(`Order ${orderId} type: "${orderType}" (original: ${order?.type || 'undefined'})`);
@@ -7509,7 +7738,7 @@ getDistinctOrderTypes(): string[] {
     const orderId = group.get('orderId')?.value;
     if (orderId && orderId !== '') {
       const order = this.allOrders.find(o => o.id === orderId);
-      // Si le type est undefined ou null, on le traite comme "Standard"
+
       const orderType = order?.type || 'Standard';
       types.add(orderType);
     }
@@ -7643,17 +7872,14 @@ private loadOrderSettings(): void {
     }
   });
 }
-/**
- * Vérifie que toutes les commandes dans le voyage sont du même type
- * Retourne true si OK, false si erreur
- */
+
 private validateOrderTypes(): { isValid: boolean, message?: string } {
-  // Si le mélange est autorisé, pas de validation
+ 
   if (this.allowMixingOrderTypes) {
     return { isValid: true };
   }
 
-  // Récupérer tous les types de commandes
+
   const orderTypes = new Set<string>();
   const ordersWithTypes: { orderId: number, type: string, reference: string }[] = [];
 
@@ -7673,11 +7899,11 @@ private validateOrderTypes(): { isValid: boolean, message?: string } {
     }
   });
 
-  // Si plusieurs types différents détectés
+
   if (orderTypes.size > 1) {
     const typesList = Array.from(orderTypes).join(', ');
     
-    // Grouper les commandes par type pour le message d'erreur
+   
     const ordersByType = new Map<string, string[]>();
     ordersWithTypes.forEach(item => {
       if (!ordersByType.has(item.type)) {
@@ -7790,7 +8016,7 @@ isGroupExpanded(customerId: number): boolean {
 isCapacityGroupExpanded(customerId: number): boolean {
   return this.expandedCapacityGroups.has(customerId);
 }
-// Helper methods for market stats
+
 getTotalPendingOrdersCount(): number {
   return this.ordersForQuickAdd.length;
 }

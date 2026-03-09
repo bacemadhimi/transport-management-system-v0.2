@@ -619,41 +619,48 @@ private setGeographicalSelections(employeeData: any) {
     typeTruckIdControl?.updateValueAndValidity();
   }
 
+getCleanCategoryCode(): string | null {
+  const category = this.employeeForm.get('employeeCategory')?.value;
+  if (!category) return null;
+  
+  // Handle both "DRIVER=true" format and plain "DRIVER" format
+  return category.includes('=') ? category.split('=')[0] : category;
+}
 
-  shouldShowDrivingLicense(): boolean {
-    const category = this.employeeForm.get('employeeCategory')?.value;
-    return ['DRIVER', 'MECHANIC'].includes(category || '');
-  }
+shouldShowDrivingLicense(): boolean {
+  const category = this.getCleanCategoryCode();
+  return ['DRIVER', 'MECHANIC'].includes(category || '');
+}
 
-  isDrivingLicenseRequired(): boolean {
-    const category = this.employeeForm.get('employeeCategory')?.value;
-    return category === 'DRIVER' || category === 'MECHANIC';
-  }
+isDrivingLicenseRequired(): boolean {
+  const category = this.getCleanCategoryCode();
+  return category === 'DRIVER' || category === 'MECHANIC';
+}
 
-  shouldShowTruckType(): boolean {
-    const category = this.employeeForm.get('employeeCategory')?.value;
-    return category === 'DRIVER';
-  }
+shouldShowTruckType(): boolean {
+  const category = this.getCleanCategoryCode();
+  return category === 'DRIVER';
+}
 
-  isTruckTypeRequired(): boolean {
-    const category = this.employeeForm.get('employeeCategory')?.value;
-    return category === 'DRIVER';
-  }
+isTruckTypeRequired(): boolean {
+  const category = this.getCleanCategoryCode();
+  return category === 'DRIVER';
+}
 
-  shouldShowLicenseAttachment(): boolean {
-    const category = this.employeeForm.get('employeeCategory')?.value;
-    return ['DRIVER', 'MECHANIC'].includes(category || '');
-  }
+shouldShowLicenseAttachment(): boolean {
+  const category = this.getCleanCategoryCode();
+  return ['DRIVER', 'MECHANIC'].includes(category || '');
+}
 
-  isLicenseAttachmentRequired(): boolean {
-    const category = this.employeeForm.get('employeeCategory')?.value;
-    return category === 'DRIVER' || category === 'MECHANIC';
-  }
+isLicenseAttachmentRequired(): boolean {
+  const category = this.getCleanCategoryCode();
+  return category === 'DRIVER' || category === 'MECHANIC';
+}
 
-  shouldShowGeographicalEntities(): boolean {
-    const category = this.employeeForm.get('employeeCategory')?.value;
-    return category === 'DRIVER';
-  }
+shouldShowGeographicalEntities(): boolean {
+  const category = this.getCleanCategoryCode();
+  return category === 'DRIVER';
+}
 getCategoryLabel(categoryCode: string): string {
   if (!categoryCode) return '';
 

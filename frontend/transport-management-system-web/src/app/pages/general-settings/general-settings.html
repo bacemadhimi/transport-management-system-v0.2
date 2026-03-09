@@ -27,10 +27,10 @@
           <form [formGroup]="orderSettingsForm" class="h-full flex flex-col">
             <div class="checkboxes-section">
               <div class="checkbox-grid">
-                <mat-checkbox formControlName="ALLOW_EDIT_ORDER">Autoriser la modification des commandes</mat-checkbox>
-                <mat-checkbox formControlName="ALLOW_DELIVERY_DATE_EDIT">Autoriser la modification de la date de livraison</mat-checkbox>
-                <mat-checkbox formControlName="ALLOW_LOAD_LATE_ORDERS">Autoriser le chargement des commandes en retard</mat-checkbox>
-                <mat-checkbox formControlName="ACCEPT_ORDERS_WITHOUT_ADDRESS">Accepter les commandes sans adresse</mat-checkbox>
+                <mat-checkbox formControlName="ALLOW_EDIT_ORDER" color="primary">Autoriser la modification des commandes</mat-checkbox>
+                <mat-checkbox formControlName="ALLOW_DELIVERY_DATE_EDIT" color="primary">Autoriser la modification de la date de livraison</mat-checkbox>
+                <mat-checkbox formControlName="ALLOW_LOAD_LATE_ORDERS" color="primary">Autoriser le chargement des commandes en retard</mat-checkbox>
+                <mat-checkbox formControlName="ACCEPT_ORDERS_WITHOUT_ADDRESS" color="primary">Accepter les commandes sans adresse</mat-checkbox>
                 <mat-checkbox formControlName="ALLOW_MIXING_ORDER_TYPES" color="primary">Autoriser le mélange des types de commandes</mat-checkbox>
               </div>
             </div>
@@ -241,12 +241,12 @@
           <form [formGroup]="tripSettingsForm" class="h-full flex flex-col">
             <div class="checkboxes-section">
               <div class="checkbox-grid">
-                <mat-checkbox formControlName="ALLOW_EDIT_TRIPS">Autoriser la modification des voyages</mat-checkbox>
-                <mat-checkbox formControlName="ALLOW_DELETE_TRIPS">Autoriser la suppression des voyages</mat-checkbox>
-                <mat-checkbox formControlName="REQUIRE_DELETE_CONFIRMATION">Exiger confirmation avant suppression</mat-checkbox>
-                <mat-checkbox formControlName="NOTIFY_ON_TRIP_EDIT">Notifier lors de la modification d'un voyage</mat-checkbox>
-                <mat-checkbox formControlName="NOTIFY_ON_TRIP_DELETE">Notifier lors de la suppression d'un voyage</mat-checkbox>
-                <mat-checkbox formControlName="LINK_DRIVER_TO_TRUCK">Le chauffeur doit correspondre au camion</mat-checkbox>
+                <mat-checkbox formControlName="ALLOW_EDIT_TRIPS"  color="primary">Autoriser la modification des voyages</mat-checkbox>
+                <mat-checkbox formControlName="ALLOW_DELETE_TRIPS"  color="primary">Autoriser la suppression des voyages</mat-checkbox>
+                <mat-checkbox formControlName="REQUIRE_DELETE_CONFIRMATION" color="primary">Exiger confirmation avant suppression</mat-checkbox>
+                <mat-checkbox formControlName="NOTIFY_ON_TRIP_EDIT" color="primary">Notifier lors de la modification d'un voyage</mat-checkbox>
+                <mat-checkbox formControlName="NOTIFY_ON_TRIP_DELETE" color="primary">Notifier lors de la suppression d'un voyage</mat-checkbox>
+                <mat-checkbox formControlName="LINK_DRIVER_TO_TRUCK" color="primary">Le chauffeur doit correspondre au camion</mat-checkbox>
               </div>
             </div>
             
@@ -323,8 +323,8 @@
                     <mat-label>Numéro de niveau</mat-label>
                     <input matInput type="number" formControlName="levelNumber" readonly>
                   </mat-form-field>
-                  <mat-checkbox formControlName="isMappable">Cartographiable</mat-checkbox>
-                  <mat-checkbox formControlName="isActive">Actif</mat-checkbox>
+                  <mat-checkbox formControlName="isMappable"  color="primary">Cartographiable</mat-checkbox>
+                  <mat-checkbox formControlName="isActive" color="primary">Actif</mat-checkbox>
                 </div>
               </div>
               <button *ngIf="geographicalLevelsArray.length < 5" class="add-level-btn" type="button" (click)="addGeographicalLevel()"><mat-icon>add</mat-icon> Ajouter un niveau</button>
