@@ -19653,7 +19653,7 @@ mat-error {
     }
   }
 }
-/* Entity filter styles for select dropdowns */
+
 .entity-filter-option {
   padding: 12px 16px;
   background-color: #f8fafc;
@@ -19739,7 +19739,7 @@ mat-error {
   }
 }
 
-/* Driver and truck entity info */
+
 .driver-entity-info, .truck-entity-info {
   display: flex;
   align-items: center;
@@ -19767,7 +19767,7 @@ mat-error {
   flex-wrap: wrap;
   gap: 6px;
 }
-/* ===== STATISTICS MODAL HEADER - FOLLOWS THEME ===== */
+
 
 .stats-modal-header {
   background: var(--primary-gradient) !important;
@@ -19808,7 +19808,7 @@ mat-error {
   }
 }
 
-/* ===== STATISTICS MODAL CONTENT - KEEP ORIGINAL STYLES ===== */
+
 
 .stats-modal-content {
   padding: 20px !important;
@@ -19873,12 +19873,12 @@ mat-error {
   justify-content: center !important;
   flex-shrink: 0 !important;
   
-  /* Date icon - use theme gradient */
+  
   &.date {
     background: var(--primary-gradient) !important;
   }
   
-  /* Other icons keep their original gradients */
+  
   &.clients {
     background: linear-gradient(135deg, #3b82f6, #1d4ed8) !important;
   }
@@ -19982,7 +19982,7 @@ mat-error {
     }
     
     .rec-icon {
-      color: var(--primary-color) !important; /* Use theme for recommendation icons */
+      color: var(--primary-color) !important; 
       font-size: 18px !important;
       margin-top: 1px !important;
       flex-shrink: 0 !important;
@@ -20019,7 +20019,7 @@ mat-error {
     }
     
     .client-orders {
-      background: rgba(var(--primary-color-rgb), 0.1) !important; /* Use theme for badges */
+      background: rgba(var(--primary-color-rgb), 0.1) !important; 
       color: var(--primary-color) !important;
       padding: 2px 8px !important;
       border-radius: 12px !important;
@@ -20058,7 +20058,7 @@ mat-error {
     }
   }
 }
-/* ===== TRAJECT CONFIGURATION ICONS - FOLLOW THEME ===== */
+
 
 .traject-choice {
   margin-bottom: 1.5rem;
@@ -20108,7 +20108,7 @@ mat-error {
   }
 }
 
-/* ===== ICONS IN TRAJECT CONFIGURATION - FOLLOW THEME ===== */
+
 
 .option-content {
   display: flex;
@@ -20120,7 +20120,7 @@ mat-error {
     font-size: 2rem !important;
     width: 2rem !important;
     height: 2rem !important;
-    color: var(--primary-color) !important; /* Theme color for icons */
+    color: var(--primary-color) !important; 
     flex-shrink: 0;
     transition: all 0.3s ease;
   }
@@ -20143,21 +20143,21 @@ mat-error {
   }
 }
 
-/* Hover effect for icons */
+
 .mat-mdc-radio-button:hover .option-icon {
   transform: scale(1.1);
   filter: drop-shadow(0 4px 8px rgba(var(--primary-color-rgb), 0.3));
 }
 
-/* Selected state icon */
+
 .mat-mdc-radio-checked .option-icon {
   color: var(--primary-color) !important;
   filter: drop-shadow(0 4px 12px rgba(var(--primary-color-rgb), 0.4));
 }
 
-/* ===== ADDITIONAL TRAJECT ICONS ===== */
 
-/* Icon in traject selection dropdown */
+
+
 .traject-option .traject-info .icon-small {
   color: var(--primary-color) !important;
   font-size: 0.875rem;
@@ -20167,7 +20167,7 @@ mat-error {
   vertical-align: text-bottom;
 }
 
-/* Icon in traject preview */
+
 .selected-traject-preview .preview-title .title-icon {
   color: var(--primary-color) !important;
   font-size: 1.1rem;
@@ -20175,13 +20175,13 @@ mat-error {
   height: 1.1rem;
 }
 
-/* Icons in traject details */
+
 .traject-details .detail-item .detail-icon {
   color: var(--primary-color) !important;
   font-size: 1.5rem;
 }
 
-/* Icon in save traject section */
+
 .save-traject-section .save-header mat-icon.info-icon {
   color: var(--primary-color) !important;
 }
@@ -20190,13 +20190,13 @@ mat-error {
   color: var(--primary-color) !important;
 }
 
-/* Preview order number background */
+
 .traject-preview-from-deliveries .preview-point .preview-order {
   background: var(--primary-color) !important;
   color: white;
 }
 
-/* Icon in change traject button */
+
 .change-traject-btn {
   color: var(--primary-color) !important;
   background: rgba(var(--primary-color-rgb), 0.1);
@@ -20210,12 +20210,12 @@ mat-error {
   }
 }
 
-/* Icon in traject warning */
+
 .traject-warning .warning-icon {
-  color: #f59e0b !important; /* Keep warning icon orange */
+  color: #f59e0b !important; 
 }
 
-/* ===== TRAJECT ORDER SELECTION ICONS ===== */
+
 
 .traject-order-selection {
   .section-header .traject-order-summary mat-icon {
@@ -20248,7 +20248,7 @@ mat-error {
   }
 }
 
-/* ===== ICONS IN QUICK ADD SECTION ===== */
+
 
 .quick-add-title h3 mat-icon {
   color: var(--primary-color) !important;
@@ -20258,13 +20258,13 @@ mat-error {
   color: var(--primary-color) !important;
 }
 
-/* Step indicator icons (the numbers) */
+
 .quick-add-step-indicator .step.active .step-number {
   background: white !important;
   color: var(--primary-color) !important;
 }
 
-/* Search and filter icons */
+
 .search-field mat-icon[matPrefix] {
   color: var(--primary-color) !important;
 }
@@ -20274,7 +20274,7 @@ mat-error {
   background: rgba(var(--primary-color-rgb), 0.1) !important;
 }
 
-/* Client card icons */
+
 .client-card-virtual {
   .client-orders-count .order-icon {
     color: var(--primary-color) !important;
@@ -20293,24 +20293,24 @@ mat-error {
   }
 }
 
-/* Virtual scroll info icons */
+
 .client-virtual-scroll-info .client-count-info mat-icon {
   color: var(--primary-color) !important;
 }
 
 .client-virtual-scroll-info .search-info mat-icon {
-  color: #0369a1 !important; /* Keep search info icon blue */
+  color: #0369a1 !important; 
 }
 
-/* No results icons */
+
 .no-results .no-results-icon {
-  color: #cbd5e1 !important; /* Keep gray */
+  color: #cbd5e1 !important; 
 }
 
 .no-clients-empty .empty-icon {
-  color: #cbd5e1 !important; /* Keep gray */
+  color: #cbd5e1 !important; 
 }
-/* ===== REMOVE EXTRA BLUE ICON FROM QUICK ADD TITLE ===== */
+
 
 .quick-add-title {
   margin: 0 0 1.25rem 0;
@@ -20324,13 +20324,13 @@ mat-error {
     align-items: center;
     gap: 0.5rem;
     
-    /* Remove the ::before pseudo-element that creates the blue icon */
+    
     &::before {
       display: none !important;
       content: none !important;
     }
     
-    /* The actual mat-icon inside h3 will still show */
+    
     mat-icon {
       color: var(--primary-color) !important;
       font-size: 1.4rem;
@@ -20362,7 +20362,7 @@ mat-error {
     }
   }
   
-  /* Market stats styling */
+  
   .market-stats {
     display: flex;
     gap: 1rem;
@@ -20387,9 +20387,9 @@ mat-error {
     }
   }
 }
-/* ===== CHECKBOXES - FOLLOW THEME ===== */
 
-/* Override Material Design checkbox colors */
+
+
 ::ng-deep .mat-mdc-checkbox.mat-primary {
   --mdc-checkbox-selected-focus-icon-color: var(--primary-color) !important;
   --mdc-checkbox-selected-hover-icon-color: var(--primary-color) !important;
@@ -20399,18 +20399,18 @@ mat-error {
   --mdc-checkbox-unselected-hover-icon-color: var(--primary-color) !important;
 }
 
-/* Checkbox in selected state */
+
 ::ng-deep .mat-mdc-checkbox-checked .mdc-checkbox__background {
   background-color: var(--primary-color) !important;
   border-color: var(--primary-color) !important;
 }
 
-/* Checkbox ripple effect */
+
 ::ng-deep .mat-mdc-checkbox .mat-ripple-element {
   background-color: rgba(var(--primary-color-rgb), 0.1) !important;
 }
 
-/* Checkbox in quick add section */
+
 .client-card-virtual .client-card-content .client-orders-count mat-checkbox,
 .order-selection-step .order-select-checkbox mat-checkbox {
   ::ng-deep .mdc-checkbox__background {
@@ -20423,7 +20423,7 @@ mat-error {
   }
 }
 
-/* "Arrival equals departure" checkbox */
+
 .same-location-checkbox-unified mat-checkbox {
   ::ng-deep .mdc-checkbox__background {
     border-color: var(--border-color) !important;
@@ -20435,7 +20435,7 @@ mat-error {
   }
 }
 
-/* "Set as standard route" checkbox */
+
 .save-as-predefined-section mat-checkbox,
 .save-traject-section mat-checkbox {
   ::ng-deep .mdc-checkbox__background {
@@ -20448,7 +20448,7 @@ mat-error {
   }
 }
 
-/* Checkbox in delivery section */
+
 .order-item-virtual .order-checkbox mat-checkbox {
   ::ng-deep .mdc-checkbox__background {
     border-color: var(--border-color) !important;
@@ -20460,13 +20460,13 @@ mat-error {
   }
 }
 
-/* Disabled checkbox in delivery section */
+
 .order-item-virtual .order-checkbox mat-checkbox[disabled] {
   ::ng-deep .mdc-checkbox__background {
-    background-color: #10b981 !important; /* Keep green for disabled */
+    background-color: #10b981 !important; 
   }
 }
-/* ===== ULTIMATE RADIO BUTTON OVERRIDE ===== */
+
 
 ::ng-deep .mat-mdc-radio-button .mdc-radio {
   .mdc-radio__outer-circle {
@@ -20498,9 +20498,9 @@ mat-error {
 ::ng-deep .mat-mdc-radio-button:hover .mdc-radio__outer-circle {
   border-color: var(--primary-color) !important;
 }
-/* ===== FORCE COUNTERS TO USE THEME COLOR - ULTIMATE OVERRIDE ===== */
 
-/* Target the counter highlight specifically */
+
+
 .quick-add-title .text-sm .counter-highlight {
   color: var(--primary-color) !important;
   background: rgba(var(--primary-color-rgb), 0.1) !important;
@@ -20510,7 +20510,7 @@ mat-error {
   border-radius: 6px !important;
 }
 
-/* Target the stat badges and their numbers */
+
 .quick-add-title .market-stats .stat-badge {
   display: flex !important;
   align-items: center !important;
@@ -20520,7 +20520,7 @@ mat-error {
   border-radius: 30px !important;
   border: 1px solid #e2e8f0 !important;
   
-  /* The icon */
+  
   .mat-icon, mat-icon {
     color: var(--primary-color) !important;
     font-size: 1.1rem !important;
@@ -20528,7 +20528,7 @@ mat-error {
     height: 1.1rem !important;
   }
   
-  /* The number itself - this is what's still green */
+  
   .stat-number, 
   strong, 
   span:first-of-type,
@@ -20537,27 +20537,27 @@ mat-error {
     font-weight: 700 !important;
   }
   
-  /* The text after the number */
+  
   span:last-of-type {
     color: #1e293b !important;
     font-weight: 500 !important;
   }
 }
 
-/* Even more specific targeting for the numbers */
+
 .quick-add-title .market-stats .stat-badge span.stat-number,
 .quick-add-title .market-stats .stat-badge strong,
 .quick-add-title .market-stats .stat-badge .ng-star-inserted {
   color: var(--primary-color) !important;
 }
 
-/* Target by content type - numbers */
+
 .quick-add-title .market-stats .stat-badge span:contains("6385"),
 .quick-add-title .market-stats .stat-badge span:contains("3,510,134.57") {
   color: var(--primary-color) !important;
 }
 
-/* Force override on all numbers in the quick add section */
+
 .quick-add-title .market-stats .stat-badge span {
   &[class*="number"], 
   &[class*="count"],
@@ -20566,19 +20566,19 @@ mat-error {
   }
 }
 
-/* Target the specific structure from your HTML */
+
 .quick-add-title .market-stats .stat-badge {
   mat-icon + span {
     color: var(--primary-color) !important;
   }
 }
 
-/* If the numbers are inside a pipe or formatted */
+
 .quick-add-title .market-stats .stat-badge span:not(.mat-icon) {
   color: var(--primary-color) !important;
 }
 
-/* Remove any green from the entire quick add section */
+
 .quick-add-title * {
   &[style*="color: #10b981"],
   &[style*="color: #10b981"],
@@ -20588,33 +20588,29 @@ mat-error {
   }
 }
 
-/* ===== DIRECT ELEMENT SELECTORS ===== */
 
-/* Target by the actual numbers */
+
+
 .quick-add-title .market-stats .stat-badge:first-child span:last-child::before {
   content: "" !important;
 }
 
-/* If the numbers are in separate spans */
+
 .quick-add-title .market-stats .stat-badge span:first-of-type {
   color: var(--primary-color) !important;
 }
 
-/* If they're using ng-container or template */
+
 .quick-add-title .market-stats .stat-badge span span {
   color: var(--primary-color) !important;
 }
 
-/* ===== DEBUGGING - ADD RED BORDER TO SEE WHAT'S BEING TARGETED ===== */
-/*
-.quick-add-title .market-stats .stat-badge span {
-  border: 2px solid red !important;
-}
-*/
 
-/* ===== FALLBACK FOR ANY REMAINING GREEN ===== */
 
-/* Override the brand-green variable if it's being used */
+
+
+
+
 .counter-highlight,
 .stat-badge .stat-number,
 .market-stats .stat-badge span {
@@ -20622,12 +20618,12 @@ mat-error {
   color: var(--primary-color) !important;
 }
 
-/* Force on all text inside stat badges */
+
 .market-stats .stat-badge *:not(mat-icon) {
   color: var(--primary-color) !important;
 }
 
-/* Keep the unit text normal */
+
 .market-stats .stat-badge span:contains("commandes"),
 .market-stats .stat-badge span:contains("tonne"),
 .market-stats .stat-badge span:contains("disponibles") {
@@ -20659,20 +20655,20 @@ mat-error {
       color: var(--text-secondary) !important;
       line-height: 1.4;
       
-      /* Style for the click instruction */
+      
       &:first-of-type {
         font-weight: 500;
       }
     }
     
-    /* Style for the selected range text */
+    
     .selected-range-text {
       color: var(--primary-color) !important;
       font-weight: 600;
     }
   }
   
-  /* Also style the date selection instructions */
+  
   .selected-range-preview {
     background: rgba(var(--primary-color-rgb), 0.05) !important;
     border: 1px solid rgba(var(--primary-color-rgb), 0.15) !important;
@@ -20702,7 +20698,7 @@ mat-error {
   }
 }
 
-/* ===== CALENDAR HEADER ===== */
+
 
 .calendar-modal-header {
   background: var(--primary-gradient) !important;
@@ -20726,7 +20722,7 @@ mat-error {
   }
 }
 
-/* ===== MONTH NAVIGATION ===== */
+
 
 .calendar-modal-content {
   .month-navigation {
@@ -20749,7 +20745,7 @@ mat-error {
   }
 }
 
-/* ===== CALENDAR DAYS ===== */
+
 
 .calendar-grid {
   .weekdays .weekday {
@@ -20787,7 +20783,7 @@ mat-error {
   }
 }
 
-/* ===== CALENDAR ACTIONS ===== */
+
 
 .calendar-actions {
   border-top-color: var(--border-color) !important;
@@ -20822,7 +20818,7 @@ mat-error {
   }
 }
 
-/* ===== DATE RANGE PICKER ===== */
+
 
 .date-range-picker {
   .date-range-field {
@@ -20849,7 +20845,7 @@ mat-error {
   }
 }
 
-/* ===== SELECTED RANGE PREVIEW IN MODAL ===== */
+
 
 .selected-range-preview {
   .range-dates {
@@ -20863,24 +20859,24 @@ mat-error {
   }
 }
 
-/* ===== ERROR MESSAGES ===== */
+
 
 .date-error-messages {
   mat-error {
     .error-icon {
-      background-color: #ef4444 !important; /* Keep error icon red */
+      background-color: #ef4444 !important; 
     }
   }
 }
-/* ===== ULTIMATE CALENDAR BUTTON FIX ===== */
 
-/* Force ALL buttons in calendar actions to use theme colors */
+
+
 .calendar-actions {
   button {
     transition: all 0.2s ease;
   }
   
-  /* Aujourd'hui button - force theme color */
+  
   button:first-child {
     color: var(--primary-color) !important;
     
@@ -20893,7 +20889,7 @@ mat-error {
     }
   }
   
-  /* Effacer button with X - keep gray normally, theme on hover */
+  
   button:nth-child(2) {
     color: #6b7280 !important;
     
@@ -20911,7 +20907,7 @@ mat-error {
     }
   }
   
-  /* Appliquer button - force theme gradient */
+  
   button:last-child {
     background: var(--primary-gradient) !important;
     color: white !important;
@@ -20926,7 +20922,7 @@ mat-error {
   }
 }
 
-/* Month navigation arrows - force theme color */
+
 .month-navigation {
   button {
     color: var(--primary-color) !important;
@@ -20941,7 +20937,7 @@ mat-error {
   }
 }
 
-/* Info icon - force theme color */
+
 .range-instructions {
   mat-icon {
     color: var(--primary-color) !important;
@@ -20951,7 +20947,7 @@ mat-error {
   border-color: rgba(var(--primary-color-rgb), 0.15) !important;
 }
 
-/* Selected dates - force theme color */
+
 .day-cell.selected,
 .day-cell.range-start,
 .day-cell.range-end {
@@ -20962,19 +20958,9 @@ mat-error {
   background: rgba(var(--primary-color-rgb), 0.1) !important;
 }
 
-/* ===== DEBUG - UNCOMMENT TO SEE WHAT'S BEING TARGETED ===== */
-/*
-.calendar-actions button:first-child {
-  border: 3px solid red !important;
-}
-.calendar-actions button:nth-child(2) {
-  border: 3px solid blue !important;
-}
-.calendar-actions button:last-child {
-  border: 3px solid green !important;
-}
-*/
-/* ===== ORDER SELECTION STEP - THEME COLORS ===== */
+
+
+
 
 .order-selection-step {
   .selected-client-header {
@@ -21057,7 +21043,7 @@ mat-error {
   }
 }
 
-/* ===== QUICK ADD SECTION - THEME COLORS ===== */
+
 
 .quick-add-title {
   .market-stats .stat-badge {
@@ -21083,7 +21069,7 @@ mat-error {
   }
 }
 
-/* ===== CLIENT CARDS - THEME COLORS ===== */
+
 
 .client-card-virtual {
   .client-orders-count .order-icon,
@@ -21115,7 +21101,7 @@ mat-error {
   }
 }
 
-/* ===== ORDER ITEMS - THEME COLORS ===== */
+
 
 .order-item {
   .order-weight {
@@ -21132,7 +21118,7 @@ mat-error {
   color: var(--primary-color) !important;
 }
 
-/* ===== SELECTION ACTIONS BUTTONS ===== */
+
 
 .selection-actions {
   button {
@@ -21153,25 +21139,18 @@ mat-error {
   }
 }
 
-/* ===== TOTAL WEIGHT BADGE ===== */
+
 
 .total-weight {
   background: rgba(var(--primary-color-rgb), 0.1) !important;
   color: var(--primary-color) !important;
 }
 
-/* ===== BACK BUTTON HOVER ===== */
+
 
 .back-btn:hover {
   color: var(--primary-color) !important;
 }
 
-/* ===== FORCE ORANGE FOR TESTING ===== */
-/* Uncomment this to test if theme variables are working */
-/*
-:host {
-  --primary-color: #f97316 !important;
-  --primary-color-rgb: 249, 115, 22 !important;
-  --primary-gradient: linear-gradient(135deg, #f97316, #f59e0b) !important;
-}
-*/
+
+
