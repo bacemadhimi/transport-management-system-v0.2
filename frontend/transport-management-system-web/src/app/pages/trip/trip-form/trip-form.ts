@@ -7289,7 +7289,7 @@ shouldShowWeatherPrompt(): boolean {
   return hasLocations && weatherNotLoaded;
 }
 
-getEntityName(entityId: number): string {
+getEntityName(entityId: number | undefined): string {
   if (!entityId) return '';
   const entity = this.geographicalEntities.find(e => e.id === entityId);
   return entity ? entity.name : 'Entité inconnue';

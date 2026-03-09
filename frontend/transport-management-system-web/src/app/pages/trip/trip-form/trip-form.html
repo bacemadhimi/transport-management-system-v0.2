@@ -210,314 +210,336 @@
       <!-- ===== MODIFIED: Driver, Truck, and Convoyeur ALL in ONE ROW ===== -->
       <div class="trip-row three-fields-row">
         <!-- Driver Field -->
-        <mat-form-field appearance="outline" class="trip-field">
-          <mat-label>Chauffeur</mat-label>
-          <mat-select
-            formControlName="driverId"
-            panelClass="driver-select-panel"
-            placeholder="Sélectionner un chauffeur"
-            [disabled]="loadingDrivers || loadingAvailableDrivers">
-            
-            <mat-select-trigger>
-              <div class="selected-driver-display">
-                <span class="driver-name">{{ getDriverNameById(tripForm.get('driverId')?.value) }}</span>
-              </div>
-            </mat-select-trigger>
+     <!-- Driver Field -->
+<mat-form-field appearance="outline" class="trip-field">
+  <mat-label>Chauffeur</mat-label>
+  <mat-select
+    formControlName="driverId"
+    panelClass="driver-select-panel"
+    placeholder="Sélectionner un chauffeur"
+    [disabled]="loadingDrivers || loadingAvailableDrivers">
+    
+    <mat-select-trigger>
+      <div class="selected-driver-display">
+        <span class="driver-name">{{ getDriverNameById(tripForm.get('driverId')?.value) }}</span>
+      </div>
+    </mat-select-trigger>
 
-            <!-- Date Filter Info -->
-            <div class="filter-date-info" *ngIf="tripForm.get('estimatedStartDate')?.value">
+    <!-- Date Filter Info -->
+    <div class="filter-date-info" *ngIf="tripForm.get('estimatedStartDate')?.value">
+      <mat-icon class="date-icon">calendar_today</mat-icon>
+      <span class="date-text">
+        {{ formatDateForDisplay(tripForm.get('estimatedStartDate')?.value) }}
+      </span>
+    </div>
+
+    <!-- FILTER STATUS INDICATOR - SHOWS ACTIVE FILTERS -->
+    <div class="filter-status-indicator" *ngIf="driverEntityFilterControl.value">
+      <div class="filter-badge">
+        <mat-icon>filter_alt</mat-icon>
+        <span>Filtre entité: {{ getEntityName(driverEntityFilterControl.value) }}</span>
+        <button type="button" class="clear-filter-btn" (click)="driverEntityFilterControl.setValue(null); $event.stopPropagation()">
+          <mat-icon>close</mat-icon>
+        </button>
+      </div>
+    </div>
+
+    <div *ngIf="!tripForm.get('estimatedStartDate')?.value" class="filter-summary">
+      <mat-icon>info</mat-icon>
+      <span>Sélectionnez une date pour filtrer les chauffeurs</span>
+    </div>
+
+    <!-- Driver Entity Filter - NOW MOVED INSIDE THE SELECT AS A FILTER OPTION -->
+    <div class="entity-filter-option" *ngIf="geographicalEntities.length > 0">
+      <div class="filter-label">
+        <mat-icon>business</mat-icon>
+        <span>Filtrer par entité géographique:</span>
+      </div>
+      <div class="filter-controls">
+        <mat-form-field appearance="outline" class="entity-filter-field-inline">
+          <mat-select [formControl]="driverEntityFilterControl" placeholder="Toutes les entités">
+            <mat-option [value]="null">Toutes les entités</mat-option>
+            <mat-option *ngFor="let entity of geographicalEntities" [value]="entity.id">
+              {{ entity.name }}
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
+      </div>
+    </div>
+
+    <!-- Available Drivers Group - USING FILTERED DRIVERS -->
+    <mat-optgroup label="Chauffeurs disponibles">
+      <mat-option *ngFor="let driver of filteredAvailableDrivers" [value]="driver.id">
+        <div class="driver-option-with-details">
+          <div class="driver-main-info">
+            <span class="driver-name">{{ driver.name }}</span>
+            <span *ngIf="driverTruckMap?.has(driver.id)" 
+                  class="associated-truck-badge"
+                  [matTooltip]="'Camion associé: ' + getTruckImmatriculation(driverTruckMap.get(driver.id))">
+              <mat-icon class="truck-icon-small">local_shipping</mat-icon>
+              {{ getTruckImmatriculation(driverTruckMap.get(driver.id)) }}
+            </span>
+          </div>
+          <div class="driver-secondary-info">
+<div class="driver-entity-info" *ngIf="driver?.driverGeographicalEntities?.length">
+  <mat-icon class="entity-icon">business</mat-icon>
+  <span class="entity-name">{{ getEntityName(driver?.driverGeographicalEntities?.[0]?.geographicalEntityId) }}</span>
+</div>
+            <div class="driver-availability-info" 
+                [ngClass]="driver.availabilityStatus || 'available'">
+              <mat-icon class="availability-icon" 
+                        [color]="driver.availabilityStatus === 'available' ? 'primary' : 
+                                driver.availabilityStatus === 'overtime' ? 'accent' : 
+                                driver.availabilityStatus === 'exceeded' ? 'warn' : 'primary'">
+                {{ driver.availabilityStatus === 'available' ? 'check_circle' : 
+                  driver.availabilityStatus === 'overtime' ? 'schedule' : 
+                  driver.availabilityStatus === 'exceeded' ? 'warning' : 'check_circle' }}
+              </mat-icon>
+              <span class="availability-text">
+                {{ driver.availabilityMessage || 'Disponible' }}
+                <span *ngIf="driver.totalHours" class="total-hours">({{ driver.totalHours }}h)</span>
+              </span>
+            </div>
+          </div>
+        </div>
+      </mat-option>
+    </mat-optgroup>
+
+    <!-- Unavailable Drivers Group -->
+    <mat-optgroup *ngIf="unavailableDrivers.length > 0" label="Chauffeurs indisponibles">
+      <mat-option *ngFor="let driver of unavailableDrivers" [value]="driver.id" [disabled]="true">
+        <div class="driver-option-with-details unavailable">
+          <div class="driver-main-info">
+            <span class="driver-name">{{ driver.name }}</span>
+          </div>
+          <div class="driver-secondary-info">
+            <div class="driver-availability-info unavailable">
+              <mat-icon class="availability-icon" color="warn">cancel</mat-icon>
+              <span class="availability-text">{{ driver.reason || 'Indisponible' }}</span>
+            </div>
+          </div>
+        </div>
+      </mat-option>
+    </mat-optgroup>
+
+    <!-- No Drivers Message -->
+    <mat-option *ngIf="filteredAvailableDrivers.length === 0 && !loadingAvailableDrivers" disabled>
+      <div class="no-driver-message">
+        <mat-icon class="no-driver-icon">warning</mat-icon>
+        <div class="no-driver-text">
+          <div *ngIf="tripForm.get('estimatedStartDate')?.value" class="no-driver-details">
+            Aucun chauffeur disponible le {{ formatDateForDisplay(tripForm.get('estimatedStartDate')?.value) }}
+            <span *ngIf="driverEntityFilterControl.value"> dans cette entité</span>
+          </div>
+          <div *ngIf="!tripForm.get('estimatedStartDate')?.value" class="no-driver-details">
+            Sélectionnez d'abord une date
+          </div>
+        </div>
+      </div>
+    </mat-option>
+
+    <!-- Loading State -->
+    <mat-option *ngIf="loadingAvailableDrivers" disabled>
+      <div class="loading-drivers">
+        <mat-spinner diameter="20"></mat-spinner>
+        <div class="loading-text">
+          <span>Recherche des chauffeurs disponibles...</span>
+          <small *ngIf="tripForm.get('estimatedStartDate')?.value">
+            Date: {{ formatDateForDisplay(tripForm.get('estimatedStartDate')?.value) }}
+          </small>
+        </div>
+      </div>
+    </mat-option>
+  </mat-select>
+
+  <mat-error *ngIf="tripForm.get('driverId')?.hasError('required') && tripForm.get('driverId')?.touched">
+    Le chauffeur est obligatoire
+  </mat-error>
+</mat-form-field>
+
+      <!-- Truck Field -->
+<mat-form-field appearance="outline" class="trip-field">
+  <mat-label>Camion</mat-label>
+  
+  <mat-select formControlName="truckId" placeholder="Sélectionner un camion" panelClass="truck-select-panel">
+    
+    <mat-option disabled class="settings-info-option" *ngIf="tripSettings?.linkDriverToTruck === false">
+      <div class="settings-info-message">
+        <mat-icon class="info-icon">info</mat-icon>
+        <div class="info-content">
+          <span class="info-title">Liaison chauffeur-camion désactivée</span>
+          <span class="info-subtitle">Ce champ est optionnel selon les paramètres généraux</span>
+        </div>
+      </div>
+    </mat-option>
+    
+    <mat-select-trigger>
+      <div class="selected-truck-display">
+        <span class="selected-truck-text">{{ getSelectedTruckDisplay() }}</span>
+      </div>
+    </mat-select-trigger>
+
+    <!-- Date Filter Info -->
+    <div *ngIf="tripForm.get('estimatedStartDate')?.value" class="filter-date-info">
+      <mat-icon class="date-icon">calendar_today</mat-icon>
+      <span class="date-text">
+        {{ formatDateForDisplay(tripForm.get('estimatedStartDate')?.value) }}
+      </span>
+    </div>
+
+    <!-- FILTER STATUS INDICATOR - SHOWS ACTIVE FILTERS -->
+    <div class="filter-status-indicator" *ngIf="truckEntityFilterControl.value">
+      <div class="filter-badge">
+        <mat-icon>filter_alt</mat-icon>
+        <span>Filtre entité: {{ getEntityName(truckEntityFilterControl.value) }}</span>
+        <button type="button" class="clear-filter-btn" (click)="truckEntityFilterControl.setValue(null); $event.stopPropagation()">
+          <mat-icon>close</mat-icon>
+        </button>
+      </div>
+    </div>
+    
+    <div *ngIf="!tripForm.get('estimatedStartDate')?.value" class="filter-summary">
+      <mat-icon>info</mat-icon>
+      <span>{{ t('SELECT_DATE_TO_FILTER_TRUCKS') }}</span>
+    </div>
+
+    <!-- Truck Entity Filter - NOW MOVED INSIDE THE SELECT AS A FILTER OPTION -->
+    <div class="entity-filter-option" *ngIf="geographicalEntities.length > 0">
+      <div class="filter-label">
+        <mat-icon>business</mat-icon>
+        <span>Filtrer par entité géographique:</span>
+      </div>
+      <div class="filter-controls">
+        <mat-form-field appearance="outline" class="entity-filter-field-inline">
+          <mat-select [formControl]="truckEntityFilterControl" placeholder="Toutes les entités">
+            <mat-option [value]="null">Toutes les entités</mat-option>
+            <mat-option *ngFor="let entity of geographicalEntities" [value]="entity.id">
+              {{ entity.name }}
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
+      </div>
+    </div>
+
+    <!-- Available Trucks Group - USING FILTERED TRUCKS -->
+    <mat-optgroup *ngIf="filteredAvailableTrucks.length > 0" label="Camions disponibles">
+      <mat-option *ngFor="let truck of filteredAvailableTrucks" [value]="truck.id">
+        <div class="truck-option">
+          <div class="truck-main-info">
+            <span class="truck-identification">
+              {{ truck.immatriculation }} - {{ getMarqueName(truck.marqueTruckId) }} 
+            </span>
+            <span class="available-badge">
+              <mat-icon class="availability-icon">check_circle</mat-icon>
+              {{ t('AVAILABLE') }}
+            </span>
+          </div>
+          
+          <div class="truck-details">
+            <div class="truck-capacity-info">
+              <mat-icon class="capacity-icon">inventory</mat-icon>
+              <span class="capacity-text">{{ truck.typeTruck?.capacity }} {{ loadingUnit }}</span>
+            </div>
+            
+            <div class="truck-entity-info" *ngIf="truck?.truckGeographicalEntities?.length">
+              <mat-icon class="entity-icon">business</mat-icon>
+              <span class="entity-name">{{ getEntityName(truck?.truckGeographicalEntities?.[0]?.geographicalEntityId) }}</span>
+            </div>
+            
+            <div class="truck-color-info" *ngIf="truck.color">
+              <div class="color-display">
+                <span class="color-circle" [style.background-color]="truck.color"></span>
+                <span class="color-code">{{ truck.color }}</span>
+              </div>
+            </div>
+            
+            <div class="truck-date-info" *ngIf="tripForm.get('estimatedStartDate')?.value">
               <mat-icon class="date-icon">calendar_today</mat-icon>
-              <span class="date-text">
-                {{ formatDateForDisplay(tripForm.get('estimatedStartDate')?.value) }}
+              <span>Dispo le {{ formatDateForDisplay(tripForm.get('estimatedStartDate')?.value) }}</span>
+            </div>
+          </div>
+        </div>
+      </mat-option>
+    </mat-optgroup>
+
+    <!-- Unavailable Trucks Group -->
+    <mat-optgroup *ngIf="unavailableTrucks.length > 0" label="Camions indisponibles">
+      <mat-option *ngFor="let truck of unavailableTrucks" [value]="truck.id" [disabled]="true">
+        <div class="truck-option unavailable">
+          <div class="truck-main-info">
+            <span class="truck-identification">
+              <span class="truck-color-circle" 
+                    *ngIf="truck.color"
+                    [style.background-color]="truck.color"
+                    [style.opacity]="0.6"
+                    [matTooltip]="'Couleur: ' + truck.color">
+              </span>
+              {{ truck.immatriculation }} - {{ getMarqueName(truck.marqueTruckId)}}
+            </span>
+            <span class="unavailable-badge">
+              <mat-icon class="unavailable-icon">cancel</mat-icon>
+              {{ t('UNAVAILABLE') }}
+            </span>
+          </div>
+          <div class="truck-details">
+            <div class="truck-capacity-info">
+              <mat-icon class="capacity-icon">inventory</mat-icon>
+              <span class="capacity-text">
+                {{ truck.capacity }} {{ loadingUnit }}
               </span>
             </div>
             
-            <div *ngIf="!tripForm.get('estimatedStartDate')?.value" class="filter-summary">
-              <mat-icon>info</mat-icon>
-              <span>Sélectionnez une date pour filtrer les chauffeurs</span>
-            </div>
-
-            <!-- Driver Entity Filter -->
-            <div class="entity-filter-row" *ngIf="geographicalEntities.length > 0">
-              <mat-form-field appearance="outline" class="entity-filter-field">
-                <mat-select [formControl]="driverEntityFilterControl" placeholder="Toutes les entités">
-                  <mat-option [value]="null">Toutes les entités</mat-option>
-                  <mat-option *ngFor="let entity of geographicalEntities" [value]="entity.id">
-                    {{ entity.name }}
-                  </mat-option>
-                </mat-select>
-              </mat-form-field>
-              
-              <button 
-                *ngIf="driverEntityFilterControl.value"
-                mat-icon-button 
-                type="button" 
-                (click)="driverEntityFilterControl.setValue(null)"
-                class="clear-entity-filter-btn"
-                matTooltip="Effacer le filtre"
-              >
-                <mat-icon>clear</mat-icon>
-              </button>
-            </div>
-
-            <!-- Available Drivers Group -->
-            <mat-optgroup label="Chauffeurs disponibles">
-              <mat-option *ngFor="let driver of filteredAvailableDrivers" [value]="driver.id">
-                <div class="driver-option-with-details">
-                  <div class="driver-main-info">
-                    <span class="driver-name">{{ driver.name }}</span>
-                    <span *ngIf="driverTruckMap?.has(driver.id)" 
-                          class="associated-truck-badge"
-                          [matTooltip]="'Camion associé: ' + getTruckImmatriculation(driverTruckMap.get(driver.id))">
-                      <mat-icon class="truck-icon-small">local_shipping</mat-icon>
-                      {{ getTruckImmatriculation(driverTruckMap.get(driver.id)) }}
-                    </span>
-                  </div>
-                  <div class="driver-secondary-info">
-                    <div class="driver-availability-info" 
-                        [ngClass]="driver.availabilityStatus || 'available'">
-                      <mat-icon class="availability-icon" 
-                                [color]="driver.availabilityStatus === 'available' ? 'primary' : 
-                                        driver.availabilityStatus === 'overtime' ? 'accent' : 
-                                        driver.availabilityStatus === 'exceeded' ? 'warn' : 'primary'">
-                        {{ driver.availabilityStatus === 'available' ? 'check_circle' : 
-                          driver.availabilityStatus === 'overtime' ? 'schedule' : 
-                          driver.availabilityStatus === 'exceeded' ? 'warning' : 'check_circle' }}
-                      </mat-icon>
-                      <span class="availability-text">
-                        {{ driver.availabilityMessage || 'Disponible' }}
-                        <span *ngIf="driver.totalHours" class="total-hours">({{ driver.totalHours }}h)</span>
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </mat-option>
-            </mat-optgroup>
-
-            <!-- Unavailable Drivers Group -->
-            <mat-optgroup *ngIf="unavailableDrivers.length > 0" label="Chauffeurs indisponibles">
-              <mat-option *ngFor="let driver of unavailableDrivers" [value]="driver.id" [disabled]="true">
-                <div class="driver-option-with-details unavailable">
-                  <div class="driver-main-info">
-                    <span class="driver-name">{{ driver.name }}</span>
-                  </div>
-                  <div class="driver-secondary-info">
-                    <div class="driver-availability-info unavailable">
-                      <mat-icon class="availability-icon" color="warn">cancel</mat-icon>
-                      <span class="availability-text">{{ driver.reason || 'Indisponible' }}</span>
-                    </div>
-                  </div>
-                </div>
-              </mat-option>
-            </mat-optgroup>
-
-            <!-- No Drivers Message -->
-            <mat-option *ngIf="availableDrivers.length === 0 && !loadingAvailableDrivers" disabled>
-              <div class="no-driver-message">
-                <mat-icon class="no-driver-icon">warning</mat-icon>
-                <div class="no-driver-text">
-                  <div *ngIf="tripForm.get('estimatedStartDate')?.value" class="no-driver-details">
-                    Aucun chauffeur disponible le {{ formatDateForDisplay(tripForm.get('estimatedStartDate')?.value) }}
-                  </div>
-                  <div *ngIf="!tripForm.get('estimatedStartDate')?.value" class="no-driver-details">
-                    Sélectionnez d'abord une date
-                  </div>
-                </div>
+            <div class="truck-color-info" *ngIf="truck.color">
+              <div class="color-display">
+                <span class="color-circle" [style.background-color]="truck.color" [style.opacity]="0.6"></span>
+                <span class="color-code">{{ truck.color }}</span>
               </div>
-            </mat-option>
-
-            <!-- Loading State -->
-            <mat-option *ngIf="loadingAvailableDrivers" disabled>
-              <div class="loading-drivers">
-                <mat-spinner diameter="20"></mat-spinner>
-                <div class="loading-text">
-                  <span>Recherche des chauffeurs disponibles...</span>
-                  <small *ngIf="tripForm.get('estimatedStartDate')?.value">
-                    Date: {{ formatDateForDisplay(tripForm.get('estimatedStartDate')?.value) }}
-                  </small>
-                </div>
-              </div>
-            </mat-option>
-          </mat-select>
-
-          <mat-error *ngIf="tripForm.get('driverId')?.hasError('required') && tripForm.get('driverId')?.touched">
-            Le chauffeur est obligatoire
-          </mat-error>
-        </mat-form-field>
-
-        <!-- Truck Field -->
-        <mat-form-field appearance="outline" class="trip-field">
-          <mat-label>Camion</mat-label>
-          
-          <mat-select formControlName="truckId" placeholder="Sélectionner un camion"  panelClass="truck-select-panel">
-            
-            <mat-option disabled class="settings-info-option" *ngIf="tripSettings?.linkDriverToTruck === false">
-              <div class="settings-info-message">
-                <mat-icon class="info-icon">info</mat-icon>
-                <div class="info-content">
-                  <span class="info-title">Liaison chauffeur-camion désactivée</span>
-                  <span class="info-subtitle">Ce champ est optionnel selon les paramètres généraux</span>
-                </div>
-              </div>
-            </mat-option>
-            
-            <mat-select-trigger>
-              <div class="selected-truck-display">
-                <span class="selected-truck-text">{{ getSelectedTruckDisplay() }}</span>
-              </div>
-            </mat-select-trigger>
-            
-
-            <!-- Date Filter Info -->
-            <div *ngIf="tripForm.get('estimatedStartDate')?.value" class="filter-date-info">
-              <mat-icon class="date-icon">calendar_today</mat-icon>
-              <span class="date-text">
-                {{ formatDateForDisplay(tripForm.get('estimatedStartDate')?.value) }}
-              </span>
             </div>
             
-            <div *ngIf="!tripForm.get('estimatedStartDate')?.value" class="filter-summary">
-              <mat-icon>info</mat-icon>
-              <span>{{ t('SELECT_DATE_TO_FILTER_TRUCKS') }}</span>
+            <div class="unavailable-reason" *ngIf="truck.availabilityMessage">
+              <mat-icon class="warning-icon">info</mat-icon>
+              <span class="reason-text">{{ truck.availabilityMessage }}</span>
             </div>
-
-            <!-- Truck Entity Filter -->
-            <div class="entity-filter-row" *ngIf="geographicalEntities.length > 0">
-              <mat-form-field appearance="outline" class="entity-filter-field">
-                
-                <mat-select [formControl]="truckEntityFilterControl" placeholder="Toutes les entités">
-                  <mat-option [value]="null">Toutes les entités</mat-option>
-                  <mat-option *ngFor="let entity of geographicalEntities" [value]="entity.id">
-                    {{ entity.name }}
-                  </mat-option>
-                </mat-select>
-              </mat-form-field>
-              
-              <button 
-                *ngIf="truckEntityFilterControl.value"
-                mat-icon-button 
-                type="button" 
-                (click)="truckEntityFilterControl.setValue(null)"
-                class="clear-entity-filter-btn"
-                matTooltip="Effacer le filtre"
-              >
-                <mat-icon>clear</mat-icon>
-              </button>
-            </div>
-
-            <!-- Available Trucks Group -->
-            <mat-optgroup *ngIf="filteredAvailableTrucks.length > 0" label="Camions disponibles">
-              <mat-option *ngFor="let truck of filteredAvailableTrucks" [value]="truck.id">
-                <div class="truck-option">
-                  <div class="truck-main-info">
-                    <span class="truck-identification">
-                      {{ truck.immatriculation }} - {{ getMarqueName(truck.marqueTruckId) }} 
-                    </span>
-                    <span class="available-badge">
-                      <mat-icon class="availability-icon">check_circle</mat-icon>
-                      {{ t('AVAILABLE') }}
-                    </span>
-                  </div>
-                  
-                  <div class="truck-details">
-                    <div class="truck-capacity-info">
-                      <mat-icon class="capacity-icon">inventory</mat-icon>
-                      <span class="capacity-text">{{ truck.typeTruck?.capacity }} {{ loadingUnit }}</span>
-                    </div>
-                    
-                    <div class="truck-color-info" *ngIf="truck.color">
-                      <div class="color-display">
-                        <span class="color-circle" [style.background-color]="truck.color"></span>
-                        <span class="color-code">{{ truck.color }}</span>
-                      </div>
-                    </div>
-                    
-                    <div class="truck-date-info" *ngIf="tripForm.get('estimatedStartDate')?.value">
-                      <mat-icon class="date-icon">calendar_today</mat-icon>
-                      <span>Dispo le {{ formatDateForDisplay(tripForm.get('estimatedStartDate')?.value) }}</span>
-                    </div>
-                  </div>
-                </div>
-              </mat-option>
-            </mat-optgroup>
-
-            <!-- Unavailable Trucks Group -->
-            <mat-optgroup *ngIf="unavailableTrucks.length > 0" label="Camions indisponibles">
-              <mat-option *ngFor="let truck of unavailableTrucks" [value]="truck.id" [disabled]="true">
-                <div class="truck-option unavailable">
-                  <div class="truck-main-info">
-                    <span class="truck-identification">
-                      <span class="truck-color-circle" 
-                            *ngIf="truck.color"
-                            [style.background-color]="truck.color"
-                            [style.opacity]="0.6"
-                            [matTooltip]="'Couleur: ' + truck.color">
-                      </span>
-                      {{ truck.immatriculation }} - {{ getMarqueName(truck.marqueTruckId)}}
-                    </span>
-                    <span class="unavailable-badge">
-                      <mat-icon class="unavailable-icon">cancel</mat-icon>
-                      {{ t('UNAVAILABLE') }}
-                    </span>
-                  </div>
-                  <div class="truck-details">
-                    <div class="truck-capacity-info">
-                      <mat-icon class="capacity-icon">inventory</mat-icon>
-                      <span class="capacity-text">
-                        {{ truck.capacity }} {{ loadingUnit }}
-                      </span>
-                    </div>
-                                                    
-                    <div class="truck-color-info" *ngIf="truck.color">
-                      <div class="color-display">
-                        <span class="color-circle" [style.background-color]="truck.color" [style.opacity]="0.6"></span>
-                        <span class="color-code">{{ truck.color }}</span>
-                      </div>
-                    </div>
-                    
-                    <div class="unavailable-reason" *ngIf="truck.availabilityMessage">
-                      <mat-icon class="warning-icon">info</mat-icon>
-                      <span class="reason-text">{{ truck.availabilityMessage }}</span>
-                    </div>
-                  </div>
-                </div>
-              </mat-option>
-            </mat-optgroup>
-            
-            <!-- Loading State -->
-            <mat-option *ngIf="loadingAvailableTrucks" disabled>
-              <div class="truck-loading">
-                <mat-spinner diameter="20" class="truck-loading-spinner"></mat-spinner>
-                <span>{{ t('LOADING_TRUCKS') }}</span>
-              </div>
-            </mat-option>
-            
-            <!-- Empty State -->
-            <mat-option *ngIf="!loadingAvailableTrucks && availableTrucks.length === 0 && unavailableTrucks.length === 0" disabled>
-              <div class="truck-empty-state">
-                <mat-icon class="truck-empty-icon">local_shipping</mat-icon>
-                <div class="truck-empty-title">{{ t('NO_TRUCKS_AVAILABLE') }}</div>
-                <div class="truck-empty-subtitle">
-                  <span *ngIf="tripForm.get('estimatedStartDate')?.value">
-                    {{ t('NO_TRUCKS_AVAILABLE') }} {{ t('ON_DATE') }} {{ formatDateForDisplay(tripForm.get('estimatedStartDate')?.value) }}
-                  </span>
-                  <span *ngIf="!tripForm.get('estimatedStartDate')?.value">
-                    {{ t('SELECT_DATE_FIRST') }}
-                  </span>
-                </div>
-              </div>
-            </mat-option>
-          </mat-select>
-          
-          <mat-error *ngIf="tripForm.get('truckId')?.hasError('required') && tripSettings?.linkDriverToTruck !== false">
-            Le camion est obligatoire
-          </mat-error>
-          
-          <mat-hint *ngIf="tripSettings?.linkDriverToTruck === false" class="optional-hint">
-            <mat-icon class="hint-icon">info</mat-icon>
-            Champ optionnel (paramètre général)
-          </mat-hint>
-        </mat-form-field>
+          </div>
+        </div>
+      </mat-option>
+    </mat-optgroup>
+    
+    <!-- Loading State -->
+    <mat-option *ngIf="loadingAvailableTrucks" disabled>
+      <div class="truck-loading">
+        <mat-spinner diameter="20" class="truck-loading-spinner"></mat-spinner>
+        <span>{{ t('LOADING_TRUCKS') }}</span>
+      </div>
+    </mat-option>
+    
+    <!-- Empty State -->
+    <mat-option *ngIf="!loadingAvailableTrucks && filteredAvailableTrucks.length === 0 && unavailableTrucks.length === 0" disabled>
+      <div class="truck-empty-state">
+        <mat-icon class="truck-empty-icon">local_shipping</mat-icon>
+        <div class="truck-empty-title">{{ t('NO_TRUCKS_AVAILABLE') }}</div>
+        <div class="truck-empty-subtitle">
+          <span *ngIf="tripForm.get('estimatedStartDate')?.value">
+            {{ t('NO_TRUCKS_AVAILABLE') }} {{ t('ON_DATE') }} {{ formatDateForDisplay(tripForm.get('estimatedStartDate')?.value) }}
+            <span *ngIf="truckEntityFilterControl.value"> dans cette entité</span>
+          </span>
+          <span *ngIf="!tripForm.get('estimatedStartDate')?.value">
+            {{ t('SELECT_DATE_FIRST') }}
+          </span>
+        </div>
+      </div>
+    </mat-option>
+  </mat-select>
+  
+  <mat-error *ngIf="tripForm.get('truckId')?.hasError('required') && tripSettings?.linkDriverToTruck !== false">
+    Le camion est obligatoire
+  </mat-error>
+  
+  <mat-hint *ngIf="tripSettings?.linkDriverToTruck === false" class="optional-hint">
+    <mat-icon class="hint-icon">info</mat-icon>
+    Champ optionnel (paramètre général)
+  </mat-hint>
+</mat-form-field>
 
         <!-- Convoyeur Field (NOW IN THE SAME ROW) -->
         <mat-form-field appearance="outline" class="trip-field">
