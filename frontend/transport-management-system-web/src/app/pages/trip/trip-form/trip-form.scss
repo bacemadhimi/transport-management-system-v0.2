@@ -20498,3 +20498,384 @@ mat-error {
 ::ng-deep .mat-mdc-radio-button:hover .mdc-radio__outer-circle {
   border-color: var(--primary-color) !important;
 }
+/* ===== FORCE COUNTERS TO USE THEME COLOR - ULTIMATE OVERRIDE ===== */
+
+/* Target the counter highlight specifically */
+.quick-add-title .text-sm .counter-highlight {
+  color: var(--primary-color) !important;
+  background: rgba(var(--primary-color-rgb), 0.1) !important;
+  font-weight: 700 !important;
+  font-size: 1.2rem !important;
+  padding: 0.2rem 0.5rem !important;
+  border-radius: 6px !important;
+}
+
+/* Target the stat badges and their numbers */
+.quick-add-title .market-stats .stat-badge {
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.5rem !important;
+  background: #f8fafc !important;
+  padding: 0.5rem 1rem !important;
+  border-radius: 30px !important;
+  border: 1px solid #e2e8f0 !important;
+  
+  /* The icon */
+  .mat-icon, mat-icon {
+    color: var(--primary-color) !important;
+    font-size: 1.1rem !important;
+    width: 1.1rem !important;
+    height: 1.1rem !important;
+  }
+  
+  /* The number itself - this is what's still green */
+  .stat-number, 
+  strong, 
+  span:first-of-type,
+  .ng-star-inserted {
+    color: var(--primary-color) !important;
+    font-weight: 700 !important;
+  }
+  
+  /* The text after the number */
+  span:last-of-type {
+    color: #1e293b !important;
+    font-weight: 500 !important;
+  }
+}
+
+/* Even more specific targeting for the numbers */
+.quick-add-title .market-stats .stat-badge span.stat-number,
+.quick-add-title .market-stats .stat-badge strong,
+.quick-add-title .market-stats .stat-badge .ng-star-inserted {
+  color: var(--primary-color) !important;
+}
+
+/* Target by content type - numbers */
+.quick-add-title .market-stats .stat-badge span:contains("6385"),
+.quick-add-title .market-stats .stat-badge span:contains("3,510,134.57") {
+  color: var(--primary-color) !important;
+}
+
+/* Force override on all numbers in the quick add section */
+.quick-add-title .market-stats .stat-badge span {
+  &[class*="number"], 
+  &[class*="count"],
+  &[class*="value"] {
+    color: var(--primary-color) !important;
+  }
+}
+
+/* Target the specific structure from your HTML */
+.quick-add-title .market-stats .stat-badge {
+  mat-icon + span {
+    color: var(--primary-color) !important;
+  }
+}
+
+/* If the numbers are inside a pipe or formatted */
+.quick-add-title .market-stats .stat-badge span:not(.mat-icon) {
+  color: var(--primary-color) !important;
+}
+
+/* Remove any green from the entire quick add section */
+.quick-add-title * {
+  &[style*="color: #10b981"],
+  &[style*="color: #10b981"],
+  &[class*="green"],
+  &[class*="success"] {
+    color: var(--primary-color) !important;
+  }
+}
+
+/* ===== DIRECT ELEMENT SELECTORS ===== */
+
+/* Target by the actual numbers */
+.quick-add-title .market-stats .stat-badge:first-child span:last-child::before {
+  content: "" !important;
+}
+
+/* If the numbers are in separate spans */
+.quick-add-title .market-stats .stat-badge span:first-of-type {
+  color: var(--primary-color) !important;
+}
+
+/* If they're using ng-container or template */
+.quick-add-title .market-stats .stat-badge span span {
+  color: var(--primary-color) !important;
+}
+
+/* ===== DEBUGGING - ADD RED BORDER TO SEE WHAT'S BEING TARGETED ===== */
+/*
+.quick-add-title .market-stats .stat-badge span {
+  border: 2px solid red !important;
+}
+*/
+
+/* ===== FALLBACK FOR ANY REMAINING GREEN ===== */
+
+/* Override the brand-green variable if it's being used */
+.counter-highlight,
+.stat-badge .stat-number,
+.market-stats .stat-badge span {
+  --brand-green: var(--primary-color) !important;
+  color: var(--primary-color) !important;
+}
+
+/* Force on all text inside stat badges */
+.market-stats .stat-badge *:not(mat-icon) {
+  color: var(--primary-color) !important;
+}
+
+/* Keep the unit text normal */
+.market-stats .stat-badge span:contains("commandes"),
+.market-stats .stat-badge span:contains("tonne"),
+.market-stats .stat-badge span:contains("disponibles") {
+  color: #1e293b !important;
+  font-weight: 400 !important;
+}
+
+/* ===== IMPORTANT: MAKE SURE THE VARIABLE IS DEFINED ===== */
+:host {
+  --primary-color: #5ea2ff; /* Your theme color */
+  --primary-color-rgb: 94, 162, 255;
+}
+/* ===== CALENDAR MODAL - INFO ICON FOLLOWS THEME ===== */
+
+.calendar-modal {
+  .range-instructions {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem 1.25rem;
+    background: rgba(var(--primary-color-rgb), 0.08) !important;
+    border-radius: 10px;
+    margin: 1rem 0;
+    border: 1px solid rgba(var(--primary-color-rgb), 0.15) !important;
+    
+    mat-icon {
+      color: var(--primary-color) !important;
+      font-size: 1.25rem;
+      width: 1.25rem;
+      height: 1.25rem;
+      flex-shrink: 0;
+    }
+    
+    span {
+      font-size: 0.9rem;
+      color: var(--text-secondary) !important;
+      line-height: 1.4;
+      
+      /* Style for the click instruction */
+      &:first-of-type {
+        font-weight: 500;
+      }
+    }
+    
+    /* Style for the selected range text */
+    .selected-range-text {
+      color: var(--primary-color) !important;
+      font-weight: 600;
+    }
+  }
+  
+  /* Also style the date selection instructions */
+  .selected-range-preview {
+    background: rgba(var(--primary-color-rgb), 0.05) !important;
+    border: 1px solid rgba(var(--primary-color-rgb), 0.15) !important;
+    
+    .range-label {
+      color: var(--text-muted) !important;
+    }
+    
+    .range-value {
+      color: var(--primary-color) !important;
+      font-weight: 600;
+      
+      &.placeholder {
+        color: #94a3b8 !important;
+        font-style: italic;
+      }
+    }
+    
+    .range-duration {
+      color: var(--primary-color) !important;
+      background: rgba(var(--primary-color-rgb), 0.1) !important;
+      padding: 0.25rem 0.75rem;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: 600;
+    }
+  }
+}
+
+/* ===== CALENDAR HEADER ===== */
+
+.calendar-modal-header {
+  background: var(--primary-gradient) !important;
+  
+  h4 {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    
+    mat-icon {
+      color: white !important;
+    }
+  }
+  
+  button {
+    color: white !important;
+    
+    &:hover {
+      background: rgba(255, 255, 255, 0.2) !important;
+    }
+  }
+}
+
+/* ===== MONTH NAVIGATION ===== */
+
+.calendar-modal-content {
+  .month-navigation {
+    button {
+      color: var(--primary-color) !important;
+      
+      &:hover {
+        background: rgba(var(--primary-color-rgb), 0.1) !important;
+      }
+      
+      mat-icon {
+        color: var(--primary-color) !important;
+      }
+    }
+    
+    h5 {
+      color: var(--text-primary) !important;
+      font-weight: 600;
+    }
+  }
+}
+
+/* ===== CALENDAR DAYS ===== */
+
+.calendar-grid {
+  .weekdays .weekday {
+    color: var(--text-muted) !important;
+    font-weight: 600;
+  }
+  
+  .days-grid {
+    .day-cell {
+      &:not(.empty):hover {
+        background: rgba(var(--primary-color-rgb), 0.1) !important;
+        color: var(--primary-color) !important;
+      }
+      
+      &.selected {
+        background: var(--primary-color) !important;
+        color: white !important;
+        font-weight: 600;
+      }
+      
+      &.in-range {
+        background-color: rgba(var(--primary-color-rgb), 0.1) !important;
+      }
+      
+      &.range-start,
+      &.range-end {
+        background-color: var(--primary-color) !important;
+        color: white !important;
+      }
+      
+      .day-number {
+        font-weight: 500;
+      }
+    }
+  }
+}
+
+/* ===== CALENDAR ACTIONS ===== */
+
+.calendar-actions {
+  border-top-color: var(--border-color) !important;
+  
+  button {
+    &.mat-button {
+      color: var(--text-secondary) !important;
+      
+      &:hover {
+        background: rgba(var(--primary-color-rgb), 0.1) !important;
+        color: var(--primary-color) !important;
+      }
+      
+      mat-icon {
+        color: currentColor !important;
+      }
+    }
+    
+    &.mat-raised-button {
+      background: var(--primary-gradient) !important;
+      color: white !important;
+      
+      &:hover:not(:disabled) {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(var(--primary-color-rgb), 0.3) !important;
+      }
+      
+      mat-icon {
+        color: white !important;
+      }
+    }
+  }
+}
+
+/* ===== DATE RANGE PICKER ===== */
+
+.date-range-picker {
+  .date-range-field {
+    &:hover {
+      border-color: var(--primary-color) !important;
+      box-shadow: 0 4px 12px rgba(var(--primary-color-rgb), 0.1) !important;
+    }
+    
+    .date-range-label {
+      .date-icon {
+        color: var(--primary-color) !important;
+      }
+      
+      span {
+        color: var(--text-primary) !important;
+      }
+    }
+    
+    .date-range-duration {
+      background: rgba(var(--primary-color-rgb), 0.1) !important;
+      color: var(--primary-color) !important;
+      border: 1px solid rgba(var(--primary-color-rgb), 0.2) !important;
+    }
+  }
+}
+
+/* ===== SELECTED RANGE PREVIEW IN MODAL ===== */
+
+.selected-range-preview {
+  .range-dates {
+    .range-value {
+      color: var(--primary-color) !important;
+    }
+  }
+  
+  .range-duration {
+    color: var(--primary-color) !important;
+  }
+}
+
+/* ===== ERROR MESSAGES ===== */
+
+.date-error-messages {
+  mat-error {
+    .error-icon {
+      background-color: #ef4444 !important; /* Keep error icon red */
+    }
+  }
+}
