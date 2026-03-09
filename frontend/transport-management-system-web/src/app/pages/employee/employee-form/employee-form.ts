@@ -50,7 +50,7 @@ export class EmployeeForm implements OnInit, AfterViewInit, OnDestroy {
   data = inject<{ employeeId?: number }>(MAT_DIALOG_DATA, { optional: true }) ?? {};
   translation = inject(Translation);
   countryPlaceholder: string = '+216 12 345 678';
-
+  loadingUnit: string = 'tonnes';
   @ViewChild('fileInput') fileInput!: ElementRef;
   @ViewChild('phoneInput') phoneInput!: ElementRef<HTMLInputElement>;
 
@@ -120,6 +120,7 @@ export class EmployeeForm implements OnInit, AfterViewInit, OnDestroy {
   }
 
   ngOnInit() {
+    this.loadSettings();
     this.loadTypeTrucks();
     this.loadEmployeeCategories();
     this.loadGeographicalEntities();
@@ -1118,4 +1119,23 @@ isSubmitButtonDisabled(): boolean {
 
   return this.employeeForm.invalid;
 }
+  private loadSettings(): void {
+    this.settingsService.getOrderSettings().subscribe({
+      next: (settings) => {
+        this.loadingUnit = settings.loadingUnit || 'tonnes';
+        console.log('✅ Loading unit from settings:', this.loadingUnit);
+      },
+      error: (err) => {
+        console.error('Error loading settings:', err);
+        this.loadingUnit = 'tonnes';
+      }
+    });
+
+    this.settingsService.orderSettings$.subscribe(settings => {
+      if (settings) {
+        this.loadingUnit = settings.loadingUnit || 'tonnes';
+        console.log('🔄 Loading unit updated:', this.loadingUnit);
+      }
+    });
+  }
 }

@@ -17981,3 +17981,932 @@ mat-error {
 .truck-option {
   border: none !important;
 }
+/* Enhanced Quick Add Section - Market Style */
+.quick-add-section {
+  background: linear-gradient(135deg, #ffffff 0%, #fafbfc 100%);
+  border-radius: 16px;
+  padding: 1.25rem;
+  margin: 1rem 0 1.5rem 0;
+  border: 1px solid #e9edf4;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+
+  .section-header {
+    margin-bottom: 1.5rem;
+  }
+
+  .quick-add-step-indicator {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.5rem;
+    padding: 0.5rem;
+    background: white;
+    border-radius: 40px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+
+    .step {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.35rem 0.75rem;
+      border-radius: 30px;
+      transition: all 0.3s ease;
+
+      &.active {
+        background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+        color: white;
+        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+
+        .step-number {
+          background: white;
+          color: #3b82f6;
+        }
+
+        span {
+          color: white;
+        }
+      }
+
+      .step-number {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        background: #f1f5f9;
+        color: #64748b;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 0.85rem;
+      }
+
+      span {
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: #334155;
+        white-space: nowrap;
+
+        @media (max-width: 768px) {
+          display: none;
+        }
+      }
+    }
+
+    .step-separator {
+      width: 40px;
+      height: 2px;
+      background: linear-gradient(90deg, #e2e8f0, #94a3b8);
+      border-radius: 1px;
+
+      @media (max-width: 768px) {
+        width: 20px;
+      }
+    }
+  }
+}
+
+/* Search & Filter Bar - Market Style */
+.search-and-filter-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+
+  .search-field-container {
+    flex: 1;
+    min-width: 280px;
+
+    .search-field {
+      width: 100%;
+
+      ::ng-deep .mdc-text-field--outlined {
+        border-radius: 40px;
+        background: white;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+        
+        .mdc-notched-outline__leading {
+          border-radius: 40px 0 0 40px !important;
+        }
+        
+        .mdc-notched-outline__trailing {
+          border-radius: 0 40px 40px 0 !important;
+        }
+      }
+
+      ::ng-deep .mat-mdc-form-field-flex {
+        height: 48px;
+        align-items: center;
+      }
+
+      input {
+        font-size: 0.9rem;
+        &::placeholder {
+          color: #94a3b8;
+          font-weight: 400;
+        }
+      }
+    }
+  }
+
+  .entity-filter-container {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-width: 240px;
+
+    .entity-filter-field {
+      flex: 1;
+
+      ::ng-deep .mdc-text-field--outlined {
+        border-radius: 40px;
+        background: white;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+        
+        .mdc-notched-outline__leading {
+          border-radius: 40px 0 0 40px !important;
+        }
+        
+        .mdc-notched-outline__trailing {
+          border-radius: 0 40px 40px 0 !important;
+        }
+      }
+
+      ::ng-deep .mat-mdc-form-field-flex {
+        height: 48px;
+        align-items: center;
+      }
+    }
+
+    .clear-entity-filter-btn {
+      width: 36px;
+      height: 36px;
+      color: #64748b;
+      background: #f1f5f9;
+      border: 1px solid #e2e8f0;
+
+      &:hover {
+        color: #ef4444;
+        background: #fee2e2;
+        border-color: #fecaca;
+      }
+    }
+  }
+}
+
+/* Market-Style Client Cards Grid */
+.client-virtual-scroll-container {
+  height: 520px;
+  border: 1px solid #e9edf4;
+  border-radius: 16px;
+  background: white;
+  overflow: hidden;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+
+  .client-virtual-viewport {
+    height: 100%;
+    width: 100%;
+  }
+}
+
+.client-grid-2-columns {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  padding: 16px;
+
+  @media (max-width: 1024px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Enhanced Client Card - Inspired by Market Offers */
+.client-card-virtual {
+  height: auto;
+  min-height: 130px;
+  background: white;
+  border: 1px solid #e9edf4;
+  border-radius: 12px;
+  padding: 14px;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+
+  &:hover {
+    transform: translateY(-4px);
+    border-color: #cbd5e1;
+    box-shadow: 0 12px 24px -8px rgba(0, 0, 0, 0.12);
+
+    &::before {
+      opacity: 1;
+    }
+
+    .client-card-footer .client-select-btn {
+      background: #3b82f6;
+      color: white;
+      transform: scale(1.1);
+    }
+  }
+
+  &.selected {
+    border: 2px solid #3b82f6;
+    background: linear-gradient(135deg, #f0f9ff, white);
+
+    &::before {
+      opacity: 1;
+      background: linear-gradient(90deg, #3b82f6, #2563eb);
+      height: 4px;
+    }
+  }
+
+  .client-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 12px;
+
+    .client-name {
+      font-size: 1rem;
+      font-weight: 700;
+      color: #0f172a;
+      line-height: 1.3;
+      flex: 1;
+      padding-right: 8px;
+    }
+
+    .client-matricule {
+      background: #f1f5f9;
+      padding: 4px 8px;
+      border-radius: 20px;
+      font-size: 0.7rem;
+      font-weight: 600;
+      color: #475569;
+      white-space: nowrap;
+      border: 1px solid #e2e8f0;
+    }
+  }
+
+  .client-card-content {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+
+    .client-orders-count,
+    .client-total-weight {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 0.8rem;
+      background: #f8fafc;
+      padding: 4px 10px;
+      border-radius: 20px;
+      border: 1px solid #e9edf4;
+
+      mat-icon {
+        font-size: 1rem;
+        width: 1rem;
+        height: 1rem;
+      }
+
+      .order-icon {
+        color: #8b5cf6;
+      }
+
+      .weight-icon {
+        color: #10b981;
+      }
+    }
+
+    .client-zone {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 0.75rem;
+      color: #3b82f6;
+      background: #eff6ff;
+      padding: 4px 10px;
+      border-radius: 20px;
+      border: 1px solid #dbeafe;
+
+      .zone-icon {
+        font-size: 0.9rem;
+        width: 0.9rem;
+        height: 0.9rem;
+      }
+    }
+  }
+
+  .client-card-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: auto;
+    padding-top: 10px;
+    border-top: 1px dashed #e2e8f0;
+
+    .client-address {
+      font-size: 0.7rem;
+      color: #94a3b8;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      max-width: 70%;
+
+      mat-icon {
+        font-size: 0.8rem;
+        width: 0.8rem;
+        height: 0.8rem;
+      }
+    }
+
+    .client-select-btn {
+      width: 32px;
+      height: 32px;
+      background: #f1f5f9;
+      color: #64748b;
+      border-radius: 50%;
+      transition: all 0.2s ease;
+
+      mat-icon {
+        font-size: 1.1rem;
+      }
+    }
+  }
+}
+
+/* Virtual Scroll Info - Market Style */
+.client-virtual-scroll-info {
+  padding: 12px 16px;
+  background: #f8fafc;
+  border-top: 1px solid #e2e8f0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.8rem;
+
+  .client-count-info {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: #475569;
+
+    mat-icon {
+      font-size: 1rem;
+      width: 1rem;
+      height: 1rem;
+      color: #3b82f6;
+    }
+
+    strong {
+      color: #0f172a;
+      font-weight: 700;
+    }
+
+    .total-info {
+      color: #94a3b8;
+    }
+  }
+
+  .search-info {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    background: #e0f2fe;
+    color: #0369a1;
+    padding: 4px 10px;
+    border-radius: 30px;
+    font-size: 0.75rem;
+    font-weight: 500;
+
+    mat-icon {
+      font-size: 0.9rem;
+      width: 0.9rem;
+      height: 0.9rem;
+    }
+  }
+}
+
+/* No Results State - Market Style */
+.no-results {
+  text-align: center;
+  padding: 48px 24px;
+  background: white;
+  border-radius: 16px;
+  border: 2px dashed #e2e8f0;
+  margin: 1rem 0;
+
+  .no-results-icon {
+    font-size: 48px;
+    width: 48px;
+    height: 48px;
+    color: #cbd5e1;
+    margin-bottom: 1rem;
+  }
+
+  h4 {
+    margin: 0 0 0.5rem 0;
+    color: #334155;
+    font-size: 1.1rem;
+    font-weight: 600;
+  }
+
+  p {
+    color: #64748b;
+    margin-bottom: 1.5rem;
+    font-size: 0.9rem;
+    max-width: 400px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .clear-filter-btn {
+    background: #f1f5f9;
+    color: #475569;
+    padding: 8px 24px;
+    border-radius: 30px;
+    font-size: 0.9rem;
+    font-weight: 500;
+
+    &:hover {
+      background: #e2e8f0;
+    }
+
+    mat-icon {
+      font-size: 1rem;
+      margin-right: 0.5rem;
+    }
+  }
+}
+
+.no-clients-empty {
+  text-align: center;
+  padding: 48px 32px;
+  background: white;
+  border-radius: 16px;
+  border: 2px dashed #e2e8f0;
+
+  .empty-icon {
+    font-size: 48px;
+    width: 48px;
+    height: 48px;
+    color: #cbd5e1;
+    margin-bottom: 1rem;
+  }
+
+  h4 {
+    color: #334155;
+    margin-bottom: 0.5rem;
+    font-size: 1.1rem;
+    font-weight: 600;
+  }
+
+  p {
+    color: #64748b;
+    font-size: 0.9rem;
+    max-width: 400px;
+    margin: 0 auto;
+  }
+}
+
+/* Step 2: Order Selection - Market Style */
+.order-selection-step {
+  .selected-client-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.5rem;
+    padding: 1rem 1.25rem;
+    background: linear-gradient(135deg, #f8fafc, white);
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+
+    .client-info {
+      .client-name-display {
+        font-size: 1.2rem;
+        font-weight: 700;
+        color: #0f172a;
+        margin-bottom: 0.25rem;
+      }
+
+      .client-details {
+        display: flex;
+        gap: 1rem;
+        font-size: 0.85rem;
+        color: #64748b;
+
+        span:first-child {
+          background: #f1f5f9;
+          padding: 2px 8px;
+          border-radius: 16px;
+        }
+      }
+    }
+
+    .back-btn {
+      color: #64748b;
+
+      &:hover {
+        background: #f1f5f9;
+        color: #3b82f6;
+      }
+    }
+  }
+
+  .order-selection-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    padding: 1rem 1.25rem;
+    background: white;
+    border-radius: 10px;
+    border: 1px solid #e2e8f0;
+
+    .selection-summary {
+      display: flex;
+      gap: 2rem;
+
+      .summary-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+
+        &:first-child mat-icon {
+          color: #3b82f6;
+        }
+
+        &:last-child mat-icon {
+          color: #10b981;
+        }
+
+        span {
+          font-weight: 600;
+          color: #1e293b;
+        }
+      }
+    }
+
+    .selection-actions {
+      display: flex;
+      gap: 0.5rem;
+
+      button {
+        font-size: 0.85rem;
+        padding: 0.35rem 1rem;
+
+        mat-icon {
+          font-size: 1rem;
+          margin-right: 0.25rem;
+        }
+      }
+    }
+  }
+
+  .orders-container {
+    max-height: 350px;
+    overflow-y: auto;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    background: white;
+
+    .order-item {
+      display: flex;
+      align-items: center;
+      padding: 1rem 1.25rem;
+      border-bottom: 1px solid #f1f5f9;
+      cursor: pointer;
+      transition: all 0.2s ease;
+
+      &:hover {
+        background: #f8fafc;
+      }
+
+      &.selected {
+        background: #f0f9ff;
+        border-left: 3px solid #3b82f6;
+      }
+
+      &:last-child {
+        border-bottom: none;
+      }
+
+      .order-select-checkbox {
+        margin-right: 1rem;
+      }
+
+      .order-details {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        gap: 1.5rem;
+
+        .order-ref {
+          font-weight: 600;
+          color: #0f172a;
+          min-width: 120px;
+        }
+
+        .order-type {
+          font-size: 0.8rem;
+          color: #64748b;
+          background: #f1f5f9;
+          padding: 0.2rem 0.6rem;
+          border-radius: 4px;
+        }
+
+        .order-weight {
+          font-weight: 600;
+          color: #10b981;
+          background: #ecfdf5;
+          padding: 0.2rem 0.6rem;
+          border-radius: 4px;
+        }
+      }
+
+      .order-date {
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+        font-size: 0.85rem;
+        color: #64748b;
+        margin-right: 1rem;
+
+        .date-icon {
+          font-size: 1rem;
+          width: 1rem;
+          height: 1rem;
+        }
+      }
+
+      .order-actions {
+        .order-preview-btn {
+          color: #64748b;
+
+          &:hover {
+            color: #3b82f6;
+            background: #eff6ff;
+          }
+        }
+      }
+    }
+  }
+
+  .add-orders-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 1.5rem;
+    padding: 1.25rem 1.5rem;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+    border: 1px solid #e2e8f0;
+
+    .selected-orders-summary {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+
+      mat-icon {
+        color: #10b981;
+        font-size: 1.5rem;
+      }
+
+      strong {
+        font-size: 1.1rem;
+        color: #0f172a;
+      }
+
+      .total-weight {
+        font-size: 0.9rem;
+        color: #64748b;
+        background: #f1f5f9;
+        padding: 0.25rem 0.75rem;
+        border-radius: 20px;
+      }
+    }
+
+    button {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 1.5rem;
+
+      &:first-of-type {
+        background: #f1f5f9;
+        color: #475569;
+
+        &:hover {
+          background: #e2e8f0;
+        }
+      }
+
+      &:last-of-type {
+        background: linear-gradient(135deg, #3b82f6, #2563eb);
+        color: white;
+
+        &:hover:not(:disabled) {
+          background: linear-gradient(135deg, #2563eb, #1d4ed8);
+          transform: translateY(-1px);
+          box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+        }
+
+        &:disabled {
+          opacity: 0.6;
+        }
+      }
+    }
+  }
+}
+
+/* Step 3: Confirmation - Market Style */
+.confirmation-step {
+  .confirmation-header {
+    text-align: center;
+    margin-bottom: 2rem;
+    padding: 2rem;
+    background: linear-gradient(135deg, #f0fdf4, white);
+    border-radius: 16px;
+    border: 1px solid #bbf7d0;
+
+    .success-icon {
+      font-size: 4rem;
+      width: 4rem;
+      height: 4rem;
+      color: #10b981;
+      margin-bottom: 1rem;
+    }
+
+    h4 {
+      color: #065f46;
+      margin: 0 0 0.5rem 0;
+      font-size: 1.5rem;
+      font-weight: 700;
+    }
+
+    p {
+      color: #047857;
+      font-size: 1.1rem;
+      margin: 0;
+    }
+  }
+
+  .added-orders-summary {
+    margin-bottom: 2rem;
+
+    .summary-card {
+      background: white;
+      border-radius: 16px;
+      padding: 1.5rem;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+      border: 1px solid #e2e8f0;
+
+      .summary-title {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: #1f2937;
+        margin-bottom: 1.5rem;
+        padding-bottom: 0.75rem;
+        border-bottom: 2px solid #f1f5f9;
+      }
+
+      .summary-details {
+        display: grid;
+        gap: 1rem;
+
+        .summary-item {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 0.75rem 1rem;
+          background: #f8fafc;
+          border-radius: 8px;
+
+          .label {
+            color: #64748b;
+            font-weight: 500;
+            font-size: 0.95rem;
+          }
+
+          .value {
+            font-weight: 700;
+            color: #0f172a;
+            font-size: 1.1rem;
+          }
+        }
+      }
+    }
+  }
+
+  .confirmation-actions {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+
+    button {
+      padding: 0.75rem 1.5rem;
+      border-radius: 30px;
+      font-weight: 600;
+
+      mat-icon {
+        margin-right: 0.5rem;
+      }
+
+      &:first-child {
+        background: #f1f5f9;
+        color: #475569;
+
+        &:hover {
+          background: #e2e8f0;
+        }
+      }
+
+      &.add-more-btn {
+        background: linear-gradient(135deg, #10b981, #059669);
+        color: white;
+
+        &:hover {
+          background: linear-gradient(135deg, #059669, #047857);
+          transform: translateY(-1px);
+          box-shadow: 0 4px 12px rgba(5, 150, 105, 0.3);
+        }
+      }
+
+      &:last-child {
+        background: linear-gradient(135deg, #3b82f6, #2563eb);
+        color: white;
+
+        &:hover {
+          background: linear-gradient(135deg, #2563eb, #1d4ed8);
+          transform: translateY(-1px);
+          box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+        }
+      }
+    }
+  }
+}
+
+/* Quick Add Title - Market Style */
+.quick-add-title {
+  margin: 0 0 1.25rem 0;
+
+  h3 {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: #0f172a;
+    margin: 0 0 0.25rem 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+
+    &::before {
+      content: 'inventory_2';
+      font-family: 'Material Icons';
+      font-size: 1.4rem;
+      color: #3b82f6;
+    }
+  }
+
+  .text-sm {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    color: #64748b;
+
+    .counter-highlight {
+      font-weight: 700;
+      color: #10b981;
+      font-size: 1.1rem;
+      background: #ecfdf5;
+      padding: 0.1rem 0.4rem;
+      border-radius: 4px;
+    }
+
+    .filter-info {
+      font-size: 0.8rem;
+      color: #94a3b8;
+      margin-left: 0.5rem;
+    }
+  }
+}

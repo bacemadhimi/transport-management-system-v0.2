@@ -45,13 +45,14 @@ import { IGeographicalEntity, IGeographicalLevel } from '../../../types/general-
   styleUrls: ['./truck-form.scss']
 })
 export class TruckForm implements OnInit, OnDestroy {
+  settingsService = inject(SettingsService);
   fb = inject(FormBuilder);
   httpService = inject(Http);
   SettingsService = inject(SettingsService);
   dialogRef = inject(MatDialogRef<TruckForm>);
   data = inject<{ truckId?: number }>(MAT_DIALOG_DATA, { optional: true }) ?? {};
   @ViewChild('fileInput') fileInput!: ElementRef;
-
+  loadingUnit: string = 'tonnes';
   images: string[] = [];
   imagePreviews: string[] = [];
   fileError: string | null = null;
@@ -107,6 +108,7 @@ export class TruckForm implements OnInit, OnDestroy {
   statuses = ['Disponible', 'En mission', 'Maintenance', 'Hors service'];
 
   ngOnInit() {
+    this.loadSettings();
     this.loadGeographicalEntities();
     this.loadTypeTrucks();
     this.loadMarques();
@@ -728,4 +730,23 @@ getLevelName(levelNumber: number): string {
   const level = this.geographicalLevels.find(l => l.levelNumber === levelNumber);
   return level ? level.name : `Niveau ${levelNumber}`;
 }
+ private loadSettings(): void {
+    this.settingsService.getOrderSettings().subscribe({
+      next: (settings) => {
+        this.loadingUnit = settings.loadingUnit || 'tonnes';
+        console.log('✅ Loading unit from settings:', this.loadingUnit);
+      },
+      error: (err) => {
+        console.error('Error loading settings:', err);
+        this.loadingUnit = 'tonnes';
+      }
+    });
+
+    this.settingsService.orderSettings$.subscribe(settings => {
+      if (settings) {
+        this.loadingUnit = settings.loadingUnit || 'tonnes';
+        console.log('🔄 Loading unit updated:', this.loadingUnit);
+      }
+    });
+  }
 }

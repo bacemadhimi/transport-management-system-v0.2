@@ -78,8 +78,6 @@ public class GeneralSettingsController : ControllerBase
     [HttpPut("{id}")]
     public async Task<IActionResult> Update(int id, [FromBody] GeneralSettings model)
     {
-        if (model == null || id != model.Id)
-            return BadRequest("Invalid data.");
 
         var existing = await _context.GeneralSettings.FindAsync(id);
         if (existing == null)

@@ -384,6 +384,8 @@ namespace TransportManagementSystem.Controllers
                 .Include(c => c.CustomerGeographicalEntities)
                     .ThenInclude(cg => cg.GeographicalEntity)
                         .ThenInclude(g => g.Level)
+                .AsNoTracking()
+                .AsSplitQuery()
                 .ToListAsync();
 
             var customerDtos = customers.Select(c => new CustomerDto
@@ -416,10 +418,13 @@ namespace TransportManagementSystem.Controllers
         public async Task<ActionResult<IEnumerable<CustomerDto>>> GetCustomersWithReadyToLoadOrders()
         {
             var customers = await dbContext.Customers
+               
                 .Include(c => c.CustomerGeographicalEntities)
                     .ThenInclude(cg => cg.GeographicalEntity)
                         .ThenInclude(g => g.Level)
                 .Where(c => c.Orders.Any(o => o.Status == OrderStatus.ReadyToLoad))
+                .AsNoTracking()
+                .AsSplitQuery()
                 .ToListAsync();
 
             var customerDtos = customers.Select(c => new CustomerDto

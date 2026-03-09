@@ -1682,9 +1682,9 @@ async confirmAddOrders(): Promise<void> {
           ${truck ? `
             <div style="background-color: #f3f4f6; padding: 10px; border-radius: 5px; margin: 10px 0;">
               <p><strong>Impact sur la capacité:</strong></p>
-              <p>Poids actuel: ${currentWeight.toFixed(2)} palette</p>
-              <p>+ Ajout: ${selectedWeight.toFixed(2)} palette</p>
-              <p>= Total: ${totalAfterAddition.toFixed(2)} palette / ${truck.typeTruck?.capacity} palette</p>
+              <p>Poids actuel: ${currentWeight.toFixed(2)} ${this.loadingUnit}</p>
+              <p>+ Ajout: ${selectedWeight.toFixed(2)} ${this.loadingUnit}</p>
+              <p>= Total: ${totalAfterAddition.toFixed(2)} ${this.loadingUnit} / ${truck.typeTruck?.capacity} ${this.loadingUnit}</p>
               <p>Utilisation: ${percentageAfter.toFixed(1)}%</p>
             </div>
           ` : ''}
@@ -5477,13 +5477,6 @@ clearEntityFilter(): void {
   this.entityFilterControl.setValue(null);
 }
 
-getClientEntityName(clientId: number): string {
-  const client = this.allClientsWithPendingOrders.find(c => c.id === clientId);
-  const entityId = client?.geographicalEntities?.[0]?.geographicalEntityId;
-  const entity = this.geographicalEntities.find(e => e.id === entityId);
-  return entity?.name || '';
-}
-
 filterClients(): void {
   let filtered = this.allClientsWithPendingOrders;
 
@@ -7796,5 +7789,22 @@ isGroupExpanded(customerId: number): boolean {
 
 isCapacityGroupExpanded(customerId: number): boolean {
   return this.expandedCapacityGroups.has(customerId);
+}
+// Helper methods for market stats
+getTotalPendingOrdersCount(): number {
+  return this.ordersForQuickAdd.length;
+}
+
+getTotalPendingWeight(): number {
+  return this.ordersForQuickAdd.reduce((total, order) => total + (order.weight || 0), 0);
+}
+
+getClientEntityName(clientId: number): string {
+  const client = this.allClientsWithPendingOrders.find(c => c.id === clientId);
+  if (!client?.geographicalEntities?.length) return '';
+  
+  const entityId = client.geographicalEntities[0].geographicalEntityId;
+  const entity = this.geographicalEntities.find(e => e.id === entityId);
+  return entity?.name || '';
 }
 }

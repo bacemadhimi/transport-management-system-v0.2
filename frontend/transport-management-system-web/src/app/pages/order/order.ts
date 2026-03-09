@@ -163,8 +163,6 @@ onFilterBlur(column: string) {
     'select',
     'reference',
     'client',
-    'zone',
-    'customerCity',
     'weight',
     'deliveryAddress',
     'status',
@@ -189,7 +187,7 @@ applyAllFilters() {
    OrderStatus = OrderStatus;
 
 
-zoneControl = new FormControl<number | null>(null);
+
   deliveryDateControl = new FormControl('');
   statusControl = new FormControl('');
 sourceControl = new FormControl('');
@@ -237,7 +235,7 @@ filter: any = {
   sourceSystem: null,
   deliveryDateStart: null,
   deliveryDateEnd: null,
-  zoneId: null,
+  
     reference: null,
   customerName: null,
   customerCity: null,
