@@ -4177,14 +4177,14 @@ private loadAllDrivers(): Promise<void> {
     this.loadingDrivers = true;
     this.http.getDrivers().subscribe({
       next: (drivers) => {
-        // Store full drivers with ALL data including geographical entities
+        
         this.drivers = drivers.map(driver => {
-          // Create a copy with the proper IDriver type
+          
           const enhancedDriver: IDriver = {
             ...driver,
-            // Map geographicalEntities to driverGeographicalEntities
+           
             driverGeographicalEntities: this.mapGeographicalEntities(driver.geographicalEntities),
-            // Keep original for backward compatibility
+            
             geographicalEntities: driver.geographicalEntities || []
           };
           
@@ -4231,7 +4231,7 @@ private mapGeographicalEntities(entities?: any[]): Array<{
   }
   
   return entities.map(entity => {
-    // Case 1: Entity is already in the correct format with geographicalEntityId at root
+   
     if (entity.geographicalEntityId !== undefined) {
       return {
         geographicalEntityId: entity.geographicalEntityId,
@@ -4241,7 +4241,7 @@ private mapGeographicalEntities(entities?: any[]): Array<{
       };
     }
     
-    // Case 2: Entity has the ID inside a nested object
+   
     if (entity.geographicalEntity && entity.geographicalEntity.geographicalEntityId !== undefined) {
       return {
         geographicalEntityId: entity.geographicalEntity.geographicalEntityId,
@@ -4251,7 +4251,7 @@ private mapGeographicalEntities(entities?: any[]): Array<{
       };
     }
     
-    // Case 3: Entity is IGeographicalEntity format (from your API)
+    
     return {
       geographicalEntityId: entity.geographicalEntityId || entity.id,
       geographicalEntity: entity,
@@ -4693,7 +4693,7 @@ private handleDriverLoadError(date: Date, excludeTripId?: number): void {
 
     this.http.getAvailableDriversByDateAndZone(dateStr, undefined, excludeTripId).subscribe({
       next: (response: any) => {
-        // Same merging logic as in processDriverResponse
+        
         this.availableDrivers = (response.availableDrivers || []).map((apiDriver: any) => {
           const fullDriver = this.drivers.find(d => d.id === apiDriver.driverId);
           
@@ -4712,7 +4712,7 @@ private handleDriverLoadError(date: Date, excludeTripId?: number): void {
             idCamion: apiDriver.idCamion || null,
             zoneId: apiDriver.zoneId || null,
             zoneName: apiDriver.zoneName || '',
-            // Map from geographicalEntities to driverGeographicalEntities
+          
             driverGeographicalEntities: fullDriver ? 
               this.mapGeographicalEntities(fullDriver.geographicalEntities) : [],
             geographicalEntities: fullDriver?.geographicalEntities || [],
@@ -4743,7 +4743,7 @@ private handleDriverLoadError(date: Date, excludeTripId?: number): void {
   }
 }
 private processDriverResponse(response: any, date: Date): void {
-  // Clear existing availability status
+
   this.availableDrivers.forEach(driver => {
     driver.availabilityStatus = undefined;
     driver.availabilityMessage = undefined;
@@ -4751,12 +4751,12 @@ private processDriverResponse(response: any, date: Date): void {
     driver.totalHours = undefined;
   });
 
-  // Map available drivers from response
+  
   this.availableDrivers = (response.availableDrivers || []).map((apiDriver: any) => {
-    // Find the full driver data from this.drivers (which has geographical entities)
+    
     const fullDriver = this.drivers.find(d => d.id === apiDriver.driverId);
     
-    // Base driver object from API response
+    
     const baseDriver: IDriver = {
       id: apiDriver.driverId,
       name: apiDriver.driverName,
@@ -4772,10 +4772,10 @@ private processDriverResponse(response: any, date: Date): void {
       idCamion: apiDriver.idCamion || null,
       zoneId: apiDriver.zoneId || null,
       zoneName: apiDriver.zoneName || '',
-      // Map from geographicalEntities to driverGeographicalEntities
+      
       driverGeographicalEntities: fullDriver ? 
         this.mapGeographicalEntities(fullDriver.geographicalEntities) : [],
-      // Keep original for backward compatibility
+      
       geographicalEntities: fullDriver?.geographicalEntities || [],
       availabilityStatus: undefined,
       availabilityMessage: undefined,
@@ -5121,10 +5121,10 @@ private processDriverResponse(response: any, date: Date): void {
 selectDate(day: Date | null): void {
   if (!day || this.isDayDisabled(day)) return;
 
-  // First, load available drivers for this date
+ 
   this.loadAvailableDrivers(day);
   
-  // Then load statistics for this date
+ 
   this.loadDateStats(day);
 
   if (this.calendarMode === 'single') {
@@ -5370,19 +5370,19 @@ private async loadDateStats(date: Date): Promise<void> {
   const dateStr = this.datePipe.transform(date, 'yyyy-MM-dd') || '';
 
   try {
-    // Try to get stats from API first (for orders/clients data)
+  
     const response = await this.http.getDateStatistics(dateStr).toPromise();
 
-    // Load available drivers for this date if not already loaded
+    
     if (!this.areDriversLoadedForDate(date)) {
       await this.loadAvailableDriversForDate(date);
     }
 
-    // Calculate available drivers for this date using your local data
+   
     const availableDriversCount = this.availableDrivers.length;
     const driversForDate = this.availableDrivers;
     
-    // Calculate available trucks for this date
+    
     const availableTrucksCount = await this.getAvailableTrucksForDate(date);
 
     if (response && response.success) {
@@ -5393,7 +5393,7 @@ private async loadDateStats(date: Date): Promise<void> {
         totalClients: data.summary?.totalClients || 0,
         totalOrders: data.summary?.totalOrdersReady || 0,
         plannedTrips: data.summary?.plannedTrips || 0,
-        // Use actual loaded values
+       
         availableDrivers: availableDriversCount,
         allReadyOrders: data.summary?.allReadyOrders || 0,
         ordersInTrips: data.summary?.ordersInTrips || 0,
@@ -5436,7 +5436,7 @@ private async loadDateStats(date: Date): Promise<void> {
     }
   } catch (error) {
     console.error('Erreur lors du chargement des statistiques:', error);
-    // Fallback to local calculation
+    
     await this.loadLocalDateStatsWithDrivers(date);
   } finally {
     this.dateStatsLoading = false;
@@ -5476,7 +5476,7 @@ private loadAvailableDriversForDate(date: Date): Promise<void> {
         this.handleDriverLoadError(date, excludeTripId);
         this.loadingAvailableDrivers = false;
         this.lastLoadedDriverDate = date;
-        resolve(); // Resolve anyway to continue
+        resolve(); 
       }
     });
   });
@@ -5495,7 +5495,7 @@ private getAvailableTrucksForDate(date: Date): Promise<number> {
       },
       error: (error) => {
         console.error('Error loading trucks:', error);
-        // Fallback to all enabled trucks
+     
         const enabledTrucks = this.trucks.filter(t => t.isEnable).length;
         resolve(enabledTrucks);
       }
@@ -5504,7 +5504,7 @@ private getAvailableTrucksForDate(date: Date): Promise<number> {
 }
 
 private async loadLocalDateStatsWithDrivers(date: Date): Promise<void> {
-  // Ensure drivers are loaded for this date
+
   if (!this.areDriversLoadedForDate(date)) {
     await this.loadAvailableDriversForDate(date);
   }
@@ -5529,7 +5529,7 @@ private async loadLocalDateStatsWithDrivers(date: Date): Promise<void> {
     ordersNotAssigned.some(order => order.customerId === customer.id)
   );
 
-  // Get trucks for this date
+ 
   const availableTrucksCount = await this.getAvailableTrucksForDate(date);
 
   this.selectedDateStats = {
