@@ -14,7 +14,345 @@
   max-height: 90vh;
   overflow-y: auto;
 }
+/* Theme button - same as general settings */
+.theme-primary-btn {
+  background: var(--primary-gradient) !important;
+  color: white !important;
+  border-radius: 999px !important;
+  padding: 0 24px !important;
+  height: 44px !important;
+  font-weight: 500 !important;
+  box-shadow: 0 8px 16px rgba(var(--primary-color-rgb), 0.25) !important;
+  transition: all 0.2s ease !important;
+  border: none !important;
 
+  .mat-icon {
+    color: white !important;
+    margin-right: 4px;
+  }
+
+  &:hover:not(:disabled) {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 12px 24px rgba(var(--primary-color-rgb), 0.35) !important;
+  }
+
+  &:active:not(:disabled) {
+    transform: translateY(0) !important;
+  }
+
+  &:disabled {
+    opacity: 0.6 !important;
+    cursor: not-allowed !important;
+    box-shadow: none !important;
+  }
+}
+/* Form field focus states - like general settings */
+::ng-deep .mat-mdc-form-field {
+  &.mat-focused {
+    .mdc-notched-outline__leading,
+    .mdc-notched-outline__trailing,
+    .mdc-notched-outline__notch {
+      border-color: var(--primary-color) !important;
+      border-width: 2px !important;
+    }
+    
+    .mdc-floating-label {
+      color: var(--primary-color) !important;
+    }
+  }
+}
+
+/* Checkbox theme - like general settings */
+::ng-deep .mat-mdc-checkbox.mat-primary {
+  --mdc-checkbox-selected-focus-icon-color: var(--primary-color);
+  --mdc-checkbox-selected-hover-icon-color: var(--primary-color);
+  --mdc-checkbox-selected-icon-color: var(--primary-color);
+  --mdc-checkbox-selected-pressed-icon-color: var(--primary-color);
+}
+
+/* Radio button theme - like general settings */
+::ng-deep .mat-mdc-radio-button.mat-primary {
+  --mdc-radio-selected-focus-icon-color: var(--primary-color);
+  --mdc-radio-selected-hover-icon-color: var(--primary-color);
+  --mdc-radio-selected-icon-color: var(--primary-color);
+  --mdc-radio-selected-pressed-icon-color: var(--primary-color);
+}
+
+/* Select arrows - like general settings */
+::ng-deep .mat-mdc-select-arrow {
+  color: var(--primary-color) !important;
+}
+
+/* Date picker toggle - like general settings */
+::ng-deep .mat-datepicker-toggle {
+  color: var(--primary-color) !important;
+}
+/* Status workflow with theme - like general settings */
+.status-workflow-section .status-indicator {
+  border-color: var(--primary-color) !important;
+  box-shadow: 0 2px 8px rgba(var(--primary-color-rgb), 0.1) !important;
+  
+  .status-icon {
+    color: var(--primary-color) !important;
+  }
+}
+
+.status-progress-bar .progress-steps .progress-step.active .step-circle {
+  background: var(--primary-color) !important;
+  border-color: var(--primary-color) !important;
+  box-shadow: 0 0 0 8px rgba(var(--primary-color-rgb), 0.2) !important;
+}
+
+.status-progress-bar .progress-steps .progress-step .step-label .current-badge {
+  background: var(--primary-color) !important;
+}
+
+.status-progress-bar .progress-steps .progress-step.completed .step-circle {
+  background: var(--primary-color) !important;
+  border-color: var(--primary-color) !important;
+}
+
+.status-progress-bar .progress-steps .progress-connector.active {
+  background: var(--primary-color) !important;
+}
+/* Capacity section with theme - like general settings */
+.capacity-section .capacity-info mat-icon {
+  color: var(--primary-color) !important;
+}
+
+.capacity-section .capacity-stats .capacity-percentage {
+  color: var(--primary-color) !important;
+}
+
+.capacity-progress .progress-fill {
+  background: var(--primary-gradient) !important;
+}
+
+.capacity-progress .threshold-marker .threshold-dot {
+  background: var(--primary-color) !important;
+}
+/* Selected client card - like general settings */
+.client-card.selected {
+  border-color: var(--primary-color) !important;
+  background: linear-gradient(135deg, rgba(var(--primary-color-rgb), 0.05), white) !important;
+}
+
+.client-card .client-select-btn mat-icon {
+  color: var(--primary-color) !important;
+}
+
+/* Selected order item */
+.order-item.selected {
+  border-color: var(--primary-color) !important;
+  background: rgba(var(--primary-color-rgb), 0.05) !important;
+}
+/* Timeline summary with theme - like general settings */
+.trip-id-badge {
+  background: var(--primary-gradient) !important;
+}
+
+.timeline-flow::before {
+  background: linear-gradient(to bottom, 
+    var(--primary-color) 0%, 
+    #8b5cf6 20%, 
+    #10b981 50%, 
+    #f59e0b 80%, 
+    #ef4444 100%) !important;
+}
+
+.start-step .step-marker {
+  background: var(--primary-gradient) !important;
+}
+
+.delivery-group-step .delivery-group-number {
+  background: var(--primary-gradient) !important;
+}
+/* Calendar modal with theme - like general settings */
+.calendar-modal-header {
+  background: var(--primary-gradient) !important;
+}
+
+.calendar-grid .days-grid .day-cell.selected {
+  background: var(--primary-color) !important;
+}
+
+.calendar-grid .days-grid .day-cell.in-range {
+  background-color: rgba(var(--primary-color-rgb), 0.1) !important;
+}
+
+.calendar-actions button.mat-raised-button {
+  background: var(--primary-gradient) !important;
+}
+/* Badge styles - like general settings */
+.level-badge {
+  background: rgba(var(--primary-color-rgb), 0.1);
+  color: var(--primary-color);
+}
+
+.info-message {
+  background: rgba(var(--primary-color-rgb), 0.1);
+  color: var(--primary-color);
+  
+  mat-icon {
+    color: var(--primary-color);
+  }
+}
+/* ===== CAPACITY METER - FIXED COLORS (DO NOT CHANGE WITH THEME) ===== */
+/* These styles have higher specificity and will not be overridden by theme */
+
+/* Progress bar fill - use specific colors based on percentage */
+.capacity-progress .progress-bar .progress-fill {
+  /* This will be set dynamically by getProgressBarColor() */
+  /* The inline style will take precedence */
+}
+
+/* Threshold dots - fixed colors */
+.capacity-progress .threshold-marker .threshold-dot {
+  /* Individual dots already have inline styles, they will keep their colors */
+}
+
+/* Threshold labels - use theme colors for text is fine */
+.capacity-progress .threshold-marker .threshold-label {
+  color: var(--text-muted) !important; /* Use text-muted instead of primary */
+}
+
+/* Progress legend - fixed colors - FORCE with !important */
+.capacity-progress .progress-legend .legend-item .legend-color {
+  &.green { background: #10b981 !important; }
+  &.blue { background: #3b82f6 !important; }
+  &.orange { background: #f59e0b !important; }
+  &.red { background: #ef4444 !important; }
+}
+
+/* But since you're using inline styles in HTML, they'll already work */
+
+/* Capacity alert - keep alert colors, not theme */
+.capacity-alert {
+  /* Background is set dynamically with ngStyle */
+  
+  mat-icon {
+    /* Color is set dynamically by getCapacityAlert().color */
+  }
+  
+  span {
+    /* Color is set dynamically by getCapacityAlert().color */
+  }
+}
+
+/* Percentage badges - these CAN use theme if you want */
+.percentage-badge {
+  background: rgba(var(--primary-color-rgb), 0.1) !important;
+  color: var(--primary-color) !important;
+}
+
+/* But for the capacity level classes, FORCE specific colors */
+.client-stat .percentage-badge.level-critical {
+  background: linear-gradient(135deg, #fee2e2, #fecaca) !important;
+  color: #dc2626 !important;
+  border: 1px solid #fca5a5 !important;
+}
+
+.client-stat .percentage-badge.level-warning {
+  background: linear-gradient(135deg, #fef3c7, #fde68a) !important;
+  color: #d97706 !important;
+  border: 1px solid #fbbf24 !important;
+}
+
+.client-stat .percentage-badge.level-high {
+  background: linear-gradient(135deg, #dbeafe, #bfdbfe) !important;
+  color: #1d4ed8 !important;
+  border: 1px solid #60a5fa !important;
+}
+
+.client-stat .percentage-badge.level-normal {
+  background: linear-gradient(135deg, #d1fae5, #a7f3d0) !important;
+  color: #059669 !important;
+  border: 1px solid #34d399 !important;
+}
+
+/* Capacity warning summary - FORCE fixed colors with !important */
+.capacity-warning-summary.warning-critical {
+  background: linear-gradient(135deg, #fee2e2, #fecaca) !important;
+  border: 1px solid #fecaca !important;
+  
+  .warning-icon {
+    color: #dc2626 !important;
+  }
+  
+  .warning-title {
+    color: #dc2626 !important;
+  }
+  
+  .warning-text {
+    color: #7f1d1d !important;
+  }
+}
+
+.capacity-warning-summary.warning-high {
+  background: linear-gradient(135deg, #fef3c7, #fde68a) !important;
+  border: 1px solid #fde68a !important;
+  
+  .warning-icon {
+    color: #d97706 !important;
+  }
+  
+  .warning-title {
+    color: #d97706 !important;
+  }
+  
+  .warning-text {
+    color: #92400e !important;
+  }
+}
+
+/* Client progress bar - fill color is set by inline style, keep it */
+.client-progress .progress-bar-mini .progress-fill-mini {
+  /* Inline style from getProgressBarColorForPercentage() will take precedence */
+}
+
+/* Client progress percentage text - can use theme */
+.client-progress .progress-percentage {
+  color: var(--primary-color) !important;
+}
+
+/* Capacity section header icons - keep theme */
+.capacity-section .capacity-info mat-icon {
+  color: var(--primary-color) !important;
+}
+
+/* Capacity stats percentage - keep theme */
+.capacity-section .capacity-stats .capacity-percentage {
+  color: var(--primary-color) !important;
+}
+
+/* Total summary icons - keep theme */
+.capacity-total-summary .total-label mat-icon {
+  color: var(--primary-color) !important;
+}
+
+/* Total summary values - keep theme for some, fixed for others */
+.capacity-total-summary .total-values .total-item .total-value {
+  /* This can stay theme or be fixed - your choice */
+  color: var(--text-primary) !important;
+}
+
+/* Override any theme styles that might affect the capacity meter */
+.capacity-section .progress-fill:not(.theme-aware) {
+  background: var(--progress-color, #10b981) !important;
+}
+
+/* Remove any theme gradient from capacity progress */
+.capacity-section .progress-fill {
+  background: var(--progress-color, #10b981) !important;
+}
+
+/* Make sure the capacity section doesn't inherit theme colors for these elements */
+.capacity-section .threshold-dot,
+.capacity-section .legend-color,
+.capacity-section .capacity-alert mat-icon,
+.capacity-section .warning-icon {
+  transition: none !important; /* Prevent theme transitions from affecting colors */
+}
 .trip-form-card {
   border-radius: 1.75rem;
   box-shadow: 0 25px 55px rgba(15, 23, 42, 0.12);
