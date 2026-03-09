@@ -777,7 +777,7 @@ private processTruckResponse(response: any, date: Date): void {
           capacity: typeTruckData.capacity,
           unit: typeTruckData.unit
         } : null,
-        truckGeographicalEntities: apiTruck.truckGeographicalEntities || [] // Add this line
+        truckGeographicalEntities: apiTruck.truckGeographicalEntities || []
       };
     });
   }
@@ -800,7 +800,7 @@ private processTruckResponse(response: any, date: Date): void {
         tooltip: `Indisponible le ${this.formatDateForDisplay(date)} - ${truck.reason || 'Raison inconnue'}`,
         isAvailable: false,
         zoneId: truck.ZoneId || truck.zoneId || null,
-        truckGeographicalEntities: truck.truckGeographicalEntities || [] // Add this line
+        truckGeographicalEntities: truck.truckGeographicalEntities || [] 
       };
     });
   }
@@ -810,7 +810,7 @@ private processTruckResponse(response: any, date: Date): void {
   }
 
   this.trucks = [...this.availableTrucks, ...this.unavailableTrucks];
-  this.filteredAvailableTrucks = [...this.availableTrucks]; // Add this line
+  this.filteredAvailableTrucks = [...this.availableTrucks]; 
 
   console.log('📊 Final state:', {
     availableCount: this.availableTrucks.length,
@@ -1516,16 +1516,16 @@ getSelectedConvoyeurInfo(): string {
 async confirmAddOrders(): Promise<void> {
   if (this.selectedOrdersCount === 0 || !this.selectedClient) return;
 
-  // 1. Vérification de la capacité (existante)
+  
   const selectedWeight = this.calculateSelectedWeight();
   const capacityCheck = await this.checkCapacityBeforeAddingOrders(selectedWeight);
   if (!capacityCheck) {
     return;
   }
 
-  // 2. NOUVELLE VÉRIFICATION : Mélange des types (AJOUTEZ CE BLOC)
+  
   if (!this.allowMixingOrderTypes && this.deliveries.length > 0) {
-    // Récupérer les types des commandes existantes
+
     const existingTypes = new Set<string>();
     this.deliveryControls.forEach(group => {
       const orderId = group.get('orderId')?.value;
@@ -1536,7 +1536,7 @@ async confirmAddOrders(): Promise<void> {
       }
     });
 
-    // Récupérer les types des nouvelles commandes
+  
     const newTypes = new Set<string>();
     this.selectedOrders.forEach(orderId => {
       const order = this.allOrders.find(o => o.id === orderId);
@@ -1544,15 +1544,15 @@ async confirmAddOrders(): Promise<void> {
       newTypes.add(orderType);
     });
 
-    // Vérifier si l'ajout créerait un mélange
+  
     const allTypes = new Set([...existingTypes, ...newTypes]);
     
     if (allTypes.size > 1) {
-      // Construire le message détaillé
+      
       const existingTypesList = Array.from(existingTypes).join(', ');
       const newTypesList = Array.from(newTypes).join(', ');
       
-      // Créer le breakdown des commandes par type pour les nouvelles commandes
+     
       const ordersByType = new Map<string, string[]>();
       this.selectedOrders.forEach(orderId => {
         const order = this.allOrders.find(o => o.id === orderId);
@@ -1616,16 +1616,16 @@ async confirmAddOrders(): Promise<void> {
       });
 
       if (result.isConfirmed) {
-        // Rester sur l'étape de sélection
+     
         return;
       } else {
-        // Annuler l'ajout
+      
         return;
       }
     }
   }
 
-  // 3. Suite du traitement normal (si les vérifications sont passées)
+ 
   const totalOrders = this.clientPendingOrders.length;
   const notSelectedCount = totalOrders - this.selectedOrdersCount;
 
@@ -2096,7 +2096,7 @@ getCapacityAlert(): { message: string, color: string, icon: string, showAlert: b
   const truck = truckId ? this.trucks.find(t => t.id === truckId) : null;
   const unit = this.loadingUnit;
 
-  // Use the loaded settings
+ 
   const allowExceed = this.allowExceedMaxCapacity;
   const maxPercentage = this.maxCapacityPercentage;
 
@@ -2255,11 +2255,11 @@ private async checkCapacityBeforeAddingOrders(selectedWeight: number): Promise<b
   const unit = this.loadingUnit;
   const unitLabelPlural = this.loadingUnit;
 
-  // Get settings from General Settings (from database)
+  
   const allowExceed = this.allowExceedMaxCapacity;
-  const maxPercentage = this.maxCapacityPercentage; // This is 80 from your DB
+  const maxPercentage = this.maxCapacityPercentage; 
 
-  // If over 100% but exceed not allowed, block immediately
+
   if (percentageAfterAddition > 100 && !allowExceed) {
     const overage = totalWeightAfterAddition - capacity;
     const overagePercentage = percentageAfterAddition - 100;
@@ -2292,7 +2292,7 @@ private async checkCapacityBeforeAddingOrders(selectedWeight: number): Promise<b
     return false;
   }
 
-  // Check against max percentage from database
+ 
   if (percentageAfterAddition > maxPercentage) {
     const maxAllowedWeight = capacity * (maxPercentage / 100);
     const excess = totalWeightAfterAddition - maxAllowedWeight;
@@ -2350,7 +2350,7 @@ private async checkCapacityBeforeAddingOrders(selectedWeight: number): Promise<b
     }
   }
 
-  // If over 100% but within max percentage (unlikely but possible)
+
   if (percentageAfterAddition > 100) {
     const overage = totalWeightAfterAddition - capacity;
     const overagePercentage = percentageAfterAddition - 100;
@@ -4668,7 +4668,7 @@ private processDriverResponse(response: any, date: Date): void {
     isActive: true,
     zoneId: apiDriver.zoneId || null,
     zoneName: apiDriver.zoneName || '',
-    driverGeographicalEntities: apiDriver.driverGeographicalEntities || [], // Add this line
+    driverGeographicalEntities: apiDriver.driverGeographicalEntities || [], 
     availabilityStatus: undefined,
     availabilityMessage: undefined,
     requiresApproval: undefined,
@@ -5905,7 +5905,7 @@ clearFilters(): void {
     const customer = this.selectedClient;
     if (!customer) return;
 if (!this.allowMixingOrderTypes && this.deliveries.length > 0) {
-    // Récupérer le type des commandes existantes
+   
     const existingTypes = new Set<string>();
     this.deliveryControls.forEach(group => {
       const orderId = group.get('orderId')?.value;
@@ -5915,14 +5915,14 @@ if (!this.allowMixingOrderTypes && this.deliveries.length > 0) {
       }
     });
 
-    // Vérifier les nouvelles commandes
+
     const newTypes = new Set<string>();
     this.selectedOrders.forEach(orderId => {
       const order = this.allOrders.find(o => o.id === orderId);
       if (order?.type) newTypes.add(order.type);
     });
 
-    // Vérifier si les types sont compatibles
+    
     const allTypes = new Set([...existingTypes, ...newTypes]);
     if (allTypes.size > 1) {
       Swal.fire({
@@ -7302,11 +7302,11 @@ private async validateCapacityWithSettings(): Promise<boolean> {
   const truck = truckId ? this.trucks.find(t => t.id === truckId) : null;
   const unit = this.loadingUnit;
 
-  // Use the loaded settings
+
   const allowExceed = this.allowExceedMaxCapacity;
   const maxPercentage = this.maxCapacityPercentage;
 
-  // Calculate if current percentage exceeds allowed maximum
+  
   const isExceeded = percentage > maxPercentage;
 
   if (isExceeded) {
@@ -7410,7 +7410,7 @@ private async validateCapacityWithSettings(): Promise<boolean> {
 private loadCapacitySettings(): void {
   this.http.getAllSettingsByType('TRIP').subscribe({
     next: (settings) => {
-      // Find ALLOW_EXCEED_MAX_CAPACITY setting
+  
       const allowExceedSetting = settings.find(s => 
         s.parameterCode.startsWith('ALLOW_EXCEED_MAX_CAPACITY=')
       );
@@ -7420,7 +7420,7 @@ private loadCapacitySettings(): void {
         this.allowExceedMaxCapacity = value === 'true';
       }
       
-      // Find MAX_CAPACITY_PERCENTAGE setting
+    
       const maxPercentageSetting = settings.find(s => 
         s.parameterCode.startsWith('MAX_CAPACITY_PERCENTAGE=')
       );
@@ -7437,13 +7437,13 @@ private loadCapacitySettings(): void {
     },
     error: (error) => {
       console.error('Error loading capacity settings:', error);
-      // Default values
+  
       this.allowExceedMaxCapacity = false;
       this.maxCapacityPercentage = 100;
     }
   });
 }
-// Filter drivers by geographical entity
+
 filterDriversByEntity(): void {
   const entityId = this.driverEntityFilterControl.value;
   
@@ -7453,7 +7453,7 @@ filterDriversByEntity(): void {
   }
   
   this.filteredAvailableDrivers = this.availableDrivers.filter(driver => {
-    // Check if driver has the selected geographical entity through DriverGeographicalEntities
+    
     return driver.driverGeographicalEntities?.some(
       ge => ge.geographicalEntityId === entityId
     );
@@ -7462,7 +7462,7 @@ filterDriversByEntity(): void {
   console.log(`Filtered drivers by entity ${entityId}: ${this.filteredAvailableDrivers.length} drivers`);
 }
 
-// Filter trucks by geographical entity
+
 filterTrucksByEntity(): void {
   const entityId = this.truckEntityFilterControl.value;
   
@@ -7472,7 +7472,7 @@ filterTrucksByEntity(): void {
   }
   
   this.filteredAvailableTrucks = this.availableTrucks.filter(truck => {
-    // Check if truck has the selected geographical entity through TruckGeographicalEntities
+
     return truck.truckGeographicalEntities?.some(
       ge => ge.geographicalEntityId === entityId
     );
@@ -7480,11 +7480,7 @@ filterTrucksByEntity(): void {
   
   console.log(`Filtered trucks by entity ${entityId}: ${this.filteredAvailableTrucks.length} trucks`);
 }
-// Dans la classe TripForm, ajoutez ces méthodes:
 
-/**
- * Vérifie s'il y a plusieurs types de commandes
- */
 hasMultipleOrderTypes(): boolean {
   const types = new Set<string>();
   
@@ -7492,7 +7488,7 @@ hasMultipleOrderTypes(): boolean {
     const orderId = group.get('orderId')?.value;
     if (orderId && orderId !== '') {
       const order = this.allOrders.find(o => o.id === orderId);
-      // Si le type est undefined ou null, on le traite comme "Standard"
+
       const orderType = order?.type || 'Standard';
       types.add(orderType);
       console.log(`Order ${orderId} type: "${orderType}" (original: ${order?.type || 'undefined'})`);
@@ -7509,7 +7505,7 @@ getDistinctOrderTypes(): string[] {
     const orderId = group.get('orderId')?.value;
     if (orderId && orderId !== '') {
       const order = this.allOrders.find(o => o.id === orderId);
-      // Si le type est undefined ou null, on le traite comme "Standard"
+
       const orderType = order?.type || 'Standard';
       types.add(orderType);
     }
@@ -7643,17 +7639,14 @@ private loadOrderSettings(): void {
     }
   });
 }
-/**
- * Vérifie que toutes les commandes dans le voyage sont du même type
- * Retourne true si OK, false si erreur
- */
+
 private validateOrderTypes(): { isValid: boolean, message?: string } {
-  // Si le mélange est autorisé, pas de validation
+ 
   if (this.allowMixingOrderTypes) {
     return { isValid: true };
   }
 
-  // Récupérer tous les types de commandes
+
   const orderTypes = new Set<string>();
   const ordersWithTypes: { orderId: number, type: string, reference: string }[] = [];
 
@@ -7673,11 +7666,11 @@ private validateOrderTypes(): { isValid: boolean, message?: string } {
     }
   });
 
-  // Si plusieurs types différents détectés
+
   if (orderTypes.size > 1) {
     const typesList = Array.from(orderTypes).join(', ');
     
-    // Grouper les commandes par type pour le message d'erreur
+   
     const ordersByType = new Map<string, string[]>();
     ordersWithTypes.forEach(item => {
       if (!ordersByType.has(item.type)) {
@@ -7790,7 +7783,7 @@ isGroupExpanded(customerId: number): boolean {
 isCapacityGroupExpanded(customerId: number): boolean {
   return this.expandedCapacityGroups.has(customerId);
 }
-// Helper methods for market stats
+
 getTotalPendingOrdersCount(): number {
   return this.ordersForQuickAdd.length;
 }
