@@ -710,6 +710,7 @@ private loadAllTrucks(): void {
 
   this.http.getTrucks().subscribe({
     next: (trucks: ITruck[]) => {
+      console.log(trucks);
       this.trucks = trucks
         .filter(truck => truck.isEnable)
         .map(truck => ({
@@ -777,7 +778,7 @@ private processTruckResponse(response: any, date: Date): void {
           capacity: typeTruckData.capacity,
           unit: typeTruckData.unit
         } : null,
-        truckGeographicalEntities: apiTruck.truckGeographicalEntities || []
+        truckGeographicalEntities: apiTruck.geographicalEntities || []
       };
     });
   }
@@ -800,7 +801,7 @@ private processTruckResponse(response: any, date: Date): void {
         tooltip: `Indisponible le ${this.formatDateForDisplay(date)} - ${truck.reason || 'Raison inconnue'}`,
         isAvailable: false,
         zoneId: truck.ZoneId || truck.zoneId || null,
-        truckGeographicalEntities: truck.truckGeographicalEntities || [] 
+        truckGeographicalEntities: truck.geographicalEntities || [] 
       };
     });
   }
@@ -7446,12 +7447,12 @@ private loadCapacitySettings(): void {
 
 filterDriversByEntity(): void {
   const entityId = this.driverEntityFilterControl.value;
-  
+  console.log(entityId)
   if (!entityId) {
     this.filteredAvailableDrivers = [...this.availableDrivers];
     return;
   }
-  
+  console.log(this.filteredAvailableDrivers)
   this.filteredAvailableDrivers = this.availableDrivers.filter(driver => {
     
     return driver.driverGeographicalEntities?.some(
