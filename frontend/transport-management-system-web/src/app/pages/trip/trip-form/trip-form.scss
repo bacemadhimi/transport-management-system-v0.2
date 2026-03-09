@@ -573,6 +573,191 @@
   color: var(--primary-color) !important;
   font-weight: 700 !important;
 }
+/* ===== CREATE TRIP BUTTON - FOLLOWS THEME ===== */
+
+.trips-add-btn {
+  background: var(--primary-gradient) !important;
+  color: white !important;
+  border-radius: 999px !important;
+  padding: 0.75rem 1.5rem !important;
+  font-weight: 500 !important;
+  box-shadow: 0 8px 16px rgba(var(--primary-color-rgb), 0.25) !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.5rem !important;
+  border: none !important;
+  transition: all 0.2s ease !important;
+
+  .mat-icon {
+    color: white !important;
+  }
+
+  &:hover:not(:disabled) {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 12px 24px rgba(var(--primary-color-rgb), 0.35) !important;
+  }
+
+  &:active:not(:disabled) {
+    transform: translateY(0) !important;
+  }
+
+  &:disabled {
+    opacity: 0.6 !important;
+    cursor: not-allowed !important;
+    box-shadow: none !important;
+  }
+}
+/* ===== EDIT/SAVE TRIP BUTTON - FOLLOWS THEME ===== */
+
+.form-footer-simple .save-btn {
+  background: var(--primary-gradient) !important;
+  color: white !important;
+  border-radius: 999px !important;
+  padding: 0.625rem 2rem !important;
+  font-weight: 600 !important;
+  min-width: 140px !important;
+  box-shadow: 0 8px 16px rgba(var(--primary-color-rgb), 0.25) !important;
+  border: none !important;
+  transition: all 0.2s ease !important;
+
+  .mat-icon {
+    color: white !important;
+  }
+
+  .loading-icon {
+    animation: spin 1s linear infinite;
+  }
+
+  &:hover:not(:disabled) {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 12px 24px rgba(var(--primary-color-rgb), 0.35) !important;
+  }
+
+  &:active:not(:disabled) {
+    transform: translateY(0) !important;
+  }
+
+  &:disabled {
+    opacity: 0.6 !important;
+    cursor: not-allowed !important;
+    box-shadow: none !important;
+  }
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+/* ===== BROUILLON SECTION - FOLLOWS THEME ===== */
+
+.draft-status {
+  background: linear-gradient(135deg, rgba(var(--primary-color-rgb), 0.08), rgba(var(--primary-color-rgb), 0.03)) !important;
+  border: 1px solid rgba(var(--primary-color-rgb), 0.2) !important;
+  border-radius: 8px !important;
+  margin: 16px 0 !important;
+  padding: 12px 16px !important;
+  box-shadow: 0 2px 8px rgba(var(--primary-color-rgb), 0.1) !important;
+}
+
+.draft-status-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.draft-icon {
+  color: var(--primary-color) !important;
+  font-size: 24px !important;
+  width: 24px !important;
+  height: 24px !important;
+}
+
+.draft-text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.draft-title {
+  font-weight: 600 !important;
+  color: var(--primary-color) !important;
+  font-size: 14px !important;
+  margin-bottom: 2px !important;
+}
+
+.draft-hint {
+  font-size: 12px !important;
+  color: var(--text-muted) !important;
+}
+
+.draft-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.draft-actions button {
+  &.mat-button {
+    color: var(--text-secondary) !important;
+    
+    &:hover {
+      background: rgba(var(--primary-color-rgb), 0.1) !important;
+      color: var(--primary-color) !important;
+    }
+    
+    &[color="warn"] {
+      color: #ef4444 !important;
+      
+      &:hover {
+        background: rgba(239, 68, 68, 0.1) !important;
+      }
+    }
+  }
+}
+
+/* Save button in draft section */
+.draft-actions button:first-child {
+  mat-icon {
+    color: var(--primary-color) !important;
+  }
+  
+  &:hover {
+    mat-icon {
+      color: var(--primary-color) !important;
+    }
+  }
+}
+
+/* Delete button in draft section */
+.draft-actions button:last-child {
+  mat-icon {
+    color: #ef4444 !important;
+  }
+}
+
+/* Optional: Add a subtle pulse animation to draw attention */
+@keyframes draftPulse {
+  0% {
+    box-shadow: 0 2px 8px rgba(var(--primary-color-rgb), 0.1);
+  }
+  50% {
+    box-shadow: 0 4px 16px rgba(var(--primary-color-rgb), 0.2);
+  }
+  100% {
+    box-shadow: 0 2px 8px rgba(var(--primary-color-rgb), 0.1);
+  }
+}
+
+.draft-status {
+  animation: draftPulse 2s infinite ease-in-out;
+}
+
+/* Hover effect */
+.draft-status:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(var(--primary-color-rgb), 0.15) !important;
+  border-color: rgba(var(--primary-color-rgb), 0.3) !important;
+  transition: all 0.3s ease;
+}
 .trip-form-card {
   border-radius: 1.75rem;
   box-shadow: 0 25px 55px rgba(15, 23, 42, 0.12);
