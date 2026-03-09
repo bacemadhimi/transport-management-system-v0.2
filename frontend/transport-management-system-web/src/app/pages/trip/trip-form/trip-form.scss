@@ -20635,13 +20635,6 @@ mat-error {
   font-weight: 400 !important;
 }
 
-/* ===== IMPORTANT: MAKE SURE THE VARIABLE IS DEFINED ===== */
-:host {
-  --primary-color: #5ea2ff; /* Your theme color */
-  --primary-color-rgb: 94, 162, 255;
-}
-/* ===== CALENDAR MODAL - INFO ICON FOLLOWS THEME ===== */
-
 .calendar-modal {
   .range-instructions {
     display: flex;
@@ -20879,3 +20872,306 @@ mat-error {
     }
   }
 }
+/* ===== ULTIMATE CALENDAR BUTTON FIX ===== */
+
+/* Force ALL buttons in calendar actions to use theme colors */
+.calendar-actions {
+  button {
+    transition: all 0.2s ease;
+  }
+  
+  /* Aujourd'hui button - force theme color */
+  button:first-child {
+    color: var(--primary-color) !important;
+    
+    .mat-icon {
+      color: var(--primary-color) !important;
+    }
+    
+    &:hover {
+      background: rgba(var(--primary-color-rgb), 0.1) !important;
+    }
+  }
+  
+  /* Effacer button with X - keep gray normally, theme on hover */
+  button:nth-child(2) {
+    color: #6b7280 !important;
+    
+    .mat-icon {
+      color: #6b7280 !important;
+    }
+    
+    &:hover {
+      color: var(--primary-color) !important;
+      background: rgba(var(--primary-color-rgb), 0.1) !important;
+      
+      .mat-icon {
+        color: var(--primary-color) !important;
+      }
+    }
+  }
+  
+  /* Appliquer button - force theme gradient */
+  button:last-child {
+    background: var(--primary-gradient) !important;
+    color: white !important;
+    
+    .mat-icon {
+      color: white !important;
+    }
+    
+    &:hover:not(:disabled) {
+      box-shadow: 0 4px 12px rgba(var(--primary-color-rgb), 0.3) !important;
+    }
+  }
+}
+
+/* Month navigation arrows - force theme color */
+.month-navigation {
+  button {
+    color: var(--primary-color) !important;
+    
+    .mat-icon {
+      color: var(--primary-color) !important;
+    }
+    
+    &:hover {
+      background: rgba(var(--primary-color-rgb), 0.1) !important;
+    }
+  }
+}
+
+/* Info icon - force theme color */
+.range-instructions {
+  mat-icon {
+    color: var(--primary-color) !important;
+  }
+  
+  background: rgba(var(--primary-color-rgb), 0.08) !important;
+  border-color: rgba(var(--primary-color-rgb), 0.15) !important;
+}
+
+/* Selected dates - force theme color */
+.day-cell.selected,
+.day-cell.range-start,
+.day-cell.range-end {
+  background: var(--primary-color) !important;
+}
+
+.day-cell.in-range {
+  background: rgba(var(--primary-color-rgb), 0.1) !important;
+}
+
+/* ===== DEBUG - UNCOMMENT TO SEE WHAT'S BEING TARGETED ===== */
+/*
+.calendar-actions button:first-child {
+  border: 3px solid red !important;
+}
+.calendar-actions button:nth-child(2) {
+  border: 3px solid blue !important;
+}
+.calendar-actions button:last-child {
+  border: 3px solid green !important;
+}
+*/
+/* ===== ORDER SELECTION STEP - THEME COLORS ===== */
+
+.order-selection-step {
+  .selected-client-header {
+    .client-details span:first-child {
+      background: rgba(var(--primary-color-rgb), 0.1) !important;
+      color: var(--primary-color) !important;
+    }
+  }
+
+  .selection-summary {
+    .summary-item {
+      &:first-child {
+        .mat-icon {
+          color: var(--primary-color) !important;
+        }
+        
+        span {
+          color: #1e293b;
+          
+          .count {
+            color: var(--primary-color) !important;
+          }
+        }
+      }
+      
+      &:last-child {
+        .mat-icon {
+          color: var(--primary-color) !important;
+        }
+      }
+    }
+  }
+
+  .orders-container {
+    .order-item {
+      &.selected {
+        border-color: var(--primary-color) !important;
+        background: rgba(var(--primary-color-rgb), 0.05) !important;
+        
+        .order-ref {
+          color: var(--primary-color) !important;
+        }
+      }
+      
+      .order-weight {
+        color: var(--primary-color) !important;
+      }
+      
+      .order-preview-btn:hover {
+        .mat-icon {
+          color: var(--primary-color) !important;
+        }
+      }
+    }
+  }
+
+  .selected-orders-summary {
+    .mat-icon {
+      color: var(--primary-color) !important;
+    }
+    
+    strong {
+      color: var(--primary-color) !important;
+    }
+    
+    .total-weight {
+      background: rgba(var(--primary-color-rgb), 0.1) !important;
+      color: var(--primary-color) !important;
+    }
+  }
+
+  .add-orders-footer {
+    button:last-of-type {
+      background: var(--primary-gradient) !important;
+      
+      &:hover:not(:disabled) {
+        box-shadow: 0 4px 12px rgba(var(--primary-color-rgb), 0.3) !important;
+      }
+    }
+  }
+}
+
+/* ===== QUICK ADD SECTION - THEME COLORS ===== */
+
+.quick-add-title {
+  .market-stats .stat-badge {
+    .mat-icon {
+      color: var(--primary-color) !important;
+    }
+    
+    .stat-number {
+      color: var(--primary-color) !important;
+    }
+  }
+}
+
+.client-virtual-scroll-info {
+  .client-count-info {
+    .mat-icon {
+      color: var(--primary-color) !important;
+    }
+    
+    strong {
+      color: var(--primary-color) !important;
+    }
+  }
+}
+
+/* ===== CLIENT CARDS - THEME COLORS ===== */
+
+.client-card-virtual {
+  .client-orders-count .order-icon,
+  .client-total-weight .weight-icon,
+  .client-zone .zone-icon {
+    color: var(--primary-color) !important;
+  }
+  
+  &.selected {
+    border-color: var(--primary-color) !important;
+    
+    .client-name {
+      color: var(--primary-color) !important;
+    }
+  }
+  
+  .client-card-footer .client-select-btn {
+    .mat-icon {
+      color: var(--primary-color) !important;
+    }
+    
+    &:hover {
+      background: var(--primary-color) !important;
+      
+      .mat-icon {
+        color: white !important;
+      }
+    }
+  }
+}
+
+/* ===== ORDER ITEMS - THEME COLORS ===== */
+
+.order-item {
+  .order-weight {
+    color: var(--primary-color) !important;
+  }
+  
+  &.selected {
+    border-color: var(--primary-color) !important;
+    background: rgba(var(--primary-color-rgb), 0.05) !important;
+  }
+}
+
+.order-date .date-icon {
+  color: var(--primary-color) !important;
+}
+
+/* ===== SELECTION ACTIONS BUTTONS ===== */
+
+.selection-actions {
+  button {
+    color: var(--text-secondary) !important;
+    
+    &:hover {
+      color: var(--primary-color) !important;
+      background: rgba(var(--primary-color-rgb), 0.1) !important;
+      
+      .mat-icon {
+        color: var(--primary-color) !important;
+      }
+    }
+    
+    .mat-icon {
+      color: currentColor !important;
+    }
+  }
+}
+
+/* ===== TOTAL WEIGHT BADGE ===== */
+
+.total-weight {
+  background: rgba(var(--primary-color-rgb), 0.1) !important;
+  color: var(--primary-color) !important;
+}
+
+/* ===== BACK BUTTON HOVER ===== */
+
+.back-btn:hover {
+  color: var(--primary-color) !important;
+}
+
+/* ===== FORCE ORANGE FOR TESTING ===== */
+/* Uncomment this to test if theme variables are working */
+/*
+:host {
+  --primary-color: #f97316 !important;
+  --primary-color-rgb: 249, 115, 22 !important;
+  --primary-gradient: linear-gradient(135deg, #f97316, #f59e0b) !important;
+}
+*/
