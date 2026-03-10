@@ -26,6 +26,7 @@ import { ITypeTruck } from '../types/type-truck';
 import { ICategorys } from '../types/categorys';
 import { IMarque, IMarqueDto } from '../types/marque';
 import { IGeneralSettings , IGeographicalEntity, IGeographicalLevel, SearchOptions,  } from '../types/general-settings';
+import { IEmployee } from '../types/employee';
 
 @Injectable({
   providedIn: 'root'
@@ -1251,10 +1252,28 @@ getClientName(customerId: number): Observable<string> {
   }
 
 
-  getEmployeesList(filter: any) {
-    const params = new HttpParams({ fromObject: filter });
-    return this.http.get<PagedData<any>>(environment.apiUrl + '/api/Employee/PaginationAndSearch?' + params.toString());
+getEmployeesList(filter: any): Observable<PagedData<IEmployee>> {
+  let params = new HttpParams()
+    .set('pageIndex', filter.pageIndex?.toString() || '0')
+    .set('pageSize', filter.pageSize?.toString() || '10');
+  
+  if (filter.search) {
+    params = params.set('search', filter.search);
   }
+  
+  if (filter.employeeCategory) {
+    params = params.set('employeeCategory', filter.employeeCategory);
+  }
+  
+  if (filter.isEnable !== undefined && filter.isEnable !== null) {
+    params = params.set('isEnable', filter.isEnable.toString());
+    console.log('Setting isEnable param:', filter.isEnable.toString());
+  }
+  
+  console.log('HTTP params:', params.toString());
+  
+  return this.http.get<PagedData<IEmployee>>(`${environment.apiUrl}/api/employee/PaginationAndSearch`, { params });
+}
 
   getEmployee(id: number) {
     return this.http.get<any>(environment.apiUrl + '/api/Employee/' + id);
@@ -1272,9 +1291,9 @@ getClientName(customerId: number): Observable<string> {
     return this.http.delete(environment.apiUrl + '/api/Employee/' + id);
   }
 
-  enableEmployee(id: number) {
-    return this.http.put(environment.apiUrl + `/api/Employee/${id}`, { isEnable: true });
-  }
+ enableEmployee(id: number): Observable<any> {
+  return this.http.put(`${environment.apiUrl}/api/employee/enable/${id}`, {});
+}
 
   downloadEmployeeAttachment(id: number) {
     return this.http.get(environment.apiUrl + `/api/Employee/${id}/download-attachment`, {

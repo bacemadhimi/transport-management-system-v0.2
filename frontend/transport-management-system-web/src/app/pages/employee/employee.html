@@ -1,19 +1,43 @@
 <div class="employee-page">
   <div class="employee-header">
-    <h1>{{ t('EMPLOYEE_LIST') || 'Employee List' }}</h1>
+    <h1>{{ t('EMPLOYEE_LIST') || 'liste des employés' }}</h1>
 
     <div class="employee-header__actions">
       <div class="employee-header__left">
-        <mat-form-field appearance="outline" class="employee-search">
-          <mat-label>{{ t('SEARCH_EMPLOYEE') }}</mat-label>
-          <input
-            matInput
-            type="text"
-            [formControl]="searchControl"
-            placeholder="{{ t('SEARCH_EMPLOYEE_PLACEHOLDER') }}"
-          />
-        </mat-form-field>
+        <div class="search-filters-row">
+          <!-- Employee Search -->
+          <mat-form-field appearance="outline" class="employee-search">
+            <mat-label>{{ t('SEARCH_EMPLOYEE') || 'Chercher employé' }}</mat-label>
+            <input
+              matInput
+              type="text"
+              [formControl]="searchControl"
+              placeholder="{{ t('SEARCH_EMPLOYEE_PLACEHOLDER') }}"
+            />
+          </mat-form-field>
 
+          <!-- Category Filter - DYNAMIC FROM GENERAL SETTINGS -->
+          <mat-form-field appearance="outline" class="employee-category-filter">
+            <mat-label>{{ t('FILTER_BY_CATEGORY') || 'FILTER_BY_CATEGORY' }}</mat-label>
+            <mat-select [formControl]="categoryFilterControl">
+              <mat-option [value]="null">{{ t('ALL_CATEGORIES') || 'ALL_CATEGORIES' }}</mat-option>
+              <mat-option *ngFor="let category of categoryOptions" [value]="category.value">
+                {{ category.label }}
+              </mat-option>
+            </mat-select>
+          </mat-form-field>
+
+          <!-- Show Disabled Checkbox -->
+          <mat-checkbox 
+            [checked]="showDisabled" 
+            (change)="toggleListe($event.checked)"
+            color="primary"
+            class="show-disabled-checkbox">
+            {{ t('SHOW_DISABLED') || 'SHOW_DISABLED' }}
+          </mat-checkbox>
+        </div>
+
+        <!-- Export Actions -->
         <div class="export-actions" aria-label="Export actions">
           <button mat-icon-button class="export-btn export-excel" (click)="exportExcel()" title="Export Excel">
             <svg viewBox="0 0 24 24" class="export-icon" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
@@ -45,7 +69,7 @@
           class="employee-add-btn" 
           (click)="add()" 
           type="button">
-          {{ t('ADD_EMPLOYEE') }}
+          {{ t('ADD_EMPLOYEE') || 'Gestion des employés' }}
         </button>
       </div>
     </div>

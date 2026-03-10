@@ -486,9 +486,27 @@
   "EMPLOYE_SUPPORT": "Type Supporté",
   "LICENSE_ATTACHMENT_REQUIRED": "Pièce jointe du permis requise",
   "CONVOYEUR_INFO": "Transporter Information",
-  "SUPPORTED_FILE_TYPES": "Types de fichiers pris en charge"
+  "SUPPORTED_FILE_TYPES": "Types de fichiers pris en charge",
+  "FILTER_BY_CATEGORY": "Filtrer par catégorie",
+  "ALL_CATEGORIES": "Toutes les catégories",
+  "EMPLOYEES": "Employés",
+  "SHOW_DISABLED": "Afficher les désactivés",
+  "Email": "Email",
+  "CONFIRMATION": "Confirmation",
+  "SUCCESS": "Succès",
+  "EMPLOYEE_DISABLE_CONFIRM": "Voulez-vous désactiver l'employé",
+  "EMPLOYEE_DISABLE_SUCCESS": "Employé désactivé avec succès",
+  "EMPLOYEE_DISABLE_ERROR": "Erreur lors de la désactivation de l'employé",
+  "EMPLOYEE_ENABLE_CONFIRM": "Voulez-vous activer l'employé",
+  "EMPLOYEE_ENABLE_SUCCESS": "Employé activé avec succès",
+  "EMPLOYEE_ENABLE_ERROR": "Erreur lors de l'activation de l'employé",
+  "YES_DISABLE": "Oui, désactiver",
+  "YES_ENABLE": "Oui, activer",
+  "EXPORT_EXCEL": "Exporter Excel",
+  "EXPORT_CSV": "Exporter CSV",
+  "EXPORT_PDF": "Exporter PDF"
 
 
-  
+
 }
 
