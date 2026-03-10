@@ -1592,6 +1592,51 @@ public class TripsController : ControllerBase
 
         return Ok(trips);
     }
+
+  
+    [HttpGet("today-count")]
+    public async Task<ActionResult<TripCountDto>> GetTodayTripCount()
+    {
+        try
+        {
+            var today = DateTime.UtcNow.Date;
+            var tomorrow = today.AddDays(1);
+
+  
+            var tripSettings = await context.GeneralSettings
+                .Where(s => s.ParameterType == "TRIP" &&
+                           s.ParameterCode.StartsWith("MAX_TRIPS_PER_DAY="))
+                .FirstOrDefaultAsync();
+
+            int maxTripsPerDay = 10;
+
+            if (tripSettings != null)
+            {
+                var value = tripSettings.ParameterCode.Split('=')[1];
+                int.TryParse(value, out maxTripsPerDay);
+            }
+
+           
+            var tripsToday = await context.Trips
+                .Where(t => t.CreatedAt >= today &&
+                            t.CreatedAt < tomorrow)
+                .CountAsync();
+
+            var result = new TripCountDto
+            {
+                TripsCreatedToday = tripsToday,
+                MaxTripsPerDay = maxTripsPerDay,
+                HasReachedLimit = tripsToday >= maxTripsPerDay,
+                Date = today.ToString("yyyy-MM-dd")
+            };
+
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { error = ex.Message });
+        }
+    }
 }
 
 public class ApiResponse

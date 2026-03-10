@@ -119,8 +119,10 @@ getActions(row: any, actions: string[]) {
     startDate: null,
     endDate: null
   };
-
-
+  maxTripsPerDay: number = 10; 
+  tripsCreatedToday: number = 0;
+  createButtonDisabled: boolean = false;
+  createButtonTooltip: string = '';
   searchControl = new FormControl('');
   statusControl = new FormControl(null);
   truckControl = new FormControl(null);
@@ -413,7 +415,9 @@ showCols = [
 
     this.initializeSignalR();
 
-
+    setInterval(() => {
+        this.refreshTodayTripsCount();
+      }, 300000);
     this.searchControl.valueChanges.pipe(debounceTime(250))
       .subscribe((value: string | null) => {
         this.filter.search = value;
@@ -638,9 +642,40 @@ showCols = [
     }
   }
 
-  add() {
-    this.router.navigate(['trips/create']);
+add() {
+  console.log('Add clicked - Today trips:', this.tripsCreatedToday, 'Max:', this.maxTripsPerDay);
+  
+  if (this.tripsCreatedToday >= this.maxTripsPerDay) {
+    console.log('Limit reached, showing alert');
+    Swal.fire({
+      title: 'Limite journalière atteinte',
+      html: `
+        <div style="text-align: center; padding: 20px;">
+          <div style="font-size: 48px; margin-bottom: 16px;">⚠️</div>
+          <p style="font-size: 18px; font-weight: 600; margin-bottom: 12px; color: #f59e0b;">
+            Vous avez atteint la limite de ${this.maxTripsPerDay} voyage par jour
+          </p>
+          <p style="color: #6b7280; font-size: 14px; margin-bottom: 8px;">
+            Vous avez déjà créé ${this.tripsCreatedToday} voyage aujourd'hui.
+          </p>
+          <p style="color: #6b7280; font-size: 14px;">
+            Réessayez demain ou contactez votre administrateur.
+          </p>
+        </div>
+      `,
+      icon: 'warning',
+      confirmButtonText: 'OK',
+      confirmButtonColor: '#3085d6',
+      width: 450,
+      customClass: {
+        popup: 'swal-custom-popup'
+      }
+    });
+    return;
   }
+  
+  this.router.navigate(['trips/create']);
+}
 
 edit(trip: any) {
 if (!this.allowEditTrip) {
@@ -749,7 +784,10 @@ if (!this.allowEditTrip) {
       data: {}
     });
 
-    ref.afterClosed().subscribe(() => this.getLatestData());
+     ref.afterClosed().subscribe(() => {
+    this.getLatestData();
+    this.refreshTodayTripsCount();
+  });
   }
 
   pageChange(event: any) {
@@ -1117,24 +1155,87 @@ private redirectToTripFormWithDraft(draft: any): void {
   this.clearDraft();
   this.router.navigate(['/trips/create']);
 }
-private loadTripSettings(): void {
-  this.settingsService.getTripSettings().subscribe({
-    next: (settings) => {
-      this.allowEditTrip = settings.allowEditTrips;
-      this.allowDeleteTrip = settings.allowDeleteTrips;
-    },
-    error: (err) => {
-      console.error('Erreur récupération des settings :', err);
-      this.allowEditTrip = true;
-      this.allowDeleteTrip = true;
-    }
-  });
-}
+
 isEditDisabled(): boolean {
   return !this.allowEditTrip;
 }
 
 isDeleteDisabled(): boolean {
   return !this.allowDeleteTrip;
+}
+private loadTripSettings(): void {
+  this.settingsService.getTripSettings().subscribe({
+    next: (settings) => {
+      console.log('Trip settings loaded:', settings);
+      this.allowEditTrip = settings.allowEditTrips;
+      this.allowDeleteTrip = settings.allowDeleteTrips;
+      
+      // Make sure we're getting the numeric value
+      this.maxTripsPerDay = Number(settings.maxTripsPerDay) || 10;
+      
+      console.log('Max trips per day set to:', this.maxTripsPerDay);
+      
+      // Check today's count after loading settings
+      setTimeout(() => {
+        this.checkTodayTripsCount();
+      }, 500);
+    },
+    error: (err) => {
+      console.error('Erreur récupération des settings :', err);
+      this.allowEditTrip = true;
+      this.allowDeleteTrip = true;
+      this.maxTripsPerDay = 10;
+    }
+  });
+}
+refreshTodayTripsCount(): void {
+  this.checkTodayTripsCount();
+}
+
+private checkTodayTripsCount(): void {
+  const today = new Date();
+  
+  console.log('Checking trips for date:', this.formatDateForAPI(today));
+
+  this.httpService.getTodayTripCount().subscribe({
+    next: (result: any) => {
+      console.log('Today trips result:', result);
+      
+      if (result) {
+        this.tripsCreatedToday = result.tripsCreatedToday || 0;
+        this.maxTripsPerDay = result.maxTripsPerDay || 10;
+        
+        this.updateCreateButtonState();
+        console.log(`Trips created today: ${this.tripsCreatedToday}/${this.maxTripsPerDay}`);
+        console.log(`Has reached limit: ${result.hasReachedLimit}`);
+      }
+    },
+    error: (error) => {
+      console.error('Error checking today\'s trips count:', error);
+      // Fallback to default values
+      this.tripsCreatedToday = 0;
+      this.maxTripsPerDay = 10;
+      this.updateCreateButtonState();
+    }
+  });
+}
+
+
+private formatDateForAPI(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+private updateCreateButtonState(): void {
+  const limitReached = this.tripsCreatedToday >= this.maxTripsPerDay;
+  this.createButtonDisabled = limitReached;
+  
+  if (limitReached) {
+    this.createButtonTooltip = `Limite journalière atteinte: ${this.maxTripsPerDay} voyages maximum par jour`;
+  } else {
+    this.createButtonTooltip = `Créer un nouveau voyage (${this.tripsCreatedToday}/${this.maxTripsPerDay} aujourd'hui)`;
+  }
 }
 }
