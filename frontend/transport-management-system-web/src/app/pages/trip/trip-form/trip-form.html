@@ -1411,103 +1411,65 @@
         </div>
       </div>
 
-      <!-- Selected Traject Preview -->
-      <div class="selected-traject-preview" *ngIf="selectedTraject && !isEditMode">
-        <div class="preview-header">
-          <div class="preview-title">
-            <h4>Traject sélectionné</h4>
-            <div class="traject-name-actions">
-              <span class="traject-badge">{{ selectedTraject.name }}</span>
-              <span class="traject-status-badge" [class.predefined]="selectedTraject.isPredefined">
-                {{ selectedTraject.isPredefined ? 'Standard' : 'Personnalisé' }}
-              </span>
-            </div>
-          </div>
-          
-          <div class="preview-actions">
-            <div *ngIf="tripId && !selectedTraject.isPredefined" class="save-as-predefined-section">
-              <mat-checkbox 
-                [(ngModel)]="saveAsPredefined"
-                (change)="onSaveAsPredefinedChange($event.checked)"
-                [ngModelOptions]="{standalone: true}"
-                color="primary"
-              >
-                Définir comme traject standard
-              </mat-checkbox>
-              <mat-icon 
-                class="info-icon" 
-                matTooltip="Ce traject sera enregistré comme standard pour être réutilisé dans d'autres voyages"
-              >
-                info
-              </mat-icon>
-            </div>
-            
-            <div *ngIf="selectedTraject.isPredefined" class="predefined-status-display">
-              <mat-icon color="primary" class="predefined-icon">check_circle</mat-icon>
-              <span class="predefined-text">Traject standard (réutilisable)</span>
-            </div>
-            
-            <div class="traject-actions" *ngIf="false">
-              <button mat-button type="button" 
-                      (click)="changeTraject()"
-                      class="change-traject-btn">
-                <mat-icon>swap_horiz</mat-icon>
-                Changer de traject
-              </button>
-              
-              <button mat-button type="button" 
-                      (click)="deleteTraject()"
-                      class="delete-traject-btn"
-                      color="warn"
-                      [disabled]="savingTrajectChanges || deletingTraject">
-                <mat-icon *ngIf="!deletingTraject">delete</mat-icon>
-                <mat-spinner *ngIf="deletingTraject" diameter="20"></mat-spinner>
-                {{ deletingTraject ? 'Suppression...' : 'Supprimer' }}
-              </button>
-            </div>
-          </div>
-        </div>
-        
-        <div class="traject-details">
-          <div class="detail-row">
-            <div class="detail-item">
-              <mat-icon class="detail-icon">pin_drop</mat-icon>
-              <div class="detail-content">
-                <div class="detail-label">Points d'arrêt</div>
-                <div class="detail-value">{{ selectedTraject.points?.length || 0 }} points</div>
-              </div>
-            </div>
-            
-            <div class="detail-item">
-              <mat-icon class="detail-icon">route</mat-icon>
-              <div class="detail-content">
-                <div class="detail-label">Type de traject</div>
-                <div class="detail-value" [class.predefined]="selectedTraject.isPredefined">
-                  {{ selectedTraject.isPredefined ? 'Standard' : 'Personnalisé' }}
-                </div>
-              </div>
-            </div>
-            
-            <div class="detail-item">
-              <mat-icon class="detail-icon">calendar_today</mat-icon>
-              <div class="detail-content">
-                <div class="detail-label">Créé le</div>
-                <div class="detail-value">{{ formatTrajectDate(selectedTraject.createdAt) }}</div> 
-              </div>
-            </div>
-          </div>
-          
-          <div *ngIf="!selectedTraject.isPredefined && tripId" class="traject-warning">
-            <mat-icon class="warning-icon">warning</mat-icon>
-            <div class="warning-content">
-              <div class="warning-title">Traject personnalisé</div>
-              <div class="warning-text">
-                Ce traject n'est pas enregistré comme standard. Cochez la case ci-dessus pour le définir comme standard et le réutiliser.
-              </div>
-            </div>
-          </div>
-        </div>
+<!-- Selected Traject Preview - COMPACT VERSION -->
+<div class="selected-traject-preview" *ngIf="selectedTraject && !isEditMode">
+  <!-- Header with "ROUTE TRAJECT SÉLECTIONNÉ" -->
+  <div class="preview-header">
+    <div class="preview-title">
+      <mat-icon class="title-icon">route</mat-icon>
+      <h4>ROUTE TRAJECT SÉLECTIONNÉ</h4>
+    </div>
+  </div>
+
+  <!-- Traject name and status in one line -->
+  <div class="traject-name-row">
+    <div class="traject-name-container">
+      <span class="traject-name">{{ selectedTraject.name }}</span>
+      <span class="traject-status-badge" [class.predefined]="selectedTraject.isPredefined">
+        <mat-icon *ngIf="selectedTraject.isPredefined">check_circle</mat-icon>
+        {{ selectedTraject.isPredefined ? 'STANDARD' : 'PERSONNALISÉ' }}
+      </span>
+    </div>
+  </div>
+
+  <!-- Three metrics in one row -->
+  <div class="traject-metrics-row">
+    <!-- Points d'arrêt -->
+    <div class="metric-item">
+      <mat-icon class="metric-icon">place</mat-icon>
+      <div class="metric-content">
+        <div class="metric-value">{{ selectedTraject.points?.length || 0 }} points</div>
+        <div class="metric-label">POINTS D'ARRÊT</div>
       </div>
+    </div>
+
+    <!-- Type de traject -->
+    <div class="metric-item">
+      <mat-icon class="metric-icon">category</mat-icon>
+      <div class="metric-content">
+        <div class="metric-value">{{ selectedTraject.isPredefined ? 'Standard' : 'Personnalisé' }}</div>
+        <div class="metric-label">TYPE DE TRAJECT</div>
+      </div>
+    </div>
+
+    <!-- Créé le -->
+    <div class="metric-item">
+      <mat-icon class="metric-icon">calendar_today</mat-icon>
+      <div class="metric-content">
+        <div class="metric-value">{{ formatTrajectDate(selectedTraject.createdAt) || '10/03/2026' }}</div>
+        <div class="metric-label">CRÉÉ LE</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Optional: Show if not predefined and in edit mode -->
+  <div *ngIf="!selectedTraject.isPredefined && tripId" class="traject-warning-compact">
+    <mat-icon class="warning-icon">warning</mat-icon>
+    <div class="warning-content">
+      <span class="warning-text">Traject personnalisé - non enregistré comme standard</span>
+    </div>
+  </div>
+</div>
 
       <!-- Cancelled Info -->
       <div class="cancelled-info" *ngIf="tripForm.get('tripStatus')?.value === 'Cancelled'">
