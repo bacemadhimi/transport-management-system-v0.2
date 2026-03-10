@@ -28,6 +28,8 @@ namespace TransportManagementSystem.Models
         public DateTime? EndDate { get; set; }
         public string? ParameterType { get; set; }
         public int? ConvoyeurId { get; set; }
+        public string? EmployeeCategory { get; set; } 
+        public bool? IsEnable { get; set; }
     }
     public class PagedData<T>
     {

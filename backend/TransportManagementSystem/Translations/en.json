@@ -484,7 +484,25 @@
   "EMPLOYE_SUPPORT": "Supported Type",
   "LICENSE_ATTACHMENT_REQUIRED": "License attachment required",
   "CONVOYEUR_INFO": "Convoyeur Information",
-  "SUPPORTED_FILE_TYPES": "Supported file types"
+  "SUPPORTED_FILE_TYPES": "Supported file types",
+  "FILTER_BY_CATEGORY": "Filter by Category",
+  "ALL_CATEGORIES": "All Categories",
+  "EMPLOYEES": "Employees",
+  "SHOW_DISABLED": "Show Disabled",
+  "Email": "Email",
+  "CONFIRMATION": "Confirmation",
+  "SUCCESS": "Success",
+  "EMPLOYEE_DISABLE_CONFIRM": "Are you sure you want to disable employee",
+  "EMPLOYEE_DISABLE_SUCCESS": "Employee disabled successfully",
+  "EMPLOYEE_DISABLE_ERROR": "Error disabling employee",
+  "EMPLOYEE_ENABLE_CONFIRM": "Are you sure you want to enable employee",
+  "EMPLOYEE_ENABLE_SUCCESS": "Employee enabled successfully",
+  "EMPLOYEE_ENABLE_ERROR": "Error enabling employee",
+  "YES_DISABLE": "Yes, disable",
+  "YES_ENABLE": "Yes, enable",
+  "EXPORT_EXCEL": "Export Excel",
+  "EXPORT_CSV": "Export CSV",
+  "EXPORT_PDF": "Export PDF"
 
-  
+
 }

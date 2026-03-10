@@ -28,16 +28,14 @@ public class EmployeeController : ControllerBase
     [HttpGet("PaginationAndSearch")]
     public async Task<IActionResult> GetEmployeeList([FromQuery] SearchOptions searchOption)
     {
-        
         var query = dbContext.Employees
-            .AsNoTracking()
-            .Where(x => x.IsEnable);
+            .AsNoTracking();
+        // REMOVED: .Where(x => x.IsEnable) - This was forcing only enabled employees
 
-    
+        // Apply search filter
         if (!string.IsNullOrWhiteSpace(searchOption.Search))
         {
             var search = searchOption.Search.Trim();
-
             query = query.Where(x =>
                 x.Name.StartsWith(search) ||
                 x.IdNumber.StartsWith(search) ||
@@ -46,10 +44,25 @@ public class EmployeeController : ControllerBase
             );
         }
 
-   
+        // Apply category filter
+        if (!string.IsNullOrWhiteSpace(searchOption.EmployeeCategory))
+        {
+            query = query.Where(x => x.EmployeeCategory.ToLower() == searchOption.EmployeeCategory.ToLower());
+        }
+
+        // Apply isEnable filter (this controls showing enabled/disabled)
+        if (searchOption.IsEnable.HasValue)
+        {
+            query = query.Where(x => x.IsEnable == searchOption.IsEnable.Value);
+        }
+        else
+        {
+            // Optional: Default to showing only enabled if no filter is specified
+            query = query.Where(x => x.IsEnable);
+        }
+
         var total = await query.CountAsync();
 
-      
         var data = await query
             .OrderByDescending(x => x.CreatedAt)
             .Skip(searchOption.PageIndex!.Value * searchOption.PageSize!.Value)
@@ -58,15 +71,16 @@ public class EmployeeController : ControllerBase
             {
                 x.Id,
                 x.Name,
-                x.IdNumber, 
+                x.IdNumber,
                 x.DrivingLicense,
                 x.Email,
                 x.PhoneNumber,
                 x.EmployeeCategory,
-                TruckType = x.TypeTruck.Type,   
-                x.AttachmentFileType,          
+                TruckType = x.TypeTruck.Type,
+                x.AttachmentFileType,
                 x.CreatedAt,
                 x.IsInternal,
+                x.IsEnable
             })
             .ToListAsync();
 
@@ -636,5 +650,31 @@ public class EmployeeController : ControllerBase
             .ToListAsync();
 
         return Ok(drivers);
+    }
+
+    [HttpPut("enable/{id}")]
+    public async Task<IActionResult> EnableEmployee(int id)
+    {
+        var employee = await dbContext.Employees
+            .Include(e => (e as Driver).DriverGeographicalEntities)
+            .FirstOrDefaultAsync(e => e.Id == id);
+
+        if (employee == null)
+        {
+            return NotFound(new ApiResponse(false, $"Employé {id} non trouvé"));
+        }
+
+        // Check if already enabled
+        if (employee.IsEnable)
+        {
+            return Ok(new ApiResponse(true, $"Employé {id} est déjà activé", employee));
+        }
+
+        employee.IsEnable = true;
+        employee.UpdatedAt = DateTime.UtcNow;
+
+        await dbContext.SaveChangesAsync();
+
+        return Ok(new ApiResponse(true, $"Employé {id} a été activé avec succès", employee));
     }
 }
