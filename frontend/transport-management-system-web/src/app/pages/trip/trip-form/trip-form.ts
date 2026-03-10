@@ -1012,53 +1012,56 @@ private processTruckResponse(response: any, date: Date): void {
     });
   }
 
-  private async checkAndDisplayTrajectStatus(trajectId: number): Promise<void> {
-    try {
-      this.http.getTrajectById(trajectId).subscribe({
-        next: (traject: ITraject) => {
-          if (traject) {
-            this.selectedTraject = traject;
-            this.selectedTrajectControl.setValue(traject.id, { emitEvent: false });
+private async checkAndDisplayTrajectStatus(trajectId: number): Promise<void> {
+  try {
+    this.http.getTrajectById(trajectId).subscribe({
+      next: (traject: ITraject) => {
+        if (traject) {
+          this.selectedTraject = traject;
+          this.selectedTrajectControl.setValue(traject.id, { emitEvent: false });
 
-            this.trajectMode = 'predefined';
-            this.hasMadeTrajectChoice = true;
+          this.trajectMode = 'predefined';
+          this.hasMadeTrajectChoice = true;
 
-            if (traject.startLocationId) {
-              this.tripForm.get('startLocationId')?.setValue(traject.startLocationId, { emitEvent: true });
-              this.tripForm.get('startLocationId')?.markAsTouched();
-              this.tripForm.get('startLocationId')?.updateValueAndValidity();
-            }
-
-            if (traject.endLocationId) {
-              this.tripForm.get('endLocationId')?.setValue(traject.endLocationId, { emitEvent: true });
-              this.tripForm.get('endLocationId')?.markAsTouched();
-              this.tripForm.get('endLocationId')?.updateValueAndValidity();
-            }
-
-            if (!traject.isPredefined) {
-              this.saveAsPredefined = false;
-              this.showSaveAsPredefinedOption = true;
-            } else {
-              this.saveAsPredefined = true;
-              this.showSaveAsPredefinedOption = false;
-            }
-
-            this.loadTrajectCustomersForOrderSelection(traject);
-          } else {
-            this.trajectMode = 'new';
-            this.hasMadeTrajectChoice = true;
+          if (traject.startLocationId) {
+            this.tripForm.get('startLocationId')?.setValue(traject.startLocationId, { emitEvent: true });
+            this.tripForm.get('startLocationId')?.markAsTouched();
+            this.tripForm.get('startLocationId')?.updateValueAndValidity();
           }
-        },
-        error: (error) => {
-          console.error('Error loading traject:', error);
+
+          if (traject.endLocationId) {
+            this.tripForm.get('endLocationId')?.setValue(traject.endLocationId, { emitEvent: true });
+            this.tripForm.get('endLocationId')?.markAsTouched();
+            this.tripForm.get('endLocationId')?.updateValueAndValidity();
+          }
+
+          if (!traject.isPredefined) {
+            this.saveAsPredefined = false;
+            this.showSaveAsPredefinedOption = true;
+            // Hide order selection for non-predefined trajects in edit mode
+            this.showTrajectOrderSelection = false;
+          } else {
+            this.saveAsPredefined = true;
+            this.showSaveAsPredefinedOption = false;
+            // Show order selection for predefined trajects
+            this.loadTrajectCustomersForOrderSelection(traject);
+          }
+
+        } else {
           this.trajectMode = 'new';
           this.hasMadeTrajectChoice = true;
         }
-      });
-    } catch (error) {
-      console.error('Error checking traject:', error);
-    }
+      },
+      error: (error) => {
+        console.error('Error loading traject:', error);
+        this.trajectMode = 'new';
+        this.hasMadeTrajectChoice = true;
+      }
+    });
+  } catch (error) {
+    console.error('Error checking traject:', error);
   }
+}
 
   private loadDeliveriesFromTrip(deliveries: any[]): void {
     if (deliveries.length === 0) {
@@ -3973,98 +3976,102 @@ private async checkCapacityBeforeAddingOrders(selectedWeight: number): Promise<b
     return this.tripForm.get('endLocationId')?.value || null;
   }
 
-  onTrajectSelected(trajectId: number): void {
-    console.log('Traject sélectionné avec ID:', trajectId);
-    const traject = this.trajects.find(t => t.id === trajectId);
-    if (!traject) {
-      this.selectedTraject = null;
-      return;
-    }
-
-    this.selectedTraject = { ...traject };
-
-
-    if (traject.startLocationId) {
-      this.tripForm.get('startLocationId')?.setValue(traject.startLocationId, { emitEvent: true });
-      this.tripForm.get('startLocationId')?.markAsTouched();
-      this.tripForm.get('startLocationId')?.updateValueAndValidity();
-    }
-
-    if (traject.endLocationId) {
-      this.tripForm.get('endLocationId')?.setValue(traject.endLocationId, { emitEvent: true });
-      this.tripForm.get('endLocationId')?.markAsTouched();
-      this.tripForm.get('endLocationId')?.updateValueAndValidity();
-    }
-
-
-    if (traject.startLocationId && traject.endLocationId &&
-        traject.startLocationId === traject.endLocationId) {
-      this.arrivalEqualsDeparture.setValue(true, { emitEvent: true });
-    } else {
-      this.arrivalEqualsDeparture.setValue(false, { emitEvent: true });
-    }
-
-    if (!traject.isPredefined && this.tripId) {
-      this.showSaveAsPredefinedOption = true;
-      this.saveAsPredefined = false;
-    } else {
-      this.showSaveAsPredefinedOption = false;
-      this.saveAsPredefined = traject.isPredefined;
-    }
-
-    this.loadTrajectCustomersForOrderSelection(traject);
-
-    setTimeout(() => {
-      if (traject.startLocationId) {
-        this.fetchWeatherForStartLocation();
-      }
-      if (traject.endLocationId) {
-        this.fetchWeatherForEndLocation();
-      }
-    }, 500);
+onTrajectSelected(trajectId: number): void {
+  console.log('Traject sélectionné avec ID:', trajectId);
+  const traject = this.trajects.find(t => t.id === trajectId);
+  if (!traject) {
+    this.selectedTraject = null;
+    return;
   }
 
-  private loadTrajectCustomersForOrderSelection(traject: ITraject): void {
-    const customerPoints = traject.points
-      .filter(point => point.clientId)
-      .map(point => ({
-        clientId: point.clientId!,
-        order: point.order,
-        clientName: point.clientName || ''
-      }))
-      .reduce((unique, point) => {
-        if (!unique.some(p => p.clientId === point.clientId)) {
-          unique.push(point);
-        }
-        return unique;
-      }, [] as { clientId: number, order: number, clientName: string }[])
-      .sort((a, b) => a.order - b.order);
+  this.selectedTraject = { ...traject };
 
-    if (customerPoints.length === 0) {
-      this.snackBar.open('Ce traject ne contient pas de clients', 'Fermer', { duration: 3000 });
-      return;
+  if (traject.startLocationId) {
+    this.tripForm.get('startLocationId')?.setValue(traject.startLocationId, { emitEvent: true });
+    this.tripForm.get('startLocationId')?.markAsTouched();
+    this.tripForm.get('startLocationId')?.updateValueAndValidity();
+  }
+
+  if (traject.endLocationId) {
+    this.tripForm.get('endLocationId')?.setValue(traject.endLocationId, { emitEvent: true });
+    this.tripForm.get('endLocationId')?.markAsTouched();
+    this.tripForm.get('endLocationId')?.updateValueAndValidity();
+  }
+
+  if (traject.startLocationId && traject.endLocationId &&
+      traject.startLocationId === traject.endLocationId) {
+    this.arrivalEqualsDeparture.setValue(true, { emitEvent: true });
+  } else {
+    this.arrivalEqualsDeparture.setValue(false, { emitEvent: true });
+  }
+
+  if (!traject.isPredefined && this.tripId) {
+    this.showSaveAsPredefinedOption = true;
+    this.saveAsPredefined = false;
+  } else {
+    this.showSaveAsPredefinedOption = false;
+    this.saveAsPredefined = traject.isPredefined;
+  }
+
+  // ONLY show order selection for PREDEFINED trajects
+  if (traject.isPredefined) {
+    this.loadTrajectCustomersForOrderSelection(traject);
+  } else {
+    // For non-predefined trajects, hide the order selection
+    this.showTrajectOrderSelection = false;
+  }
+
+  setTimeout(() => {
+    if (traject.startLocationId) {
+      this.fetchWeatherForStartLocation();
     }
+    if (traject.endLocationId) {
+      this.fetchWeatherForEndLocation();
+    }
+  }, 500);
+}
 
-    const trajectCustomers: ICustomer[] = [];
-
-    customerPoints.forEach(customerPoint => {
-      const customer = this.allCustomers.find(c => c.id === customerPoint.clientId);
-      if (customer) {
-        const customerWithOrder = {
-          ...customer,
-          trajectOrder: customerPoint.order,
-          displayName: `${customerPoint.order}. ${customer.name}`
-        };
-        trajectCustomers.push(customerWithOrder);
+private loadTrajectCustomersForOrderSelection(traject: ITraject): void {
+  const customerPoints = traject.points
+    .filter(point => point.clientId)
+    .map(point => ({
+      clientId: point.clientId!,
+      order: point.order,
+      clientName: point.clientName || ''
+    }))
+    .reduce((unique, point) => {
+      if (!unique.some(p => p.clientId === point.clientId)) {
+        unique.push(point);
       }
-    });
+      return unique;
+    }, [] as { clientId: number, order: number, clientName: string }[])
+    .sort((a, b) => a.order - b.order);
 
-    this.trajectCustomers = trajectCustomers;
+  if (customerPoints.length === 0) {
+    this.snackBar.open('Ce traject ne contient pas de clients', 'Fermer', { duration: 3000 });
+    return;
+  }
 
+  const trajectCustomers: ICustomer[] = [];
+
+  customerPoints.forEach(customerPoint => {
+    const customer = this.allCustomers.find(c => c.id === customerPoint.clientId);
+    if (customer) {
+      const customerWithOrder = {
+        ...customer,
+        trajectOrder: customerPoint.order,
+        displayName: `${customerPoint.order}. ${customer.name}`
+      };
+      trajectCustomers.push(customerWithOrder);
+    }
+  });
+
+  this.trajectCustomers = trajectCustomers;
+
+  // Only show order selection for predefined trajects
+  if (traject.isPredefined) {
     this.showTrajectOrderSelection = true;
-    this.trajectMode = 'predefined';
-    this.hasMadeTrajectChoice = true;
-
+    
     setTimeout(() => {
       const section = document.querySelector('.traject-order-selection');
       if (section) {
@@ -4078,6 +4085,7 @@ private async checkCapacityBeforeAddingOrders(selectedWeight: number): Promise<b
       { duration: 4000 }
     );
   }
+}
 
   calculateTotalWeight(): number {
     return this.deliveryControls.reduce((total, deliveryGroup) => {
