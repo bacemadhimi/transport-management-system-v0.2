@@ -1438,4 +1438,8 @@ getWeatherForTrip(startLocationId: number, endLocationId: number): Observable<an
 getWeatherForecast(cityName: string): Observable<any> {
   return this.http.get(`${environment.apiUrl}/api/Weather/forecast?q=${encodeURIComponent(cityName)}`);
 }
+getTodayTripCount(): Observable<any> {
+  return this.http.get(`${environment.apiUrl}/api/trips/today-count`);
+}
+
 }
