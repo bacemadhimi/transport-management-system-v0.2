@@ -45,6 +45,7 @@ namespace TransportManagementSystem.Data
         public DbSet<GeneralSettings> GeneralSettings { get; set; }
         public DbSet<Notification> Notifications { get; set; }
         public DbSet<UserNotification> UserNotifications { get; set; }
+        public DbSet<ChatMessage> ChatMessages { get; set; }
         public DbSet<GeographicalLevel> GeographicalLevels { get; set; }
         public DbSet<GeographicalEntity> GeographicalEntities { get; set; }
         public DbSet<TruckGeographicalEntity> TruckGeographicalEntities { get; set; }
