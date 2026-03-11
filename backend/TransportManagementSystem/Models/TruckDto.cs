@@ -1,4 +1,6 @@
-﻿namespace TransportManagementSystem.Models;
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace TransportManagementSystem.Models;
 
 public class TruckDto
 {
@@ -14,4 +16,16 @@ public class TruckDto
     public int? ZoneId { get; set; }
     public int TypeTruckId { get; set; }
     public TypeTruckDto? TypeTruck { get; set; }
+    public List<TruckGeographicalEntityDto> GeographicalEntities { get; set; }
+    
+}
+public class TruckGeographicalEntityDto
+{
+    [Required]
+    public int GeographicalEntityId { get; set; }
+    public string? GeographicalEntityName { get; set; }
+    public string? LevelName { get; set; }
+    public int LevelNumber { get; set; }
+    public decimal? Latitude { get; set; }
+    public decimal? Longitude { get; set; }
 }

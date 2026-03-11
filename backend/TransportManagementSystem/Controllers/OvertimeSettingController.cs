@@ -112,8 +112,10 @@ public class OvertimeSettingController : ControllerBase
         if (!ModelState.IsValid)
             return BadRequest(ModelState);
 
-        
-        var driver = await _context.Drivers.FindAsync(dto.DriverId);
+
+        var driver = await _context.Employees
+            .OfType<Driver>()
+            .FirstOrDefaultAsync(d => d.Id == dto.DriverId);
         if (driver == null)
             return BadRequest(new { message = "Driver not found.", Status = 400 });
 

@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+﻿import { Component, OnInit, inject } from '@angular/core';
 import { Http } from '../../services/http';
 import { Table } from '../../components/table/table';
 import { MatButtonModule } from '@angular/material/button';
@@ -40,11 +40,11 @@ import { Translation } from '../../services/Translation';
   styleUrls: ['./overtime.scss']
 })
 export class Overtime implements OnInit {
-      constructor(public auth: Auth) {}  
-    
+      constructor(public auth: Auth) {}
+
       getActions(row: any, actions: string[]) {
         const permittedActions: string[] = [];
-    
+
         for (const a of actions) {
           if (a === 'Modifier' && this.auth.hasPermission('OVERTIME_EDIT')) {
             permittedActions.push(a);
@@ -53,17 +53,17 @@ export class Overtime implements OnInit {
             permittedActions.push(a);
           }
         }
-    
+
         return permittedActions;
       }
-      
+
   httpService = inject(Http);
   pagedOvertimeData!: PagedData<IOvertimeSetting>;
   totalData!: number;
-  //Call the service to get translations for this page
+
  private translation = inject(Translation);
  t(key: string): string { return this.translation.t(key); }
-  //
+
   filter: any = {
     pageIndex: 0,
     pageSize: 10,
@@ -78,18 +78,18 @@ export class Overtime implements OnInit {
   readonly dialog = inject(MatDialog);
 
 showCols = [
-  
+
   { key: 'driverName', label: this.t('DRIVER') },
-  { 
+  {
     key: 'isActive', label: this.t('DRIVER_STATUS'),
     format: (row: any) => {
       const value = row.isActive;
-      return value ? 
-        '<span class="status-badge status-active">Actif</span>' : 
+      return value ?
+        '<span class="status-badge status-active">Actif</span>' :
         '<span class="status-badge status-inactive">Inactif</span>';
     }
   },
-  { 
+  {
     key: 'maxDailyHours', label: this.t('MAX_DAILY_HOURS'),
     format: (row: any) => {
       const value = row.maxDailyHours;
@@ -97,7 +97,7 @@ showCols = [
       return `${Number(value).toFixed(1)}h`;
     }
   },
-  { 
+  {
     key: 'maxWeeklyHours', label: this.t('MAX_WEEKLY_HOURS'),
     format: (row: any) => {
       const value = row.maxWeeklyHours;
@@ -105,7 +105,7 @@ showCols = [
       return `${Number(value).toFixed(1)}h`;
     }
   },
-  { 
+  {
     key: 'overtimeRatePerHour', label:  this.t('OVERTIME_RATE_PER_HOUR'),
     format: (row: any) => {
       const value = row.overtimeRatePerHour;
@@ -113,7 +113,7 @@ showCols = [
       return `${Number(value).toFixed(2)} dinar`;
     }
   },
-  { 
+  {
     key: 'weekendRateMultiplier', label: this.t('WEEKEND_RATE_MULTIPLIER'),
     format: (row: any) => {
       const value = row.weekendRateMultiplier;
@@ -121,7 +121,7 @@ showCols = [
       return `×${Number(value).toFixed(2)}`;
     }
   },
-  { 
+  {
     key: 'holidayRateMultiplier', label:this.t('HOLIDAY_RATE_MULTIPLIER'),
     format: (row: any) => {
       const value = row.holidayRateMultiplier;
@@ -131,9 +131,9 @@ showCols = [
   },
   {
     key: 'Action',
-   // format: (row: any) => this.getActions(row, ['Modifier', 'Supprimer', 'Activer/Désactiver'])
+
     format: (row: any) => [this.t('ACTION_EDIT'),
-            this.t('ACTION_DELETE'), row.active? 
+            this.t('ACTION_DELETE'), row.active?
             this.t('ACTION_DEACTIVATE'):
              this.t('ACTION_TOGGLE')
 ]
@@ -142,7 +142,7 @@ showCols = [
 
   ngOnInit() {
     this.getLatestData();
-    
+
     this.searchControl.valueChanges.pipe(debounceTime(250))
       .subscribe((value: string | null) => {
         this.filter.search = value;
@@ -184,9 +184,9 @@ showCols = [
 
   edit(overtime: IOvertimeSetting) {
     const ref = this.dialog.open(OvertimeForm, {
-      width: '900px', 
-      maxWidth: '95vw', 
-      maxHeight: '90vh', 
+      width: '900px',
+      maxWidth: '95vw',
+      maxHeight: '90vh',
       panelClass: ['dialog-overlay', 'wide-dialog'],
       data: { overtimeId: overtime.id }
     });
@@ -215,10 +215,10 @@ showCols = [
 
   openDialog(): void {
     const ref = this.dialog.open(OvertimeForm, {
-      width: '900px', 
-      maxWidth: '95vw', 
-      maxHeight: '90vh', 
-      panelClass: ['dialog-overlay', 'wide-dialog'], 
+      width: '900px',
+      maxWidth: '95vw',
+      maxHeight: '90vh',
+      panelClass: ['dialog-overlay', 'wide-dialog'],
       data: {}
     });
 
@@ -230,11 +230,11 @@ showCols = [
     this.getLatestData();
   }
 
-  // onRowClick(event: any) {
-  //   if (event.btn === "Modifier") this.edit(event.rowData);
-  //   if (event.btn === "Supprimer") this.delete(event.rowData);
-  //   if (event.btn === "Activer/Désactiver") this.toggleStatus(event.rowData);
-  // }
+
+
+
+
+
 
     onRowClick(event: any) {
       const editLabel = this.t('ACTION_EDIT');

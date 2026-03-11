@@ -1,5 +1,6 @@
-import { Component, inject, OnInit } from '@angular/core';
+﻿import { Component, inject, OnInit } from '@angular/core';
 import { Http } from '../../services/http';
+import { SettingsService } from '../../services/settings.service';
 import { Table } from '../../components/table/table';
 import { ITypeTruck } from '../../types/type-truck';
 import { MatButtonModule } from '@angular/material/button';
@@ -34,7 +35,7 @@ import Swal from 'sweetalert2';
   styleUrls: ['./type-truck.scss']
 })
 export class TypeTruck implements OnInit {
-  constructor(public auth: Auth) {}  
+  constructor(public auth: Auth) {}
 
   getActions(row: any, actions: string[]) {
     const permittedActions: string[] = [];
@@ -52,6 +53,7 @@ export class TypeTruck implements OnInit {
   }
 
   httpService = inject(Http);
+  settingsService = inject(SettingsService);
   pagedTypeTruckData!: PagedData<ITypeTruck>;
   totalData!: number;
 
@@ -60,13 +62,21 @@ export class TypeTruck implements OnInit {
     pageSize: 10
   };
 
+  loadingUnit: string = 'tonnes'; 
+
   searchControl = new FormControl('');
   readonly dialog = inject(MatDialog);
 
   showCols = [
     { key: 'type', label: 'Type' },
     { key: 'capacity', label: 'Capacité' },
-    { key: 'unit', label: 'Unité' },
+    { 
+      key: 'unit', 
+      label: 'Unité',
+      format: (row: ITypeTruck) => {
+        return this.loadingUnit || 'tonnes';
+      }
+    },
     {
       key: 'Action',
       format: () => ["Modifier", "Supprimer"]
@@ -74,6 +84,7 @@ export class TypeTruck implements OnInit {
   ];
 
   ngOnInit() {
+    this.loadSettings();
     this.getLatestData();
 
     this.searchControl.valueChanges.pipe(debounceTime(250))
@@ -82,6 +93,26 @@ export class TypeTruck implements OnInit {
         this.filter.pageIndex = 0;
         this.getLatestData();
       });
+  }
+
+  private loadSettings(): void {
+    this.settingsService.getOrderSettings().subscribe({
+      next: (settings) => {
+        this.loadingUnit = settings.loadingUnit || 'tonnes';
+        console.log('✅ Loading unit from settings:', this.loadingUnit);
+      },
+      error: (err) => {
+        console.error('Error loading settings:', err);
+        this.loadingUnit = 'tonnes';
+      }
+    });
+
+    this.settingsService.orderSettings$.subscribe(settings => {
+      if (settings) {
+        this.loadingUnit = settings.loadingUnit || 'tonnes';
+        console.log('🔄 Loading unit updated:', this.loadingUnit);
+      }
+    });
   }
 
   getLatestData() {
@@ -99,7 +130,10 @@ export class TypeTruck implements OnInit {
     const ref = this.dialog.open(TypeTruckForm, {
       panelClass: 'm-auto',
       width: '500px',
-      data: { typeTruckId: typeTruck.id }
+      data: { 
+        typeTruckId: typeTruck.id,
+        defaultUnit: this.loadingUnit // Pass default unit to form
+      }
     });
 
     ref.afterClosed().subscribe((result) => {
@@ -149,7 +183,9 @@ export class TypeTruck implements OnInit {
     const ref = this.dialog.open(TypeTruckForm, {
       panelClass: 'm-auto',
       width: '500px',
-      data: {}
+      data: {
+        defaultUnit: this.loadingUnit 
+      }
     });
 
     ref.afterClosed().subscribe((result) => {

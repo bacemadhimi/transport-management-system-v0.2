@@ -49,7 +49,10 @@ public class LocationsController : ControllerBase
             IsActive = l.IsActive,
             CreatedAt = l.CreatedAt,
             UpdatedAt = l.UpdatedAt,
-            ZoneId = l.ZoneId
+            Address = l.Address,
+            Longitude = l.Longitude,
+            Latitude = l.Latitude
+
         }).ToListAsync();
 
         return Ok(new PagedData<LocationDto>
@@ -62,8 +65,7 @@ public class LocationsController : ControllerBase
     [HttpGet]
     public async Task<IActionResult> GetLocations()
     {
-        var locations = await locationRepository.Query()
-            .Include(l => l.Zone)   
+        var locations = await locationRepository.Query()  
             .OrderBy(l => l.Name)
             .Select(l => new LocationDto
             {
@@ -72,8 +74,9 @@ public class LocationsController : ControllerBase
                 IsActive = l.IsActive,
                 CreatedAt = l.CreatedAt,
                 UpdatedAt = l.UpdatedAt,
-                ZoneId = l.ZoneId,
-                ZoneName = l.Zone.Name   
+                Address = l.Address,
+                Longitude = l.Longitude,
+                Latitude = l.Latitude
             })
             .ToListAsync();
 
@@ -94,7 +97,9 @@ public class LocationsController : ControllerBase
                 IsActive = l.IsActive,
                 CreatedAt = l.CreatedAt,
                 UpdatedAt = l.UpdatedAt,
-                ZoneId = l.ZoneId
+                Address = l.Address,
+                Longitude = l.Longitude,
+                Latitude = l.Latitude
             })
             .FirstOrDefaultAsync();
 
@@ -117,7 +122,9 @@ public class LocationsController : ControllerBase
             IsActive = model.IsActive ?? true,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow,
-            ZoneId = model.ZoneId
+            Address = model.Address,
+            Longitude = model.Longitude,
+            Latitude = model.Latitude
         };
 
         await locationRepository.AddAsync(location);
@@ -143,8 +150,8 @@ public class LocationsController : ControllerBase
         if (model.IsActive.HasValue)
             location.IsActive = model.IsActive.Value;
 
-        if (model.ZoneId.HasValue)
-            location.ZoneId = model.ZoneId.Value;
+        if (!string.IsNullOrWhiteSpace(model.Address))
+            location.Address = model.Address;
 
         location.UpdatedAt = DateTime.UtcNow;
 

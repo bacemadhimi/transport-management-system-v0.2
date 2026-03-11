@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+﻿import { Component, OnInit, inject } from '@angular/core';
 import { Http } from '../../services/http';
 import { Table } from '../../components/table/table';
 import { MatButtonModule } from '@angular/material/button';
@@ -38,11 +38,11 @@ import { CommonModule } from '@angular/common';
   styleUrls: ['./fuel.scss']
 })
 export class Fuel implements OnInit {
-      constructor(public auth: Auth) {}  
-    
+      constructor(public auth: Auth) {}
+
       getActions(row: any, actions: string[]) {
         const permittedActions: string[] = [];
-    
+
         for (const a of actions) {
           if (a === 'Modifier' && this.auth.hasPermission('FUEL_EDIT')) {
             permittedActions.push(a);
@@ -51,10 +51,10 @@ export class Fuel implements OnInit {
             permittedActions.push(a);
           }
         }
-    
+
         return permittedActions;
       }
-      
+
   httpService = inject(Http);
   pagedFuelData!: PagedData<IFuel>;
   totalData!: number;
@@ -69,27 +69,27 @@ export class Fuel implements OnInit {
   readonly dialog = inject(MatDialog);
 
   showCols = [
- 
-    { 
-      key: 'truck', 
+
+    {
+      key: 'truck',
       label: 'Camion',
       format: (row: IFuel) => row.truck ? `${row.truck.brand} - ${row.truck.immatriculation}` : `Camion #${row.truckId}`
     },
-    { 
-      key: 'driver', 
+    {
+      key: 'driver',
       label: 'Chauffeur',
       format: (row: IFuel) => row.driver ? row.driver.name : `Chauffeur #${row.driverId}`
     },
-    { 
-      key: 'fillDate', 
+    {
+      key: 'fillDate',
       label: 'Date Remplissage',
       format: (row: IFuel) => {
         if (!row.fillDate) return 'N/A';
         const date = new Date(row.fillDate);
-        return date.toLocaleDateString('fr-FR', { 
-          day: '2-digit', 
-          month: '2-digit', 
-          year: 'numeric' 
+        return date.toLocaleDateString('fr-FR', {
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric'
         });
       }
     },
@@ -97,8 +97,8 @@ export class Fuel implements OnInit {
     { key: 'odometerReading', label: 'Compteur KM' },
     { key: 'amount', label: 'Montant (€)' },
     { key: 'fuelTank', label: 'Type Carburant' },
-    { 
-      key: 'fuelVendor', 
+    {
+      key: 'fuelVendor',
       label: 'Fournisseur',
       format: (row: IFuel) => row.fuelVendor ? row.fuelVendor.name : `Fournisseur #${row.fuelVendorId}`
     },
@@ -231,8 +231,8 @@ export class Fuel implements OnInit {
 
   exportPDF() {
     const doc = new jsPDF();
-    
-    // Add title
+
+
     doc.setFontSize(16);
     doc.text('Rapport des Remplissages Carburant', 14, 22);
     doc.setFontSize(10);
@@ -259,10 +259,10 @@ export class Fuel implements OnInit {
       headStyles: { fillColor: [41, 128, 185] }
     });
 
-    // Add total summary
+
     const totalQuantity = rows.reduce((sum, f) => sum + (f.quantity || 0), 0);
     const totalAmount = rows.reduce((sum, f) => sum + (f.amount || 0), 0);
-    
+
     const finalY = (doc as any).lastAutoTable.finalY || 100;
     doc.setFontSize(10);
     doc.text(`Total Quantité: ${totalQuantity} L`, 14, finalY + 10);

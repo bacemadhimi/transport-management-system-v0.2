@@ -1,4 +1,4 @@
-import { Component, inject, OnInit } from '@angular/core';
+﻿import { Component, inject, OnInit } from '@angular/core';
 import { FormBuilder, Validators, ReactiveFormsModule, FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
@@ -57,12 +57,12 @@ export class DayOffForm implements OnInit {
 
   this.isSubmitting = true;
   const formDate = this.dayOffForm.value.date!;
-  
+
 
   const noonDate = new Date(formDate);
   noonDate.setHours(12, 0, 0, 0);
-  
-  // Format as YYYY-MM-DD string
+
+
   const dateStr = noonDate.toISOString().split('T')[0];
     const value: IDayOff = {
       id: this.data.dayOffId || 0,
@@ -126,11 +126,11 @@ export class DayOffForm implements OnInit {
 
   getErrorMessage(controlName: string): string {
     const control = this.dayOffForm.get(controlName);
-    
+
     if (control?.hasError('required')) {
       return `${this.getFieldLabel(controlName)} est obligatoire`;
     }
-    
+
     return '';
   }
 

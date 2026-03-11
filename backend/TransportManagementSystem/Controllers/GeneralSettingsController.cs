@@ -78,8 +78,6 @@ public class GeneralSettingsController : ControllerBase
     [HttpPut("{id}")]
     public async Task<IActionResult> Update(int id, [FromBody] GeneralSettings model)
     {
-        if (model == null || id != model.Id)
-            return BadRequest("Invalid data.");
 
         var existing = await _context.GeneralSettings.FindAsync(id);
         if (existing == null)
@@ -88,7 +86,8 @@ public class GeneralSettingsController : ControllerBase
         existing.ParameterType = model.ParameterType;
         existing.ParameterCode = model.ParameterCode;
         existing.Description = model.Description;
-        existing.Value = model.Value;
+        existing.LogoBase64 = model.LogoBase64;
+
 
         await _context.SaveChangesAsync();
         return Ok(existing);
@@ -123,8 +122,8 @@ public class GeneralSettingsController : ControllerBase
             query = query.Where(g =>
                 g.ParameterType.Contains(searchOption.Search) ||
                 g.ParameterCode.Contains(searchOption.Search) ||
-                g.Description.Contains(searchOption.Search)  ||
-                g.Value.Contains(searchOption.Search)) ;
+                g.Description.Contains(searchOption.Search) 
+              ) ;
         }
 
      
@@ -145,8 +144,7 @@ public class GeneralSettingsController : ControllerBase
                 Id = g.Id,
                 ParameterType = g.ParameterType,
                 ParameterCode = g.ParameterCode,
-                Description = g.Description,
-                Value = g.Value
+                Description = g.Description       
             })
             .ToListAsync();
 
@@ -170,7 +168,7 @@ public class GeneralSettingsController : ControllerBase
                 ParameterType = g.ParameterType,
                 ParameterCode = g.ParameterCode,
                 Description = g.Description,
-                Value = g.Value  // Make sure to include Value!
+                LogoBase64 = g.LogoBase64
             })
             .ToListAsync();
 
