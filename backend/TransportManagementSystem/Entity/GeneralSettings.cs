@@ -1,4 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+using System.Reflection.Metadata;
 
 namespace TransportManagementSystem.Entity;
 
@@ -19,6 +21,7 @@ public class GeneralSettings
     [MaxLength(200)]
     public string? Description { get; set; }
 
-    [MaxLength(200)]
-    public string? Value { get; set; }
+    [Column(TypeName = "nvarchar(MAX)")]
+    public string? LogoBase64 { get; set; }
+
 }

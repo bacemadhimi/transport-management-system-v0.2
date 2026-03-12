@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+﻿import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatCheckboxModule } from '@angular/material/checkbox';
@@ -16,7 +16,7 @@ interface ModulePermission {
   name: string;
   key: string;
   actions: Action[];
-  children?: ModulePermission[]; 
+  children?: ModulePermission[];
 }
 
 @Component({
@@ -38,14 +38,14 @@ export class Permissions {
   roles: IUserGroup[] = [];
 modules: ModulePermission[] = [
 
-  // Accueil
+
     {
       name: 'Accueil',
       key: 'ACCUEIL',
       actions: [{ label: 'Consulter', key: 'VIEW' }]
     },
 
-    // Gestion des chauffeurs
+
     {
       name: 'Gestion des chauffeurs',
       key: 'CHAUFFEUR',
@@ -56,11 +56,11 @@ modules: ModulePermission[] = [
         { label: 'Activer', key: 'ENABLE' },
         { label: 'Désactiver', key: 'DISABLE' },
         { label: 'Imprimer', key: 'PRINT' },
-        { label: 'Approuvé', key: 'APPROVED' } 
+        { label: 'Approuvé', key: 'APPROVED' }
       ]
     },
 
-    // Gestion des employés
+
     {
       name: 'Gestion des employés',
       key: 'EMPLOYEE',
@@ -71,11 +71,11 @@ modules: ModulePermission[] = [
         { label: 'Activer', key: 'ENABLE' },
         { label: 'Désactiver', key: 'DISABLE' },
         { label: 'Imprimer', key: 'PRINT' },
-        { label: 'Approuvé', key: 'APPROVED' } 
+        { label: 'Approuvé', key: 'APPROVED' }
       ]
     },
 
-    // Gestion des convoyeurs
+
     {
       name: 'Gestion des convoyeurs',
       key: 'CONVOYEUR',
@@ -86,11 +86,11 @@ modules: ModulePermission[] = [
         { label: 'Activer', key: 'ENABLE' },
         { label: 'Désactiver', key: 'DISABLE' },
         { label: 'Imprimer', key: 'PRINT' },
-        { label: 'Approuvé', key: 'APPROVED' } 
+        { label: 'Approuvé', key: 'APPROVED' }
       ]
     },
 
-    // Gestion des véhicules
+
     {
       name: 'Gestion des véhicules',
       key: 'TRUCK',
@@ -101,11 +101,11 @@ modules: ModulePermission[] = [
         { label: 'Activer', key: 'ENABLE' },
         { label: 'Désactiver', key: 'DISABLE' },
         { label: 'Imprimer', key: 'PRINT' },
-         { label: 'Approuvé', key: 'APPROVED' } 
+         { label: 'Approuvé', key: 'APPROVED' }
       ]
     },
 
-    // Gestion des commandes
+
     {
       name: 'Gestion des commandes',
       key: 'ORDER',
@@ -119,7 +119,7 @@ modules: ModulePermission[] = [
       ]
     },
 
-    // Gestion des voyages
+
     {
       name: 'Gestion des voyages',
       key: 'TRAVEL',
@@ -130,12 +130,12 @@ modules: ModulePermission[] = [
         { label: 'Activer', key: 'ENABLE' },
         { label: 'Désactiver', key: 'DISABLE' },
         { label: 'Imprimer', key: 'PRINT' },
-         { label: 'Approuvé', key: 'APPROVED' } 
+         { label: 'Approuvé', key: 'APPROVED' }
       ]
     },
 
-    
-    // Historique des voyages
+
+
     {
       name: 'Historique des voyages',
       key: 'HISTORIQUE_TRAVEL',
@@ -146,12 +146,12 @@ modules: ModulePermission[] = [
         { label: 'Activer', key: 'ENABLE' },
         { label: 'Désactiver', key: 'DISABLE' },
          { label: 'Imprimer', key: 'PRINT' },
-          { label: 'Approuvé', key: 'APPROVED' } 
+          { label: 'Approuvé', key: 'APPROVED' }
       ]
     },
 
-    
-    // Lieux
+
+
     {
       name: 'Lieux',
       key: 'LOCATION',
@@ -162,11 +162,11 @@ modules: ModulePermission[] = [
         { label: 'Activer', key: 'ENABLE' },
         { label: 'Désactiver', key: 'DISABLE' },
          { label: 'Imprimer', key: 'PRINT' },
-          { label: 'Approuvé', key: 'APPROVED' } 
+          { label: 'Approuvé', key: 'APPROVED' }
       ]
     },
 
-    // Gestion des utilisateurs
+
     {
       name: 'Gestion des utilisateurs',
       key: 'USER',
@@ -177,11 +177,11 @@ modules: ModulePermission[] = [
         { label: 'Activer', key: 'ENABLE' },
         { label: 'Désactiver', key: 'DISABLE' },
          { label: 'Imprimer', key: 'PRINT' },
-          { label: 'Approuvé', key: 'APPROVED' } 
+          { label: 'Approuvé', key: 'APPROVED' }
       ]
     },
 
-    // Gestion des groupes d’utilisateurs
+
     {
       name: 'Gestion des groupes d’utilisateurs',
       key: 'USER_GROUP',
@@ -192,11 +192,11 @@ modules: ModulePermission[] = [
         { label: 'Activer', key: 'ENABLE' },
         { label: 'Désactiver', key: 'DISABLE' },
          { label: 'Imprimer', key: 'PRINT' },
-          { label: 'Approuvé', key: 'APPROVED' } 
+          { label: 'Approuvé', key: 'APPROVED' }
       ]
     },
 
-    // Gestion des permissions
+
     {
       name: 'Gestion des permissions',
       key: 'PERMISSION',
@@ -206,7 +206,7 @@ modules: ModulePermission[] = [
       ]
     },
 
-    // Gestion des clients
+
     {
       name: 'Gestion des clients',
       key: 'CUSTOMER',
@@ -217,11 +217,11 @@ modules: ModulePermission[] = [
         { label: 'Activer', key: 'ENABLE' },
         { label: 'Désactiver', key: 'DISABLE' },
         { label: 'Imprimer', key: 'PRINT' },
-         { label: 'Approuvé', key: 'APPROVED' } 
+         { label: 'Approuvé', key: 'APPROVED' }
       ]
     },
 
-    // Fournisseurs carburant
+
     {
       name: 'Fournisseurs carburant',
       key: 'FUEL_VENDOR',
@@ -232,11 +232,11 @@ modules: ModulePermission[] = [
         { label: 'Activer', key: 'ENABLE' },
         { label: 'Désactiver', key: 'DISABLE' },
         { label: 'Imprimer', key: 'PRINT' },
-         { label: 'Approuvé', key: 'APPROVED' } 
+         { label: 'Approuvé', key: 'APPROVED' }
       ]
     },
 
-    // Carburant
+
     {
       name: 'Carburant',
       key: 'FUEL',
@@ -247,11 +247,11 @@ modules: ModulePermission[] = [
         { label: 'Activer', key: 'ENABLE' },
         { label: 'Désactiver', key: 'DISABLE' },
          { label: 'Imprimer', key: 'PRINT' },
-          { label: 'Approuvé', key: 'APPROVED' } 
+          { label: 'Approuvé', key: 'APPROVED' }
       ]
     },
 
-        // Gestion des mécaniciens
+
     {
       name: 'Gestion des mécaniciens',
       key: 'MECHANIC',
@@ -262,11 +262,11 @@ modules: ModulePermission[] = [
         { label: 'Activer', key: 'ENABLE' },
         { label: 'Désactiver', key: 'DISABLE' },
          { label: 'Imprimer', key: 'PRINT' },
-          { label: 'Approuvé', key: 'APPROVED' } 
+          { label: 'Approuvé', key: 'APPROVED' }
       ]
     },
 
-    // Gestion des vendeurs
+
     {
       name: 'Gestion des vendeurs',
       key: 'VENDOR',
@@ -277,11 +277,11 @@ modules: ModulePermission[] = [
         { label: 'Activer', key: 'ENABLE' },
         { label: 'Désactiver', key: 'DISABLE' },
          { label: 'Imprimer', key: 'PRINT' },
-          { label: 'Approuvé', key: 'APPROVED' } 
+          { label: 'Approuvé', key: 'APPROVED' }
       ]
     },
 
-    // Maintenance Camion
+
     {
       name: 'Maintenance Camion',
       key: 'TRUCK_MAINTENANCE',
@@ -292,11 +292,11 @@ modules: ModulePermission[] = [
         { label: 'Activer', key: 'ENABLE' },
         { label: 'Désactiver', key: 'DISABLE' },
          { label: 'Imprimer', key: 'PRINT' },
-          { label: 'Approuvé', key: 'APPROVED' } 
+          { label: 'Approuvé', key: 'APPROVED' }
       ]
     },
 
-    // Heures Supplémentaires
+
     {
       name: 'Heures Supplémentaires',
       key: 'OVERTIME',
@@ -307,11 +307,11 @@ modules: ModulePermission[] = [
         { label: 'Activer', key: 'ENABLE' },
         { label: 'Désactiver', key: 'DISABLE' },
          { label: 'Imprimer', key: 'PRINT' },
-          { label: 'Approuvé', key: 'APPROVED' } 
+          { label: 'Approuvé', key: 'APPROVED' }
       ]
     },
 
-    // Disponibilités des chauffeurs
+
     {
       name: 'Disponibilités des chauffeurs',
       key: 'DRIVER_AVAILABILITY',
@@ -322,11 +322,11 @@ modules: ModulePermission[] = [
         { label: 'Activer', key: 'ENABLE' },
         { label: 'Désactiver', key: 'DISABLE' },
          { label: 'Imprimer', key: 'PRINT' },
-          { label: 'Approuvé', key: 'APPROVED' } 
+          { label: 'Approuvé', key: 'APPROVED' }
       ]
     },
 
-        // Disponibilités des camions
+
     {
       name: 'Disponibilités des camions',
       key: 'TRUCK_AVAILABILITY',
@@ -337,10 +337,10 @@ modules: ModulePermission[] = [
         { label: 'Activer', key: 'ENABLE' },
         { label: 'Désactiver', key: 'DISABLE' },
          { label: 'Imprimer', key: 'PRINT' },
-          { label: 'Approuvé', key: 'APPROVED' } 
+          { label: 'Approuvé', key: 'APPROVED' }
       ]
     },
-    // Jours Fériés
+
     {
       name: 'Jours Fériés',
       key: 'DAYOFF',
@@ -351,7 +351,7 @@ modules: ModulePermission[] = [
         { label: 'Activer', key: 'ENABLE' },
         { label: 'Désactiver', key: 'DISABLE' },
          { label: 'Imprimer', key: 'PRINT' },
-          { label: 'Approuvé', key: 'APPROVED' } 
+          { label: 'Approuvé', key: 'APPROVED' }
       ]
     },
 
@@ -370,14 +370,14 @@ modules: ModulePermission[] = [
     this.httpService.getAllRoles().subscribe((groups: IUserGroup[]) => {
       this.roles = groups.map(r => ({
         ...r,
-        permissions: {} 
+        permissions: {}
       }));
 
-     
+
       this.roles.forEach(role => {
         this.httpService.getGroupPermissions(role.id).subscribe((codes: string[]) => {
 
- 
+
           this.modules.forEach(mod => {
             mod.actions.forEach(act => {
               role.permissions![`${mod.key}_${act.key}`] = false;

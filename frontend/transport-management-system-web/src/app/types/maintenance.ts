@@ -1,4 +1,4 @@
-// types/maintenance.ts
+﻿
 export interface IMaintenance {
   id: number;
   tripId: number;
@@ -14,8 +14,8 @@ export interface IMaintenance {
   quantity: number;
   notificationType: 'Email' | 'SMS' | 'Both';
   members: string;
-  
-  // Related entities
+
+
   trip?: {
     id: number;
     destination: string;
@@ -23,19 +23,19 @@ export interface IMaintenance {
     truckId: number;
     bookingId: string;
   };
-  
+
   vendor?: {
     id: number;
     name: string;
   };
-  
+
   mechanic?: {
     id: number;
     name: string;
     specialization: string;
   };
-  
-  
+
+
   truck?: {
     id: number;
     immatriculation: string;

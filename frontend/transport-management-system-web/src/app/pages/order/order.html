@@ -58,20 +58,6 @@
 </mat-form-field>
 
 
- <!-- Filtre Zone -->
-<mat-form-field appearance="outline" class="status-filter">
-  <!-- <mat-label>Zone</mat-label> -->
-  <mat-label>{{ t('ZONE') }}</mat-label>
-  
-  <mat-select [formControl]="zoneControl">
-    <!-- <mat-option [value]="null">Toutes</mat-option> -->
-      <mat-option [value]="null">{{ t('ALL') }}</mat-option>
-    <mat-option *ngFor="let z of zones" [value]="z.id">
-      {{ z.name }}
-    </mat-option>
-  </mat-select>
-</mat-form-field>
-
 <!-- Filtre commandes en retard -->
 <mat-form-field appearance="outline" class="status-filter small-filter">
   <!-- <mat-label>Commandes en retard</mat-label> -->
@@ -290,7 +276,7 @@
 <ng-container matColumnDef="deliveryAddress">
   <th mat-header-cell *matHeaderCellDef>Adresse livraison</th>
   <td mat-cell *matCellDef="let element">
-    {{ element.deliveryAddress }} 
+  {{ element.deliveryAddress || element.customerName  }}
   </td>
 </ng-container>
 

@@ -4,11 +4,17 @@
       {{ isEditing ? t('EDIT_CUSTOMER') : t('ADD_CUSTOMER') }}
     </mat-card-title>
 
+    <div class="loading-overlay" *ngIf="isLoading">
+      <mat-spinner diameter="50"></mat-spinner>
+      <span>Chargement...</span>
+    </div>
+
     <form [formGroup]="customerForm" (ngSubmit)="onSubmit()">
-            <!-- Matricule -->
+      
+      <!-- Matricule -->
       <mat-form-field class="w-full">
         <mat-label>{{ t('CUSTOMER_REG_NUMBER') }}</mat-label>
-        <input matInput formControlName="matricule" placeholder="Ex : MAT-00123" [readonly]="isSubmitting || loadingZones">
+        <input matInput formControlName="matricule" placeholder="Ex : MAT-00123" [readonly]="isSubmitting">
         <mat-error *ngIf="customerForm.get('matricule')?.invalid && customerForm.get('matricule')?.touched">
           {{ getErrorMessage('matricule') }}
         </mat-error>
@@ -17,19 +23,17 @@
       <!-- Full Name -->
       <mat-form-field class="w-full">
         <mat-label>{{ t('CUSTOMER_FULL_NAME') }}</mat-label>
-        <input matInput formControlName="name" placeholder="e.g., Monoprix" [readonly]="isSubmitting || loadingZones">
+        <input matInput formControlName="name" placeholder="e.g., Monoprix" [readonly]="isSubmitting">
         <mat-error *ngIf="customerForm.get('name')?.invalid && customerForm.get('name')?.touched">
           {{ getErrorMessage('name') }}
         </mat-error>
       </mat-form-field>
 
-
-
       <!-- Phone -->
       <mat-label>{{ t('CUSTOMER_PHONE') }}</mat-label>
       <div class="mat-phone-field w-full">
         <div class="mat-phone-wrapper">
-          <input matInput formControlName="phone" #phoneInput [readonly]="isSubmitting || loadingZones" />
+          <input matInput formControlName="phone" #phoneInput [readonly]="isSubmitting" />
         </div>
         <mat-error *ngIf="customerForm.get('phone')?.invalid && customerForm.get('phone')?.touched">
           {{ getErrorMessage('phone') }}
@@ -39,96 +43,155 @@
       <!-- Email -->
       <mat-form-field class="w-full">
         <mat-label>Email</mat-label>
-        <input matInput type="email" formControlName="email" placeholder="e.g., jean.dupont@example.com" [readonly]="isSubmitting || loadingZones">
+        <input matInput type="email" formControlName="email" placeholder="e.g., contact@example.com" [readonly]="isSubmitting">
         <mat-error *ngIf="customerForm.get('email')?.invalid && customerForm.get('email')?.touched">
           {{ getErrorMessage('email') }}
-        </mat-error>
-      </mat-form-field>
-
-      <!-- Address -->
-      <mat-form-field class="w-full">
-        <mat-label>{{ t('CUSTOMER_ADDRESS') }}</mat-label>
-        <textarea matInput formControlName="adress" placeholder="e.g., 123 Rue Principale, Paris, France" [readonly]="isSubmitting || loadingZones" rows="3"></textarea>
-        <mat-error *ngIf="customerForm.get('adress')?.invalid && customerForm.get('adress')?.touched">
-          {{ getErrorMessage('adress') }}
         </mat-error>
       </mat-form-field>
 
       <!-- Contact -->
       <mat-form-field class="w-full">
         <mat-label>{{ t('CUSTOMER_CONTACT') }}</mat-label>
-        <textarea matInput formControlName="contact" placeholder="contact" [readonly]="isSubmitting || loadingZones" rows="3"></textarea>
+        <textarea matInput formControlName="contact" placeholder="Contact person or notes" [readonly]="isSubmitting" rows="3"></textarea>
         <mat-error *ngIf="customerForm.get('contact')?.invalid && customerForm.get('contact')?.touched">
           {{ getErrorMessage('contact') }}
         </mat-error>
       </mat-form-field>
 
-      <!-- Zone Dropdown (REPLACED TEXTAREA WITH SELECT) -->
-      <mat-form-field class="w-full">
-        <mat-label>Zone</mat-label>
-        <mat-select 
-          formControlName="zoneId" 
-          [disabled]="isSubmitting || loadingZones"
-          required
-        >
-          <!-- Loading state -->
-          <mat-option *ngIf="loadingZones" disabled>
-            <div class="flex items-center">
-              <mat-spinner diameter="20" class="mr-2"></mat-spinner>
-              <span>{{ t('LOADING_ZONES') }}</span>
-            </div>
-          </mat-option>
+      <!-- Geographical Entities - Hierarchical Dropdowns (like truck form) -->
+      <div class="form-row full-width" style="grid-column: span 2;">
+        <div class="form-field-group" style="width: 100%;">
+          <mat-label>{{ t('GEOGRAPHICAL_ENTITIES_LABEL') || 'Localisations' }}</mat-label>
           
-          <!-- No zones available -->
-          <mat-option *ngIf="!loadingZones && zones.length === 0" disabled>
-            <div class="text-gray-500 italic">
-              Aucune zone active disponible
+          <div class="hierarchical-selector" *ngIf="!loadingGeographicalEntities; else loadingTemplate">
+            <!-- No entities message -->
+            <div *ngIf="geographicalEntities.length === 0" class="no-entities-message">
+              <mat-icon>info</mat-icon>
+              <p>Aucune localisation active disponible</p>
+              <p class="small">Configurez d'abord des entités géographiques</p>
             </div>
-          </mat-option>
-          
-          <!-- Zones list -->
-          <mat-option *ngFor="let zone of zones" [value]="zone.id">
-            {{ zone.name }}
-          </mat-option>
-        </mat-select>
-        <mat-error *ngIf="customerForm.get('zoneId')?.invalid && customerForm.get('zoneId')?.touched">
-          {{ getErrorMessage('zoneId') }}
-        </mat-error>
-      </mat-form-field>
-         
-      <!-- City Dropdown -->
-<mat-form-field class="w-full">
-  <mat-label>City</mat-label>
-  <mat-select 
-    formControlName="cityId"
-    [disabled]="isSubmitting || loadingCities"
-    required
-  >
-    <!-- Loading state -->
-    <mat-option *ngIf="loadingCities" disabled>
-      <div class="flex items-center">
-        <mat-spinner diameter="20" class="mr-2"></mat-spinner>
-       <div class="text-gray-500 italic">
-              Aucune zone active disponible
+
+            <!-- Inline dropdowns container -->
+            <div class="inline-dropdowns">
+              <!-- Level 1 Dropdown -->
+              <div class="dropdown-item" *ngIf="level1Entities.length > 0">
+                <div class="dropdown-label">{{ getLevelName(1) }}</div>
+                <mat-form-field appearance="outline" class="compact-dropdown">
+                  <mat-select 
+                    [formControl]="level1Control"
+                    [placeholder]="'Sélectionner'">
+                    <mat-option [value]="null">Aucun</mat-option>
+                    <mat-option *ngFor="let entity of level1Entities" [value]="entity.id">
+                      <span class="entity-name">{{ entity.name }}</span>
+                      <span *ngIf="entity.latitude && entity.longitude" class="coords-hint">
+                        ({{ entity.latitude | number:'1.2-2' }}, {{ entity.longitude | number:'1.2-2' }})
+                      </span>
+                    </mat-option>
+                  </mat-select>
+                </mat-form-field>
+              </div>
+
+              <!-- Level 2 Dropdown -->
+              <div class="dropdown-item" *ngIf="level2Entities.length > 0">
+                <div class="dropdown-label">{{ getLevelName(2) }}</div>
+                <mat-form-field appearance="outline" class="compact-dropdown">
+                  <mat-select 
+                    [formControl]="level2Control"
+                    [disabled]="!level1Control.value"
+                    [placeholder]="'Sélectionner'">
+                    <mat-option [value]="null">Aucun</mat-option>
+                    <mat-option *ngFor="let entity of level2Entities" [value]="entity.id">
+                      <span class="entity-name">{{ entity.name }}</span>
+                      <span *ngIf="entity.latitude && entity.longitude" class="coords-hint">
+                        ({{ entity.latitude | number:'1.2-2' }}, {{ entity.longitude | number:'1.2-2' }})
+                      </span>
+                    </mat-option>
+                  </mat-select>
+                </mat-form-field>
+              </div>
+
+              <!-- Level 3 Dropdown -->
+              <div class="dropdown-item" *ngIf="level3Entities.length > 0">
+                <div class="dropdown-label">{{ getLevelName(3) }}</div>
+                <mat-form-field appearance="outline" class="compact-dropdown">
+                  <mat-select 
+                    [formControl]="level3Control"
+                    [disabled]="!level2Control.value"
+                    [placeholder]="'Sélectionner'">
+                    <mat-option [value]="null">Aucun</mat-option>
+                    <mat-option *ngFor="let entity of level3Entities" [value]="entity.id">
+                      <span class="entity-name">{{ entity.name }}</span>
+                      <span *ngIf="entity.latitude && entity.longitude" class="coords-hint">
+                        ({{ entity.latitude | number:'1.2-2' }}, {{ entity.longitude | number:'1.2-2' }})
+                      </span>
+                    </mat-option>
+                  </mat-select>
+                </mat-form-field>
+              </div>
+
+              <!-- Level 4 Dropdown -->
+              <div class="dropdown-item" *ngIf="level4Entities.length > 0">
+                <div class="dropdown-label">{{ getLevelName(4) }}</div>
+                <mat-form-field appearance="outline" class="compact-dropdown">
+                  <mat-select 
+                    [formControl]="level4Control"
+                    [disabled]="!level3Control.value"
+                    [placeholder]="'Sélectionner'">
+                    <mat-option [value]="null">Aucun</mat-option>
+                    <mat-option *ngFor="let entity of level4Entities" [value]="entity.id">
+                      <span class="entity-name">{{ entity.name }}</span>
+                      <span *ngIf="entity.latitude && entity.longitude" class="coords-hint">
+                        ({{ entity.latitude | number:'1.2-2' }}, {{ entity.longitude | number:'1.2-2' }})
+                      </span>
+                    </mat-option>
+                  </mat-select>
+                </mat-form-field>
+              </div>
+
+              <!-- Level 5 Dropdown -->
+              <div class="dropdown-item" *ngIf="level5Entities.length > 0">
+                <div class="dropdown-label">{{ getLevelName(5) }}</div>
+                <mat-form-field appearance="outline" class="compact-dropdown">
+                  <mat-select 
+                    [formControl]="level5Control"
+                    [disabled]="!level4Control.value"
+                    [placeholder]="'Sélectionner'">
+                    <mat-option [value]="null">Aucun</mat-option>
+                    <mat-option *ngFor="let entity of level5Entities" [value]="entity.id">
+                      <span class="entity-name">{{ entity.name }}</span>
+                      <span *ngIf="entity.latitude && entity.longitude" class="coords-hint">
+                        ({{ entity.latitude | number:'1.2-2' }}, {{ entity.longitude | number:'1.2-2' }})
+                      </span>
+                    </mat-option>
+                  </mat-select>
+                </mat-form-field>
+              </div>
             </div>
+
+            <!-- Selected Entities Summary -->
+            <div class="selected-summary" *ngIf="selectedEntities.length > 0">
+              <h4>Localisations sélectionnées ({{ selectedEntities.length }})</h4>
+              <div class="selected-chips">
+                <span class="selected-chip" *ngFor="let id of selectedEntities">
+                  {{ getEntityName(id) }}
+                  <mat-icon (click)="removeEntity(id)">close</mat-icon>
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <ng-template #loadingTemplate>
+            <div class="loading-entities">
+              <mat-spinner diameter="30"></mat-spinner>
+              <span>Chargement des localisations...</span>
+            </div>
+          </ng-template>
+
+          <mat-error *ngIf="customerForm.get('geographicalEntityIds')?.invalid && customerForm.get('geographicalEntityIds')?.touched">
+            {{ getErrorMessage('geographicalEntityIds') }}
+          </mat-error>
+        </div>
       </div>
-    </mat-option>
-
-    <!-- No cities available -->
-    <mat-option *ngIf="!loadingCities && cities.length === 0" disabled>
-      <div class="text-gray-500 italic">{{ t('NO_ACTIVE_CITIES') }}</div>
-    </mat-option>
-
-    <!-- Cities list -->
-    <mat-option *ngFor="let city of cities" [value]="city.id">
-      {{ city.name }}
-    </mat-option>
-  </mat-select>
-
-  <mat-error *ngIf="customerForm.get('cityId')?.invalid && customerForm.get('cityId')?.touched">
-    {{ getErrorMessage('cityId') }}
-  </mat-error>
-</mat-form-field>
 
       <!-- Form Buttons -->
       <div class="flex justify-center mt-4 space-x-4">
@@ -136,14 +199,14 @@
           mat-raised-button 
           color="primary" 
           type="submit" 
-          [disabled]="customerForm.invalid || isSubmitting || loadingZones"
+          [disabled]="customerForm.invalid || isSubmitting"
         >
           <mat-spinner *ngIf="isSubmitting" diameter="20" class="inline-block mr-2"></mat-spinner>
           {{ isEditing ? t('EDIT') : t('ADD') }}
         </button>
 
         <button mat-button type="button" (click)="onCancel()" [disabled]="isSubmitting">
-                 {{ t('CANCEL') }}
+          {{ t('CANCEL') }}
         </button>
       </div>
     </form>

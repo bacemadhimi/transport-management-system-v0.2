@@ -658,3 +658,40 @@
     opacity: 1;
   }
 }
+.create-trip-btn {
+  position: relative;
+  
+  .trip-counter {
+    font-size: 12px;
+    margin-left: 4px;
+    opacity: 0.8;
+  }
+  
+  &[disabled] {
+    opacity: 0.7;
+    cursor: not-allowed;
+    background-color: #9ca3af !important;
+  }
+}
+.trip-limit-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background-color: #f3f4f6;
+  border-radius: 8px;
+  font-size: 14px;
+  
+  .counter-value {
+    font-weight: 600;
+    color: var(--primary-color, #2563eb);
+  }
+  
+  .warning {
+    color: #f59e0b;
+  }
+  
+  .danger {
+    color: #ef4444;
+  }
+}

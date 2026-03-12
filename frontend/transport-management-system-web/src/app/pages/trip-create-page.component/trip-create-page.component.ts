@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+﻿import { Component, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
@@ -32,7 +32,7 @@ import { Translation } from '../../services/Translation';
       </div>
 
       <div class="trip-form-container">
-        <app-trip-form 
+        <app-trip-form
           [mode]="'create'"
           (success)="onSuccess()"
           (cancel)="goBack()"
@@ -41,7 +41,7 @@ import { Translation } from '../../services/Translation';
     </div>
   `,
   styles: `
-    /* Full-screen container like trip list */
+
     .trips-page {
       height: 100vh;
       display: flex;
@@ -49,7 +49,7 @@ import { Translation } from '../../services/Translation';
       background: #f8fafc;
       overflow: hidden;
     }
-    
+
     .trips-header {
       flex-shrink: 0;
       background: white;
@@ -58,14 +58,14 @@ import { Translation } from '../../services/Translation';
       box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
       z-index: 10;
     }
-    
+
     .trips-header__top {
       display: flex;
       align-items: center;
       gap: 16px;
       margin-bottom: 16px;
     }
-    
+
     .back-button {
       display: flex;
       align-items: center;
@@ -75,12 +75,12 @@ import { Translation } from '../../services/Translation';
       border-radius: 6px;
       transition: all 0.2s;
     }
-    
+
     .back-button:hover {
       color: #334155;
       background: #f1f5f9;
     }
-    
+
     .trips-title {
       margin: 0;
       font-size: 24px;
@@ -88,62 +88,62 @@ import { Translation } from '../../services/Translation';
       color: #0f172a;
       flex: 1;
     }
-    
+
     .trips-header__actions {
       display: flex;
       justify-content: space-between;
       align-items: center;
       gap: 16px;
     }
-    
+
     .trips-header__left {
       display: flex;
       align-items: center;
       gap: 12px;
       flex: 1;
     }
-    
+
     .trips-header__right {
       display: flex;
       gap: 12px;
     }
-    
-    /* Trip form container - takes remaining space */
+
+
     .trip-form-container {
       flex: 1;
       overflow: hidden;
       display: flex;
       flex-direction: column;
     }
-    
-    /* Force TripForm to fill the container */
+
+
     .trip-form-container ::ng-deep app-trip-form {
       flex: 1;
       display: flex;
       flex-direction: column;
     }
-    
-    /* Mobile responsiveness */
+
+
     @media (max-width: 768px) {
       .trips-header {
         padding: 16px;
       }
-      
+
       .trips-title {
         font-size: 20px;
       }
-      
+
       .trips-header__actions {
         flex-direction: column;
         align-items: stretch;
         gap: 12px;
       }
-      
+
       .trips-header__left,
       .trips-header__right {
         width: 100%;
       }
-      
+
       .trips-header__right {
         justify-content: flex-end;
       }
@@ -166,7 +166,7 @@ export class TripCreatePageComponent {
   onSuccess(): void {
     this.router.navigate(['/trips']);
   }
-  //
+
     private translation = inject(Translation);
       t(key: string): string { return this.translation.t(key); }
 }

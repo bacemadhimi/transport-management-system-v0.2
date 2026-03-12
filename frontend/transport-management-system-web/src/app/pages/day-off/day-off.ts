@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+﻿import { Component, OnInit, inject } from '@angular/core';
 import { Http } from '../../services/http';
 import { Table } from '../../components/table/table';
 import { MatButtonModule } from '@angular/material/button';
@@ -42,11 +42,11 @@ import { CommonModule } from '@angular/common';
   styleUrls: ['./day-off.scss']
 })
 export class DayOff implements OnInit {
-      constructor(public auth: Auth) {}  
-    
+      constructor(public auth: Auth) {}
+
       getActions(row: any, actions: string[]) {
         const permittedActions: string[] = [];
-    
+
         for (const a of actions) {
           if (a === 'Modifier' && this.auth.hasPermission('DAYOFF_EDIT')) {
             permittedActions.push(a);
@@ -55,10 +55,10 @@ export class DayOff implements OnInit {
             permittedActions.push(a);
           }
         }
-    
+
         return permittedActions;
       }
-      
+
   httpService = inject(Http);
   pagedDayOffData!: PagedData<IDayOff>;
   totalData!: number;
@@ -78,18 +78,18 @@ export class DayOff implements OnInit {
   readonly dialog = inject(MatDialog);
 
   showCols = [
- 
+
     { key: 'name', label: 'Nom' },
     { key: 'country', label: 'Pays' },
-    { 
-    key: 'date', 
+    {
+    key: 'date',
     label: 'Date',
     format: (row: any) => {
       if (!row || !row.date) return '-';
-      
+
       const date = new Date(row.date);
       if (isNaN(date.getTime())) return '-';
-      
+
       return date.toLocaleDateString('fr-FR', {
         day: '2-digit',
         month: '2-digit',
@@ -109,7 +109,7 @@ export class DayOff implements OnInit {
 
   ngOnInit() {
     this.getLatestData();
-    
+
     this.searchControl.valueChanges.pipe(debounceTime(250))
       .subscribe((value: string | null) => {
         this.filter.search = value;

@@ -1,4 +1,4 @@
-import { Component, inject, OnInit } from '@angular/core';
+﻿import { Component, inject, OnInit } from '@angular/core';
 import {
   FormBuilder,
   Validators,
@@ -73,14 +73,14 @@ export class RoleForm implements OnInit {
 
   ngOnInit(): void {
 
-    // Chargement groupes existants
+
     if (!this.data.groupId) {
       this.httpService.getAllRoles().subscribe(res => {
         this.groups = res;
       });
     }
 
-    // Edition
+
     if (this.data.groupId) {
       this.httpService.getRole(this.data.groupId).subscribe(group => {
         this.roleForm.patchValue({ name: group.name });
@@ -98,7 +98,7 @@ export class RoleForm implements OnInit {
 onSubmit() {
   if (this.roleForm.invalid) return;
 
-  // MODIFICATION
+
   if (this.data.groupId) {
     this.httpService.updateRole(this.data.groupId, {
       id: this.data.groupId,
@@ -110,7 +110,7 @@ onSubmit() {
     return;
   }
 
-  // CRÉATION AVEC OU SANS HÉRITAGE
+
   const payload = {
     name: this.roleForm.value.name,
     parentGroupId: this.roleForm.value.inherit
@@ -126,7 +126,7 @@ this.httpService.createRoleWithInheritance(payload)
     error: (err) => {
       console.error('Erreur HTTP mais création OK ?', err);
 
-      // 🔥 CAS PARTICULIER : le backend a créé mais Angular râle
+
       if (err?.status === 200 || err?.status === 201) {
         this.success('Groupe ajouté avec succès');
       } else {

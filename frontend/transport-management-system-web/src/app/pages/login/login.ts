@@ -1,4 +1,4 @@
-import { Component, inject, OnInit } from '@angular/core';
+﻿import { Component, inject, OnInit } from '@angular/core';
 import { Auth } from '../../services/auth';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -25,8 +25,8 @@ export class Login implements OnInit {
   loginForm!: FormGroup;
   isLoading = false;
   loginError: string | null = null;
-  
-  // UI state
+
+
   showPassword = false;
   emailFocused = false;
   passwordFocused = false;
@@ -113,17 +113,17 @@ export class Login implements OnInit {
       this.router.navigateByUrl('/user-dashboard');
     }
   }
-  // Ajouter cette méthode à votre composant Login
+
 onGoogleLogin() {
   this.isLoading = true;
-  
-  // Appel à votre service d'authentification Google
+
+
   this.authService.loginWithGoogle().subscribe({
     next: (result) => {
       this.authService.saveToken(result);
       this.isLoading = false;
       this.redirectByRole(result.roles);
-      
+
       this.snackBar.open(
         'Connexion avec Google réussie',
         'Fermer',
@@ -134,7 +134,7 @@ onGoogleLogin() {
       this.isLoading = false;
       this.loginError = 'Erreur de connexion avec Google';
       console.error('Erreur Google login:', error);
-      
+
       this.snackBar.open(
         'Échec de la connexion avec Google',
         'Fermer',
