@@ -1,4 +1,4 @@
-// maintenance.ts
+﻿
 import { Component, OnInit, inject } from '@angular/core';
 import { Http } from '../../services/http';
 import { Table } from '../../components/table/table';
@@ -40,11 +40,11 @@ import { CommonModule } from '@angular/common';
   styleUrls: ['./maintenance.scss']
 })
 export class Maintenance implements OnInit {
-      constructor(public auth: Auth) {}  
-    
+      constructor(public auth: Auth) {}
+
       getActions(row: any, actions: string[]) {
         const permittedActions: string[] = [];
-    
+
         for (const a of actions) {
           if (a === 'Modifier' && this.auth.hasPermission('TRUCK_MAINTENANCE_EDIT')) {
             permittedActions.push(a);
@@ -53,10 +53,10 @@ export class Maintenance implements OnInit {
             permittedActions.push(a);
           }
         }
-    
+
         return permittedActions;
       }
-      
+
   httpService = inject(Http);
   pagedMaintenanceData!: PagedData<IMaintenance>;
   totalData!: number;
@@ -71,29 +71,29 @@ export class Maintenance implements OnInit {
   readonly dialog = inject(MatDialog);
 
   showCols = [
-   
-    { 
-      key: 'truck', 
+
+    {
+      key: 'truck',
       label: 'Camion',
       format: (row: IMaintenance) => row.truck ? `${row.truck.brand} - ${row.truck.immatriculation}` : `Camion #${row.trip?.truckId || 'N/A'}`
     },
-    { 
-      key: 'trip', 
+    {
+      key: 'trip',
       label: 'Mission',
       format: (row: IMaintenance) => row.trip ? `Mission #${row.trip.id} - ${row.trip.bookingId}` : `Mission #${row.tripId}`
     },
-    { 
-      key: 'mechanic', 
+    {
+      key: 'mechanic',
       label: 'Mécanicien',
       format: (row: IMaintenance) => row.mechanic ? `${row.mechanic.name} ` : `Mécanicien #${row.mechanicId}`
     },
-    { 
-      key: 'vendor', 
+    {
+      key: 'vendor',
       label: 'Fournisseur',
       format: (row: IMaintenance) => row.vendor ? row.vendor.name : `Fournisseur #${row.vendorId}`
     },
-    { 
-      key: 'status', 
+    {
+      key: 'status',
       label: 'Statut',
       format: (row: IMaintenance) => {
         const statusColors: { [key: string]: string } = {
@@ -105,29 +105,29 @@ export class Maintenance implements OnInit {
         return `<span class="status-badge status-${statusColors[row.status] || 'gray'}">${row.status}</span>`;
       }
     },
-    { 
-      key: 'startDate', 
+    {
+      key: 'startDate',
       label: 'Date Début',
       format: (row: IMaintenance) => {
         if (!row.startDate) return 'N/A';
         const date = new Date(row.startDate);
-        return date.toLocaleDateString('fr-FR', { 
-          day: '2-digit', 
-          month: '2-digit', 
-          year: 'numeric' 
+        return date.toLocaleDateString('fr-FR', {
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric'
         });
       }
     },
-    { 
-      key: 'endDate', 
+    {
+      key: 'endDate',
       label: 'Date Fin',
       format: (row: IMaintenance) => {
         if (!row.endDate) return 'N/A';
         const date = new Date(row.endDate);
-        return date.toLocaleDateString('fr-FR', { 
-          day: '2-digit', 
-          month: '2-digit', 
-          year: 'numeric' 
+        return date.toLocaleDateString('fr-FR', {
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric'
         });
       }
     },
@@ -135,8 +135,8 @@ export class Maintenance implements OnInit {
     { key: 'totalCost', label: 'Coût Total (€)' },
     { key: 'partsName', label: 'Pièces' },
     { key: 'quantity', label: 'Quantité' },
-    { 
-      key: 'notificationType', 
+    {
+      key: 'notificationType',
       label: 'Notification',
       format: (row: IMaintenance) => row.notificationType
     },
@@ -169,10 +169,10 @@ export class Maintenance implements OnInit {
 
   edit(maintenance: IMaintenance) {
     const ref = this.dialog.open(MaintenanceForm, {
-      width: '900px', 
-      maxWidth: '95vw', 
-      maxHeight: '90vh', 
-      panelClass: ['dialog-overlay', 'wide-dialog'], 
+      width: '900px',
+      maxWidth: '95vw',
+      maxHeight: '90vh',
+      panelClass: ['dialog-overlay', 'wide-dialog'],
       data: { maintenanceId: maintenance.id }
     });
 
@@ -191,10 +191,10 @@ export class Maintenance implements OnInit {
 
   openDialog(): void {
     const ref = this.dialog.open(MaintenanceForm, {
-      width: '900px', 
-      maxWidth: '95vw', 
-      maxHeight: '90vh', 
-      panelClass: ['dialog-overlay', 'wide-dialog'], 
+      width: '900px',
+      maxWidth: '95vw',
+      maxHeight: '90vh',
+      panelClass: ['dialog-overlay', 'wide-dialog'],
       data: {}
     });
 
@@ -283,8 +283,8 @@ export class Maintenance implements OnInit {
 
   exportPDF() {
     const doc = new jsPDF();
-    
-    // Add title
+
+
     doc.setFontSize(16);
     doc.text('Rapport des Maintenances', 14, 22);
     doc.setFontSize(10);
@@ -310,11 +310,11 @@ export class Maintenance implements OnInit {
       headStyles: { fillColor: [41, 128, 185] }
     });
 
-    // Add total summary
+
     const totalCost = rows.reduce((sum, m) => sum + (m.totalCost || 0), 0);
     const activeMaintenances = rows.filter(m => m.status === 'En cours' || m.status === 'Planifié').length;
     const completedMaintenances = rows.filter(m => m.status === 'Terminé').length;
-    
+
     const finalY = (doc as any).lastAutoTable.finalY || 100;
     doc.setFontSize(10);
     doc.text(`Coût Total: ${totalCost.toFixed(2)} €`, 14, finalY + 10);

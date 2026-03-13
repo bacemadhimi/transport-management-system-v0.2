@@ -12,12 +12,10 @@ namespace TransportManagementSystem.Data
 
         public DbSet<Truck> Trucks { get; set; }
         public DbSet<User> Users { get; set; }
-        public DbSet<Driver> Drivers { get; set; }
         public DbSet<Trip> Trips { get; set; }
         public DbSet<Customer> Customers { get; set; }
         public DbSet<FuelVendor> FuelVendors { get; set; }
         public DbSet<Fuel> Fuels { get; set; }
-        public DbSet<Mechanic> Mechanics { get; set; }
         public DbSet<Vendor> Vendors { get; set; }
         public DbSet<Maintenance> Maintenances { get; set; }
 
@@ -32,7 +30,6 @@ namespace TransportManagementSystem.Data
         public DbSet<Traject> Trajects { get; set; }
         public DbSet<TrajectPoint> TrajectPoints { get; set; }
         public DbSet<Location> Locations { get; set; }
-        public DbSet<Convoyeur> Convoyeurs { get; set; }
         public DbSet<DayOff> DayOffs { get; set; }
         public DbSet<OvertimeSetting> OvertimeSettings { get; set; }
         public DbSet<DriverAvailability> DriverAvailabilities { get; set; }
@@ -42,14 +39,18 @@ namespace TransportManagementSystem.Data
         public DbSet<SyncHistoryDetail> SyncHistoryDetails { get; set; }
         public DbSet<TruckAvailability> TruckAvailabilities { get; set; }
         public DbSet<Translation> Translations { get; set; }
-        public DbSet<Zone> Zones { get; set; }
-        public DbSet<City> Citys { get; set; }
         public DbSet<TypeTruck> TypeTrucks { get; set; }
         public DbSet<Employee> Employees { get; set; }
         //public DbSet<Category> Categories { get; set; }
         public DbSet<GeneralSettings> GeneralSettings { get; set; }
         public DbSet<Notification> Notifications { get; set; }
         public DbSet<UserNotification> UserNotifications { get; set; }
+        public DbSet<ChatMessage> ChatMessages { get; set; }
+        public DbSet<GeographicalLevel> GeographicalLevels { get; set; }
+        public DbSet<GeographicalEntity> GeographicalEntities { get; set; }
+        public DbSet<TruckGeographicalEntity> TruckGeographicalEntities { get; set; }
+        public DbSet<DriverGeographicalEntity> DriverGeographicalEntities { get; set; }
+        public DbSet<CustomerGeographicalEntity> CustomerGeographicalEntities { get; set; }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -162,53 +163,6 @@ namespace TransportManagementSystem.Data
                .HasForeignKey(o => o.CustomerId)
                .OnDelete(DeleteBehavior.Restrict);
 
-          
-            modelBuilder.Entity<Location>()
-                .HasOne(l => l.Zone)
-                .WithMany(z => z.Locations) 
-                .HasForeignKey(l => l.ZoneId)
-                .IsRequired()
-                .OnDelete(DeleteBehavior.Restrict);
-
-      
-            modelBuilder.Entity<Driver>()
-                .HasOne(d => d.Zone)
-                .WithMany(z => z.Drivers) 
-                .HasForeignKey(d => d.ZoneId)
-                .IsRequired()
-                .OnDelete(DeleteBehavior.Restrict);
-
-
-            modelBuilder.Entity<Customer>()
-                  .HasOne(c => c.Zone)
-                  .WithMany(z => z.Customers)
-                  .HasForeignKey(c => c.ZoneId)
-                  .IsRequired(false)  
-                  .OnDelete(DeleteBehavior.Restrict);
-
-
-            modelBuilder.Entity<Driver>()
-                 .HasOne(c => c.City)
-                 .WithMany(z => z.Drivers)
-                 .HasForeignKey(c => c.CityId)
-                 .IsRequired(false)
-                 .OnDelete(DeleteBehavior.Restrict);
-
-            modelBuilder.Entity<Convoyeur>()
-                 .HasOne(c => c.City)
-                 .WithMany(z => z.Convoyeurs)
-                 .HasForeignKey(c => c.CityId)
-                 .IsRequired(false)
-                 .OnDelete(DeleteBehavior.Restrict);
-
-
-            modelBuilder.Entity<Truck>()
-                .HasOne(d => d.Zone)
-                .WithMany(z => z.Trucks)
-                .HasForeignKey(d => d.ZoneId)
-                .IsRequired()
-                .OnDelete(DeleteBehavior.Restrict);
-
             modelBuilder.Entity<Truck>(entity =>
             {
                 entity.HasOne(t => t.TypeTruck)
@@ -237,6 +191,48 @@ namespace TransportManagementSystem.Data
                 .HasForeignKey(un => un.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
 
+            modelBuilder.Entity<GeographicalLevel>()
+           .HasIndex(l => l.LevelNumber)
+           .IsUnique();
+
+            modelBuilder.Entity<GeographicalLevel>()
+                .HasIndex(l => l.Name)
+                .IsUnique();
+
+            // GeographicalEntity configuration
+            modelBuilder.Entity<GeographicalEntity>()
+                .HasOne(e => e.Level)
+                .WithMany()
+                .HasForeignKey(e => e.LevelId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<GeographicalEntity>()
+                .HasOne(e => e.Parent)
+                .WithMany(e => e.Children)
+                .HasForeignKey(e => e.ParentId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<GeographicalEntity>()
+                .HasIndex(e => new { e.LevelId, e.Name })
+                .IsUnique();
+            modelBuilder.Entity<Employee>(entity =>
+            {
+
+                entity.HasDiscriminator<string>("EmployeeDiscriminator")
+                    .HasValue<Employee>("EMPLOYEE")
+                    .HasValue<Driver>("DRIVER")
+                    .HasValue<Convoyeur>("CONVOYEUR")
+                    .HasValue<Mechanic>("MECHANIC");
+
+                entity.Property(e => e.EmployeeCategory)
+                    .IsRequired()
+                    .HasMaxLength(50);
+            });
+                    modelBuilder.Entity<Maintenance>()
+                      .HasOne(m => m.Trip)
+                      .WithMany()
+                      .HasForeignKey(m => m.TripId)
+                      .OnDelete(DeleteBehavior.Restrict);
         }
 
         public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)

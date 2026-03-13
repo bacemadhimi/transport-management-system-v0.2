@@ -14,29 +14,29 @@ public class DriverOvertimeController : ControllerBase
     private readonly ILogger<DriverOvertimeController> _logger;
 
     private const decimal MAX_DAILY_OVERTIME_HOURS = 2m;
+
     public DriverOvertimeController(ApplicationDbContext context, ILogger<DriverOvertimeController> logger)
     {
         _context = context;
         _logger = logger;
     }
-  
+
     [HttpPost("check")]
     public async Task<ActionResult<DriverOvertimeResultDto>> CheckDriverOvertime([FromBody] DriverOvertimeCheckDto request)
     {
         try
         {
-         
-            var driver = await _context.Drivers
+            // Use Set<Driver>() instead of Drivers DbSet
+            var driver = await _context.Set<Driver>()
                 .FirstOrDefaultAsync(d => d.Id == request.DriverId);
 
             if (driver == null)
                 return NotFound(new { message = $"Chauffeur ID {request.DriverId} non trouvé" });
 
-         
+            // OvertimeSettings still uses DriverId (or should be updated to EmployeeId)
             var overtimeSettings = await _context.OvertimeSettings
                 .FirstOrDefaultAsync(o => o.DriverId == request.DriverId && o.IsActive);
 
-     
             decimal maxDailyHours;
             if (overtimeSettings != null)
             {
@@ -44,17 +44,14 @@ public class DriverOvertimeController : ControllerBase
             }
             else
             {
-                maxDailyHours = 8; 
+                maxDailyHours = 8;
             }
 
-        
             var existingTrips = await GetTripsForDate(request.DriverId, request.Date, request.ExcludeTripId);
             var totalExistingHours = existingTrips.Sum(t => t.EstimatedDuration);
 
-     
             var newTotalHours = totalExistingHours + (decimal)request.TripDuration;
             var maxTotalHours = maxDailyHours + MAX_DAILY_OVERTIME_HOURS;
-
 
             var result = new DriverOvertimeResultDto
             {
@@ -76,7 +73,7 @@ public class DriverOvertimeController : ControllerBase
                 }).ToList()
             };
 
-            // 6. Déterminer le statut
+            // Déterminer le statut
             if (newTotalHours > maxTotalHours)
             {
                 // DÉPASSEMENT DE LIMITE
@@ -90,7 +87,7 @@ public class DriverOvertimeController : ControllerBase
                 // HEURES SUPPLÉMENTAIRES
                 result.IsAvailable = true;
                 result.Status = "overtime";
-                result.RequiresApproval = true; // Demander approbation pour heures sup
+                result.RequiresApproval = true;
                 result.Message = $"HEURES SUP: +{result.NewOvertimeHours:F1}h (Approbation requise)";
             }
             else
@@ -117,13 +114,10 @@ public class DriverOvertimeController : ControllerBase
         try
         {
             var result = new List<DriverOvertimeAvailabilityDto>();
-            var driversQuery = _context.Drivers
-                .Where(d => d.IsEnable);
 
-            if (request.ZoneId.HasValue)
-            {
-                driversQuery = driversQuery.Where(d => d.ZoneId == request.ZoneId.Value);
-            }
+            // Use Set<Driver>() instead of Drivers DbSet
+            var driversQuery = _context.Set<Driver>()
+                .Where(d => d.IsEnable);
 
             var drivers = await driversQuery.ToListAsync();
 
@@ -152,7 +146,7 @@ public class DriverOvertimeController : ControllerBase
         var endOfDay = date.Date.AddDays(1).AddTicks(-1);
 
         var query = _context.Trips
-            .Where(t => t.DriverId == driverId &&
+            .Where(t => t.DriverId == driverId && // Note: Trip still uses DriverId
                        t.EstimatedStartDate >= startOfDay &&
                        t.EstimatedStartDate <= endOfDay &&
                        t.TripStatus != TripStatus.Cancelled);
@@ -188,7 +182,7 @@ public class DriverOvertimeController : ControllerBase
         {
             DriverId = driver.Id,
             DriverName = driver.Name,
-            PermisNumber = driver.PermisNumber ?? "",
+            PermisNumber = driver.DrivingLicense ?? "", // Use DrivingLicense instead of PermisNumber
             TotalHours = Math.Round(newTotalHours, 2),
             MaxNormalHours = maxDailyHours,
             OvertimeHours = Math.Round(overtimeHours, 2)
@@ -225,13 +219,14 @@ public class DriverOvertimeController : ControllerBase
 
         return availability;
     }
+
     [HttpPost("check-driver-with-trip-duration")]
     public async Task<ActionResult<DriverOvertimeResultDto>> CheckDriverWithTripDuration(
-    [FromBody] DriverOvertimeCheckWithDurationDto request)
+        [FromBody] DriverOvertimeCheckWithDurationDto request)
     {
         try
         {
-            var driver = await _context.Drivers
+            var driver = await _context.Set<Driver>()
                 .FirstOrDefaultAsync(d => d.Id == request.DriverId);
 
             if (driver == null)
@@ -308,7 +303,7 @@ public class DriverOvertimeController : ControllerBase
     {
         try
         {
-            var driver = await _context.Drivers
+            var driver = await _context.Set<Driver>()
                 .FirstOrDefaultAsync(d => d.Id == request.DriverId);
 
             if (driver == null)

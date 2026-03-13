@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+﻿import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
@@ -29,10 +29,10 @@ import { TripForm } from '../trip/trip-form/trip-form';
           </div>
         </div>
       </div>
-      
+
       <div class="trip-form-container">
         @if (tripId) {
-          <app-trip-form 
+          <app-trip-form
             [tripId]="tripId"
             [mode]="'edit'"
             (success)="onSuccess()"
@@ -48,7 +48,7 @@ import { TripForm } from '../trip/trip-form/trip-form';
     </div>
   `,
   styles: `
-    /* Full-screen container like trip list */
+
     .trips-page {
       height: 100vh;
       display: flex;
@@ -56,7 +56,7 @@ import { TripForm } from '../trip/trip-form/trip-form';
       background: #f8fafc;
       overflow: hidden;
     }
-    
+
     .trips-header {
       flex-shrink: 0;
       background: white;
@@ -65,14 +65,14 @@ import { TripForm } from '../trip/trip-form/trip-form';
       box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
       z-index: 10;
     }
-    
+
     .trips-header__top {
       display: flex;
       align-items: center;
       gap: 16px;
       margin-bottom: 16px;
     }
-    
+
     .back-button {
       display: flex;
       align-items: center;
@@ -82,12 +82,12 @@ import { TripForm } from '../trip/trip-form/trip-form';
       border-radius: 6px;
       transition: all 0.2s;
     }
-    
+
     .back-button:hover {
       color: #334155;
       background: #f1f5f9;
     }
-    
+
     .trips-title {
       margin: 0;
       font-size: 24px;
@@ -95,39 +95,39 @@ import { TripForm } from '../trip/trip-form/trip-form';
       color: #0f172a;
       flex: 1;
     }
-    
+
     .trips-header__actions {
       display: flex;
       justify-content: space-between;
       align-items: center;
       gap: 16px;
     }
-    
+
     .trips-header__left {
       display: flex;
       align-items: center;
       gap: 12px;
       flex: 1;
     }
-    
+
     .trips-header__right {
       display: flex;
       gap: 12px;
     }
-    
-    /* Trip form container - takes remaining space */
+
+
     .trip-form-container {
       flex: 1;
       overflow: auto;
       padding: 24px;
       background: #f8fafc;
-      
+
       @media (max-width: 768px) {
         padding: 16px;
       }
     }
-    
-    /* Loading state */
+
+
     .loading-container {
       display: flex;
       flex-direction: column;
@@ -138,28 +138,28 @@ import { TripForm } from '../trip/trip-form/trip-form';
       color: #64748b;
       gap: 16px;
     }
-    
-    /* Mobile responsiveness */
+
+
     @media (max-width: 768px) {
       .trips-header {
         padding: 16px;
       }
-      
+
       .trips-title {
         font-size: 20px;
       }
-      
+
       .trips-header__actions {
         flex-direction: column;
         align-items: stretch;
         gap: 12px;
       }
-      
+
       .trips-header__left,
       .trips-header__right {
         width: 100%;
       }
-      
+
       .trips-header__right {
         justify-content: flex-end;
       }

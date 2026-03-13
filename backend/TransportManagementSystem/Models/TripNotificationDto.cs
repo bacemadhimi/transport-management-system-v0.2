@@ -1,4 +1,5 @@
 ﻿namespace TransportManagementSystem.Models;
+
 public class NotificationDto
 {
     public int Id { get; set; }
@@ -10,12 +11,24 @@ public class NotificationDto
     public string? TripReference { get; set; }
     public string? OldStatus { get; set; }
     public string? NewStatus { get; set; }
+
+    // Driver information
     public string? DriverName { get; set; }
+    public int? DriverId { get; set; }
+
+    // Convoyeur information
+    public string? ConvoyeurName { get; set; }
+    public int? ConvoyeurId { get; set; }
+
+    // Truck information
     public string? TruckImmatriculation { get; set; }
+    public int? TruckId { get; set; }
+
     public bool IsRead { get; set; }
     public string? AdditionalData { get; set; }
     public DateTime CreatedAt { get; set; }
 }
+
 public class NotificationFilterDto
 {
     public bool? IsRead { get; set; }
@@ -23,9 +36,12 @@ public class NotificationFilterDto
     public DateTime? FromDate { get; set; }
     public DateTime? ToDate { get; set; }
     public int? TripId { get; set; }
+    public int? DriverId { get; set; } // Added for filtering by driver
+    public int? ConvoyeurId { get; set; } // Added for filtering by convoyeur
     public int PageIndex { get; set; } = 0;
     public int PageSize { get; set; } = 20;
 }
+
 public class TripNotificationDto
 {
     public int Id { get; set; }
@@ -37,8 +53,19 @@ public class TripNotificationDto
     public string? TripReference { get; set; }
     public string? OldStatus { get; set; }
     public string? NewStatus { get; set; }
+
+    // Driver information
     public string? DriverName { get; set; }
+    public int? DriverId { get; set; }
+
+    // Convoyeur information
+    public string? ConvoyeurName { get; set; }
+    public int? ConvoyeurId { get; set; }
+
+    // Truck information
     public string? TruckImmatriculation { get; set; }
+    public int? TruckId { get; set; }
+
     public int? CancelledTripsCount { get; set; }
     public bool IsRead { get; set; }
     public string? UserId { get; set; }
@@ -51,8 +78,19 @@ public class TripStatusChangeDto
     public string TripReference { get; set; } = string.Empty;
     public string OldStatus { get; set; } = string.Empty;
     public string NewStatus { get; set; } = string.Empty;
+
+    // Driver information
     public string? DriverName { get; set; }
+    public int? DriverId { get; set; }
+
+    // Convoyeur information
+    public string? ConvoyeurName { get; set; }
+    public int? ConvoyeurId { get; set; }
+
+    // Truck information
     public string? TruckImmatriculation { get; set; }
+    public int? TruckId { get; set; }
+
     public string? Message { get; set; }
     public DateTime ChangedAt { get; set; }
     public string ChangedBy { get; set; } = string.Empty;

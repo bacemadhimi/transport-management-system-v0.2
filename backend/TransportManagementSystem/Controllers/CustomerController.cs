@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Text.Json;
 using TransportManagementSystem.Data;
 using TransportManagementSystem.Entity;
 using TransportManagementSystem.Models;
@@ -12,17 +13,21 @@ namespace TransportManagementSystem.Controllers
     {
         private readonly ApplicationDbContext dbContext;
         private readonly IRepository<Customer> customerRepository;
+
         public CustomerController(ApplicationDbContext context, IRepository<Customer> customerRepository)
         {
             this.customerRepository = customerRepository;
             dbContext = context;
         }
 
-
         [HttpGet("PaginationAndSearch")]
         public async Task<IActionResult> GetCustomerList([FromQuery] SearchOptions searchOption)
         {
-            var query = dbContext.Customers.AsQueryable();
+            var query = dbContext.Customers
+                .Include(c => c.CustomerGeographicalEntities)
+                    .ThenInclude(cg => cg.GeographicalEntity)
+                        .ThenInclude(g => g.Level)
+                .AsQueryable();
 
             if (!string.IsNullOrWhiteSpace(searchOption.Search))
             {
@@ -31,14 +36,13 @@ namespace TransportManagementSystem.Controllers
                 query = query.Where(c =>
                     c.Name.ToLower().Contains(search) ||
                     c.Phone.ToLower().Contains(search) ||
-                    c.Email.ToLower().Contains(search) ||
-                    c.Adress.ToLower().Contains(search)
+                    c.Email.ToLower().Contains(search)
                 );
             }
+
             if (!string.IsNullOrWhiteSpace(searchOption.SourceSystem))
             {
-                if (Enum.TryParse<DataSource>(
-                    searchOption.SourceSystem, true, out var source))
+                if (Enum.TryParse<DataSource>(searchOption.SourceSystem, true, out var source))
                 {
                     query = query.Where(c => c.SourceSystem == source);
                 }
@@ -60,14 +64,22 @@ namespace TransportManagementSystem.Controllers
                 Id = c.Id,
                 Name = c.Name,
                 Phone = c.Phone,
-                City = c.City,
+                PhoneCountry = c.PhoneCountry,
                 Email = c.Email,
-                Adress = c.Adress,
                 Matricule = c.Matricule,
-                Gouvernorat = c.Gouvernorat,
                 Contact = c.Contact,
-                ZoneId = c.ZoneId,
-                SourceSystem = c.SourceSystem.ToString()
+                SourceSystem = c.SourceSystem.ToString(),
+                GeographicalEntities = c.CustomerGeographicalEntities?
+                    .Where(cg => cg.GeographicalEntity != null && cg.GeographicalEntity.IsActive)
+                    .Select(cg => new CustomerGeographicalEntityDto
+                    {
+                        GeographicalEntityId = cg.GeographicalEntityId,
+                        GeographicalEntityName = cg.GeographicalEntity.Name,
+                        LevelName = cg.GeographicalEntity.Level?.Name,
+                        LevelNumber = cg.GeographicalEntity.Level?.LevelNumber ?? 0,
+                        Latitude = cg.GeographicalEntity.Latitude,
+                        Longitude = cg.GeographicalEntity.Longitude
+                    }).ToList() ?? new List<CustomerGeographicalEntityDto>()
             }).ToList();
 
             return Ok(new PagedData<CustomerDto>
@@ -77,106 +89,368 @@ namespace TransportManagementSystem.Controllers
             });
         }
 
-
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Customer>>> GetCustomers()
+        public async Task<ActionResult<IEnumerable<CustomerDto>>> GetCustomers()
         {
-            return await dbContext.Customers.ToListAsync();
+            var customers = await dbContext.Customers
+                .Include(c => c.CustomerGeographicalEntities)
+                    .ThenInclude(cg => cg.GeographicalEntity)
+                        .ThenInclude(g => g.Level)
+                .ToListAsync();
+
+            var customerDtos = customers.Select(c => new CustomerDto
+            {
+                Id = c.Id,
+                Name = c.Name,
+                Phone = c.Phone,
+                PhoneCountry = c.PhoneCountry,
+                Email = c.Email,
+                Matricule = c.Matricule,
+                Contact = c.Contact,
+                SourceSystem = c.SourceSystem.ToString(),
+                GeographicalEntities = c.CustomerGeographicalEntities?
+                    .Where(cg => cg.GeographicalEntity != null && cg.GeographicalEntity.IsActive)
+                    .Select(cg => new CustomerGeographicalEntityDto
+                    {
+                        GeographicalEntityId = cg.GeographicalEntityId,
+                        GeographicalEntityName = cg.GeographicalEntity.Name,
+                        LevelName = cg.GeographicalEntity.Level?.Name,
+                        LevelNumber = cg.GeographicalEntity.Level?.LevelNumber ?? 0,
+                        Latitude = cg.GeographicalEntity.Latitude,
+                        Longitude = cg.GeographicalEntity.Longitude
+                    }).ToList() ?? new List<CustomerGeographicalEntityDto>()
+            }).ToList();
+
+            return Ok(customerDtos);
         }
 
-
         [HttpGet("{id}")]
-        public async Task<ActionResult<Customer>> GetCustomerById(int id)
+        public async Task<ActionResult<CustomerDto>> GetCustomerById(int id)
         {
-            var customer = await dbContext.Customers.FindAsync(id);
+            var customer = await dbContext.Customers
+                .Include(c => c.CustomerGeographicalEntities)
+                    .ThenInclude(cg => cg.GeographicalEntity)
+                        .ThenInclude(g => g.Level)
+                .FirstOrDefaultAsync(c => c.Id == id);
 
             if (customer == null)
                 return NotFound(new { message = $"Customer with ID {id} not found" });
 
-            return customer;
-        }
+            var customerDto = new CustomerDto
+            {
+                Id = customer.Id,
+                Name = customer.Name,
+                Phone = customer.Phone,
+                PhoneCountry = customer.PhoneCountry,
+                Email = customer.Email,
+                Matricule = customer.Matricule,
+                Contact = customer.Contact,
+                SourceSystem = customer.SourceSystem.ToString(),
+                GeographicalEntities = customer.CustomerGeographicalEntities?
+                    .Where(cg => cg.GeographicalEntity != null && cg.GeographicalEntity.IsActive)
+                    .Select(cg => new CustomerGeographicalEntityDto
+                    {
+                        GeographicalEntityId = cg.GeographicalEntityId,
+                        GeographicalEntityName = cg.GeographicalEntity.Name,
+                        LevelName = cg.GeographicalEntity.Level?.Name,
+                        LevelNumber = cg.GeographicalEntity.Level?.LevelNumber ?? 0,
+                        Latitude = cg.GeographicalEntity.Latitude,
+                        Longitude = cg.GeographicalEntity.Longitude
+                    }).ToList() ?? new List<CustomerGeographicalEntityDto>()
+            };
 
+            return Ok(new ApiResponse(true, "Customer retrieved successfully", customerDto));
+        }
 
         [HttpPost]
         public async Task<ActionResult> CreateCustomer([FromBody] CustomerDto model)
         {
             if (!ModelState.IsValid)
-                return BadRequest(ModelState);
+                return BadRequest(new ApiResponse(false, "Invalid data", ModelState));
 
-            var exists = await dbContext.Customers.AnyAsync(c => c.Name == model.Name);
+            var exists = await dbContext.Customers.AnyAsync(c => c.Matricule == model.Matricule);
             if (exists)
-                return BadRequest($"Customer '{model.Name}' already exists.");
+                return BadRequest(new ApiResponse(false, $"Customer with matricule '{model.Matricule}' already exists."));
+
+            // Validate Geographical Entities if provided
+            if (model.GeographicalEntities != null && model.GeographicalEntities.Any())
+            {
+                var entityIds = model.GeographicalEntities.Select(g => g.GeographicalEntityId).ToList();
+                var validEntities = await dbContext.GeographicalEntities
+                    .Where(g => entityIds.Contains(g.Id) && g.IsActive)
+                    .Select(g => g.Id)
+                    .ToListAsync();
+
+                var invalidIds = entityIds.Except(validEntities).ToList();
+                if (invalidIds.Any())
+                    return BadRequest(new ApiResponse(false,
+                        $"Les entités géographiques avec IDs {string.Join(", ", invalidIds)} sont invalides ou inactives"));
+            }
 
             var customer = new Customer
             {
                 SourceSystem = DataSource.TMS,
                 ExternalId = null,
-
                 Name = model.Name,
                 Phone = model.Phone,
-                City = model.City,
+                PhoneCountry = model.PhoneCountry ?? "tn",
                 Email = model.Email,
-                Adress = model.Adress,
                 Matricule = model.Matricule,
-                Gouvernorat = model.Gouvernorat,
                 Contact = model.Contact,
-                ZoneId = model.ZoneId
+                CustomerGeographicalEntities = new List<CustomerGeographicalEntity>()
             };
+
+            // Add geographical entities
+            if (model.GeographicalEntities != null && model.GeographicalEntities.Any())
+            {
+                foreach (var geoDto in model.GeographicalEntities)
+                {
+                    customer.CustomerGeographicalEntities.Add(new CustomerGeographicalEntity
+                    {
+                        GeographicalEntityId = geoDto.GeographicalEntityId
+                    });
+                }
+            }
 
             dbContext.Customers.Add(customer);
             await dbContext.SaveChangesAsync();
 
-            return CreatedAtAction(nameof(GetCustomerById), new { id = customer.Id }, model);
-        }
+            // Load the created customer with relationships
+            var createdCustomer = await dbContext.Customers
+                .Include(c => c.CustomerGeographicalEntities)
+                    .ThenInclude(cg => cg.GeographicalEntity)
+                        .ThenInclude(g => g.Level)
+                .FirstOrDefaultAsync(c => c.Id == customer.Id);
 
+            var customerDto = new CustomerDto
+            {
+                Id = createdCustomer.Id,
+                Name = createdCustomer.Name,
+                Phone = createdCustomer.Phone,
+                PhoneCountry = createdCustomer.PhoneCountry,
+                Email = createdCustomer.Email,
+                Matricule = createdCustomer.Matricule,
+                Contact = createdCustomer.Contact,
+                SourceSystem = createdCustomer.SourceSystem.ToString(),
+                GeographicalEntities = createdCustomer.CustomerGeographicalEntities?
+                    .Where(cg => cg.GeographicalEntity != null && cg.GeographicalEntity.IsActive)
+                    .Select(cg => new CustomerGeographicalEntityDto
+                    {
+                        GeographicalEntityId = cg.GeographicalEntityId,
+                        GeographicalEntityName = cg.GeographicalEntity.Name,
+                        LevelName = cg.GeographicalEntity.Level?.Name,
+                        LevelNumber = cg.GeographicalEntity.Level?.LevelNumber ?? 0,
+                        Latitude = cg.GeographicalEntity.Latitude,
+                        Longitude = cg.GeographicalEntity.Longitude
+                    }).ToList() ?? new List<CustomerGeographicalEntityDto>()
+            };
+
+            return CreatedAtAction(nameof(GetCustomerById), new { id = customer.Id },
+                new ApiResponse(true, "Customer created successfully", customerDto));
+        }
 
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateCustomer(int id, [FromBody] CustomerDto model)
         {
             if (!ModelState.IsValid)
-                return BadRequest(ModelState);
+                return BadRequest(new ApiResponse(false, "Invalid data", ModelState));
 
-            var customer = await dbContext.Customers.FindAsync(id);
+            var customer = await dbContext.Customers
+                .Include(c => c.CustomerGeographicalEntities)
+                .FirstOrDefaultAsync(c => c.Id == id);
+
             if (customer == null)
-                return NotFound($"Customer with Id {id} does not exist.");
+                return NotFound(new ApiResponse(false, $"Customer with ID {id} not found"));
 
+            var existingCustomer = await dbContext.Customers
+                .FirstOrDefaultAsync(c => c.Matricule == model.Matricule && c.Id != id);
+
+            if (existingCustomer != null)
+                return BadRequest(new ApiResponse(false, $"Customer with matricule '{model.Matricule}' already exists."));
+
+            // Validate Geographical Entities if provided
+            if (model.GeographicalEntities != null && model.GeographicalEntities.Any())
+            {
+                var entityIds = model.GeographicalEntities.Select(g => g.GeographicalEntityId).ToList();
+                var validEntities = await dbContext.GeographicalEntities
+                    .Where(g => entityIds.Contains(g.Id) && g.IsActive)
+                    .Select(g => g.Id)
+                    .ToListAsync();
+
+                var invalidIds = entityIds.Except(validEntities).ToList();
+                if (invalidIds.Any())
+                    return BadRequest(new ApiResponse(false,
+                        $"Les entités géographiques avec IDs {string.Join(", ", invalidIds)} sont invalides ou inactives"));
+            }
+
+            // Update customer properties
             customer.Name = model.Name;
             customer.Phone = model.Phone;
-            customer.City = model.City;
+            customer.PhoneCountry = model.PhoneCountry ?? "tn";
             customer.Email = model.Email;
-            customer.Adress = model.Adress;
             customer.Matricule = model.Matricule;
-            customer.Gouvernorat = model.Gouvernorat;
             customer.Contact = model.Contact;
-            customer.ZoneId = model.ZoneId;
+            customer.UpdatedAt = DateTime.UtcNow;
+
+            // Update geographical entities
+            if (model.GeographicalEntities != null)
+            {
+                // Remove old associations
+                if (customer.CustomerGeographicalEntities != null && customer.CustomerGeographicalEntities.Any())
+                {
+                    dbContext.CustomerGeographicalEntities.RemoveRange(customer.CustomerGeographicalEntities);
+                }
+
+                // Add new associations
+                if (model.GeographicalEntities.Any())
+                {
+                    customer.CustomerGeographicalEntities = model.GeographicalEntities.Select(geoDto => new CustomerGeographicalEntity
+                    {
+                        CustomerId = customer.Id,
+                        GeographicalEntityId = geoDto.GeographicalEntityId
+                    }).ToList();
+                }
+            }
 
             await dbContext.SaveChangesAsync();
 
-            return Ok(new { Message = "Customer updated successfully" });
-        }
+            // Load updated customer with relationships
+            var updatedCustomer = await dbContext.Customers
+                .Include(c => c.CustomerGeographicalEntities)
+                    .ThenInclude(cg => cg.GeographicalEntity)
+                        .ThenInclude(g => g.Level)
+                .FirstOrDefaultAsync(c => c.Id == id);
 
+            var customerDto = new CustomerDto
+            {
+                Id = updatedCustomer.Id,
+                Name = updatedCustomer.Name,
+                Phone = updatedCustomer.Phone,
+                PhoneCountry = updatedCustomer.PhoneCountry,
+                Email = updatedCustomer.Email,
+                Matricule = updatedCustomer.Matricule,
+                Contact = updatedCustomer.Contact,
+                SourceSystem = updatedCustomer.SourceSystem.ToString(),
+                GeographicalEntities = updatedCustomer.CustomerGeographicalEntities?
+                    .Where(cg => cg.GeographicalEntity != null && cg.GeographicalEntity.IsActive)
+                    .Select(cg => new CustomerGeographicalEntityDto
+                    {
+                        GeographicalEntityId = cg.GeographicalEntityId,
+                        GeographicalEntityName = cg.GeographicalEntity.Name,
+                        LevelName = cg.GeographicalEntity.Level?.Name,
+                        LevelNumber = cg.GeographicalEntity.Level?.LevelNumber ?? 0,
+                        Latitude = cg.GeographicalEntity.Latitude,
+                        Longitude = cg.GeographicalEntity.Longitude
+                    }).ToList() ?? new List<CustomerGeographicalEntityDto>()
+            };
+
+            return Ok(new ApiResponse(true, "Customer updated successfully", customerDto));
+        }
 
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteCustomer(int id)
         {
-            var customer = await dbContext.Customers.FindAsync(id);
+            var customer = await dbContext.Customers
+                .Include(c => c.CustomerGeographicalEntities)
+                .FirstOrDefaultAsync(c => c.Id == id);
+
             if (customer == null)
-                return NotFound();
+                return NotFound(new ApiResponse(false, $"Customer with ID {id} not found"));
+
+            // Check if customer has any orders
+            var hasOrders = await dbContext.Orders.AnyAsync(o => o.CustomerId == id);
+            if (hasOrders)
+            {
+                return BadRequest(new ApiResponse(false,
+                    "Cannot delete customer because they have associated orders"));
+            }
+
+            // Remove geographical entity associations
+            if (customer.CustomerGeographicalEntities != null && customer.CustomerGeographicalEntities.Any())
+            {
+                dbContext.CustomerGeographicalEntities.RemoveRange(customer.CustomerGeographicalEntities);
+            }
 
             dbContext.Customers.Remove(customer);
             await dbContext.SaveChangesAsync();
 
-            return Ok(new { Message = "Customer deleted successfully" });
+            return Ok(new ApiResponse(true, "Customer deleted successfully"));
+        }
+
+        [HttpGet("list")]
+        public async Task<ActionResult<IEnumerable<CustomerDto>>> GetCustomersList()
+        {
+            var customers = await dbContext.Customers
+                .Include(c => c.CustomerGeographicalEntities)
+                    .ThenInclude(cg => cg.GeographicalEntity)
+                        .ThenInclude(g => g.Level)
+                .AsNoTracking()
+                .AsSplitQuery()
+                .ToListAsync();
+
+            var customerDtos = customers.Select(c => new CustomerDto
+            {
+                Id = c.Id,
+                Name = c.Name,
+                Phone = c.Phone,
+                PhoneCountry = c.PhoneCountry,
+                Email = c.Email,
+                Matricule = c.Matricule,
+                Contact = c.Contact,
+                SourceSystem = c.SourceSystem.ToString(),
+                GeographicalEntities = c.CustomerGeographicalEntities?
+                    .Where(cg => cg.GeographicalEntity != null && cg.GeographicalEntity.IsActive)
+                    .Select(cg => new CustomerGeographicalEntityDto
+                    {
+                        GeographicalEntityId = cg.GeographicalEntityId,
+                        GeographicalEntityName = cg.GeographicalEntity.Name,
+                        LevelName = cg.GeographicalEntity.Level?.Name,
+                        LevelNumber = cg.GeographicalEntity.Level?.LevelNumber ?? 0,
+                        Latitude = cg.GeographicalEntity.Latitude,
+                        Longitude = cg.GeographicalEntity.Longitude
+                    }).ToList() ?? new List<CustomerGeographicalEntityDto>()
+            }).ToList();
+
+            return Ok(customerDtos);
         }
 
         [HttpGet("with-ready-to-load-orders")]
-        public async Task<ActionResult<IEnumerable<Customer>>> GetCustomersWithReadyToLoadOrders()
+        public async Task<ActionResult<IEnumerable<CustomerDto>>> GetCustomersWithReadyToLoadOrders()
         {
             var customers = await dbContext.Customers
+               
+                .Include(c => c.CustomerGeographicalEntities)
+                    .ThenInclude(cg => cg.GeographicalEntity)
+                        .ThenInclude(g => g.Level)
                 .Where(c => c.Orders.Any(o => o.Status == OrderStatus.ReadyToLoad))
+                .AsNoTracking()
+                .AsSplitQuery()
                 .ToListAsync();
 
-            return Ok(customers);
+            var customerDtos = customers.Select(c => new CustomerDto
+            {
+                Id = c.Id,
+                Name = c.Name,
+                Phone = c.Phone,
+                PhoneCountry = c.PhoneCountry,
+                Email = c.Email,
+                Matricule = c.Matricule,
+                Contact = c.Contact,
+                SourceSystem = c.SourceSystem.ToString(),
+                GeographicalEntities = c.CustomerGeographicalEntities?
+                    .Where(cg => cg.GeographicalEntity != null && cg.GeographicalEntity.IsActive)
+                    .Select(cg => new CustomerGeographicalEntityDto
+                    {
+                        GeographicalEntityId = cg.GeographicalEntityId,
+                        GeographicalEntityName = cg.GeographicalEntity.Name,
+                        LevelName = cg.GeographicalEntity.Level?.Name,
+                        LevelNumber = cg.GeographicalEntity.Level?.LevelNumber ?? 0,
+                        Latitude = cg.GeographicalEntity.Latitude,
+                        Longitude = cg.GeographicalEntity.Longitude
+                    }).ToList() ?? new List<CustomerGeographicalEntityDto>()
+            }).ToList();
+
+            return Ok(customerDtos);
         }
 
         [HttpGet("{id}/name")]
@@ -193,11 +467,63 @@ namespace TransportManagementSystem.Controllers
             return Ok(customer);
         }
 
-
-        [HttpGet("list")]
-        public async Task<ActionResult<IEnumerable<Customer>>> GetCustomersList()
+        // GET: api/Customer/by-geographical-entity/{entityId}
+        [HttpGet("by-geographical-entity/{entityId}")]
+        public async Task<IActionResult> GetCustomersByGeographicalEntity(int entityId)
         {
-            var customers = await customerRepository.GetAll();
+            var customers = await dbContext.Customers
+                .Include(c => c.CustomerGeographicalEntities)
+                    .ThenInclude(cg => cg.GeographicalEntity)
+                        .ThenInclude(g => g.Level)
+                .Where(c => c.CustomerGeographicalEntities.Any(cg => cg.GeographicalEntityId == entityId))
+                .ToListAsync();
+
+            var customerDtos = customers.Select(c => new CustomerDto
+            {
+                Id = c.Id,
+                Name = c.Name,
+                Phone = c.Phone,
+                PhoneCountry = c.PhoneCountry,
+                Email = c.Email,
+                Matricule = c.Matricule,
+                Contact = c.Contact,
+                SourceSystem = c.SourceSystem.ToString()
+            }).ToList();
+
+            return Ok(customerDtos);
+        }
+
+        // GET: api/Customer/with-coordinates
+        [HttpGet("with-coordinates")]
+        public async Task<IActionResult> GetCustomersWithCoordinates()
+        {
+            var customers = await dbContext.Customers
+                .Include(c => c.CustomerGeographicalEntities)
+                    .ThenInclude(cg => cg.GeographicalEntity)
+                        .ThenInclude(g => g.Level)
+                .Where(c => c.CustomerGeographicalEntities.Any(cg =>
+                    cg.GeographicalEntity.Latitude != null &&
+                    cg.GeographicalEntity.Longitude != null))
+                .Select(c => new
+                {
+                    c.Id,
+                    c.Name,
+                    c.Matricule,
+                    c.Phone,
+                    c.Email,
+                    GeographicalEntities = c.CustomerGeographicalEntities
+                        .Where(cg => cg.GeographicalEntity.Latitude != null && cg.GeographicalEntity.Longitude != null)
+                        .Select(cg => new
+                        {
+                            cg.GeographicalEntityId,
+                            Name = cg.GeographicalEntity.Name,
+                            Level = cg.GeographicalEntity.Level != null ? cg.GeographicalEntity.Level.Name : null,
+                            cg.GeographicalEntity.Latitude,
+                            cg.GeographicalEntity.Longitude
+                        }).ToList()
+                })
+                .ToListAsync();
+
             return Ok(customers);
         }
     }

@@ -6,7 +6,7 @@
       <i class="fas fa-map-marked-alt"></i>
       Cartes des Opérations
     </h1>
-    <p class="page-subtitle">Visualisation des camions et chauffeurs en temps réel - 24 Gouvernorats</p>
+    <p class="page-subtitle">Visualisation des camions et chauffeurs par entités géographiques</p>
   </div>
 
   <!-- ========== MESSAGES ========== -->
@@ -29,13 +29,13 @@
   <!-- ========== SECTION CARTES JUMELÉES ========== -->
   <div class="maps-row">
     
-    <!-- === CARTE DES CAMIONS (GAUCHE) - 24 GOUVERNORATS === -->
+    <!-- === CARTE DES CAMIONS (GAUCHE) === -->
     <div class="card map-card left-map">
       <div class="card-header">
         <div class="header-left">
           <h3>
             <i class="fas fa-truck"></i>
-            Carte des Camions - 24 Gouvernorats
+            Carte des Camions - Entités Géographiques
           </h3>
           <div class="map-status-badge">
             <span class="live-indicator"></span>
@@ -55,19 +55,21 @@
       <div class="card-body">
         <div class="map-container-wrapper">
           
-          <!-- FILTRES RAPIDES PAR RÉGION - CAMIONS -->
-          <div class="map-region-filters">
+          <!-- FILTRES RAPIDES PAR NIVEAU - CAMIONS -->
+          <div class="map-region-filters" *ngIf="geographicalLevels.length > 0">
             <button class="region-filter-btn" 
                     [class.active]="activeTruckRegionFilter === 'all'"
                     (click)="centerMap('truck')">
-              <i class="fas fa-map"></i> Toutes
+              <i class="fas fa-map"></i> Tous les niveaux
             </button>
-            <button class="region-filter-btn" 
-                    *ngFor="let region of Object.keys(ZONES_BY_REGION)" 
-                    [class.active]="activeTruckRegionFilter === region"
-                    (click)="focusOnRegion(region, 'truck')">
-              <i class="fas fa-map-marker-alt"></i> {{ region }}
-            </button>
+            <ng-container *ngFor="let level of geographicalLevels">
+              <button *ngIf="level.isMappable" 
+                      class="region-filter-btn" 
+                      [class.active]="activeTruckRegionFilter === level.name"
+                      (click)="focusOnRegion(level.name, 'truck')">
+                <i class="fas fa-map-marker-alt"></i> {{ level.name }}
+              </button>
+            </ng-container>
           </div>
           
           <!-- Carte Leaflet Camions -->
@@ -79,7 +81,7 @@
           <div *ngIf="mapsLoading.trucks" class="map-loading-overlay">
             <div class="loading-content">
               <div class="spinner-small"></div>
-              <span>Chargement des 24 gouvernorats...</span>
+              <span>Chargement des entités géographiques...</span>
             </div>
           </div>
           
@@ -99,7 +101,7 @@
             <h4><i class="fas fa-truck"></i> Légende Camions</h4>
             <div class="legend-grid">
               <div class="legend-section">
-                <h5>Zones</h5>
+                <h5>Entités</h5>
                 <div class="legend-item">
                   <span class="legend-dot" style="background: #1cc88a;"></span>
                   <span class="legend-label">Très active (>5 camions)</span>
@@ -148,8 +150,8 @@
                 <span class="stat-label">Camions</span>
               </div>
               <div class="stat-item">
-                <span class="stat-value">{{ truckStats.activeZones }}/24</span>
-                <span class="stat-label">Zones actives</span>
+                <span class="stat-value">{{ truckStats.activeEntities }}/{{ mappableEntities.length }}</span>
+                <span class="stat-label">Entités actives</span>
               </div>
               <div class="stat-item">
                 <span class="stat-value">{{ truckStats.onMission }}</span>
@@ -175,13 +177,13 @@
       </div>
     </div>
 
-    <!-- === CARTE DES CHAUFFEURS (DROITE) - 24 GOUVERNORATS === -->
+    <!-- === CARTE DES CHAUFFEURS (DROITE) === -->
     <div class="card map-card right-map">
       <div class="card-header">
         <div class="header-left">
           <h3>
             <i class="fas fa-user-tie"></i>
-            Carte des Chauffeurs - 24 Gouvernorats
+            Carte des Chauffeurs - Entités Géographiques
           </h3>
           <div class="map-status-badge">
             <span class="live-indicator" style="background: #36b9cc;"></span>
@@ -201,19 +203,21 @@
       <div class="card-body">
         <div class="map-container-wrapper">
           
-          <!-- FILTRES RAPIDES PAR RÉGION - CHAUFFEURS -->
-          <div class="map-region-filters">
+          <!-- FILTRES RAPIDES PAR NIVEAU - CHAUFFEURS -->
+          <div class="map-region-filters" *ngIf="geographicalLevels.length > 0">
             <button class="region-filter-btn" 
                     [class.active]="activeDriverRegionFilter === 'all'"
                     (click)="centerMap('driver')">
-              <i class="fas fa-map"></i> Toutes
+              <i class="fas fa-map"></i> Tous les niveaux
             </button>
-            <button class="region-filter-btn" 
-                    *ngFor="let region of Object.keys(ZONES_BY_REGION)" 
-                    [class.active]="activeDriverRegionFilter === region"
-                    (click)="focusOnRegion(region, 'driver')">
-              <i class="fas fa-map-marker-alt"></i> {{ region }}
-            </button>
+            <ng-container *ngFor="let level of geographicalLevels">
+              <button *ngIf="level.isMappable" 
+                      class="region-filter-btn" 
+                      [class.active]="activeDriverRegionFilter === level.name"
+                      (click)="focusOnRegion(level.name, 'driver')">
+                <i class="fas fa-map-marker-alt"></i> {{ level.name }}
+              </button>
+            </ng-container>
           </div>
           
           <!-- Carte Leaflet Chauffeurs -->
@@ -225,7 +229,7 @@
           <div *ngIf="mapsLoading.drivers" class="map-loading-overlay">
             <div class="loading-content">
               <div class="spinner-small"></div>
-              <span>Chargement des 24 gouvernorats...</span>
+              <span>Chargement des entités géographiques...</span>
             </div>
           </div>
           
@@ -245,7 +249,7 @@
             <h4><i class="fas fa-user-tie"></i> Légende Chauffeurs</h4>
             <div class="legend-grid">
               <div class="legend-section">
-                <h5>Zones</h5>
+                <h5>Entités</h5>
                 <div class="legend-item">
                   <span class="legend-dot" style="background: #1cc88a;"></span>
                   <span class="legend-label">Très active (>5 chauffeurs)</span>
@@ -298,8 +302,8 @@
                 <span class="stat-label">Chauffeurs</span>
               </div>
               <div class="stat-item">
-                <span class="stat-value">{{ driverActiveZones }}/24</span>
-                <span class="stat-label">Zones actives</span>
+                <span class="stat-value">{{ driverStats.activeEntities }}/{{ mappableEntities.length }}</span>
+                <span class="stat-label">Entités actives</span>
               </div>
               <div class="stat-item">
                 <span class="stat-value">{{ driverStats.onMission }}</span>
@@ -326,98 +330,131 @@
     </div>
   </div>
 
-  <!-- ========== SECTION ZONES - 24 GOUVERNORATS ========== -->
+  <!-- ========== SECTION ENTITÉS ========== -->
   <div class="card zones-card">
     <div class="card-header">
       <div class="header-left">
         <h4>
           <i class="fas fa-map-pin"></i>
-          Zones d'Opération - 24 Gouvernorats
+          {{ activeEntityView === 'trucks' ? 'Entités Géographiques - Camions' : 'Entités Géographiques - Chauffeurs' }}
         </h4>
       </div>
       <div class="zone-tabs">
-        <button class="zone-tab" [class.active]="activeZoneView === 'trucks'" (click)="switchZoneView('trucks')">
+        <button class="zone-tab" [class.active]="activeEntityView === 'trucks'" (click)="switchEntityView('trucks')">
           <i class="fas fa-truck"></i> Camions
         </button>
-        <button class="zone-tab" [class.active]="activeZoneView === 'drivers'" (click)="switchZoneView('drivers')">
+        <button class="zone-tab" [class.active]="activeEntityView === 'drivers'" (click)="switchEntityView('drivers')">
           <i class="fas fa-user-tie"></i> Chauffeurs
         </button>
       </div>
     </div>
     <div class="card-body">
-      <div class="zones-grid">
-        <div class="zone-card" *ngFor="let zone of zones" 
-             [class.active]="activeZoneName === zone.name"
-             (click)="focusOnZone(zone.name)">
-          
-          <!-- En-tête de zone -->
-          <div class="zone-header">
-            <div class="zone-icon" 
-                 [style.background]="activeZoneView === 'trucks' ? getZoneColor(zone.name) : getDriverZoneColor(zone.name)">
-              {{ zone.name.substring(0, 3) }}
-            </div>
-            <div class="zone-info">
-              <h5>{{ zone.name }}</h5>
-              <span class="zone-count" *ngIf="activeZoneView === 'trucks'">
-                {{ getZoneStats(zone.name).total }} camions
-              </span>
-              <span class="zone-count" *ngIf="activeZoneView === 'drivers'">
-                {{ getDriverZoneStats(zone.name).total }} chauffeurs
-              </span>
-            </div>
-            <div class="zone-percentage" *ngIf="activeZoneView === 'trucks'">
-              <div class="percentage-circle" 
-                   [style.background]="'linear-gradient(135deg, ' + getZoneColor(zone.name) + ', #764ba2)'">
-                {{ getZoneUtilizationPercentage(zone.name) }}%
+
+      <!-- Vue Camions - Entités -->
+      <div *ngIf="activeEntityView === 'trucks'">
+        <div class="zones-grid">
+          <ng-container *ngFor="let entity of mappableEntities">
+            <div class="zone-card" 
+                 *ngIf="entity.latitude && entity.longitude"
+                 [class.active]="activeEntityName === entity.name"
+                 (click)="entity.id && focusOnEntity(entity.id, 'trucks')">
+              
+              <!-- En-tête de l'entité -->
+              <div class="zone-header">
+                <div class="zone-icon" 
+                     [style.background]="entity.id ? getTruckEntityColor(entity.id) : '#6c757d'">
+                  <i class="fas fa-truck"></i>
+                </div>
+                <div class="zone-info">
+                  <h5>{{ entity.name }}</h5>
+                  <span class="zone-level">{{ entity.id ? getEntityLevelName(entity.id) : '' }}</span>
+                  <span class="zone-count">
+                    {{ entity.id ? getTruckEntityStats(entity.id).totalTrucks : 0 }} camions
+                  </span>
+                </div>
+                <div class="zone-percentage" *ngIf="entity.id">
+                  <div class="percentage-circle" 
+                       [style.background]="'linear-gradient(135deg, ' + getTruckEntityColor(entity.id) + ', #764ba2)'">
+                    {{ entity.id ? getTruckEntityUtilizationPercentage(entity.id) : 0 }}%
+                  </div>
+                </div>
+              </div>
+              
+              <!-- Statistiques Camions -->
+              <div class="zone-stats" *ngIf="entity.id">
+                <div class="stat-badge available">
+                  <i class="fas fa-check-circle"></i>
+                  {{ getTruckEntityStats(entity.id).availableTrucks }}
+                </div>
+                <div class="stat-badge mission">
+                  <i class="fas fa-truck"></i>
+                  {{ getTruckEntityStats(entity.id).onMissionTrucks }}
+                </div>
+                <div class="stat-badge maintenance">
+                  <i class="fas fa-tools"></i>
+                  {{ getTruckEntityStats(entity.id).maintenanceTrucks }}
+                </div>
+                <div class="stat-badge out">
+                  <i class="fas fa-exclamation-circle"></i>
+                  {{ getTruckEntityStats(entity.id).outOfServiceTrucks }}
+                </div>
               </div>
             </div>
-            <div class="zone-percentage" *ngIf="activeZoneView === 'drivers'">
-              <div class="percentage-circle" 
-                   [style.background]="'linear-gradient(135deg, ' + getDriverZoneColor(zone.name) + ', #764ba2)'">
-                {{ getDriverUtilizationPercentage(zone.name) }}%
+          </ng-container>
+        </div>
+      </div>
+
+      <!-- Vue Chauffeurs - Entités -->
+      <div *ngIf="activeEntityView === 'drivers'">
+        <div class="zones-grid">
+          <ng-container *ngFor="let entity of mappableEntities">
+            <div class="zone-card" 
+                 *ngIf="entity.latitude && entity.longitude"
+                 [class.active]="activeEntityName === entity.name"
+                 (click)="entity.id && focusOnEntity(entity.id, 'drivers')">
+              
+              <!-- En-tête de l'entité -->
+              <div class="zone-header">
+                <div class="zone-icon" 
+                     [style.background]="entity.id ? getDriverEntityColor(entity.id) : '#6c757d'">
+                  <i class="fas fa-user-tie"></i>
+                </div>
+                <div class="zone-info">
+                  <h5>{{ entity.name }}</h5>
+                  <span class="zone-level">{{ entity.id ? getEntityLevelName(entity.id) : '' }}</span>
+                  <span class="zone-count">
+                    {{ entity.id ? getDriverEntityStats(entity.id).totalDrivers : 0 }} chauffeurs
+                  </span>
+                </div>
+                <div class="zone-percentage" *ngIf="entity.id">
+                  <div class="percentage-circle" 
+                       [style.background]="'linear-gradient(135deg, ' + getDriverEntityColor(entity.id) + ', #764ba2)'">
+                    {{ entity.id ? getDriverEntityUtilizationPercentage(entity.id) : 0 }}%
+                  </div>
+                </div>
+              </div>
+              
+              <!-- Statistiques Chauffeurs -->
+              <div class="zone-stats" *ngIf="entity.id">
+                <div class="stat-badge available">
+                  <i class="fas fa-check-circle"></i>
+                  {{ getDriverEntityStats(entity.id).availableDrivers }}
+                </div>
+                <div class="stat-badge mission">
+                  <i class="fas fa-truck"></i>
+                  {{ getDriverEntityStats(entity.id).onMissionDrivers }}
+                </div>
+                <div class="stat-badge overtime">
+                  <i class="fas fa-clock"></i>
+                  {{ getDriverEntityStats(entity.id).overtimeDrivers }}
+                </div>
+                <div class="stat-badge conflict">
+                  <i class="fas fa-exclamation-triangle"></i>
+                  {{ getDriverEntityStats(entity.id).conflictDrivers }}
+                </div>
               </div>
             </div>
-          </div>
-          
-          <!-- Statistiques Camions -->
-          <div class="zone-stats" *ngIf="activeZoneView === 'trucks'">
-            <div class="stat-badge available">
-              <i class="fas fa-check-circle"></i>
-              {{ getZoneStats(zone.name).available }}
-            </div>
-            <div class="stat-badge mission">
-              <i class="fas fa-truck"></i>
-              {{ getZoneStats(zone.name).onMission }}
-            </div>
-            <div class="stat-badge maintenance">
-              <i class="fas fa-tools"></i>
-              {{ getZoneStats(zone.name).maintenance }}
-            </div>
-            <div class="stat-badge out">
-              <i class="fas fa-exclamation-circle"></i>
-              {{ getZoneStats(zone.name).outOfService }}
-            </div>
-          </div>
-          
-          <!-- Statistiques Chauffeurs -->
-          <div class="zone-stats" *ngIf="activeZoneView === 'drivers'">
-            <div class="stat-badge available">
-              <i class="fas fa-check-circle"></i>
-              {{ getDriverZoneStats(zone.name).available }}
-            </div>
-            <div class="stat-badge mission">
-              <i class="fas fa-truck"></i>
-              {{ getDriverZoneStats(zone.name).onMission }}
-            </div>
-            <div class="stat-badge overtime">
-              <i class="fas fa-clock"></i>
-              {{ getDriverZoneStats(zone.name).overtime }}
-            </div>
-            <div class="stat-badge conflict">
-              <i class="fas fa-exclamation-triangle"></i>
-              {{ getDriverZoneStats(zone.name).conflict }}
-            </div>
-          </div>
+          </ng-container>
         </div>
       </div>
     </div>
@@ -433,9 +470,9 @@
     <div *ngIf="showHelp" class="help-content">
       <h4><i class="fas fa-info-circle"></i> Comment Utiliser les Cartes</h4>
       <ul>
-        <li><strong>Cartes jumelées :</strong> Visualisez camions et chauffeurs côte à côte</li>
-        <li><strong>Régions :</strong> Cliquez sur les boutons pour zoomer sur une région spécifique</li>
-        <li><strong>Zones :</strong> Cliquez sur une zone pour la centrer sur la carte active</li>
+        <li><strong>Cartes jumelées :</strong> Visualisez camions et chauffeurs par entités géographiques</li>
+        <li><strong>Niveaux :</strong> Cliquez sur les boutons pour zoomer sur un niveau spécifique</li>
+        <li><strong>Entités :</strong> Cliquez sur une carte pour la centrer sur la carte active</li>
         <li><strong>Marqueurs :</strong> Cliquez sur un marqueur pour voir les détails</li>
       </ul>
     </div>
@@ -456,7 +493,7 @@
       <span class="footer-separator">•</span>
       <span class="footer-text">
         <i class="fas fa-shield-alt"></i>
-        24 Gouvernorats - Temps réel
+        Visualisation par entités géographiques
       </span>
     </div>
   </div>

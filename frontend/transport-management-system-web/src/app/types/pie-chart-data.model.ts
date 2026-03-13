@@ -1,4 +1,4 @@
-export interface PieChartData {
+﻿export interface PieChartData {
   label: string;
   value: number;
   color?: string;
