@@ -23,7 +23,9 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatRadioModule } from '@angular/material/radio';
-import { catchError, debounceTime, forkJoin, interval, map, Observable, of, shareReplay, Subscription, tap } from 'rxjs';
+import { catchError, forkJoin, interval, map, Observable, of, shareReplay, Subscription, tap } from 'rxjs';
+import { debounceTime, distinctUntilChanged, switchMap } from 'rxjs/operators';
+import { Subject } from 'rxjs';
 import { ITraject, ITrajectPoint } from '../../../types/traject';
 import { TrajectFormSimpleComponent } from './traject-form-simple.component';
 import { CdkDragDrop, CdkDrag, CdkDragHandle, CdkDropList, moveItemInArray } from '@angular/cdk/drag-drop';
@@ -39,6 +41,9 @@ import { Translation } from '../../../services/Translation';
 import { SettingsService } from '../../../services/settings.service';
 import { ITripSettings } from '../../../types/general-settings';
 import { IGeographicalEntity } from '../../../types/general-settings';
+import { GpsAddressService } from '../../../services/gps-address.service';
+import { MatAutocompleteModule } from '@angular/material/autocomplete';
+
 interface DialogData {
   tripId?: number;
 }
@@ -67,9 +72,9 @@ interface DialogData {
     MatSlideToggleModule,
     MatCheckboxModule,
     MatRadioModule,
+    MatAutocompleteModule,
     CdkDrag,
     CdkDragHandle,
-    CdkDropList,
     MatChipsModule,
     MatDividerModule,
     TruncatePipe,
@@ -197,6 +202,10 @@ export class TripForm implements OnInit {
   public Math = Math;
   allCustomers: ICustomer[] = [];
   loading = false;
+  
+  // Smart address search with suggestions
+  addressSuggestions: Map<number, any[]> = new Map(); // customerId -> suggestions
+  addressSearchSubject: Subject<{customerId: number, query: string}> = new Subject();
   loadingTrucks = false;
   loadingDrivers = false;
   loadingCustomers = false;
@@ -293,6 +302,7 @@ selectedDateStats: any = {
     private datePipe: DatePipe,
     private dialog: MatDialog,
     private settingsService: SettingsService,
+    private gpsAddressService: GpsAddressService,
     @Optional() private dialogRef?: MatDialogRef<TripForm>,
     @Optional() @Inject(MAT_DIALOG_DATA) public data?: DialogData
   ) {
@@ -310,6 +320,15 @@ selectedDateStats: any = {
     this.loadCapacitySettings();
     this.setupSubscriptions();
     this.loadConfiguration();
+
+    // Handle empty customers case gracefully
+    this.filteredClients = this.allClientsWithPendingOrders || [];
+
+    this.setupSubscriptions();
+    this.loadConfiguration();
+
+    // Setup smart address search with debounce
+    this.setupAddressSearch();
 
     setTimeout(() => {
       this.captureInitialState();
@@ -1256,6 +1275,8 @@ private async checkAndDisplayTrajectStatus(trajectId: number): Promise<void> {
       customerId: [deliveryData?.customerId || '', Validators.required],
       orderId: [deliveryData?.orderId || '', Validators.required],
       deliveryAddress: [deliveryData?.deliveryAddress || ''],
+      deliveryAddress: [deliveryData?.deliveryAddress || ''], // Validators.required removed temporarily
+      geolocation: [deliveryData?.geolocation || null], // Champ pour stocker les coordonnées GPS (format: "lat,lng")
       sequence: [deliveryData?.sequence || sequence, [Validators.required, Validators.min(1)]],
       plannedTime: [plannedTime],
       notes: [deliveryData?.notes || '']
@@ -1333,6 +1354,184 @@ private async checkAndDisplayTrajectStatus(trajectId: number): Promise<void> {
     return customer ? (customer.name || 'Nom non disponible') : '';
   }
 
+
+  onDeliveryAddressBlur(customerId: number): void {
+    const control = this.tripForm.get(`deliveries`);
+    if (!control) return;
+
+    const deliveriesArray = control as FormArray;
+    const deliveryGroup = deliveriesArray.controls.find(d => {
+      const group = d as FormGroup;
+      return group.get('customerId')?.value === customerId;
+    });
+
+    if (deliveryGroup) {
+      const groupControl = deliveryGroup as FormGroup;
+      const addressControlName = `deliveryAddress_${customerId}`;
+      const newAddress = this.tripForm.get(addressControlName)?.value;
+
+      if (newAddress && newAddress.trim().length > 0) {
+        // Géocoder l'adresse et stocker les coordonnées
+        this.geocodeDeliveryAddress(customerId, newAddress);
+        
+        groupControl.patchValue({ deliveryAddress: newAddress }, { emitEvent: false });
+        this.hasUnsavedTrajectChanges = true;
+        console.log(`Adresse mise à jour pour le client ${customerId}: ${newAddress}`);
+      }
+    }
+  }
+
+  /**
+   * Géocoder l'adresse de livraison et stocker les coordonnées GPS
+   */
+  private geocodeDeliveryAddress(customerId: number, address: string): void {
+    console.log(`Géocodage de l'adresse pour le client ${customerId}: ${address}`);
+    
+    this.gpsAddressService.validateAndNormalizeAddress(address).subscribe({
+      next: (result) => {
+        if (result.success && result.lat && result.lng) {
+          // Trouver le groupe de livraison pour ce client
+          const deliveriesArray = this.tripForm.get('deliveries') as FormArray;
+          const deliveryGroup = deliveriesArray.controls.find(d => {
+            const group = d as FormGroup;
+            return group.get('customerId')?.value === customerId;
+          });
+
+          if (deliveryGroup) {
+            const groupControl = deliveryGroup as FormGroup;
+            
+            // Stocker les coordonnées dans le champ geolocation (format: "lat,lng")
+            const geolocationValue = `${result.lat.toFixed(6)},${result.lng.toFixed(6)}`;
+            groupControl.patchValue({ 
+              geolocation: geolocationValue,
+              deliveryAddress: result.address // Utiliser l'adresse normalisée
+            }, { emitEvent: false });
+            
+            console.log(`✅ Adresse géocodée pour le client ${customerId}: ${result.address} (${geolocationValue})`);
+            
+            this.snackBar.open(`✅ Adresse géocodée avec succès`, 'Fermer', {
+              duration: 3000,
+              horizontalPosition: 'right',
+              verticalPosition: 'top'
+            });
+          }
+        } else {
+          console.warn(`⚠️ Géocodage échoué pour ${address}: ${result.error}`);
+          this.snackBar.open(`⚠️ Adresse non trouvée: ${result.error}`, 'Fermer', {
+            duration: 5000,
+            horizontalPosition: 'right',
+            verticalPosition: 'top'
+          });
+        }
+      },
+      error: (error) => {
+        console.error(`❌ Erreur de géocodage pour ${address}:`, error);
+        this.snackBar.open(`❌ Erreur de géocodage`, 'Fermer', {
+          duration: 5000,
+          horizontalPosition: 'right',
+          verticalPosition: 'top'
+        });
+      }
+    });
+  }
+
+  /**
+   * Setup smart address search with debounce and suggestions
+   */
+  private setupAddressSearch(): void {
+    this.addressSearchSubject.pipe(
+      debounceTime(500), // Wait 500ms after typing stops
+      distinctUntilChanged((prev, curr) => prev.query === curr.query),
+      switchMap(({ customerId, query }) => {
+        if (query.length < 3) {
+          return of([]);
+        }
+        return this.gpsAddressService.getAddressSuggestions(query);
+      })
+    ).subscribe({
+      next: (suggestions) => {
+        this.addressSuggestions.set(this.currentCustomerId!, suggestions);
+      },
+      error: (error) => {
+        console.error('Error fetching address suggestions:', error);
+      }
+    });
+  }
+
+  currentCustomerId: number | null = null;
+
+  onAddressInput(event: any, customerId: number): void {
+    const query = event.target.value;
+    this.currentCustomerId = customerId;
+    this.addressSearchSubject.next({ customerId, query });
+  }
+
+  /**
+   * Show address suggestions when search icon is clicked
+   */
+  showAddressSuggestions(customerId: number): void {
+    // Get current address from form
+    const deliveriesArray = this.tripForm.get('deliveries') as FormArray;
+    const deliveryGroup = deliveriesArray.controls.find(d => {
+      const group = d as FormGroup;
+      return group.get('customerId')?.value === customerId;
+    });
+
+    if (deliveryGroup) {
+      const groupControl = deliveryGroup as FormGroup;
+      const currentAddress = groupControl.get('deliveryAddress')?.value || '';
+
+      if (currentAddress && currentAddress.trim().length >= 3) {
+        // Trigger search with current address
+        this.currentCustomerId = customerId;
+        this.addressSearchSubject.next({ customerId, query: currentAddress });
+
+        // Open the autocomplete panel manually
+        const inputElement = document.querySelector(`input[formcontrolname='deliveryAddress_${customerId}']`) as HTMLElement;
+        if (inputElement) {
+          inputElement.focus();
+        }
+      } else {
+        // Show hint to type at least 3 characters
+        this.snackBar.open('🔍 Tapez au moins 3 caractères pour rechercher', 'Fermer', {
+          duration: 3000,
+          horizontalPosition: 'right',
+          verticalPosition: 'top'
+        });
+      }
+    }
+  }
+
+  onAddressSelected(event: any, customerId: number): void {
+    const suggestion = event.option.value;
+    
+    // Find delivery group for this customer
+    const deliveriesArray = this.tripForm.get('deliveries') as FormArray;
+    const deliveryGroup = deliveriesArray.controls.find(d => {
+      const group = d as FormGroup;
+      return group.get('customerId')?.value === customerId;
+    });
+
+    if (deliveryGroup) {
+      const groupControl = deliveryGroup as FormGroup;
+      const geolocationValue = `${suggestion.lat.toFixed(6)},${suggestion.lng.toFixed(6)}`;
+      
+      groupControl.patchValue({
+        deliveryAddress: suggestion.address,
+        geolocation: geolocationValue
+      }, { emitEvent: false });
+
+      console.log(`✅ Address selected for client ${customerId}: ${suggestion.address} (${geolocationValue})`);
+      
+      this.snackBar.open(`✅ Adresse sélectionnée: ${suggestion.address}`, 'Fermer', {
+        duration: 3000
+      });
+    }
+  }
+
+  getAddressSuggestions(customerId: number): any[] {
+    return this.addressSuggestions.get(customerId) || [];
+  }
 
   getOrderReference(orderId: number): string {
     if (!orderId) return 'N/A';
@@ -2641,6 +2840,7 @@ private async checkCapacityBeforeAddingOrders(selectedWeight: number): Promise<b
         customerId: parseInt(delivery.customerId),
         orderId: parseInt(delivery.orderId),
         deliveryAddress: delivery.deliveryAddress,
+        geolocation: delivery.geolocation || null, // Inclure les coordonnées GPS
         sequence: parseInt(delivery.sequence) || (index + 1),
         plannedTime: plannedTime,
         notes: delivery.notes || null
@@ -2982,6 +3182,8 @@ private async checkCapacityBeforeAddingOrders(selectedWeight: number): Promise<b
       customerId: [movedDelivery.get('customerId')?.value, Validators.required],
       orderId: [movedDelivery.get('orderId')?.value, Validators.required],
       deliveryAddress: [movedDelivery.get('deliveryAddress')?.value],
+      deliveryAddress: [movedDelivery.get('deliveryAddress')?.value], // Validators.required removed temporarily
+      geolocation: [movedDelivery.get('geolocation')?.value || null],
       sequence: [movedDelivery.get('sequence')?.value, [Validators.required, Validators.min(1)]],
       plannedTime: [movedDelivery.get('plannedTime')?.value],
       notes: [movedDelivery.get('notes')?.value || '']
@@ -5878,6 +6080,8 @@ clearFilters(): void {
             customerId: [delivery.customerId || '', Validators.required],
             orderId: [delivery.orderId || '', Validators.required],
             deliveryAddress: [delivery.deliveryAddress || ''],
+            deliveryAddress: [delivery.deliveryAddress || '', Validators.maxLength(500)], // Validators.required removed temporarily
+            geolocation: [delivery.geolocation || null],
             sequence: [sequence, [Validators.required, Validators.min(1)]],
             plannedTime: [delivery.plannedTime || ''],
             notes: [delivery.notes || '']
@@ -6881,6 +7085,8 @@ if (!this.allowMixingOrderTypes && this.deliveries.length > 0) {
             customerId: [delivery.customerId || '', Validators.required],
             orderId: [delivery.orderId || '', Validators.required],
             deliveryAddress: [delivery.deliveryAddress || ''],
+            deliveryAddress: [delivery.deliveryAddress || '', Validators.maxLength(500)], // Validators.required removed temporarily
+            geolocation: [delivery.geolocation || null],
             sequence: [sequence, [Validators.required, Validators.min(1)]],
             plannedTime: [delivery.plannedTime || ''],
             notes: [delivery.notes || '']

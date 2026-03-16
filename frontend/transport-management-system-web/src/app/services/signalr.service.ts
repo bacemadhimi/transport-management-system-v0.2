@@ -1,4 +1,5 @@
 ﻿
+ 
 import { Injectable, inject } from '@angular/core';
 import * as signalR from '@microsoft/signalr';
 import { environment } from '../../environments/environment';
@@ -22,6 +23,16 @@ export interface TripNotification {
   additionalData?: any;
 }
 
+export interface GPSPosition {
+  id: number;
+  driverId: number | null;
+  truckId: number | null;
+  latitude: number;
+  longitude: number;
+  timestamp: string;
+  source: string;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -29,6 +40,11 @@ export class SignalRService {
   private hubConnection!: signalR.HubConnection;
   private authService = inject(Auth);
   private notificationService = inject(NotificationService);
+
+  // Expose hubConnection for GPS tracking
+  public getHubConnection(): signalR.HubConnection | undefined {
+    return this.hubConnection;
+  }
 
   private notificationsSubject = new BehaviorSubject<TripNotification[]>([]);
   public notifications$ = this.notificationsSubject.asObservable();
@@ -38,6 +54,45 @@ export class SignalRService {
 
   private unreadCountSubject = new BehaviorSubject<number>(0);
   public unreadCount$ = this.unreadCountSubject.asObservable();
+
+  // Connect method for GPS tracking
+  public async connect(): Promise<void> {
+    if (this.hubConnection) {
+      return;
+    }
+    await this.startConnection();
+  }
+
+  private positionSubject = new BehaviorSubject<GPSPosition | null>(null);
+  public position$ = this.positionSubject.asObservable();
+
+  // Listen for GPS positions
+  public onGPSPosition(callback: (position: GPSPosition) => void): void {
+    this.hubConnection?.on('ReceivePosition', callback);
+  }
+
+  // Listen for trip status changes
+  public onTripStatusChanged(callback: (update: any) => void): void {
+    this.hubConnection?.on('TripStatusChanged', callback);
+  }
+
+  // Invoke server methods
+  public async invokeGetActiveTrips(): Promise<void> {
+    if (this.hubConnection?.state === signalR.HubConnectionState.Connected) {
+      await this.hubConnection.invoke('GetActiveTrips');
+    } else {
+      console.warn('SignalR not connected, cannot get active trips');
+    }
+  }
+
+  public onActiveTrips(callback: (trips: any[]) => void): void {
+    this.hubConnection?.on('ActiveTrips', callback);
+  }
+
+  // Request active trips for real-time tracking
+  public async requestActiveTrips(): Promise<void> {
+    await this.invokeGetActiveTrips();
+  }
 
   constructor() {
     this.initializeConnection();
@@ -58,7 +113,7 @@ export class SignalRService {
 
   private initializeConnection() {
     this.hubConnection = new signalR.HubConnectionBuilder()
-      .withUrl(`${environment.apiUrl}/triphub`, {
+      .withUrl(`${environment.apiUrl}/gpshub`, {
         accessTokenFactory: () => this.authService.getToken() || ''
       })
       .withAutomaticReconnect([0, 2000, 5000, 10000, 30000])
@@ -123,6 +178,12 @@ export class SignalRService {
 
     this.hubConnection.on('UserDisconnected', (userId: string) => {
       console.log('User disconnected:', userId);
+    });
+
+    // GPS position handler
+    this.hubConnection.on('ReceiveGPSPosition', (position: GPSPosition) => {
+      console.log('📍 Received GPS position:', position);
+      this.positionSubject.next(position);
     });
   }
 
@@ -316,6 +377,11 @@ private addNotification(notification: TripNotification, pageSize: number = 20) {
   }
 
 
+  stopConnection() {
+    this.disconnect();
+  }
+
+  
   reconnect() {
     this.disconnect();
     setTimeout(() => this.startConnection(), 1000);

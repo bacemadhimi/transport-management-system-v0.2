@@ -1,4 +1,5 @@
 <mat-card class="responsive-table-card">
+  @if (PagedData && PagedData.data) {
   <div class="table-scroll">
     <table mat-table [dataSource]="PagedData.data" matSort (matSortChange)="onSortChange($event)" class="responsive-table">
 
@@ -82,11 +83,15 @@
 
       <tr mat-header-row *matHeaderRowDef="cols"></tr>
       <tr mat-row *matRowDef="let row; columns: cols"></tr>
-      
+
     </table>
   </div>
+  } @else {
+    <p class="no-data">Aucune donnée disponible</p>
+  }
 </mat-card>
 
+@if (PagedData && PagedData.data) {
 <div class="table-paginator-wrapper">
   <mat-paginator #paginator
                  class="demo-paginator"
@@ -98,3 +103,4 @@
                  aria-label="Select page">
   </mat-paginator>
 </div>
+}

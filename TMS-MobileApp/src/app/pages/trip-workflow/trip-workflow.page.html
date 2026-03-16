@@ -1,0 +1,214 @@
+<ion-header>
+  <ion-toolbar color="primary">
+    <ion-title>Trip Workflow</ion-title>
+    <ion-buttons slot="end">
+      <ion-button *ngIf="connectionStatus">
+        <ion-icon slot="icon-only" name="wifi" slot="icon-only"></ion-icon>
+      </ion-button>
+      <ion-button *ngIf="!connectionStatus" color="danger">
+        <ion-icon slot="icon-only" name="wifi-outline"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="trip-workflow-content" *ngIf="!isLoading && trip">
+  
+  <!-- Trip Info Card -->
+  <div class="trip-info-card">
+    <div class="trip-header">
+      <div class="trip-reference">
+        <h2>{{ trip.tripReference }}</h2>
+        <ion-badge [color]="getStatusColor(trip.status)">
+          {{ trip.status }}
+        </ion-badge>
+      </div>
+    </div>
+
+    <div class="trip-details">
+      <ion-item lines="none">
+        <ion-icon slot="start" name="person"></ion-icon>
+        <ion-label>
+          <h3>Chauffeur</h3>
+          <p>{{ trip.driverName || 'Non assigné' }}</p>
+        </ion-label>
+      </ion-item>
+
+      <ion-item lines="none">
+        <ion-icon slot="start" name="car"></ion-icon>
+        <ion-label>
+          <h3>Camion</h3>
+          <p>{{ trip.truckImmatriculation || 'N/A' }}</p>
+        </ion-label>
+      </ion-item>
+
+      <ion-item lines="none">
+        <ion-icon slot="start" name="navigate"></ion-icon>
+        <ion-label>
+          <h3>Destination</h3>
+          <p>{{ trip.destination || 'Non définie' }}</p>
+        </ion-label>
+      </ion-item>
+
+      <ion-item lines="none">
+        <ion-icon slot="start" name="speedometer"></ion-icon>
+        <ion-label>
+          <h3>Distance</h3>
+          <p>{{ trip.estimatedDistance || 0 }} km</p>
+        </ion-label>
+      </ion-item>
+
+      <ion-item lines="none">
+        <ion-icon slot="start" name="time"></ion-icon>
+        <ion-label>
+          <h3>Durée estimée</h3>
+          <p>{{ trip.estimatedDuration || 0 }}h</p>
+        </ion-label>
+      </ion-item>
+    </div>
+
+    <!-- GPS Status -->
+    <div class="gps-status" *ngIf="gpsTrackingActive">
+      <ion-item lines="none">
+        <ion-icon slot="start" name="location" color="success"></ion-icon>
+        <ion-label>
+          <h3>GPS Actif</h3>
+          <p>
+            {{ currentLatitude?.toFixed(6) }}, {{ currentLongitude?.toFixed(6) }}
+          </p>
+          <p class="last-update">
+            Dernière MAJ: {{ lastPositionUpdate | date:'HH:mm:ss' }}
+          </p>
+        </ion-label>
+      </ion-item>
+    </div>
+  </div>
+
+  <!-- Workflow Steps -->
+  <div class="workflow-steps">
+    <h3 class="section-title">Progression du Trip</h3>
+    
+    <div class="step" *ngFor="let step of statusWorkflow; let i = index" 
+         [class.active]="currentStatus === step.status"
+         [class.completed]="isStatusCompleted(step.status)">
+      <div class="step-marker">
+        <ion-icon [name]="step.icon"></ion-icon>
+      </div>
+      <div class="step-content">
+        <h4>{{ step.label }}</h4>
+        <p>{{ getStatusDescription(step.status) }}</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Action Buttons -->
+  <div class="action-buttons">
+    
+    <!-- Accept/Reject -->
+    <div *ngIf="canAccept()" class="action-group">
+      <ion-button expand="block" color="success" (click)="acceptTrip()" class="action-btn">
+        <ion-icon slot="start" name="checkmark-circle"></ion-icon>
+        Accepter le Trip
+      </ion-button>
+      
+      <ion-button expand="block" fill="outline" color="danger" (click)="showRejectPopup()" class="action-btn">
+        <ion-icon slot="start" name="close-circle"></ion-icon>
+        Refuser
+      </ion-button>
+    </div>
+
+    <!-- Start Loading -->
+    <div *ngIf="canStartLoading()" class="action-group">
+      <ion-button expand="block" color="warning" (click)="startLoading()" class="action-btn">
+        <ion-icon slot="start" name="download"></ion-icon>
+        Démarrer Chargement
+      </ion-button>
+    </div>
+
+    <!-- Start Delivery -->
+    <div *ngIf="canStartDelivery()" class="action-group">
+      <ion-button expand="block" color="primary" (click)="startDelivery()" class="action-btn">
+        <ion-icon slot="start" name="car"></ion-icon>
+        Démarrer Livraison
+      </ion-button>
+    </div>
+
+    <!-- Arrived -->
+    <div *ngIf="canArrive()" class="action-group">
+      <ion-button expand="block" color="success" (click)="arrivedAtDestination()" class="action-btn">
+        <ion-icon slot="start" name="location"></ion-icon>
+        Je suis arrivé
+      </ion-button>
+    </div>
+
+    <!-- Complete -->
+    <div *ngIf="canComplete()" class="action-group">
+      <ion-button expand="block" color="success" (click)="completeTrip()" class="action-btn">
+        <ion-icon slot="start" name="checkmark-done-circle"></ion-icon>
+        Terminer la Livraison
+      </ion-button>
+    </div>
+
+    <!-- Completed -->
+    <div *ngIf="currentStatus === 'Completed'" class="action-group">
+      <ion-card color="success">
+        <ion-card-content class="text-center">
+          <ion-icon name="checkmark-done-circle" size="large"></ion-icon>
+          <h3>Trip Terminé !</h3>
+          <p>Merci pour votre travail</p>
+        </ion-card-content>
+      </ion-card>
+    </div>
+
+  </div>
+
+</ion-content>
+
+<!-- Reject Modal -->
+<ion-modal [isOpen]="showRejectModal" (didDismiss)="showRejectModal = false">
+  <ng-template>
+    <ion-header>
+      <ion-toolbar>
+        <ion-title>Refuser le Trip</ion-title>
+        <ion-buttons slot="end">
+          <ion-button (click)="showRejectModal = false">Fermer</ion-button>
+        </ion-buttons>
+      </ion-toolbar>
+    </ion-header>
+
+    <ion-content class="ion-padding">
+      <h3>Sélectionnez la raison du refus :</h3>
+
+      <ion-list>
+        <ion-radio-group [(ngModel)]="rejectReasonCode">
+          <ion-item 
+            *ngFor="let reason of rejectionReasons"
+            button
+          >
+            <ion-icon slot="start" [name]="reason.icon" color="danger"></ion-icon>
+            <ion-label>{{ reason.label }}</ion-label>
+            <ion-radio slot="end" [value]="reason.code"></ion-radio>
+          </ion-item>
+        </ion-radio-group>
+      </ion-list>
+
+      <ion-item>
+        <ion-label position="stacked">Détails supplémentaires (optionnel)</ion-label>
+        <ion-textarea 
+          [(ngModel)]="rejectReason" 
+          placeholder="Décrivez la raison du refus..."
+          rows="4"
+        ></ion-textarea>
+      </ion-item>
+
+      <div class="ion-padding">
+        <ion-button expand="block" color="danger" (click)="rejectTrip()" [disabled]="!rejectReason">
+          <ion-icon slot="start" name="close-circle"></ion-icon>
+          Confirmer le Refus
+        </ion-button>
+      </div>
+    </ion-content>
+  </ng-template>
+</ion-modal>
+
+<ion-loading [isOpen]="isLoading" message="Chargement..."></ion-loading>

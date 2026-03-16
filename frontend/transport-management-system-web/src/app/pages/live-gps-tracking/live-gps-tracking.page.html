@@ -1,0 +1,195 @@
+<div class="live-gps-tracking">
+  <!-- Header avec stats -->
+  <div class="page-header">
+    <div class="header-content">
+      <h1>
+        <mat-icon>location_on</mat-icon>
+        Suivi GPS en Temps Réel
+      </h1>
+      <div class="connection-status" [class.connected]="connectionStatus">
+        <mat-icon>{{ connectionStatus ? 'wifi' : 'wifi_off' }}</mat-icon>
+        <span>{{ connectionStatus ? 'Connecté' : 'Déconnecté' }}</span>
+      </div>
+    </div>
+
+    <div class="stats-bar">
+      <mat-card class="stat-card">
+        <mat-icon>directions_car</mat-icon>
+        <div class="stat-content">
+          <div class="stat-value">{{ activeTrips.length }}</div>
+          <div class="stat-label">Trips Actifs</div>
+        </div>
+      </mat-card>
+      <mat-card class="stat-card in-delivery">
+        <mat-icon>navigation</mat-icon>
+        <div class="stat-content">
+          <div class="stat-value">{{ getInDeliveryCount() }}</div>
+          <div class="stat-label">En Livraison</div>
+        </div>
+      </mat-card>
+      <mat-card class="stat-card loading">
+        <mat-icon>download</mat-icon>
+        <div class="stat-content">
+          <div class="stat-value">{{ getLoadingCount() }}</div>
+          <div class="stat-label">Chargement</div>
+        </div>
+      </mat-card>
+      <mat-card class="stat-card arrived">
+        <mat-icon>location_on</mat-icon>
+        <div class="stat-content">
+          <div class="stat-value">{{ getArrivedCount() }}</div>
+          <div class="stat-label">Arrivés</div>
+        </div>
+      </mat-card>
+    </div>
+  </div>
+
+  <!-- Contenu principal -->
+  <div class="main-content">
+    <!-- Sidebar avec liste des trips -->
+    <div class="trips-sidebar">
+      <div class="sidebar-header">
+        <h3>Trips Actifs</h3>
+        <div class="filters">
+          <mat-form-field appearance="outline" class="search-input">
+            <mat-icon matPrefix>search</mat-icon>
+            <input matInput [(ngModel)]="searchQuery" (ngModelChange)="applyFilters()" placeholder="Rechercher...">
+          </mat-form-field>
+          
+          <mat-form-field appearance="outline" class="status-filter">
+            <mat-select [(ngModel)]="statusFilter" (ngModelChange)="applyFilters()">
+              <mat-option value="all">Tous</mat-option>
+              <mat-option value="Loading">Chargement</mat-option>
+              <mat-option value="InDelivery">En livraison</mat-option>
+              <mat-option value="Arrived">Arrivé</mat-option>
+              <mat-option value="Completed">Terminé</mat-option>
+            </mat-select>
+          </mat-form-field>
+        </div>
+      </div>
+
+      <div class="trips-list">
+        <mat-card 
+          *ngFor="let trip of filteredTrips"
+          class="trip-card"
+          [class.selected]="selectedTrip?.id === trip.id"
+          (click)="selectTrip(trip)"
+        >
+          <mat-card-header>
+            <mat-card-title>
+              <mat-icon>navigate_before</mat-icon>
+              {{ trip.tripReference }}
+            </mat-card-title>
+            <span class="status-badge status-{{ trip.status.toLowerCase() }}">{{ trip.status }}</span>
+          </mat-card-header>
+
+          <mat-card-content>
+            <div class="trip-details">
+              <div class="detail-row">
+                <mat-icon>directions_car</mat-icon>
+                <span>{{ trip.truckImmatriculation || 'N/A' }}</span>
+              </div>
+              <div class="detail-row">
+                <mat-icon>person</mat-icon>
+                <span>{{ trip.driverName || 'N/A' }}</span>
+              </div>
+              <div class="detail-row">
+                <mat-icon>inventory_2</mat-icon>
+                <span>{{ trip.deliveriesCount || 0 }} livraisons</span>
+              </div>
+              <div class="detail-row">
+                <mat-icon>speed</mat-icon>
+                <span>{{ trip.estimatedDistance || 0 }} km</span>
+              </div>
+            </div>
+          </mat-card-content>
+
+          <mat-card-actions>
+            <div class="trip-footer">
+              <mat-icon>access_time</mat-icon>
+              <span class="last-update">{{ formatLastUpdate(trip.lastPositionUpdate) }}</span>
+              <mat-icon 
+                class="live-indicator"
+                [class.active]="isPositionLive(trip.lastPositionUpdate)"
+              >radio_button_checked</mat-icon>
+            </div>
+          </mat-card-actions>
+        </mat-card>
+
+        <div *ngIf="filteredTrips.length === 0" class="no-trips">
+          <mat-icon>location_off</mat-icon>
+          <p>Aucun trip actif</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Carte -->
+    <div class="map-container">
+      <div id="map"></div>
+      
+      <!-- Overlay infos trip sélectionné -->
+      <mat-card class="trip-info-overlay" *ngIf="selectedTrip">
+        <mat-card-header>
+          <mat-card-title>
+            <mat-icon>navigate</mat-icon>
+            {{ selectedTrip.tripReference }}
+          </mat-card-title>
+          <span class="status-badge status-{{ selectedTrip.status.toLowerCase() }}">{{ selectedTrip.status }}</span>
+        </mat-card-header>
+
+        <mat-card-content>
+          <div class="info-row">
+            <mat-icon>directions_car</mat-icon>
+            <div>
+              <div class="label">Camion</div>
+              <div class="value">{{ selectedTrip.truckImmatriculation || 'N/A' }}</div>
+            </div>
+          </div>
+
+          <div class="info-row">
+            <mat-icon>person</mat-icon>
+            <div>
+              <div class="label">Chauffeur</div>
+              <div class="value">{{ selectedTrip.driverName || 'N/A' }}</div>
+            </div>
+          </div>
+
+          <div class="info-row">
+            <mat-icon>location_on</mat-icon>
+            <div>
+              <div class="label">Position</div>
+              <div class="value">
+                {{ selectedTrip.currentLatitude?.toFixed(6) || 'N/A' }}, 
+                {{ selectedTrip.currentLongitude?.toFixed(6) || 'N/A' }}
+              </div>
+            </div>
+          </div>
+
+          <div class="info-row">
+            <mat-icon>access_time</mat-icon>
+            <div>
+              <div class="label">Dernière MAJ</div>
+              <div class="value">{{ formatLastUpdate(selectedTrip.lastPositionUpdate) }}</div>
+            </div>
+          </div>
+
+          <div class="info-row">
+            <mat-icon>inventory_2</mat-icon>
+            <div>
+              <div class="label">Livraisons</div>
+              <div class="value">{{ selectedTrip.deliveriesCount || 0 }} arrêts</div>
+            </div>
+          </div>
+
+          <div class="info-row">
+            <mat-icon>speed</mat-icon>
+            <div>
+              <div class="label">Distance</div>
+              <div class="value">{{ selectedTrip.estimatedDistance || 0 }} km</div>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+  </div>
+</div>

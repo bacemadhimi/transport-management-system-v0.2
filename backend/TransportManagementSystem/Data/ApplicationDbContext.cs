@@ -51,9 +51,27 @@ namespace TransportManagementSystem.Data
         public DbSet<TruckGeographicalEntity> TruckGeographicalEntities { get; set; }
         public DbSet<DriverGeographicalEntity> DriverGeographicalEntities { get; set; }
         public DbSet<CustomerGeographicalEntity> CustomerGeographicalEntities { get; set; }
+        public DbSet<GeocodingCache> GeocodingCache { get; set; }
+        public DbSet<PositionGPS> PositionsGPS { get; set; }
+        public DbSet<ResultatOptimisation> ResultatOptimisations { get; set; }
+        public DbSet<TripAssignment> TripAssignments { get; set; }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
+
+            // TripAssignment - Disable cascade delete to avoid multiple cascade paths
+            modelBuilder.Entity<TripAssignment>()
+                .HasOne(a => a.Trip)
+                .WithMany()
+                .HasForeignKey(a => a.TripId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<TripAssignment>()
+                .HasOne(a => a.Driver)
+                .WithMany()
+                .HasForeignKey(a => a.DriverId)
+                .OnDelete(DeleteBehavior.Restrict);
 
             // Enum → string
             modelBuilder.Entity<Trip>()
