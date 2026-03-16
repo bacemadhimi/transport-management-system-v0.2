@@ -10,11 +10,11 @@ public class GeneralSettings
     public int Id { get; set; }
 
     [Required]
-    [MaxLength(50)]
+    [MaxLength(500)]
     public string ParameterType { get; set; }   
 
     [Required]
-    [MaxLength(50)]
+    [MaxLength(500)]
     public string ParameterCode { get; set; }
 
     [Required]

@@ -8,6 +8,7 @@ namespace TransportManagementSystem.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]
+[Authorize]
 public class UserGroupController : ControllerBase
 {
     private readonly IRepository<UserGroup> _userGroupRepository;

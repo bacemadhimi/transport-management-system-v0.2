@@ -171,9 +171,17 @@ namespace TransportManagementSystem.Data
                     .OnDelete(DeleteBehavior.Cascade); 
             });
 
-            modelBuilder.Entity<GeneralSettings>()
-                   .HasIndex(p => new { p.ParameterType, p.ParameterCode })
-                   .IsUnique();
+            modelBuilder.Entity<GeneralSettings>(entity =>
+            {
+                entity.Property(e => e.ParameterType)
+                    .HasMaxLength(255);
+
+                entity.Property(e => e.ParameterCode)
+                    .HasMaxLength(255);
+
+                entity.HasIndex(e => new { e.ParameterType, e.ParameterCode })
+                    .IsUnique();
+            });
 
             modelBuilder.Entity<UserNotification>()
                    .HasIndex(un => new { un.NotificationId, un.UserId })
