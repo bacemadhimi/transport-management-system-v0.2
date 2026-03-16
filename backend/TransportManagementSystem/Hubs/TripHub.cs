@@ -51,6 +51,12 @@ public class TripHub : Hub
         await Clients.Group($"role-{role}").SendAsync("ReceiveNotification", notification);
     }
 
+    // Send trip assignment notification
+    public async Task SendTripAssignment(int driverId, object tripData)
+    {
+        await Clients.User(driverId.ToString()).SendAsync("TripAssigned", tripData);
+    }
+
     // Override OnConnectedAsync to handle connection
     public override async Task OnConnectedAsync()
     {

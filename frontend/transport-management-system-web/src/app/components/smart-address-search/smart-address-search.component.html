@@ -1,0 +1,83 @@
+<div class="smart-address-search">
+  <mat-form-field appearance="outline" class="address-search-field" [floatLabel]="'always'">
+    <mat-label>{{ label }}</mat-label>
+    
+    <div class="search-input-wrapper">
+      <input
+        matInput
+        [placeholder]="placeholder"
+        [(ngModel)]="searchQuery"
+        (ngModelChange)="onSearchChange()"
+        (focus)="onFocus()"
+        (blur)="onBlur()"
+        [required]="required"
+        autocomplete="off"
+        class="address-input"
+      />
+      
+      <button
+        mat-icon-button
+        type="button"
+        *ngIf="searchQuery"
+        (click)="clearSelection()"
+        matSuffix
+        matTooltip="Effacer"
+        class="clear-button"
+      >
+        <mat-icon>close</mat-icon>
+      </button>
+      
+      <button
+        mat-icon-button
+        type="button"
+        *ngIf="showCurrentLocationButton"
+        (click)="getCurrentLocation()"
+        [disabled]="isLoading"
+        matSuffix
+        matTooltip="Utiliser ma position actuelle"
+        class="location-button"
+      >
+        <mat-icon *ngIf="!isLoading">my_location</mat-icon>
+        <mat-progress-spinner *ngIf="isLoading" diameter="20" strokeWidth="2"></mat-progress-spinner>
+      </button>
+      
+      <mat-icon matPrefix class="search-icon">search</mat-icon>
+    </div>
+    
+    <mat-hint *ngIf="!selectedSuggestion" align="end">
+      {{ searchQuery.length >= 3 ? suggestions.length + ' suggestion(s)' : '3 caractères min.' }}
+    </mat-hint>
+  </mat-form-field>
+
+  <!-- Suggestions Dropdown -->
+  <div class="suggestions-dropdown" *ngIf="suggestions.length > 0 && isFocused">
+    <div class="suggestions-list">
+      <div
+        *ngFor="let suggestion of suggestions"
+        class="suggestion-item"
+        (click)="selectSuggestion(suggestion)"
+      >
+        <div class="suggestion-icon">
+          <mat-icon>location_on</mat-icon>
+        </div>
+        <div class="suggestion-content">
+          <div class="suggestion-address">{{ suggestion.displayName || suggestion.address }}</div>
+          <div class="suggestion-details" *ngIf="suggestion.type">
+            <mat-icon class="type-icon">label</mat-icon>
+            <span>{{ suggestion.type }}</span>
+            <span class="importance" *ngIf="suggestion.importance">
+              • Pertinence: {{ (suggestion.importance * 100) | number:'1.0-0' }}%
+            </span>
+          </div>
+        </div>
+        <div class="suggestion-action">
+          <mat-icon>add_location</mat-icon>
+        </div>
+      </div>
+    </div>
+    <div class="suggestions-footer">
+      <mat-icon>info</mat-icon>
+      <span>Propulsé par OpenStreetMap Nominatim</span>
+    </div>
+  </div>
+</div>

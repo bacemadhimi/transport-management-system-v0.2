@@ -14,7 +14,10 @@ public class Delivery
 
     public int Sequence { get; set; }
     public string DeliveryAddress { get; set; }
-    public string? Geolocation { get; set; } 
+    public string? Geolocation { get; set; }
+
+    public int? LocationId { get; set; }
+    public Location? Location { get; set; } 
 
 
     public DateTime? PlannedTime { get; set; }

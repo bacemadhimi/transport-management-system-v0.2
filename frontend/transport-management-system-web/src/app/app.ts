@@ -174,9 +174,21 @@ loadNotificationsFromDatabase(pageIndex: number = 0, pageSize: number = 20) {
 
         console.log('📚 DB Load - Cancelled only:', this.notifications.length);
         console.log('📚 Unread count:', this.unreadNotificationsCount);
+      } else {
+        console.warn('⚠️ Invalid notification response:', response);
+        // Initialize with empty arrays on invalid response
+        this.notifications = [];
+        this.allNotifications = [];
+        this.unreadNotificationsCount = 0;
       }
     },
-    error: (err) => console.error('Error loading notifications from database:', err)
+    error: (err) => {
+      console.error('❌ Error loading notifications from database:', err);
+      // Initialize with empty arrays on error
+      this.notifications = [];
+      this.allNotifications = [];
+      this.unreadNotificationsCount = 0;
+    }
   });
 }
 loadMoreNotifications() {
@@ -240,10 +252,18 @@ initializeSignalR() {
 
     this.httpService.getTripsList({ pageIndex: 0, pageSize: 1000 }).subscribe({
       next: (res: any) => {
-        this.cancelledTrips = res?.data?.filter((t: any) => t.tripStatus === 'Cancelled') ?? [];
+        // Handle both array and paged response
+        const tripsData = res?.data?.data || res?.data || res || [];
+        this.cancelledTrips = Array.isArray(tripsData) 
+          ? tripsData.filter((t: any) => t.tripStatus === 'Cancelled') 
+          : [];
         this.cancelledTripsCount = this.cancelledTrips.length;
       },
-      error: (err) => console.error('Erreur notification:', err)
+      error: (err) => {
+        console.error('Erreur loading cancelled trips:', err);
+        this.cancelledTrips = [];
+        this.cancelledTripsCount = 0;
+      }
     });
   }
 
