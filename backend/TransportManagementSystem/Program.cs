@@ -94,6 +94,13 @@ builder.Services.AddScoped<IStatisticsService, StatisticsService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddScoped<INotificationRepository, NotificationRepository>();
 
+// GPS & Geocoding services
+builder.Services.AddScoped<IGeocodingService, GeocodingService>();
+builder.Services.AddHttpClient("Nominatim");
+
+// Notification Hub Service
+builder.Services.AddSingleton<NotificationHubService>();
+
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
@@ -107,7 +114,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             )
         };
 
-    
+
         options.Events = new JwtBearerEvents
         {
             OnMessageReceived = context =>
@@ -117,9 +124,11 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
                 var path = context.HttpContext.Request.Path;
                 if (!string.IsNullOrEmpty(accessToken) &&
-                    path.StartsWithSegments("/triphub"))
+                    (path.StartsWithSegments("/triphub") || 
+                     path.StartsWithSegments("/gpshub") || 
+                     path.StartsWithSegments("/notificationhub")))
                 {
-              
+
                     context.Token = accessToken;
                 }
                 return Task.CompletedTask;
@@ -176,15 +185,19 @@ if (app.Environment.IsDevelopment())
 }
 
 
-app.UseRouting();  
+app.UseRouting();
 
-app.UseCors("SignalRCors"); 
+app.UseCors("SignalRCors");
 
 app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
 
+// Map SignalR hubs
 app.MapHub<TripHub>("/triphub");
+app.MapHub<GPSHub>("/gpshub");
+app.MapHub<NotificationHub>("/notificationhub");
+
 app.MapControllers();
 
 app.Run();

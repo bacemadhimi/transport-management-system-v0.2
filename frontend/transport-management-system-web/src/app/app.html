@@ -585,12 +585,19 @@
               <mat-icon matListItemIcon class="submenu-icon">location_on</mat-icon>
               <a matListItemTitle class="submenu-text">{{ t('LOCATIONS') }}</a>
             </mat-list-item>
-            <mat-list-item 
+            <mat-list-item
               routerLink="/statics"
               routerLinkActive="active-submenu-item"
               class="submenu-item">
               <mat-icon matListItemIcon class="submenu-icon">analytics</mat-icon>
               <a matListItemTitle class="submenu-text">{{ t('STATISTICS') }}</a>
+            </mat-list-item>
+            <mat-list-item
+              routerLink="/gps-tracking"
+              routerLinkActive="active-submenu-item"
+              class="submenu-item">
+              <mat-icon matListItemIcon class="submenu-icon">gps_fixed</mat-icon>
+              <a matListItemTitle class="submenu-text">Suivi GPS</a>
             </mat-list-item>
           </mat-nav-list>
         </mat-expansion-panel>

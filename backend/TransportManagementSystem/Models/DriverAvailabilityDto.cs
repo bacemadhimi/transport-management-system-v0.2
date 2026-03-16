@@ -3,13 +3,13 @@
 public class DriverAvailabilityDto
 {
     public int DriverId { get; set; }
-    public string DriverName { get; set; }
-    public string Phone { get; set; }
-    public string Status { get; set; }
+    public string DriverName { get; set; } = string.Empty;
+    public string Phone { get; set; } = string.Empty;
+    public string Status { get; set; } = string.Empty;
     public bool IsAvailable { get; set; }
-    public string Reason { get; set; }
+    public string Reason { get; set; } = string.Empty;
     public bool IsDayOff { get; set; }
-    public Dictionary<string, AvailabilityDayDto> Availability { get; set; }
+    public Dictionary<string, AvailabilityDayDto> Availability { get; set; } = new();
     public string? ZoneName { get; set; }
     public string? PermisNumber { get; set; }
 }

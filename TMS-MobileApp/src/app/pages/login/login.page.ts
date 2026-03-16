@@ -25,8 +25,7 @@ export class LoginPage implements AfterViewInit {
   @ViewChild('usernameInput') usernameInput!: IonInput;
   @ViewChild('passwordInput') passwordInput!: IonInput;
  
-  //apiUrl = 'http://localhost:5191/api/User';
-  apiUrl = 'https://localhost:7287/api/Auth/login';
+  apiUrl = 'http://localhost:5191/api/Auth/login';
  
   isLoading = false;
   errorMessage = '';

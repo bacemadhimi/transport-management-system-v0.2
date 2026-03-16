@@ -192,11 +192,12 @@ public class DriverAvailabilityController : ControllerBase
             }
             else
             {
-                
+
                 var newAvailability = new DriverAvailability
                 {
                     DriverId = driverId,
-                    Date = date,
+                    StartDate = date,
+                    EndDate = date,
                     IsAvailable = updateDto.IsAvailable,
                     IsDayOff = updateDto.IsDayOff,
                     Reason = updateDto.Reason ?? "",
@@ -303,7 +304,8 @@ public class DriverAvailabilityController : ControllerBase
                     return new DriverAvailability
                     {
                         DriverId = driverId,
-                        Date = date,
+                        StartDate = date,
+                        EndDate = date,
                         IsAvailable = !isWeekend && !isCompanyDayOff, // Disponible par défaut
                         IsDayOff = isWeekend || isCompanyDayOff,
                         Reason = isWeekend ? "Weekend" : isCompanyDayOff ? "Jour férié" : "",

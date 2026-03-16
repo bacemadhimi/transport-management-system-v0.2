@@ -9,6 +9,11 @@ public class Location
     [Required]
     public string Name { get; set; } = string.Empty;
 
+    public string? AddressText { get; set; }
+    public double? Latitude { get; set; }
+    public double? Longitude { get; set; }
+    public bool IsValidated { get; set; } = false;
+
     public bool IsActive { get; set; } = true;
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

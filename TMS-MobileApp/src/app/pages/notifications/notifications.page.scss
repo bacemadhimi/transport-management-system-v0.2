@@ -183,3 +183,30 @@
     background: rgba(255, 255, 255, 0.05);
   }
 }
+
+/* Trip Notification Alert Styling */
+.trip-notification-alert .alert-message {
+  white-space: pre-line;
+  line-height: 1.8;
+  font-size: 14px;
+  padding: 10px 0;
+}
+
+.trip-notification-alert .alert-subHeader {
+  text-align: center;
+  font-weight: 600;
+  color: var(--ion-color-primary);
+  padding-bottom: 10px;
+  border-bottom: 2px solid var(--ion-color-primary);
+  margin-bottom: 10px;
+}
+
+.trip-notification-alert .alert-button-cancel {
+  color: #dc2626;
+  font-weight: 600;
+}
+
+.trip-notification-alert .alert-button-confirm {
+  color: #16a34a;
+  font-weight: 600;
+}

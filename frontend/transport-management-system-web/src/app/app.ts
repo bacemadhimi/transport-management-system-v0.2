@@ -119,23 +119,23 @@ ngOnInit() {
 loadNotificationsFromDatabase(pageIndex: number = 0, pageSize: number = 20) {
   this.http.get(`${environment.apiUrl}/api/notifications?pageIndex=${pageIndex}&pageSize=${pageSize}`).subscribe({
     next: (response: any) => {
-      if (response.success) {
+      if (response?.success && response?.data) {
         // Get ALL notifications from database and map them
-        const allDbNotifications = (response.data.notifications as any[]).map((n: any) => ({
+        const allDbNotifications = (response.data.notifications || []).map((n: any) => ({
           ...n,
           // Convert isRead from number (0/1) to boolean
           isRead: n.isRead === true || n.isRead === 1 || n.isRead === 'true',
           timestamp: new Date(n.timestamp)
         })) as TripNotification[];
-        
+
         // Store all for reference
         this.allNotifications = allDbNotifications;
-        
+
         // STRICT FILTER: ONLY keep TRIP_CANCELLED
-        const cancelledNotifications = allDbNotifications.filter((n: TripNotification) => 
+        const cancelledNotifications = allDbNotifications.filter((n: TripNotification) =>
           n.type === 'TRIP_CANCELLED'
         );
-        
+
         if (pageIndex === 0) {
           // First page - replace with cancelled only
           this.notifications = cancelledNotifications;
@@ -145,18 +145,30 @@ loadNotificationsFromDatabase(pageIndex: number = 0, pageSize: number = 20) {
           const uniqueNewCancelled = cancelledNotifications.filter((n: TripNotification) => !existingIds.has(n.id));
           this.notifications = [...this.notifications, ...uniqueNewCancelled];
         }
-        
+
         // Count ONLY unread cancelled notifications
         this.unreadNotificationsCount = this.notifications.filter((n: TripNotification) => !n.isRead).length;
-        
-        this.totalNotifications = response.data.totalCount;
+
+        this.totalNotifications = response.data.totalCount || 0;
         this.hasMoreNotifications = this.notifications.length < this.totalNotifications;
-        
+
         console.log('📚 DB Load - Cancelled only:', this.notifications.length);
         console.log('📚 Unread count:', this.unreadNotificationsCount);
+      } else {
+        console.warn('⚠️ Invalid notification response:', response);
+        // Initialize with empty arrays on invalid response
+        this.notifications = [];
+        this.allNotifications = [];
+        this.unreadNotificationsCount = 0;
       }
     },
-    error: (err) => console.error('Error loading notifications from database:', err)
+    error: (err) => {
+      console.error('❌ Error loading notifications from database:', err);
+      // Initialize with empty arrays on error
+      this.notifications = [];
+      this.allNotifications = [];
+      this.unreadNotificationsCount = 0;
+    }
   });
 }
 loadMoreNotifications() {
@@ -217,13 +229,21 @@ initializeSignalR() {
       this.cancelledTrips = [];
       return;
     }
-    
+
     this.httpService.getTripsList({ pageIndex: 0, pageSize: 1000 }).subscribe({
       next: (res: any) => {
-        this.cancelledTrips = res?.data?.filter((t: any) => t.tripStatus === 'Cancelled') ?? [];
+        // Handle both array and paged response
+        const tripsData = res?.data?.data || res?.data || res || [];
+        this.cancelledTrips = Array.isArray(tripsData) 
+          ? tripsData.filter((t: any) => t.tripStatus === 'Cancelled') 
+          : [];
         this.cancelledTripsCount = this.cancelledTrips.length;
       },
-      error: (err) => console.error('Erreur notification:', err)
+      error: (err) => {
+        console.error('Erreur loading cancelled trips:', err);
+        this.cancelledTrips = [];
+        this.cancelledTripsCount = 0;
+      }
     });
   }
 

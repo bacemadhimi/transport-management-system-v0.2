@@ -1223,6 +1223,40 @@
                       
 
                       <div class="delivery-details">
+                        <!-- Adresse de livraison - CHAMP MODIFIABLE AVEC RECHERCHE INTELLIGENTE -->
+                        <div class="detail-item full-width">
+                          <mat-icon class="detail-icon">location_on</mat-icon>
+                          <div class="detail-content">
+                            <div class="detail-label">Adresse de livraison</div>
+                            <mat-form-field appearance="outline" class="delivery-address-field">
+                              <input matInput
+                                     [formControlName]="'deliveryAddress_' + group.customerId"
+                                     (blur)="onDeliveryAddressBlur(group.customerId)"
+                                     (input)="onAddressInput($event, group.customerId)"
+                                     [matAutocomplete]="autoAddress"
+                                     placeholder="Tapez une adresse..."
+                                     value="{{ group.deliveryGroup.get('deliveryAddress')?.value || '' }}">
+                              <button mat-icon-button matSuffix type="button" 
+                                      (click)="showAddressSuggestions(group.customerId)"
+                                      matTooltip="Rechercher des adresses"
+                                      matTooltipPosition="above">
+                                <mat-icon>search</mat-icon>
+                              </button>
+                              <mat-autocomplete #autoAddress="matAutocomplete" 
+                                                (optionSelected)="onAddressSelected($event, group.customerId)">
+                                <mat-option *ngFor="let suggestion of getAddressSuggestions(group.customerId)" 
+                                            [value]="suggestion">
+                                  <div style="display: flex; align-items: center; gap: 8px;">
+                                    <mat-icon>location_on</mat-icon>
+                                    <span>{{ suggestion.address }}</span>
+                                  </div>
+                                </mat-option>
+                              </mat-autocomplete>
+                              <mat-hint>Adresse où livrer les commandes de ce client</mat-hint>
+                            </mat-form-field>
+                          </div>
+                        </div>
+
                         <div class="detail-row">
                           <div class="detail-item">
                             <mat-icon class="detail-icon">schedule</mat-icon>
@@ -1231,7 +1265,7 @@
                               <div class="detail-value">{{ group.deliveryGroup.get('plannedTime')?.value || 'Non définie' }}</div>
                             </div>
                           </div>
-                          
+
                           <div class="detail-item">
                             <mat-icon class="detail-icon">note</mat-icon>
                             <div class="detail-content">
@@ -1239,7 +1273,7 @@
                               <div class="detail-value">{{ group.deliveryGroup.get('notes')?.value || 'Aucune note' }}</div>
                             </div>
                           </div>
-                          
+
                           <div class="detail-item">
                             <mat-icon class="detail-icon">percent</mat-icon>
                             <div class="detail-content">
