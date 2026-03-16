@@ -472,7 +472,7 @@ public class TripsController : ControllerBase
 
         var year = model.EstimatedStartDate.Year;
 
-        var lastTripReference = await tripRepository.Query()
+var lastTripReference = await tripRepository.Query()
             .Where(t => t.TripReference.StartsWith($"LIV-{year}-"))
             .OrderByDescending(t => t.TripReference)
             .Select(t => t.TripReference)
@@ -490,7 +490,7 @@ public class TripsController : ControllerBase
         }
 
         var tripReference = $"LIV-{year}-{nextSequence:D3}";
-        var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
 
         var trip = new Trip
         {
@@ -627,8 +627,8 @@ public class TripsController : ControllerBase
             TripStatus.Cancelled
         };
 
-        if (nonEditableStatuses.Contains(trip.TripStatus))
-            return BadRequest(new ApiResponse(false,
+    if (nonEditableStatuses.Contains(trip.TripStatus))
+return BadRequest(new ApiResponse(false,
                 $"Impossible de modifier un trajet avec le statut: {TripStatusTransitions.GetStatusLabel(trip.TripStatus)}. " +
                 "Seuls les trajets 'Planifié' peuvent être modifiés."));
 
@@ -970,6 +970,84 @@ public class TripsController : ControllerBase
         if (rowsToDelete.Any())
         {
             context.TruckAvailabilities.RemoveRange(rowsToDelete);
+            await context.SaveChangesAsync();
+        }
+    }
+
+    private async Task UpdateOrderStatusesBasedOnTripStatus(Trip trip, TripStatus newStatus)
+    {
+        if (trip.Deliveries.Any())
+        {
+            var orderIds = trip.Deliveries.Select(d => d.OrderId).ToList();
+            var orders = await context.Orders.Where(o => orderIds.Contains(o.Id)).ToListAsync();
+
+            foreach (var order in orders)
+            {
+                if (OrderStatusMap.TryGetValue(newStatus, out var orderStatus))
+                {
+                    order.Status = orderStatus;
+                }
+            }
+
+            await context.SaveChangesAsync();
+        }
+    }
+
+    private async Task UpdateDriverAvailabilityForTrip(int driverId, DateTime startDate, DateTime endDate, int tripId, string tripReference)
+    {
+        var driverAvailability = new DriverAvailability
+        {
+            DriverId = driverId,
+            StartDate = startDate,
+            EndDate = endDate,
+            TripId = tripId,
+            TripReference = tripReference
+        };
+
+        await context.DriverAvailabilities.AddAsync(driverAvailability);
+        await context.SaveChangesAsync();
+    }
+
+    private async Task RestoreDriverAvailabilityForTrip(int driverId, DateTime startDate, DateTime endDate, string tripReference)
+    {
+        var driverAvailability = await context.DriverAvailabilities
+            .FirstOrDefaultAsync(da => da.DriverId == driverId &&
+                                   da.StartDate == startDate &&
+                                   da.EndDate == endDate &&
+                                   da.TripReference == tripReference);
+
+        if (driverAvailability != null)
+        {
+            context.DriverAvailabilities.Remove(driverAvailability);
+            await context.SaveChangesAsync();
+        }
+    }
+
+    private async Task UpdateTruckAvailabilityForTrip(int truckId, DateTime startDate, DateTime endDate, string tripReference)
+    {
+        var truckAvailability = new TruckAvailability
+        {
+            TruckId = truckId,
+            StartDate = startDate,
+            EndDate = endDate,
+            TripReference = tripReference
+        };
+
+        await context.TruckAvailabilities.AddAsync(truckAvailability);
+        await context.SaveChangesAsync();
+    }
+
+    private async Task RestoreTruckAvailabilityForTrip(int truckId, DateTime startDate, DateTime endDate, string tripReference)
+    {
+        var truckAvailability = await context.TruckAvailabilities
+            .FirstOrDefaultAsync(ta => ta.TruckId == truckId &&
+                                   ta.StartDate == startDate &&
+                                   ta.EndDate == endDate &&
+                                   ta.TripReference == tripReference);
+
+        if (truckAvailability != null)
+        {
+            context.TruckAvailabilities.Remove(truckAvailability);
             await context.SaveChangesAsync();
         }
     }
