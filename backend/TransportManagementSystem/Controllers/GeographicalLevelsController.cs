@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using TransportManagementSystem.Data;
 using TransportManagementSystem.Entity;
-using TransportManagementSystem.Models;
+
 
 namespace TransportManagementSystem.Controllers;
 

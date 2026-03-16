@@ -1,8 +1,10 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using TransportManagementSystem.Services;
 
 [ApiController]
 [Route("api/sync")]
+[Authorize]
 public class SyncController : ControllerBase
 {
     private readonly OrderSyncService _syncService;

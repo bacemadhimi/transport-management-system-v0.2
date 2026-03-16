@@ -1,12 +1,13 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using System.Text.Json;
-using Microsoft.EntityFrameworkCore;
 using TransportManagementSystem.Data;
 
 namespace TransportManagementSystem.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class WeatherController : ControllerBase
 {
     private readonly IHttpClientFactory _httpClientFactory;

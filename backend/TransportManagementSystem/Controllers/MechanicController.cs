@@ -1,13 +1,15 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using TransportManagementSystem.Data;
 using TransportManagementSystem.Entity;
 using TransportManagementSystem.Models;
 
-namespace TransportManagementSystem.Controllers
-{
+namespace TransportManagementSystem.Controllers;
+
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class MechanicController : ControllerBase
     {
         private readonly ApplicationDbContext dbContext;
@@ -214,7 +216,7 @@ namespace TransportManagementSystem.Controllers
             return $"MECH{DateTime.Now.Ticks.ToString().Substring(0, 8)}";
         }
     }
-}
+
 
 // Request DTOs
 public class CreateMechanicRequest

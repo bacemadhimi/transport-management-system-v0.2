@@ -9,6 +9,7 @@ namespace TransportManagementSystem.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class DashboardController : ControllerBase
     {
         private readonly ApplicationDbContext _context;
