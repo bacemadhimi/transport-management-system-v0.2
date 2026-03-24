@@ -1,9 +1,9 @@
 using Microsoft.AspNetCore.Mvc;
-using TransportManagementSystem.Service;
 using TransportManagementSystem.Models;
 using TransportManagementSystem.Data;
 using TransportManagementSystem.Entity;
 using Microsoft.EntityFrameworkCore;
+using TransportManagementSystem.Services;
 
 namespace TransportManagementSystem.Controllers
 {

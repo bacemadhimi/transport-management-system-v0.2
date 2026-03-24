@@ -48,7 +48,7 @@ public class TripAssignmentsController : ControllerBase
             if (trip == null)
                 return NotFound(new { message = "Trip non trouvé" });
 
-            var driver = await _context.Drivers.FindAsync(request.DriverId);
+            var driver = await _context.Set<Driver>().FindAsync(request.DriverId);
             if (driver == null)
                 return NotFound(new { message = "Chauffeur non trouvé" });
 
@@ -240,7 +240,7 @@ public class TripAssignmentsController : ControllerBase
                 TripReference = a.Trip != null ? a.Trip.TripReference : null,
                 DriverId = a.DriverId,
                 DriverName = a.Driver != null ? a.Driver.Name : null,
-                DriverPhone = a.Driver != null ? a.Driver.Phone : null,
+                DriverPhone = a.Driver != null ? a.Driver.PhoneNumber : null,
                 a.AssignedAt,
                 a.ExpiresAt,
                 IsExpired = a.ExpiresAt < DateTime.UtcNow

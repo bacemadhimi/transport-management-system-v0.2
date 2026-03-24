@@ -1275,7 +1275,6 @@ private async checkAndDisplayTrajectStatus(trajectId: number): Promise<void> {
       customerId: [deliveryData?.customerId || '', Validators.required],
       orderId: [deliveryData?.orderId || '', Validators.required],
       deliveryAddress: [deliveryData?.deliveryAddress || ''],
-      deliveryAddress: [deliveryData?.deliveryAddress || ''], // Validators.required removed temporarily
       geolocation: [deliveryData?.geolocation || null], // Champ pour stocker les coordonnées GPS (format: "lat,lng")
       sequence: [deliveryData?.sequence || sequence, [Validators.required, Validators.min(1)]],
       plannedTime: [plannedTime],
@@ -3182,7 +3181,6 @@ private async checkCapacityBeforeAddingOrders(selectedWeight: number): Promise<b
       customerId: [movedDelivery.get('customerId')?.value, Validators.required],
       orderId: [movedDelivery.get('orderId')?.value, Validators.required],
       deliveryAddress: [movedDelivery.get('deliveryAddress')?.value],
-      deliveryAddress: [movedDelivery.get('deliveryAddress')?.value], // Validators.required removed temporarily
       geolocation: [movedDelivery.get('geolocation')?.value || null],
       sequence: [movedDelivery.get('sequence')?.value, [Validators.required, Validators.min(1)]],
       plannedTime: [movedDelivery.get('plannedTime')?.value],
@@ -6080,7 +6078,6 @@ clearFilters(): void {
             customerId: [delivery.customerId || '', Validators.required],
             orderId: [delivery.orderId || '', Validators.required],
             deliveryAddress: [delivery.deliveryAddress || ''],
-            deliveryAddress: [delivery.deliveryAddress || '', Validators.maxLength(500)], // Validators.required removed temporarily
             geolocation: [delivery.geolocation || null],
             sequence: [sequence, [Validators.required, Validators.min(1)]],
             plannedTime: [delivery.plannedTime || ''],
@@ -7085,7 +7082,6 @@ if (!this.allowMixingOrderTypes && this.deliveries.length > 0) {
             customerId: [delivery.customerId || '', Validators.required],
             orderId: [delivery.orderId || '', Validators.required],
             deliveryAddress: [delivery.deliveryAddress || ''],
-            deliveryAddress: [delivery.deliveryAddress || '', Validators.maxLength(500)], // Validators.required removed temporarily
             geolocation: [delivery.geolocation || null],
             sequence: [sequence, [Validators.required, Validators.min(1)]],
             plannedTime: [delivery.plannedTime || ''],

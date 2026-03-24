@@ -4,7 +4,7 @@ using TransportManagementSystem.Entity;
 using TransportManagementSystem.Hubs;
 using Microsoft.EntityFrameworkCore;
 
-namespace TransportManagementSystem.Service
+namespace TransportManagementSystem.Services
 {
     public interface IGPSService
     {

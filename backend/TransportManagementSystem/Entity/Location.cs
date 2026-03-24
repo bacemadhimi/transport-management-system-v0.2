@@ -21,6 +21,4 @@ public class Location
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
     [Required]
     public string Address { get; set; } = string.Empty;
-    public required double Longitude { get; set; }
-    public required double Latitude { get; set; }
 }

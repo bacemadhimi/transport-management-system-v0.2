@@ -1,16 +1,10 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net.Http;
-using System.Net.Http.Json;
 using System.Text.Json;
-using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using TransportManagementSystem.Data;
 using TransportManagementSystem.Entity;
 using TransportManagementSystem.Models;
 
-namespace TransportManagementSystem.Service
+namespace TransportManagementSystem.Services
 {
     public interface IOptimisationService
     {
@@ -97,7 +91,7 @@ namespace TransportManagementSystem.Service
         public async Task<double> CalculateEstimatedTimeAsync(double distanceKm)
         {
             const double averageSpeedKmh = 60d;
-            var timeMinutes = (distanceKm / averageSpeedKmh) * 60;
+            var timeMinutes = distanceKm / averageSpeedKmh * 60;
             return await Task.FromResult(timeMinutes);
         }
 
