@@ -53,18 +53,16 @@ namespace TransportManagementSystem.Data
         public DbSet<TruckGeographicalEntity> TruckGeographicalEntities { get; set; }
         public DbSet<DriverGeographicalEntity> DriverGeographicalEntities { get; set; }
         public DbSet<CustomerGeographicalEntity> CustomerGeographicalEntities { get; set; }
-<<<<<<< HEAD
+
         public DbSet<PMMWarehouse> PMMWarehouse { get; set; }
         public DbSet<CPDataX> CPDataX { get; set; }
-=======
+
         public DbSet<GeocodingCache> GeocodingCache { get; set; }
         public DbSet<PositionGPS> PositionsGPS { get; set; }
         public DbSet<ResultatOptimisation> ResultatOptimisations { get; set; }
         public DbSet<TripAssignment> TripAssignments { get; set; }
 
-        public DbSet<Warehouse> Warehouses { get; set; }
-        public DbSet<Zone> Zones { get; set; }
->>>>>>> 97da423886bc29ffb2a2dc00900f21c53be8a593
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
