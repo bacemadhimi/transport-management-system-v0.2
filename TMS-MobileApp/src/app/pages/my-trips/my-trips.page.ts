@@ -17,6 +17,8 @@ interface MyTrip {
   driverName?: string;
   truckImmatriculation?: string;
   startDate?: string;
+  endDate?: string;
+  deliveries?: any[];
 }
 
 @Component({
@@ -36,6 +38,7 @@ export class MyTripsPage implements OnInit {
   loading: boolean = true;
   driverId: number | null = null;
   error: string | null = null;
+  refreshing: boolean = false;
 
   private readonly API_URL = 'http://localhost:5191/api/Trips';
 
@@ -54,7 +57,6 @@ export class MyTripsPage implements OnInit {
     this.error = null;
 
     try {
-      // Get current user info
       const user = this.authService.currentUser();
       if (!user) {
         this.error = 'Utilisateur non connecté';
@@ -64,55 +66,67 @@ export class MyTripsPage implements OnInit {
 
       this.driverId = (user as any).driverId || user.id;
       console.log('📦 Loading trips for driver:', this.driverId);
+      console.log('👤 User object:', JSON.stringify(user, null, 2));
 
-      // Get token
       const token = localStorage.getItem('token');
+      console.log('🔑 Token:', token ? 'PRESENT (' + token.length + ' chars)' : 'MISSING');
+      
       const headers = {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
       };
 
-      // Fetch real trips from API - Filter by driver
-      this.http.get<any[]>(`${this.API_URL}?status=all`, { headers })
+      // Fetch ALL trips for this driver (both active and history)
+      const apiUrl = `${this.API_URL}/driver/${this.driverId}`;
+      console.log('📡 API URL:', apiUrl);
+      
+      this.http.get<any[]>(apiUrl, { headers })
         .subscribe({
           next: (trips) => {
-            console.log('📦 Trips received:', trips.length);
-            
-            // Filter trips for this driver only
-            const driverTrips = trips.filter(trip => 
-              trip.driverId === this.driverId || 
-              (trip.driver && trip.driver.id === this.driverId)
-            );
-
-            console.log('🚛 Driver trips:', driverTrips.length);
+            console.log('📦 Total trips received:', trips.length);
+            console.log('📦 Trips data:', JSON.stringify(trips, null, 2));
 
             // Transform API data
-            this.trips = driverTrips.map(trip => ({
-              id: trip.id,
-              tripReference: trip.tripReference || `TRIP-${trip.id}`,
-              status: trip.status || trip.tripStatus || 'Planned',
-              destination: this.getDestination(trip),
-              estimatedDistance: trip.estimatedDistance || 0,
-              estimatedDuration: trip.estimatedDuration || 0,
-              deliveriesCount: trip.deliveriesCount || trip.deliveries?.length || 0,
-              isActive: this.isActiveStatus(trip.status || trip.tripStatus),
-              driverName: trip.driver?.name,
-              truckImmatriculation: trip.truck?.immatriculation,
-              startDate: trip.estimatedStartDate
-            }));
+            this.trips = trips.map(trip => {
+              const transformed = {
+                id: trip.id,
+                tripReference: trip.tripReference || `TRIP-${trip.id}`,
+                status: trip.Status || 'Planned',
+                destination: this.getDestination(trip),
+                estimatedDistance: trip.EstimatedDistance || 0,
+                estimatedDuration: trip.EstimatedDuration || 0,
+                deliveriesCount: trip.DeliveriesCount || 0,
+                isActive: this.isActiveStatus(trip.Status),
+                driverName: trip.DriverName,
+                truckImmatriculation: trip.TruckImmatriculation,
+                startDate: trip.EstimatedStartDate,
+                endDate: trip.EstimatedEndDate,
+                deliveries: trip.Deliveries
+              };
+              console.log('🔄 Transformed trip:', transformed.tripReference, 'Status:', transformed.status, 'Active:', transformed.isActive);
+              return transformed;
+            });
 
             // Separate active and history
-            this.activeTrips = this.trips.filter(t => t.isActive);
-            this.historyTrips = this.trips.filter(t => !t.isActive);
-
-            console.log('✅ Active trips:', this.activeTrips.length);
-            console.log('📚 History trips:', this.historyTrips.length);
+            // Active trips: sorted by CreatedAt ascending (oldest first)
+            this.activeTrips = this.trips
+              .filter(t => t.isActive)
+              .sort((a, b) => new Date(a.startDate || '').getTime() - new Date(b.startDate || '').getTime());
             
+            // History trips: sorted by CreatedAt descending (newest first)
+            this.historyTrips = this.trips
+              .filter(t => !t.isActive)
+              .sort((a, b) => new Date(b.endDate || b.startDate || '').getTime() - new Date(a.endDate || a.startDate || '').getTime());
+
+            console.log('✅ Active trips:', this.activeTrips.length, this.activeTrips.map(t => `${t.tripReference} (${t.status})`));
+            console.log('📚 History trips:', this.historyTrips.length, this.historyTrips.map(t => `${t.tripReference} (${t.status})`));
+
             this.loading = false;
           },
           error: (err) => {
             console.error('❌ Error loading trips:', err);
-            this.error = 'Erreur de chargement des trajets';
+            console.error('❌ Error details:', JSON.stringify(err, null, 2));
+            this.error = 'Erreur de chargement des trajets: ' + (err.message || err.error?.message || 'Inconnue');
             this.trips = [];
             this.activeTrips = [];
             this.historyTrips = [];
@@ -122,7 +136,7 @@ export class MyTripsPage implements OnInit {
 
     } catch (error) {
       console.error('Error loading trips:', error);
-      this.error = 'Erreur inattendue';
+      this.error = 'Erreur inattendue: ' + (error as any).message;
       this.trips = [];
       this.activeTrips = [];
       this.historyTrips = [];
@@ -131,26 +145,39 @@ export class MyTripsPage implements OnInit {
   }
 
   private getDestination(trip: any): string {
-    if (trip.deliveries && trip.deliveries.length > 0) {
-      const lastDelivery = trip.deliveries[trip.deliveries.length - 1];
-      return lastDelivery.customerName || lastDelivery.deliveryAddress || 'Destination inconnue';
+    if (trip.Deliveries && trip.Deliveries.length > 0) {
+      const lastDelivery = trip.Deliveries[trip.Deliveries.length - 1];
+      return lastDelivery.CustomerName || lastDelivery.DeliveryAddress || 'Destination inconnue';
     }
     return 'Destination inconnue';
   }
 
   private isActiveStatus(status: string): boolean {
-    const activeStatuses = ['Planned', 'Accepted', 'LoadingInProgress', 'DeliveryInProgress', 'InDelivery', 'Loading'];
+    const activeStatuses = [
+      'Pending',
+      'Planned',
+      'Assigned',
+      'Accepted',
+      'Loading',
+      'LoadingInProgress',
+      'DeliveryInProgress',
+      'InDelivery',
+      'Arrived'
+    ];
     return activeStatuses.includes(status);
   }
 
   getStatusColor(status: string): string {
     const colors: Record<string, string> = {
+      'Pending': 'medium',
       'Planned': 'medium',
+      'Assigned': 'primary',
       'Accepted': 'primary',
-      'LoadingInProgress': 'warning',
       'Loading': 'warning',
+      'LoadingInProgress': 'warning',
       'DeliveryInProgress': 'primary',
       'InDelivery': 'primary',
+      'Arrived': 'success',
       'Completed': 'success',
       'Receipt': 'success',
       'Cancelled': 'danger',
@@ -161,12 +188,15 @@ export class MyTripsPage implements OnInit {
 
   getStatusText(status: string): string {
     const texts: Record<string, string> = {
+      'Pending': 'En attente',
       'Planned': 'Planifié',
+      'Assigned': 'Assigné',
       'Accepted': 'Accepté',
-      'LoadingInProgress': 'Chargement',
       'Loading': 'Chargement',
+      'LoadingInProgress': 'Chargement',
       'DeliveryInProgress': 'Livraison',
       'InDelivery': 'Livraison',
+      'Arrived': 'Arrivé',
       'Completed': 'Terminé',
       'Receipt': 'Livré',
       'Cancelled': 'Annulé',
@@ -175,11 +205,33 @@ export class MyTripsPage implements OnInit {
     return texts[status] || status;
   }
 
+  getStatusIcon(status: string): string {
+    const icons: Record<string, string> = {
+      'Pending': 'time',
+      'Planned': 'calendar',
+      'Assigned': 'person',
+      'Accepted': 'checkmark-circle',
+      'Loading': 'cube',
+      'LoadingInProgress': 'cube',
+      'DeliveryInProgress': 'truck',
+      'InDelivery': 'truck',
+      'Arrived': 'location',
+      'Completed': 'checkmark-done-circle',
+      'Receipt': 'checkmark-done-circle',
+      'Cancelled': 'close-circle',
+      'Refused': 'close-circle'
+    };
+    return icons[status] || 'document';
+  }
+
   viewTrip(trip: MyTrip) {
     this.router.navigate([`/trip/${trip.id}`]);
   }
 
-  viewGPS(trip: MyTrip) {
+  viewGPS(trip: MyTrip, event?: Event) {
+    if (event) {
+      event.stopPropagation();
+    }
     this.router.navigate([`/gps-tracking`], {
       queryParams: {
         tripId: trip.id,
@@ -188,7 +240,11 @@ export class MyTripsPage implements OnInit {
     });
   }
 
-  refreshData() {
-    this.loadMyTrips();
+  doRefresh(event: any) {
+    this.refreshing = true;
+    this.loadMyTrips().finally(() => {
+      this.refreshing = false;
+      event.target.complete();
+    });
   }
 }

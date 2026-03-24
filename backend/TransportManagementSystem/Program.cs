@@ -98,6 +98,10 @@ builder.Services.AddScoped<INotificationRepository, NotificationRepository>();
 builder.Services.AddScoped<IGeocodingService, GeocodingService>();
 builder.Services.AddHttpClient("Nominatim");
 
+// AI Chatbot services
+builder.Services.AddScoped<IChatbotService, ChatbotService>();
+builder.Services.AddHttpClient("Ollama");
+
 // Notification Hub Service
 builder.Services.AddSingleton<NotificationHubService>();
 

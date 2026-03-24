@@ -493,16 +493,14 @@ var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
         await tripRepository.AddAsync(trip);
         await tripRepository.SaveChangesAsync();
 
+        _logger.LogInformation($"✅ Trip created successfully - ID: {trip.Id}, Reference: {trip.TripReference}");
 
         truck.Status = "En mission";
         driver.Status = "En mission";
         context.Trucks.Update(truck);
         context.Drivers.Update(driver);
 
-
-        await UpdateDriverAvailabilityForTrip(model.DriverId, model.EstimatedStartDate, model.EstimatedEndDate, trip.Id, tripReference);
-        await UpdateTruckAvailabilityForTrip(model.TruckId, model.EstimatedStartDate, model.EstimatedEndDate, tripReference);
-
+        // ✅ SAUVEGARDER LE VOYAGE D'ABORD
         if (model.Deliveries?.Any() == true)
         {
             var deliveries = model.Deliveries.Select(d => new Delivery
@@ -519,33 +517,108 @@ var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
             });
 
             await deliveryRepository.AddRangeAsync(deliveries);
+            _logger.LogInformation($"✅ Deliveries added - Count: {deliveries.Count()}");
         }
 
         await context.SaveChangesAsync();
-        var tripWithDeliveries = await context.Trips
-        .Include(t => t.Deliveries)
-            .ThenInclude(d => d.Order)
-        .FirstAsync(t => t.Id == trip.Id);
-        await UpdateOrderStatusesBasedOnTripStatus(tripWithDeliveries, TripStatus.Planned);
-        await context.SaveChangesAsync();
-
-        // Send notification to driver - ENHANCED WITH FULL TRIP DETAILS
+        _logger.LogInformation($"✅ Trip and deliveries saved to database");
+        
+        // ✅ CRÉER LA NOTIFICATION MAINTENANT (AVANT UpdateDriverAvailabilityForTrip qui peut échouer)
+        _logger.LogInformation($"📢 START creating notification for trip {trip.TripReference} to driver {model.DriverId}");
+        
         try
         {
-            _logger.LogInformation($"📢 START sending notification for trip {trip.TripReference} to driver {model.DriverId}");
-
             // Get delivery details for notification
-            var firstDelivery = tripWithDeliveries.Deliveries.FirstOrDefault();
-            var lastDelivery = tripWithDeliveries.Deliveries.LastOrDefault();
+            var tripWithDeliveries = await context.Trips
+                .Include(t => t.Deliveries)
+                    .ThenInclude(d => d.Order)
+                .FirstOrDefaultAsync(t => t.Id == trip.Id);
+
+            var firstDelivery = tripWithDeliveries?.Deliveries.FirstOrDefault();
+            var lastDelivery = tripWithDeliveries?.Deliveries.LastOrDefault();
             var destination = lastDelivery?.DeliveryAddress ?? "Non définie";
             var customerName = firstDelivery?.Customer?.Name ?? "Inconnu";
 
-            // Find the User ID associated with this Driver (by matching Email)
-            var driverUser = await context.Users
-                .FirstOrDefaultAsync(u => u.Email == driver.Email);
-            
+            // ✅ FIX PERMANENT: Use the user_id linked to the driver
+            // Now that we have driver.user_id properly set, use it for notifications
+            int userIdForNotification = driver.user_id ?? model.DriverId; // Fallback to DriverId if user_id not set
+            _logger.LogInformation($"🔍 Driver {model.DriverId} ({driver.Email}) -> User ID: {userIdForNotification} (from driver.user_id)");
+
+            // ✅ SAUVEGARDER LA NOTIFICATION EN BASE DE DONNÉES (pour persistance)
+            var notificationEntity = new Notification
+            {
+                Type = "NEW_TRIP_ASSIGNMENT",
+                Title = "Nouvelle Mission",
+                Message = $"Trip {trip.TripReference} assigné - Destination: {destination}",
+                Timestamp = DateTime.UtcNow,
+                TripId = trip.Id,
+                TripReference = trip.TripReference,
+                DriverName = driver.Name,
+                TruckImmatriculation = truck.Immatriculation,
+                AdditionalData = System.Text.Json.JsonSerializer.Serialize(new
+                {
+                    destination = destination,
+                    estimatedDistance = trip.EstimatedDistance,
+                    estimatedDuration = trip.EstimatedDuration,
+                    deliveriesCount = tripWithDeliveries?.Deliveries.Count ?? 0,
+                    customerName = customerName
+                }),
+                CreatedAt = DateTime.UtcNow
+            };
+
+            context.Notifications.Add(notificationEntity);
+            _logger.LogInformation($"✅ Notification entity added to context");
+
+            // Créer la notification utilisateur liée
+            // CRITICAL: Use userIdForNotification (from User table), NOT model.DriverId!
+            // This MUST match the UserId in the JWT token
+            var userNotification = new UserNotification
+            {
+                NotificationId = notificationEntity.Id,
+                UserId = userIdForNotification, // MUST match JWT token UserId
+                IsRead = false,
+                ReadAt = null
+            };
+
+            context.UserNotifications.Add(userNotification);
+            await context.SaveChangesAsync();
+
+            _logger.LogInformation($"✅ UserNotification created - UserId: {userIdForNotification}, NotificationId: {notificationEntity.Id}");
+            _logger.LogInformation($"✅ Notification SAVED to database - ID: {notificationEntity.Id}");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, $"❌ Error creating notification for trip {trip.TripReference}");
+            // Continue even if notification fails - don't block trip creation
+        }
+
+        // ✅ MAINTENANT mettre à jour les disponibilités (peut échouer mais notification est déjà sauvegardée)
+        try
+        {
+            await UpdateDriverAvailabilityForTrip(model.DriverId, model.EstimatedStartDate, model.EstimatedEndDate, trip.Id, tripReference);
+            await UpdateTruckAvailabilityForTrip(model.TruckId, model.EstimatedStartDate, model.EstimatedEndDate, tripReference);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, $"⚠️ Driver/Truck availability update failed, but trip created successfully");
+            // Continue - trip was created successfully
+        }
+
+        // Send real-time notification via SignalR
+        try
+        {
+            var tripWithDeliveries = await context.Trips
+                .Include(t => t.Deliveries)
+                    .ThenInclude(d => d.Order)
+                .FirstOrDefaultAsync(t => t.Id == trip.Id);
+
+            var firstDelivery = tripWithDeliveries?.Deliveries.FirstOrDefault();
+            var lastDelivery = tripWithDeliveries?.Deliveries.LastOrDefault();
+            var destination = lastDelivery?.DeliveryAddress ?? "Non définie";
+            var customerName = firstDelivery?.Customer?.Name ?? "Inconnu";
+
+            var driverUser = await context.Users.FirstOrDefaultAsync(u => u.Email == driver.Email);
             int userIdForNotification = driverUser?.Id ?? model.DriverId;
-            _logger.LogInformation($"🔍 Driver {model.DriverId} ({driver.Email}) -> User ID: {userIdForNotification}");
 
             var notification = new
             {
@@ -560,7 +633,7 @@ var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
                 truckImmatriculation = truck.Immatriculation,
                 destination = destination,
                 customerName = customerName,
-                deliveriesCount = tripWithDeliveries.Deliveries.Count,
+                deliveriesCount = tripWithDeliveries?.Deliveries.Count ?? 0,
                 estimatedDistance = trip.EstimatedDistance,
                 estimatedDuration = trip.EstimatedDuration,
                 estimatedStartDate = trip.EstimatedStartDate,
@@ -624,7 +697,8 @@ return BadRequest(new ApiResponse(false,
         var oldStartDate = trip.EstimatedStartDate;
         var oldEndDate = trip.EstimatedEndDate;
 
-        var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
+        var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var userId = !string.IsNullOrEmpty(userIdClaim) ? int.Parse(userIdClaim) : 0;
 
         trip.EstimatedDistance = model.EstimatedDistance;
         trip.EstimatedDuration = model.EstimatedDuration;
@@ -666,10 +740,11 @@ return BadRequest(new ApiResponse(false,
         }
         else if (oldDriverId == model.DriverId)
         {
-
             if (oldStartDate != model.EstimatedStartDate || oldEndDate != model.EstimatedEndDate)
             {
-                await RestoreDriverAvailabilityForTrip(model.DriverId, oldStartDate.Value, oldEndDate.Value, trip.TripReference);
+                var oldStart = oldStartDate ?? DateTime.MinValue;
+                var oldEnd = oldEndDate ?? DateTime.MaxValue;
+                await RestoreDriverAvailabilityForTrip(model.DriverId, oldStart, oldEnd, trip.TripReference);
                 await UpdateDriverAvailabilityForTrip(model.DriverId, model.EstimatedStartDate, model.EstimatedEndDate, trip.Id, trip.TripReference);
             }
         }
@@ -705,7 +780,9 @@ return BadRequest(new ApiResponse(false,
         {
             if (oldStartDate != model.EstimatedStartDate || oldEndDate != model.EstimatedEndDate)
             {
-                await RestoreTruckAvailabilityForTrip(model.TruckId, oldStartDate.Value, oldEndDate.Value, trip.TripReference);
+                var oldStart = oldStartDate ?? DateTime.MinValue;
+                var oldEnd = oldEndDate ?? DateTime.MaxValue;
+                await RestoreTruckAvailabilityForTrip(model.TruckId, oldStart, oldEnd, trip.TripReference);
                 await UpdateTruckAvailabilityForTrip(model.TruckId, model.EstimatedStartDate, model.EstimatedEndDate, trip.TripReference);
             }
         }
@@ -741,7 +818,7 @@ return BadRequest(new ApiResponse(false,
             .Include(t => t.Deliveries)
             .FirstOrDefaultAsync(t => t.Id == trip.Id);
 
-        return Ok(new ApiResponse(true, $"Trajet {id} mis à jour avec succès", updatedTrip));
+        return Ok(new ApiResponse(true, $"Trajet {id} mis à jour avec succès", updatedTrip ?? new object()));
     }
 
     [HttpPut("{id}/status")]
@@ -1124,5 +1201,220 @@ return BadRequest(new ApiResponse(false,
         }
 
         return recommendations;
+    }
+
+    /// <summary>
+    /// Get all trips for a specific driver (for mobile app)
+    /// </summary>
+    [HttpGet("driver/{driverId}")]
+    public async Task<IActionResult> GetTripsByDriver(int driverId, [FromQuery] string? status = null)
+    {
+        try
+        {
+            _logger.LogInformation($"📂 GetTripsByDriver called - DriverId: {driverId}, Status: {status}");
+            
+            var query = context.Trips
+                .Include(t => t.Driver)
+                .Include(t => t.Truck)
+                .Include(t => t.Deliveries)
+                    .ThenInclude(d => d.Customer)
+                .Where(t => t.DriverId == driverId)
+                .AsQueryable();
+
+            // Filter by status if provided
+            if (!string.IsNullOrEmpty(status))
+            {
+                if (status == "active")
+                {
+                    // Active statuses: Pending, Assigned, Accepted, Loading, InDelivery, Arrived
+                    var activeStatuses = new[] {
+                        TripStatus.Pending,
+                        TripStatus.Assigned,
+                        TripStatus.Accepted,
+                        TripStatus.Loading,
+                        TripStatus.InDelivery,
+                        TripStatus.Arrived
+                    };
+                    query = query.Where(t => activeStatuses.Contains(t.TripStatus));
+                }
+                else if (status == "history")
+                {
+                    // History statuses: Completed, Cancelled, Refused
+                    var historyStatuses = new[] {
+                        TripStatus.Completed,
+                        TripStatus.Cancelled,
+                        TripStatus.Refused
+                    };
+                    query = query.Where(t => historyStatuses.Contains(t.TripStatus));
+                }
+                else if (Enum.TryParse<TripStatus>(status, out var parsedStatus))
+                {
+                    query = query.Where(t => t.TripStatus == parsedStatus);
+                }
+            }
+
+            var allTripsCount = await query.CountAsync();
+            _logger.LogInformation($"📊 Total trips found for driver {driverId}: {allTripsCount}");
+
+            var trips = await query
+                .OrderByDescending(t => t.CreatedAt)
+                .Select(t => new
+                {
+                    t.Id,
+                    t.TripReference,
+                    t.BookingId,
+                    Status = t.TripStatus.ToString(),
+                    DriverId = t.DriverId,
+                    DriverName = t.Driver != null ? t.Driver.Name : null,
+                    TruckId = t.TruckId,
+                    TruckImmatriculation = t.Truck != null ? t.Truck.Immatriculation : null,
+                    t.EstimatedDistance,
+                    t.EstimatedDuration,
+                    t.EstimatedStartDate,
+                    t.EstimatedEndDate,
+                    t.ActualStartDate,
+                    t.ActualEndDate,
+                    t.CreatedAt,
+                    DeliveriesCount = t.Deliveries.Count,
+                    Deliveries = t.Deliveries.Select(d => new
+                    {
+                        d.Id,
+                        d.DeliveryAddress,
+                        CustomerName = d.Customer != null ? d.Customer.Name : null,
+                        d.OrderId,
+                        d.Status
+                    }).ToList(),
+                    t.CurrentLatitude,
+                    t.CurrentLongitude,
+                    t.LastPositionUpdate
+                })
+                .ToListAsync();
+
+            _logger.LogInformation($"✅ Returning {trips.Count} trips for driver {driverId}");
+            if (trips.Count > 0)
+            {
+                _logger.LogInformation($"📦 First trip: {trips[0].TripReference}, Status: {trips[0].Status}");
+            }
+
+            return Ok(trips);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error loading trips for driver {DriverId}", driverId);
+            return BadRequest(new { message = "Error loading driver trips", error = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// DEBUG: Get all trips with their driver IDs (for testing)
+    /// </summary>
+    [HttpGet("debug/all")]
+    public async Task<IActionResult> GetAllTripsWithDrivers()
+    {
+        try
+        {
+            var trips = await context.Trips
+                .Include(t => t.Driver)
+                .Include(t => t.Truck)
+                .Select(t => new
+                {
+                    t.Id,
+                    t.TripReference,
+                    t.DriverId,
+                    DriverName = t.Driver != null ? t.Driver.Name : null,
+                    DriverEmail = t.Driver != null ? t.Driver.Email : null,
+                    t.TripStatus,
+                    t.CreatedAt
+                })
+                .OrderByDescending(t => t.CreatedAt)
+                .Take(50)
+                .ToListAsync();
+
+            return Ok(trips);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = "Error", error = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// DEBUG: Fix driver user_id linkage (TEMPORARY - remove after use)
+    /// </summary>
+    [HttpPost("debug/fix-driver-link")]
+    public async Task<IActionResult> FixDriverLink()
+    {
+        try
+        {
+            // Find driver with email anis12@tms.demo
+            var driver = await context.Drivers
+                .FirstOrDefaultAsync(d => d.Email == "anis12@tms.demo");
+
+            if (driver == null)
+                return NotFound(new { message = "Driver not found" });
+
+            // Update driver's user_id to 14
+            driver.user_id = 14;
+            await context.SaveChangesAsync();
+
+            return Ok(new { 
+                success = true, 
+                message = $"Driver {driver.Id} ({driver.Name}) linked to User 14",
+                driverId = driver.Id,
+                userId = driver.user_id
+            });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = "Error", error = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// DEBUG: Auto-fix ALL drivers user_id linkage (Run once after deploy)
+    /// </summary>
+    [HttpPost("debug/auto-fix-all-drivers")]
+    public async Task<IActionResult> AutoFixAllDrivers()
+    {
+        try
+        {
+            var fixedDrivers = new List<object>();
+
+            // Find all drivers without user_id
+            var driversWithoutUser = await context.Drivers
+                .Where(d => d.user_id == null)
+                .ToListAsync();
+
+            foreach (var driver in driversWithoutUser)
+            {
+                // Find matching user by email
+                var user = await context.Users
+                    .FirstOrDefaultAsync(u => u.Email == driver.Email);
+
+                if (user != null)
+                {
+                    driver.user_id = user.Id;
+                    fixedDrivers.Add(new { 
+                        driverId = driver.Id, 
+                        driverName = driver.Name, 
+                        driverEmail = driver.Email,
+                        userId = user.Id,
+                        userName = user.Name
+                    });
+                }
+            }
+
+            await context.SaveChangesAsync();
+
+            return Ok(new { 
+                success = true, 
+                message = $"Auto-fixed {fixedDrivers.Count} drivers",
+                fixedDrivers = fixedDrivers
+            });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = "Error", error = ex.Message });
+        }
     }
 }

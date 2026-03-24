@@ -1,69 +1,144 @@
+// Trip History Page - Modern Professional Styling
 .history-content {
-  --background: #f8fafc;
+  --background: #f5f7fa;
 
-  .filter-bar {
-    background: white;
+  .stats-container {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
     padding: 16px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    background: linear-gradient(135deg, var(--ion-color-primary) 0%, var(--ion-color-primary-dark) 100%);
+    margin-bottom: 8px;
+  }
 
-    ion-segment {
-      --background: #f1f5f9;
-      --color: #64748b;
-      border-radius: 8px;
-      margin: 0 auto;
-      max-width: 400px;
+  .stat-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 12px 8px;
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 12px;
+    backdrop-filter: blur(10px);
+    transition: transform 0.2s ease;
 
-      ion-segment-button {
-        --color: #64748b;
-        --color-checked: #3b82f6;
+    &:active {
+      transform: scale(0.95);
+    }
 
-        ion-label {
-          font-size: 13px;
-          font-weight: 600;
-        }
+    .stat-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 6px;
+      font-size: 18px;
+      background: rgba(255, 255, 255, 0.2);
+
+      &.total {
+        background: rgba(255, 255, 255, 0.25);
       }
 
-      .segment-button-checked {
-        background: #3b82f6;
-        border-radius: 6px;
+      &.completed {
+        background: rgba(76, 209, 55, 0.3);
+      }
+
+      &.cancelled {
+        background: rgba(255, 59, 48, 0.3);
+      }
+
+      &.distance {
+        background: rgba(0, 122, 255, 0.3);
+      }
+    }
+
+    .stat-info {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+
+      .stat-value {
+        font-size: 18px;
+        font-weight: 700;
+        color: #fff;
+        line-height: 1;
+      }
+
+      .stat-label {
+        font-size: 10px;
+        color: rgba(255, 255, 255, 0.85);
+        margin-top: 2px;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
       }
     }
   }
 
-  ion-list {
-    background: transparent;
-    padding: 16px;
+  .filter-section {
+    padding: 12px 16px;
+    background: #fff;
+    border-bottom: 1px solid #e5e5e5;
 
-    ion-item {
-      --background: white;
-      --border-radius: 12px;
-      margin-bottom: 12px;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    ion-segment {
+      margin: 0;
+      --background: transparent;
 
-      ion-icon {
-        font-size: 28px;
-        margin-right: 12px;
-      }
-
-      h3 {
-        font-size: 16px;
-        font-weight: 600;
-        color: #1e293b;
-        margin-bottom: 4px;
-      }
-
-      p {
-        font-size: 13px;
-        color: #64748b;
-        margin: 0;
-      }
-
-      ion-badge {
-        font-size: 12px;
-        padding: 6px 12px;
-        border-radius: 12px;
+      ion-segment-button {
+        --indicator-color: var(--ion-color-primary);
+        --color: #666;
+        --color-checked: var(--ion-color-primary);
+        font-weight: 500;
         text-transform: capitalize;
       }
+    }
+  }
+
+  .loading-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 80px 20px;
+    text-align: center;
+
+    ion-spinner {
+      width: 48px;
+      height: 48px;
+      margin-bottom: 16px;
+    }
+
+    .loading-text {
+      color: #666;
+      font-size: 14px;
+      margin: 0;
+    }
+  }
+
+  .error-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 20px;
+    text-align: center;
+
+    ion-icon {
+      font-size: 48px;
+      margin-bottom: 16px;
+    }
+
+    h3 {
+      color: #333;
+      font-size: 20px;
+      margin: 0 0 8px 0;
+    }
+
+    p {
+      color: #666;
+      font-size: 14px;
+      margin: 0 0 20px 0;
+      max-width: 280px;
     }
   }
 
@@ -72,27 +147,196 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 80px 20px;
+    padding: 60px 20px;
     text-align: center;
-    color: #94a3b8;
 
-    ion-icon {
-      font-size: 80px;
-      margin-bottom: 24px;
-      opacity: 0.5;
+    .empty-icon {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      background: #f0f0f0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 20px;
+
+      ion-icon {
+        font-size: 40px;
+        color: #999;
+      }
     }
 
     h3 {
+      color: #333;
       font-size: 18px;
-      font-weight: 600;
       margin: 0 0 8px 0;
-      color: #64748b;
     }
 
     p {
+      color: #666;
       font-size: 14px;
-      margin: 0;
-      color: #94a3b8;
+      margin: 0 0 20px 0;
+      max-width: 280px;
+      line-height: 1.5;
     }
+
+    .empty-hint {
+      color: #999;
+      font-size: 13px;
+      font-style: italic;
+    }
+  }
+
+  .history-list {
+    padding: 12px 0;
+
+    ion-list {
+      background: transparent;
+      padding: 0;
+    }
+
+    ion-item-sliding {
+      margin-bottom: 8px;
+    }
+
+    .trip-item {
+      --background: #fff;
+      --border-radius: 12px;
+      --inner-padding-end: 0;
+      margin: 0 12px;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+      border: 1px solid #f0f0f0;
+      --min-height: 90px;
+
+      &:active {
+        --background: #f8f9fa;
+      }
+
+      .trip-item-start {
+        margin-right: 12px;
+      }
+
+      .status-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
+        color: #fff;
+
+        &.success {
+          background: linear-gradient(135deg, #34c759 0%, #30b34e 100%);
+        }
+
+        &.danger {
+          background: linear-gradient(135deg, #ff3b30 0%, #e6352b 100%);
+        }
+
+        &.medium {
+          background: linear-gradient(135deg, #8e8e93 0%, #79797e 100%);
+        }
+      }
+
+      .trip-label {
+        margin: 12px 0;
+
+        .trip-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          margin-bottom: 6px;
+
+          .trip-reference {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1a1a1a;
+            margin: 0;
+          }
+
+          .status-badge {
+            font-size: 11px;
+            font-weight: 600;
+            padding: 4px 10px;
+            border-radius: 12px;
+            text-transform: capitalize;
+          }
+        }
+
+        .trip-destination {
+          font-size: 13px;
+          color: #666;
+          margin: 4px 0;
+          display: flex;
+          align-items: center;
+          gap: 4px;
+
+          .icon-small {
+            font-size: 14px;
+            color: var(--ion-color-primary);
+          }
+        }
+
+        .trip-details {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 12px;
+          margin-top: 8px;
+
+          .trip-detail {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 12px;
+            color: #888;
+
+            ion-icon {
+              font-size: 13px;
+            }
+          }
+        }
+
+        .trip-truck {
+          display: flex;
+          align-items: center;
+          gap: 4px;
+          font-size: 12px;
+          color: #666;
+          margin-top: 6px;
+          padding-top: 6px;
+          border-top: 1px solid #f0f0f0;
+
+          ion-icon {
+            font-size: 13px;
+          }
+        }
+      }
+
+      .chevron {
+        color: #ccc;
+        font-size: 18px;
+        margin-right: 12px;
+      }
+    }
+
+    .list-padding {
+      height: 20px;
+    }
+  }
+}
+
+// Pull to refresh spinning icon
+.spinning {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
   }
 }

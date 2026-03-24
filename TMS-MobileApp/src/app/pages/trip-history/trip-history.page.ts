@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { IonicModule } from '@ionic/angular';
 import { AuthService } from '../../services/auth.service';
 import { HttpClient } from '@angular/common/http';
+import { Router } from '@angular/router';
 
 interface TripHistory {
   id: number;
@@ -15,6 +16,7 @@ interface TripHistory {
   deliveriesCount: number;
   destination?: string;
   truckImmatriculation?: string;
+  deliveries?: any[];
 }
 
 @Component({
@@ -35,10 +37,12 @@ export class TripHistoryPage implements OnInit {
   loading: boolean = true;
   driverId: number | null = null;
   error: string | null = null;
+  refreshing: boolean = false;
   stats = {
     total: 0,
     completed: 0,
     cancelled: 0,
+    refused: 0,
     totalDistance: 0
   };
 
@@ -46,7 +50,8 @@ export class TripHistoryPage implements OnInit {
 
   constructor(
     private authService: AuthService,
-    private http: HttpClient
+    private http: HttpClient,
+    private router: Router
   ) {}
 
   ngOnInit() {
@@ -58,7 +63,6 @@ export class TripHistoryPage implements OnInit {
     this.error = null;
 
     try {
-      // Get current user info
       const user = this.authService.currentUser();
       if (!user) {
         this.error = 'Utilisateur non connecté';
@@ -69,49 +73,34 @@ export class TripHistoryPage implements OnInit {
       this.driverId = (user as any).driverId || user.id;
       console.log('📚 Loading history for driver:', this.driverId);
 
-      // Get token
       const token = localStorage.getItem('token');
       const headers = {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
       };
 
-      // Fetch real trips from API
-      this.http.get<any[]>(`${this.API_URL}?status=all`, { headers })
+      // Use the new driver-specific endpoint with history filter
+      this.http.get<any[]>(`${this.API_URL}/driver/${this.driverId}?status=history`, { headers })
         .subscribe({
           next: (trips) => {
-            console.log('📦 All trips received:', trips.length);
-            
-            // Filter completed/cancelled trips for this driver only
-            const driverHistory = trips.filter(trip => {
-              const isDriverTrip = trip.driverId === this.driverId || 
-                                  (trip.driver && trip.driver.id === this.driverId);
-              const isCompleted = ['Completed', 'Receipt', 'Cancelled', 'Refused']
-                .includes(trip.status || trip.tripStatus);
-              return isDriverTrip && isCompleted;
-            });
+            console.log('📦 Driver history trips:', trips.length);
 
-            console.log('📚 Driver history trips:', driverHistory.length);
-
-            // Transform API data
-            this.history = driverHistory.map(trip => ({
+            // Transform API data - already sorted by CreatedAt descending (newest first)
+            this.history = trips.map(trip => ({
               id: trip.id,
               tripReference: trip.tripReference || `TRIP-${trip.id}`,
-              status: trip.status || trip.tripStatus || 'Completed',
-              date: new Date(trip.estimatedEndDate || trip.estimatedStartDate || Date.now()),
-              distance: trip.estimatedDistance || 0,
-              duration: trip.estimatedDuration || 0,
-              deliveriesCount: trip.deliveriesCount || trip.deliveries?.length || 0,
+              status: trip.Status || 'Completed',
+              date: new Date(trip.EstimatedEndDate || trip.EstimatedStartDate || trip.CreatedAt || Date.now()),
+              distance: trip.EstimatedDistance || 0,
+              duration: trip.EstimatedDuration || 0,
+              deliveriesCount: trip.DeliveriesCount || 0,
               destination: this.getDestination(trip),
-              truckImmatriculation: trip.truck?.immatriculation
+              truckImmatriculation: trip.TruckImmatriculation,
+              deliveries: trip.Deliveries
             }));
 
-            // Calculate stats
             this.calculateStats();
-
-            // Apply default filter
             this.applyFilter();
-            
             this.loading = false;
           },
           error: (err) => {
@@ -133,25 +122,30 @@ export class TripHistoryPage implements OnInit {
   }
 
   private getDestination(trip: any): string {
-    if (trip.deliveries && trip.deliveries.length > 0) {
-      const lastDelivery = trip.deliveries[trip.deliveries.length - 1];
-      return lastDelivery.customerName || lastDelivery.deliveryAddress || 'Destination inconnue';
+    if (trip.Deliveries && trip.Deliveries.length > 0) {
+      const lastDelivery = trip.Deliveries[trip.Deliveries.length - 1];
+      return lastDelivery.CustomerName || lastDelivery.DeliveryAddress || 'Destination inconnue';
     }
     return 'Destination inconnue';
   }
 
   private calculateStats() {
     this.stats.total = this.history.length;
-    this.stats.completed = this.history.filter(h => h.status === 'Completed' || h.status === 'Receipt').length;
-    this.stats.cancelled = this.history.filter(h => h.status === 'Cancelled' || h.status === 'Refused').length;
+    this.stats.completed = this.history.filter(h => h.status === 'Completed' || h.status === 'Arrived' || h.status === 'Receipt').length;
+    this.stats.cancelled = this.history.filter(h => h.status === 'Cancelled').length;
+    this.stats.refused = this.history.filter(h => h.status === 'Refused').length;
     this.stats.totalDistance = this.history.reduce((sum, h) => sum + (h.distance || 0), 0);
-    
+
     console.log('📊 Stats:', this.stats);
   }
 
   applyFilter() {
     if (this.filterStatus === 'all') {
       this.filteredHistory = this.history;
+    } else if (this.filterStatus === 'completed') {
+      this.filteredHistory = this.history.filter(h => 
+        h.status === 'Completed' || h.status === 'Arrived' || h.status === 'Receipt'
+      );
     } else {
       this.filteredHistory = this.history.filter(h => h.status === this.filterStatus);
     }
@@ -160,6 +154,7 @@ export class TripHistoryPage implements OnInit {
   getStatusColor(status: string): string {
     const colors: Record<string, string> = {
       'Completed': 'success',
+      'Arrived': 'success',
       'Receipt': 'success',
       'Cancelled': 'danger',
       'Refused': 'danger'
@@ -170,6 +165,7 @@ export class TripHistoryPage implements OnInit {
   getStatusIcon(status: string): string {
     const icons: Record<string, string> = {
       'Completed': 'checkmark-done-circle',
+      'Arrived': 'checkmark-done-circle',
       'Receipt': 'checkmark-done-circle',
       'Cancelled': 'close-circle',
       'Refused': 'close-circle'
@@ -180,6 +176,7 @@ export class TripHistoryPage implements OnInit {
   getStatusText(status: string): string {
     const texts: Record<string, string> = {
       'Completed': 'Terminé',
+      'Arrived': 'Arrivé',
       'Receipt': 'Livré',
       'Cancelled': 'Annulé',
       'Refused': 'Refusé'
@@ -189,6 +186,7 @@ export class TripHistoryPage implements OnInit {
 
   formatDate(date: Date): string {
     return new Date(date).toLocaleDateString('fr-FR', {
+      weekday: 'short',
       day: 'numeric',
       month: 'short',
       year: 'numeric',
@@ -211,10 +209,14 @@ export class TripHistoryPage implements OnInit {
   }
 
   viewDetails(trip: TripHistory) {
-    console.log('View details:', trip);
+    this.router.navigate([`/trip/${trip.id}`]);
   }
 
-  refreshData() {
-    this.loadHistory();
+  doRefresh(event: any) {
+    this.refreshing = true;
+    this.loadHistory().finally(() => {
+      this.refreshing = false;
+      event.target.complete();
+    });
   }
 }

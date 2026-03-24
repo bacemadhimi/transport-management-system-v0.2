@@ -283,55 +283,369 @@ export class GPSTrackingPage implements OnInit, OnDestroy {
   }
 
   /**
-   * Créer l'icône du camion
+   * Créer l'icône du camion - ULTRA RÉALISTE comme un vrai camion de livraison
+   * Design: Camion moderne avec cabine avancée, proportions réalistes
    */
-  private createTruckIcon(): L.DivIcon {
+  private createTruckIcon(color?: string): L.DivIcon {
+    const truckColor = color || '#2563eb'; // Bleu moderne
+
     return L.divIcon({
       html: `
-        <div style="
-          background: linear-gradient(135deg, #667eea, #764ba2);
-          border: 3px solid white;
-          border-radius: 50%;
-          width: 50px;
-          height: 50px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          box-shadow: 0 4px 20px rgba(102, 126, 234, 0.5);
-          animation: pulse 2s infinite;
+        <div class="truck-marker-container" style="
+          position: relative;
+          width: 60px;
+          height: 60px;
+          filter: drop-shadow(0 4px 10px rgba(0,0,0,0.45));
+          transition: transform 0.15s ease-out;
         ">
-          <span style="font-size: 24px;">🚛</span>
+          <!-- Ultra Realistic Modern Delivery Truck -->
+          <svg width="60" height="60" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <!-- Main body metallic gradient -->
+              <linearGradient id="bodyMetal" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" style="stop-color:#60a5fa;stop-opacity:1" />
+                <stop offset="20%" style="stop-color:#3b82f6;stop-opacity:1" />
+                <stop offset="50%" style="stop-color:${truckColor};stop-opacity:1" />
+                <stop offset="80%" style="stop-color:#1d4ed8;stop-opacity:1" />
+                <stop offset="100%" style="stop-color:#1e3a8a;stop-opacity:1" />
+              </linearGradient>
+
+              <!-- Cab front with depth -->
+              <linearGradient id="cabMetal" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" style="stop-color:#3b82f6;stop-opacity:1" />
+                <stop offset="40%" style="stop-color:#2563eb;stop-opacity:1" />
+                <stop offset="100%" style="stop-color:#1e40af;stop-opacity:1" />
+              </linearGradient>
+
+              <!-- Windshield realistic -->
+              <linearGradient id="windshield" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" style="stop-color:#e0f2fe;stop-opacity:1" />
+                <stop offset="30%" style="stop-color:#7dd3fc;stop-opacity:0.95" />
+                <stop offset="60%" style="stop-color:#38bdf8;stop-opacity:0.9" />
+                <stop offset="100%" style="stop-color:#0ea5e9;stop-opacity:0.85" />
+              </linearGradient>
+
+              <!-- Chrome realistic -->
+              <linearGradient id="chrome" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" style="stop-color:#fafafa;stop-opacity:1" />
+                <stop offset="20%" style="stop-color:#e5e5e5;stop-opacity:1" />
+                <stop offset="50%" style="stop-color:#a3a3a3;stop-opacity:1" />
+                <stop offset="80%" style="stop-color:#737373;stop-opacity:1" />
+                <stop offset="100%" style="stop-color:#525252;stop-opacity:1" />
+              </linearGradient>
+
+              <!-- Tire realistic -->
+              <radialGradient id="tire" cx="40%" cy="40%" r="60%">
+                <stop offset="0%" style="stop-color:#525252;stop-opacity:1" />
+                <stop offset="50%" style="stop-color:#262626;stop-opacity:1" />
+                <stop offset="100%" style="stop-color:#0a0a0a;stop-opacity:1" />
+              </radialGradient>
+
+              <!-- Headlight LED -->
+              <radialGradient id="headlight" cx="50%" cy="50%" r="50%">
+                <stop offset="0%" style="stop-color:#fef9c3;stop-opacity:1" />
+                <stop offset="60%" style="stop-color:#fef08a;stop-opacity:0.9" />
+                <stop offset="100%" style="stop-color:#fde047;stop-opacity:0.7" />
+              </radialGradient>
+            </defs>
+
+            <!-- Ground shadow with blur -->
+            <ellipse cx="60" cy="112" rx="50" ry="7" fill="rgba(0,0,0,0.3)" filter="blur(3px)"/>
+
+            <!-- ===== CARGO BOX (Realistic proportions) ===== -->
+            <!-- Back panel (3D depth) -->
+            <rect x="5" y="22" width="58" height="58" rx="4" fill="#1e3a8a"/>
+            
+            <!-- Side panel main -->
+            <rect x="7" y="20" width="58" height="58" rx="4" fill="url(#bodyMetal)"/>
+            
+            <!-- Top highlight (roof reflection) -->
+            <rect x="7" y="20" width="58" height="10" rx="4" fill="#93c5fd" opacity="0.5"/>
+            
+            <!-- Side panel border -->
+            <rect x="11" y="24" width="50" height="50" rx="3" fill="none" stroke="#1e40af" stroke-width="1.5"/>
+            
+            <!-- Vertical structural ribs -->
+            <line x1="23" y1="26" x2="23" y2="72" stroke="#1e3a8a" stroke-width="2" opacity="0.7"/>
+            <line x1="36" y1="26" x2="36" y2="72" stroke="#1e3a8a" stroke-width="2" opacity="0.7"/>
+            <line x1="49" y1="26" x2="49" y2="72" stroke="#1e3a8a" stroke-width="2" opacity="0.7"/>
+
+            <!-- Rear access door -->
+            <rect x="9" y="24" width="11" height="50" rx="2" fill="#2563eb" opacity="0.85"/>
+            <line x1="14.5" y1="24" x2="14.5" y2="74" stroke="#1e3a8a" stroke-width="1.5"/>
+            
+            <!-- Door lock -->
+            <circle cx="17" cy="50" r="1.5" fill="url(#chrome)"/>
+
+            <!-- Safety/reflective stripes -->
+            <rect x="9" y="70" width="52" height="5" rx="1" fill="#fbbf24"/>
+            <rect x="9" y="70" width="52" height="1" fill="#fef3c7" opacity="0.5"/>
+            <line x1="18" y1="70" x2="18" y2="75" stroke="#1e3a8a" stroke-width="1.5"/>
+            <line x1="28" y1="70" x2="28" y2="75" stroke="#1e3a8a" stroke-width="1.5"/>
+            <line x1="38" y1="70" x2="38" y2="75" stroke="#1e3a8a" stroke-width="1.5"/>
+            <line x1="48" y1="70" x2="48" y2="75" stroke="#1e3a8a" stroke-width="1.5"/>
+            <line x1="56" y1="70" x2="56" y2="75" stroke="#1e3a8a" stroke-width="1.5"/>
+
+            <!-- ===== CAB (Modern aerodynamic) ===== -->
+            <!-- Cab body shadow -->
+            <path d="M65 26 L108 26 L114 38 L114 82 L65 82 Z" fill="#1e3a8a"/>
+            
+            <!-- Cab main body -->
+            <path d="M67 24 L106 24 L113 36 L113 80 L67 80 Z" fill="url(#cabMetal)"/>
+            
+            <!-- Cab roof with aerodynamic curve -->
+            <path d="M65 16 L104 16 Q112 16 114 24 L65 24 Z" fill="#3b82f6"/>
+            
+            <!-- Roof edge highlight -->
+            <path d="M66 17 L103 17 Q110 17 112 23 L66 23 Z" fill="#60a5fa" opacity="0.4"/>
+            
+            <!-- Cab side panel -->
+            <path d="M69 26 L103 26 L109 36 L109 78 L69 78 Z" fill="url(#cabMetal)" opacity="0.9"/>
+
+            <!-- ===== WINDSHIELD (Realistic curved glass) ===== -->
+            <path d="M105 30 L112 30 L112 58 L105 58 Q104 44 105 30" fill="url(#windshield)" stroke="#1e40af" stroke-width="2"/>
+            
+            <!-- Windshield reflection (top) -->
+            <path d="M106 32 L110 32 L110 42 L106 42 Z" fill="white" opacity="0.5"/>
+            
+            <!-- Windshield wiper -->
+            <line x1="107" y1="48" x2="111" y2="56" stroke="#374151" stroke-width="1.2"/>
+
+            <!-- Side window (driver) -->
+            <rect x="74" y="32" width="24" height="18" rx="3" fill="url(#windshield)" stroke="#1e40af" stroke-width="1.5"/>
+            
+            <!-- Window shine -->
+            <rect x="76" y="34" width="10" height="5" rx="1.5" fill="white" opacity="0.45"/>
+            
+            <!-- Window divider -->
+            <line x1="86" y1="32" x2="86" y2="50" stroke="#1e40af" stroke-width="1"/>
+
+            <!-- ===== WHEELS (Realistic with detail) ===== -->
+            <!-- Rear wheel -->
+            <g transform="translate(26, 88)">
+              <!-- Tire -->
+              <circle r="12" fill="url(#tire)" stroke="#000" stroke-width="2"/>
+              <!-- Tire tread -->
+              <circle r="11" fill="none" stroke="#171717" stroke-width="0.8" stroke-dasharray="2,2"/>
+              <!-- Rim -->
+              <circle r="7.5" fill="url(#chrome)" stroke="#525252" stroke-width="1.2"/>
+              <!-- Hubcap -->
+              <circle r="4" fill="#a3a3a3"/>
+              <circle r="2" fill="#737373"/>
+              <!-- Spokes -->
+              <line x1="-6" y1="0" x2="6" y2="0" stroke="#525252" stroke-width="2"/>
+              <line x1="0" y1="-6" x2="0" y2="6" stroke="#525252" stroke-width="2"/>
+              <line x1="-4.2" y1="-4.2" x2="4.2" y2="4.2" stroke="#525252" stroke-width="1.5"/>
+              <line x1="-4.2" y1="4.2" x2="4.2" y2="-4.2" stroke="#525252" stroke-width="1.5"/>
+            </g>
+
+            <!-- Front wheel -->
+            <g transform="translate(90, 88)">
+              <!-- Tire -->
+              <circle r="12" fill="url(#tire)" stroke="#000" stroke-width="2"/>
+              <!-- Tire tread -->
+              <circle r="11" fill="none" stroke="#171717" stroke-width="0.8" stroke-dasharray="2,2"/>
+              <!-- Rim -->
+              <circle r="7.5" fill="url(#chrome)" stroke="#525252" stroke-width="1.2"/>
+              <!-- Hubcap -->
+              <circle r="4" fill="#a3a3a3"/>
+              <circle r="2" fill="#737373"/>
+              <!-- Spokes -->
+              <line x1="-6" y1="0" x2="6" y2="0" stroke="#525252" stroke-width="2"/>
+              <line x1="0" y1="-6" x2="0" y2="6" stroke="#525252" stroke-width="2"/>
+              <line x1="-4.2" y1="-4.2" x2="4.2" y2="4.2" stroke="#525252" stroke-width="1.5"/>
+              <line x1="-4.2" y1="4.2" x2="4.2" y2="-4.2" stroke="#525252" stroke-width="1.5"/>
+            </g>
+
+            <!-- ===== HEADLIGHTS (Modern LED) ===== -->
+            <!-- Main headlight -->
+            <ellipse cx="114" cy="42" rx="2.5" ry="7" fill="url(#headlight)"/>
+            <ellipse cx="114" cy="42" rx="1.5" ry="5" fill="#fef9c3"/>
+            
+            <!-- DRL (Daytime Running Light) -->
+            <rect x="113" y="52" width="3" height="2" rx="0.5" fill="#fef9c3" opacity="0.8"/>
+
+            <!-- Turn signal -->
+            <ellipse cx="114" cy="62" rx="2" ry="4" fill="#fb923c"/>
+
+            <!-- ===== FRONT GRILL ===== -->
+            <rect x="112" y="64" width="4" height="14" fill="#171717"/>
+            <!-- Grill chrome bars -->
+            <line x1="113" y1="67" x2="115" y2="67" stroke="url(#chrome)" stroke-width="1"/>
+            <line x1="113" y1="71" x2="115" y2="71" stroke="url(#chrome)" stroke-width="1"/>
+            <line x1="113" y1="75" x2="115" y2="75" stroke="url(#chrome)" stroke-width="1"/>
+
+            <!-- ===== BUMPERS ===== -->
+            <!-- Front bumper -->
+            <rect x="111" y="76" width="6" height="7" rx="1.5" fill="url(#chrome)"/>
+            <!-- Bumper reflection -->
+            <rect x="112" y="77" width="4" height="2" rx="0.5" fill="white" opacity="0.3"/>
+            
+            <!-- Rear bumper -->
+            <rect x="3" y="76" width="6" height="7" rx="1.5" fill="url(#chrome)"/>
+
+            <!-- ===== TAIL LIGHTS ===== -->
+            <rect x="4" y="40" width="3" height="8" rx="1" fill="#ef4444"/>
+            <rect x="4" y="52" width="3" height="8" rx="1" fill="#ef4444"/>
+            <!-- Tail light glow -->
+            <rect x="3" y="41" width="2" height="6" rx="0.5" fill="#fca5a5" opacity="0.5"/>
+            <rect x="3" y="53" width="2" height="6" rx="0.5" fill="#fca5a5" opacity="0.5"/>
+
+            <!-- ===== MIRRORS ===== -->
+            <!-- Main mirror arm -->
+            <rect x="63" y="34" width="8" height="3" rx="1" fill="#374151"/>
+            <!-- Mirror housing -->
+            <rect x="60" y="32" width="6" height="7" rx="1.5" fill="#374151"/>
+            <!-- Mirror glass -->
+            <rect x="61" y="33" width="4" height="5" rx="1" fill="#6b7280"/>
+
+            <!-- ===== DOOR DETAILS ===== -->
+            <!-- Door line -->
+            <line x1="72" y1="28" x2="72" y2="78" stroke="#1e40af" stroke-width="1.5"/>
+            <!-- Door handle -->
+            <rect x="82" y="58" width="8" height="3" rx="1" fill="url(#chrome)"/>
+            <!-- Key hole -->
+            <circle cx="88" cy="59.5" r="0.8" fill="#374151"/>
+
+            <!-- ===== COMPANY BRANDING ===== -->
+            <rect x="25" y="42" width="20" height="12" rx="2" fill="white" opacity="0.15"/>
+            <text x="35" y="51" text-anchor="middle" fill="white" font-size="9" font-weight="bold" opacity="0.8">TMS</text>
+
+            <!-- ===== SIDE MARKERS (Amber) ===== -->
+            <rect x="65" y="78" width="6" height="3" rx="1" fill="#f59e0b" opacity="0.9"/>
+            <rect x="100" y="78" width="6" height="3" rx="1" fill="#f59e0b" opacity="0.9"/>
+          </svg>
+
+          <!-- GPS live indicator (pulsing green) -->
+          <div class="gps-indicator" style="
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            width: 18px;
+            height: 18px;
+            background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+            border: 3px solid white;
+            border-radius: 50%;
+            box-shadow: 0 2px 10px rgba(34, 197, 94, 0.8);
+            animation: gps-pulse 1s ease-in-out infinite;
+          "></div>
+
+          <!-- Speed indicator badge -->
+          <div class="speed-badge" style="
+            position: absolute;
+            bottom: -3px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(135deg, #1e40af 0%, #1e3a8a 100%);
+            color: white;
+            font-size: 9px;
+            font-weight: 700;
+            padding: 2px 7px;
+            border-radius: 8px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.35);
+            white-space: nowrap;
+            letter-spacing: 0.3px;
+          ">${this.speed > 0 ? Math.round(this.speed) + ' km/h' : '●'}</div>
         </div>
       `,
-      className: 'truck-marker',
-      iconSize: [50, 50],
-      iconAnchor: [25, 25]
+      className: 'truck-marker-ultra-realistic',
+      iconSize: [60, 60],
+      iconAnchor: [30, 30]
     });
   }
 
   /**
-   * Créer l'icône de destination
+   * Helper: Lighten color for highlights
+   */
+  private lightenColor(color: string, percent: number): string {
+    if (color.startsWith('#')) {
+      const num = parseInt(color.slice(1), 16);
+      const amt = Math.round(2.55 * percent);
+      const R = Math.min((num >> 16) + amt, 255);
+      const G = Math.min((num >> 8 & 0x00FF) + amt, 255);
+      const B = Math.min((num & 0x0000FF) + amt, 255);
+      return '#' + (0x1000000 + R * 0x10000 + G * 0x100 + B).toString(16).slice(1);
+    }
+    return color;
+  }
+
+  /**
+   * Helper: Darken color for 3D effect
+   */
+  private darkenColor(color: string, percent: number): string {
+    if (color.startsWith('#')) {
+      const num = parseInt(color.slice(1), 16);
+      const amt = Math.round(2.55 * percent);
+      const R = Math.max((num >> 16) - amt, 0);
+      const G = Math.max((num >> 8 & 0x00FF) - amt, 0);
+      const B = Math.max((num & 0x0000FF) - amt, 0);
+      return '#' + (0x1000000 + R * 0x10000 + G * 0x100 + B).toString(16).slice(1);
+    }
+    return color;
+  }
+
+  /**
+   * Créer l'icône de destination - Style Épingle Pro (Comme Google Maps/Uber)
    */
   private createDestinationIcon(): L.DivIcon {
     return L.divIcon({
       html: `
         <div style="
-          background: linear-gradient(135deg, #f093fb, #f5576c);
-          border: 3px solid white;
-          border-radius: 50%;
-          width: 40px;
-          height: 40px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          box-shadow: 0 4px 12px rgba(240, 147, 251, 0.5);
+          position: relative;
+          width: 50px;
+          height: 65px;
+          filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3));
         ">
-          <span style="font-size: 20px;">📍</span>
+          <!-- Pin shadow -->
+          <div style="
+            position: absolute;
+            bottom: 8px;
+            left: 5px;
+            width: 40px;
+            height: 10px;
+            background: radial-gradient(ellipse at center, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0) 70%);
+            border-radius: 50%;
+            filter: blur(1px);
+          "></div>
+
+          <!-- Pin marker -->
+          <svg width="50" height="65" viewBox="0 0 50 65">
+            <!-- Pin shadow base -->
+            <ellipse cx="25" cy="58" rx="18" ry="5" fill="rgba(0,0,0,0.2)"/>
+
+            <!-- Pin body -->
+            <path d="M 25 2 
+                     C 12 2 2 12 2 25 
+                     C 2 42 25 62 25 62 
+                     C 25 62 48 42 48 25 
+                     C 48 12 38 2 25 2 Z" 
+                  fill="url(#pinGradient)" 
+                  stroke="#c0275a" 
+                  stroke-width="2"/>
+
+            <!-- Pin highlight -->
+            <ellipse cx="20" cy="18" rx="8" ry="10" fill="rgba(255,255,255,0.3)"/>
+
+            <!-- Center circle -->
+            <circle cx="25" cy="25" r="10" fill="white" opacity="0.9"/>
+
+            <!-- Location icon -->
+            <circle cx="25" cy="25" r="6" fill="#f5576c"/>
+
+            <!-- Gradient -->
+            <defs>
+              <linearGradient id="pinGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" style="stop-color:#f5576c;stop-opacity:1" />
+                <stop offset="50%" style="stop-color:#d63384;stop-opacity:1" />
+                <stop offset="100%" style="stop-color:#c0275a;stop-opacity:1" />
+              </linearGradient>
+            </defs>
+          </svg>
         </div>
       `,
-      className: 'destination-marker',
-      iconSize: [40, 40],
-      iconAnchor: [20, 20]
+      className: 'destination-marker-pro',
+      iconSize: [50, 65],
+      iconAnchor: [25, 65]
     });
   }
 
@@ -465,13 +779,43 @@ export class GPSTrackingPage implements OnInit, OnDestroy {
     }
   }
 
+  // Store previous position for calculating direction
+  private previousPosition: { lat: number, lng: number } | null = null;
+
   /**
-   * Mettre à jour la position du camion
+   * Mettre à jour la position du camion avec rotation et animations
    */
   private updateTruckPosition(lat: number, lng: number) {
     if (this.truckMarker && this.map) {
       const newPosition: [number, number] = [lat, lng];
+      
+      // Calculate rotation angle based on movement direction
+      if (this.previousPosition) {
+        const angle = this.calculateRotationAngle(
+          this.previousPosition.lat,
+          this.previousPosition.lng,
+          lat,
+          lng
+        );
+        
+        // Apply rotation to truck marker with smooth transition
+        const truckElement = document.querySelector('.truck-marker-container') as HTMLElement;
+        if (truckElement) {
+          truckElement.style.transform = `rotate(${angle - 90}deg)`;
+        }
+      }
+      
+      // Update wheel animation speed based on current speed
+      this.updateWheelAnimationSpeed();
+      
+      // Update speed badge
+      this.updateSpeedBadge();
+      
+      // Set marker position
       this.truckMarker.setLatLng(newPosition);
+
+      // Store position for next rotation calculation
+      this.previousPosition = { lat, lng };
 
       // Pan smoothly to new position
       this.map.panTo(newPosition, {
@@ -479,6 +823,82 @@ export class GPSTrackingPage implements OnInit, OnDestroy {
         duration: 0.5,
         noMoveStart: true
       });
+    }
+  }
+
+  /**
+   * Calculate rotation angle between two GPS coordinates
+   */
+  private calculateRotationAngle(lat1: number, lng1: number, lat2: number, lng2: number): number {
+    const dLng = lng2 - lng1;
+    const dLat = lat2 - lat1;
+    
+    // Calculate bearing in radians
+    const y = Math.sin(dLng * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180);
+    const x = Math.cos(lat1 * Math.PI / 180) * Math.sin(lat2 * Math.PI / 180) -
+              Math.sin(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.cos(dLng * Math.PI / 180);
+    
+    // Convert to degrees
+    let bearing = Math.atan2(y, x) * 180 / Math.PI;
+    
+    // Normalize to 0-360
+    bearing = (bearing + 360) % 360;
+    
+    return bearing;
+  }
+
+  /**
+   * Update wheel animation speed based on vehicle speed
+   */
+  private updateWheelAnimationSpeed() {
+    const wheelElements = document.querySelectorAll('.wheel-spokes, .truck-wheels');
+    
+    // Calculate animation duration based on speed (faster speed = shorter duration)
+    // Base duration: 1s at 0 km/h, minimum 0.2s at high speed
+    const baseDuration = 1;
+    const minDuration = 0.2;
+    const maxSpeed = 100; // km/h
+    
+    let duration = baseDuration - (this.speed / maxSpeed) * (baseDuration - minDuration);
+    duration = Math.max(minDuration, Math.min(baseDuration, duration));
+    
+    wheelElements.forEach(element => {
+      const htmlElement = element as HTMLElement;
+      htmlElement.style.animationDuration = `${duration}s`;
+    });
+    
+    // Add/remove moving class based on speed
+    const truckContainer = document.querySelector('.truck-marker-container') as HTMLElement;
+    if (truckContainer) {
+      if (this.speed > 1) {
+        truckContainer.classList.add('truck-moving');
+        truckContainer.classList.remove('truck-idle');
+      } else {
+        truckContainer.classList.add('truck-idle');
+        truckContainer.classList.remove('truck-moving');
+      }
+    }
+  }
+
+  /**
+   * Update speed badge with current speed and color coding
+   */
+  private updateSpeedBadge() {
+    const speedBadge = document.querySelector('.speed-badge') as HTMLElement;
+    if (speedBadge) {
+      // Update speed text
+      speedBadge.textContent = this.speed > 0 ? `${Math.round(this.speed)} km/h` : 'STOP';
+      
+      // Update color based on speed
+      speedBadge.classList.remove('speed-high', 'speed-medium', 'speed-low');
+      
+      if (this.speed > 80) {
+        speedBadge.classList.add('speed-high');
+      } else if (this.speed > 40) {
+        speedBadge.classList.add('speed-medium');
+      } else {
+        speedBadge.classList.add('speed-low');
+      }
     }
   }
 

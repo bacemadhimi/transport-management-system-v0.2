@@ -42,7 +42,7 @@ export class HomePage implements OnInit, OnDestroy {
 
   constructor() {}
 
-  ngOnInit() {
+  async ngOnInit() {
     this.loadTrips();
     this.notificationService.startPolling(5000);
     this._notifSub = this.notificationService.cancelledCount$.subscribe(count => {
@@ -55,15 +55,25 @@ export class HomePage implements OnInit, OnDestroy {
       console.log('🔔 Unread notifications:', count);
     });
 
-    // Connect to GPS Hub for real-time notifications
-    setTimeout(() => {
-      this.connectToGPSHub();
-    }, 1000);
+    // Connect to GPS Hub for real-time notifications FIRST
+    await this.connectToGPSHub();
+
+    // ✅ DISABLED: Server sync was causing 401 errors
+    // Real-time notifications via SignalR work perfectly
+    // setTimeout(() => {
+    //   console.log('🔄 Starting notification sync after connection...');
+    //   this.notificationStorage.syncNotificationsFromServer();
+    // }, 3000);
+    
+    console.log('✅ Using real-time notifications via SignalR only');
   }
 
   async connectToGPSHub() {
     const user = this.authService.currentUser();
-    if (!user) return;
+    if (!user) {
+      console.log('⚠️ No user logged in, cannot connect to GPS Hub');
+      return;
+    }
 
     // Get driver ID - use user.id as fallback
     let driverId = (user as any).driverId;
@@ -75,6 +85,29 @@ export class HomePage implements OnInit, OnDestroy {
 
     console.log('🔌 Connecting to GPS Hub for driver:', driverId);
     console.log('📋 User data:', user);
+
+    // Check if token exists
+    const token = localStorage.getItem('token');
+    if (!token) {
+      console.error('❌ No token found! User not properly authenticated.');
+      return;
+    }
+    console.log('✅ Token found (length:', token.length, ')');
+
+    // Decode token to get UserId
+    try {
+      const tokenPayload = JSON.parse(atob(token.split('.')[1]));
+      const userIdFromToken = tokenPayload['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier'];
+      console.log('👤 UserId from token:', userIdFromToken);
+      console.log('👤 DriverId:', driverId);
+      
+      if (userIdFromToken != driverId) {
+        console.warn('⚠️ UserId from token (' + userIdFromToken + ') does not match DriverId (' + driverId + ')');
+        console.warn('⚠️ This may cause notification sync issues!');
+      }
+    } catch (e) {
+      console.error('❌ Error decoding token:', e);
+    }
 
     await this.gpsService.connect(driverId);
 

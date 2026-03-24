@@ -159,13 +159,13 @@ public class OrdersController : ControllerBase
             CustomerName = o.Customer?.Name,
             CustomerMatricule = o.Customer?.Matricule,
             ZoneId = o.Customer?.ZoneId,
-            ZoneName = o.Customer?.Zone?.Name,   
+            ZoneName = o.Customer?.Zone?.Name,
             CustomerCity = o.Customer?.City,
             DeliveryAddress = o.DeliveryAddress,
             Reference = o.Reference,
             Type = o.Type,
             Weight = o.Weight,
-            WeightUnit = o.WeightUnit,
+            WeightUnit = o.WeightUnit ?? "",
             Status = o.Status,
             SourceSystem = o.SourceSystem == DataSource.QAD ? "QAD" : "TMS",
             CreatedDate = o.CreatedDate,
@@ -197,12 +197,12 @@ public class OrdersController : ControllerBase
             CustomerName = o.Customer?.Name,
             CustomerMatricule = o.Customer?.Matricule,
             ZoneId = o.Customer?.ZoneId,
-            ZoneName = o.Customer?.Zone?.Name,   
+            ZoneName = o.Customer?.Zone?.Name,
             CustomerCity = o.Customer?.City,
             Reference = o.Reference,
             Type = o.Type,
             Weight = o.Weight,
-            WeightUnit = o.WeightUnit,
+            WeightUnit = o.WeightUnit ?? "",
             Status = o.Status,
             SourceSystem = o.SourceSystem == DataSource.QAD ? "QAD" : "TMS",
             CreatedDate = o.CreatedDate,
@@ -233,11 +233,11 @@ public class OrdersController : ControllerBase
             CustomerCity = o.Customer?.City,
 
             ZoneId = o.Customer?.ZoneId,
-            ZoneName = o.Customer?.Zone?.Name,   
+            ZoneName = o.Customer?.Zone?.Name,
             Reference = o.Reference,
             Type = o.Type,
             Weight = o.Weight,
-            WeightUnit = o.WeightUnit,
+            WeightUnit = o.WeightUnit ?? "",
             Status = o.Status,
             CreatedDate = o.CreatedDate,
             DeliveryAddress = o.DeliveryAddress,
@@ -315,7 +315,8 @@ public class OrdersController : ControllerBase
     {
         if (!ModelState.IsValid)
             return BadRequest(new ApiResponse(false, "Données invalides", ModelState));
-        string reference = model.Reference;
+        
+        string? reference = model.Reference;
         if (string.IsNullOrWhiteSpace(reference))
         {
             var lastOrder = await _orderRepository.Query()

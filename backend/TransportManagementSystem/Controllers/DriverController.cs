@@ -256,13 +256,16 @@ public class DriverController : ControllerBase
 
     private async Task CreateUserForDriver(Driver driver)
     {
-
         var existingUser = await dbContext.Users
             .FirstOrDefaultAsync(u => u.Email == driver.Email);
 
         if (existingUser != null)
+        {
+            // ✅ FIX PERMANENT: Link existing user to this driver
+            driver.user_id = existingUser.Id;
+            await dbContext.SaveChangesAsync();
             return;
-
+        }
 
         var user = new User
         {
@@ -276,6 +279,9 @@ public class DriverController : ControllerBase
         dbContext.Users.Add(user);
         await dbContext.SaveChangesAsync();
 
+        // ✅ FIX PERMANENT: Link the newly created user to this driver
+        driver.user_id = user.Id;
+        await dbContext.SaveChangesAsync();
 
         await AssignUserToDriverGroup(user.Id);
     }

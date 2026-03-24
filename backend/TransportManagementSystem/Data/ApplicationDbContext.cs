@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using TransportManagementSystem.Entity;
+using TransportManagementSystem.Models;
 
 namespace TransportManagementSystem.Data
 {
@@ -50,6 +51,7 @@ namespace TransportManagementSystem.Data
         public DbSet<GeneralSettings> GeneralSettings { get; set; }
         public DbSet<Notification> Notifications { get; set; }
         public DbSet<UserNotification> UserNotifications { get; set; }
+        public DbSet<KnowledgeBase> KnowledgeBases { get; set; }
         public DbSet<GeocodingCache> GeocodingCache { get; set; }
         public DbSet<PositionGPS> PositionsGPS { get; set; }
         public DbSet<ResultatOptimisation> ResultatOptimisations { get; set; }
