@@ -33,7 +33,12 @@ import { TypeTruck } from './pages/type-truck/type-truck';
 import { Categories } from './pages/categories/categories';
 import { Marque } from './pages/marque/marque';
 import { GeneralSettings } from './pages/general-settings/general-settings';
+<<<<<<< HEAD
 import { WarehousePlantItComponent } from './pages/warehouse/warehouse';
+=======
+import { WarehouseComponent } from './pages/warehouse/warehouse';
+import { LiveGPSTrackingPage } from './pages/live-gps-tracking/live-gps-tracking.page';
+>>>>>>> 97da423886bc29ffb2a2dc00900f21c53be8a593
 
 
 export const routes: Routes = [
@@ -204,6 +209,11 @@ export const routes: Routes = [
 {
     path: 'general-settings',
     component: GeneralSettings,
+    canActivate: [AuthGuard],
+  },
+  {
+    path: 'gps-tracking',
+    component: LiveGPSTrackingPage,
     canActivate: [AuthGuard],
   },
   {

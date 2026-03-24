@@ -1,0 +1,186 @@
+<div class="gps-page">
+  <!-- Header -->
+  <div class="page-header">
+    <div class="header-left">
+      <h1>🚛 Suivi Flotte en Temps Réel</h1>
+      <p class="subtitle">Tous les véhicules en temps réel - Interface Admin</p>
+    </div>
+    <div class="header-right">
+      <div class="connection-status" [class.connected]="isRealTimeConnected">
+        <span class="status-dot"></span>
+        <span>{{ isRealTimeConnected ? 'Temps réel actif' : 'Connexion...' }}</span>
+      </div>
+      <button class="btn-refresh" (click)="refreshData()">
+        <span class="refresh-icon">🔄</span> Actualiser
+      </button>
+    </div>
+  </div>
+
+  <div class="main-content">
+    <!-- Map Section -->
+    <div class="map-section">
+      <div id="map" class="map-container"></div>
+      
+      <!-- Map Legend -->
+      <div class="map-legend">
+        <div class="legend-item">
+          <span class="legend-dot active"></span>
+          <span>En livraison</span>
+        </div>
+        <div class="legend-item">
+          <span class="legend-dot loading"></span>
+          <span>En chargement</span>
+        </div>
+        <div class="legend-item">
+          <span class="legend-dot planned"></span>
+          <span>Planifié</span>
+        </div>
+        <div class="legend-item">
+          <span class="legend-dot realtime"></span>
+          <span>Position temps réel</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="stats-row">
+      <div class="stat-card">
+        <div class="stat-icon">🚛</div>
+        <div class="stat-content">
+          <span class="stat-value">{{ getActiveTripsCount() }}</span>
+          <span class="stat-label">Trajets actifs</span>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">📦</div>
+        <div class="stat-content">
+          <span class="stat-value">{{ getTotalDeliveries() }}</span>
+          <span class="stat-label">Livraisons</span>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">📍</div>
+        <div class="stat-content">
+          <span class="stat-value">{{ positions.length }}</span>
+          <span class="stat-label">Positions GPS</span>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">⏱️</div>
+        <div class="stat-content">
+          <span class="stat-value">{{ getTotalDistance() }} km</span>
+          <span class="stat-label">Distance totale</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Active Trips List -->
+    <div class="trips-section">
+      <div class="section-header">
+        <h2>📋 Tous les Trajets Actifs</h2>
+        <p class="section-subtitle">Véhicules en temps réel avec positions GPS</p>
+      </div>
+      
+      <div class="trips-grid" *ngIf="getActiveTrips().length > 0">
+        <div class="trip-card" *ngFor="let trip of getActiveTrips()">
+          <div class="trip-header">
+            <div class="trip-info">
+              <span class="trip-ref">{{ trip.tripReference || 'TRIP-' + trip.id }}</span>
+              <span class="trip-status" [class]="getStatusClass(trip.tripStatus)">
+                {{ getStatusText(trip.tripStatus) }}
+              </span>
+            </div>
+            <div class="trip-vehicle">
+              <span class="truck-icon">🚛</span>
+              <span class="truck-plate">{{ trip.truck?.immatriculation || '-' }}</span>
+            </div>
+          </div>
+          
+          <div class="trip-details">
+            <div class="detail-row">
+              <span class="label">👤 Chauffeur:</span>
+              <span class="value">{{ trip.driver?.name || 'Non assigné' }}</span>
+            </div>
+            <div class="detail-row">
+              <span class="label">📦 Livraisons:</span>
+              <span class="value">{{ trip.deliveryCount || 0 }}</span>
+            </div>
+            <div class="detail-row">
+              <span class="label">📏 Distance:</span>
+              <span class="value">{{ trip.estimatedDistance || 0 }} km</span>
+            </div>
+          </div>
+          
+          <div class="trip-progress">
+            <div class="progress-bar">
+              <div class="progress-fill" [style.width.%]="getTripProgress(trip.tripStatus)"></div>
+            </div>
+            <span class="progress-text">{{ getTripProgress(trip.tripStatus) }}%</span>
+          </div>
+          
+          <div class="trip-actions">
+            <button class="btn-view-trip" (click)="focusOnTrip(trip)">
+              👁️ Voir sur la carte
+            </button>
+            <button class="btn-track-live" (click)="focusOnTrip(trip)">
+              📍 Suivre en direct
+            </button>
+          </div>
+        </div>
+      </div>
+      
+      <div class="no-trips" *ngIf="getActiveTrips().length === 0">
+        <span class="empty-icon">🚛</span>
+        <p>Aucun trajet actif pour le moment</p>
+      </div>
+    </div>
+
+    <!-- Real-time Positions Section -->
+    <div class="positions-section">
+      <div class="section-header">
+        <h2>📍 Positions GPS en Temps Réel</h2>
+        <p class="section-subtitle">Toutes les positions reçues via SignalR</p>
+      </div>
+      
+      <div class="positions-list">
+        <div class="position-card" *ngFor="let pos of positions.slice(0, 20)" 
+          [class.with-location]="pos.latitude && pos.longitude">
+          <div class="position-icon">
+            🚛
+          </div>
+          <div class="position-info">
+            <span class="driver-name">{{ getDriverName(pos.driverId) }}</span>
+            <span class="coordinates">
+              {{ pos.latitude | number:'1.4-4' }}, {{ pos.longitude | number:'1.4-4' }}
+            </span>
+            <span class="timestamp">{{ formatDate(pos.timestamp) }}</span>
+          </div>
+          <div class="position-source">
+            {{ pos.source || 'GPS' }}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Map Controls -->
+    <div class="map-controls">
+      <div class="control-group">
+        <label class="control-label">Filtres:</label>
+        <div class="control-buttons">
+          <button class="btn-filter active">Tous</button>
+          <button class="btn-filter">En livraison</button>
+          <button class="btn-filter">En chargement</button>
+          <button class="btn-filter">Planifiés</button>
+        </div>
+      </div>
+      <div class="control-group">
+        <label class="control-label">Affichage:</label>
+        <div class="control-buttons">
+          <button class="btn-toggle">🗺️ Carte</button>
+          <button class="btn-toggle">📊 Liste</button>
+          <button class="btn-toggle">📍 GPS</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

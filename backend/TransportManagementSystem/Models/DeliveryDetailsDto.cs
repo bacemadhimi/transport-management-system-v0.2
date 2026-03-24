@@ -12,7 +12,10 @@ public class DeliveryDetailsDto
     public int OrderId { get; set; }
     public string? OrderReference { get; set; }
     public decimal OrderWeight { get; set; }
-    public string DeliveryAddress { get; set; }
+    public string DeliveryAddress { get; set; } = string.Empty;
+    public string? Geolocation { get; set; } // Coordonnées GPS au format "lat,lng"
+    public double? Latitude { get; set; }
+    public double? Longitude { get; set; }
     public DateTime? PlannedTime { get; set; }
     public DateTime? ActualArrivalTime { get; set; }
     public DateTime? ActualDepartureTime { get; set; }

@@ -1752,316 +1752,372 @@
             </div>
           </div>
 
-          <!-- Capacity Section -->
-          <div class="capacity-section" *ngIf="tripForm.get('truckId')?.value">
-            <div class="capacity-header">
-              <div class="capacity-info">
-                <div class="truck-icon-container">
-                  <mat-icon class="truck-icon">local_shipping</mat-icon>
-                  <div class="vehicle-info-badges">
-                    <div class="truck-badge" *ngIf="getSelectedTruckInfo()">
-                      {{ getSelectedTruckInfo() }}
-                    </div>
-                    <div class="driver-badge" *ngIf="getSelectedDriverInfo()">
-                      {{ getSelectedDriverInfo() }}
-                    </div>
-                  </div>
-                </div>
-                <div class="capacity-details">
-                  <h4>Capacité du camion</h4>
-                  <p class="capacity-stats">
-                    {{ calculateTotalWeight() | number:'1.2-2' }} / {{ getSelectedTruckCapacity() }}
-                    {{ loadingUnit }}
-                    <span class="capacity-percentage">
-                      ({{ calculateCapacityPercentage() | number:'1.0-0' }}%)
-                    </span>
-                  </p>
+<!-- Capacity Section -->
+<div class="capacity-section" *ngIf="tripForm.get('truckId')?.value">
+  <div class="capacity-header">
+    <div class="capacity-info">
+      <div class="truck-icon-container">
+        <mat-icon class="truck-icon">local_shipping</mat-icon>
+        <div class="vehicle-info-badges">
+          <div class="truck-badge" *ngIf="getSelectedTruckInfo()">
+            {{ getSelectedTruckInfo() }}
+          </div>
+          <div class="driver-badge" *ngIf="getSelectedDriverInfo()">
+            {{ getSelectedDriverInfo() }}
+          </div>
+        </div>
+      </div>
+      <div class="capacity-details">
+        <h4>Capacité du camion</h4>
+        <p class="capacity-stats">
+          {{ calculateTotalWeight() | number:'1.2-2' }} / {{ getSelectedTruckCapacity() }}
+          {{ loadingUnit }}
+          <span class="capacity-percentage">
+            ({{ calculateCapacityPercentage() | number:'1.0-0' }}%)
+          </span>
+        </p>
+      </div>
+    </div>
+    
+    <div *ngIf="calculateCapacityPercentage() >= 90" 
+        class="capacity-alert"
+        [ngStyle]="{'background': getCapacityAlert().color + '20'}">
+      <mat-icon [color]="getCapacityAlert().color">
+        {{ getCapacityAlert().icon }}
+      </mat-icon>
+      <span [style.color]="getCapacityAlert().color">
+        {{ getCapacityAlert().message }}
+      </span>
+    </div>
+  </div>
+  
+  <div class="capacity-progress">
+    <div class="progress-bar">
+      <div class="progress-fill"
+          [style.width.%]="calculateCapacityPercentage()"
+          [style.background]="getProgressBarColor()">
+      </div>
+      
+      <div class="threshold-marker" style="left: 70%">
+        <div class="threshold-dot" style="background: #3b82f6"></div>
+        <span class="threshold-label">70%</span>
+      </div>
+      
+      <div class="threshold-marker" style="left: 90%">
+        <div class="threshold-dot" style="background: #f59e0b"></div>
+        <span class="threshold-label">90%</span>
+      </div>
+      
+      <div class="threshold-marker" style="left: 100%">
+        <div class="threshold-dot" style="background: #ef4444"></div>
+        <span class="threshold-label">Max</span>
+      </div>
+    </div>
+    
+    <div class="progress-legend">
+      <div class="legend-item">
+        <span class="legend-color" style="background: #10b981"></span>
+        <span>Normal</span>
+      </div>
+      <div class="legend-item">
+        <span class="legend-color" style="background: #3b82f6"></span>
+        <span>Élevé</span>
+      </div>
+      <div class="legend-item">
+        <span class="legend-color" style="background: #f59e0b"></span>
+        <span>Attention</span>
+      </div>
+      <div class="legend-item">
+        <span class="legend-color" style="background: #ef4444"></span>
+        <span>Dépassé</span>
+      </div>
+    </div>
+  </div>
+  
+  <div class="capacity-breakdown-virtual" *ngIf="getGroupedDeliveries().length > 0">
+    <div class="breakdown-header">
+      <h5>Détail du chargement par client</h5>
+      <div class="breakdown-summary">
+        <span class="summary-item">
+          <mat-icon>groups</mat-icon>
+          {{ getGroupedDeliveries().length }} client(s)
+        </span>
+        <span class="summary-item">
+          <mat-icon>inventory</mat-icon>
+          {{ deliveries.length }} commande(s)
+        </span>
+        <span class="summary-item">
+          <mat-icon>scale</mat-icon>
+          {{ calculateTotalWeight() | number:'1.2-2' }} {{ loadingUnit }}
+        </span>
+      </div>
+    </div>
+    
+    <div class="virtual-scroll-container capacity-virtual-container">
+      <cdk-virtual-scroll-viewport
+        #capacityViewport
+        [itemSize]="120"
+        class="capacity-virtual-viewport"
+        minBufferPx="200"
+        maxBufferPx="400"
+        (scrolledIndexChange)="onCapacityScroll($event)">
+        
+        <div *cdkVirtualFor="let group of getGroupedDeliveries(); 
+                            let i = index;
+                            let last = last;
+                            trackBy: trackByGroupId"
+            class="client-group-item-virtual"
+            [class.expanded]="isCapacityGroupExpanded(group.customerId)"
+            [class.last-item]="last">
+          
+          <div class="client-group-header" 
+              (click)="toggleCapacityGroupExpanded(group.customerId)">
+            
+            <div class="client-group-info">
+              <div class="client-group-name">
+                <mat-icon class="client-icon">person</mat-icon>
+                <div class="client-name-container">
+                  <span class="client-name">{{ getClientName(group.customerId) }}</span>
+                  <span class="group-index">Client #{{ i + 1 }}</span>
                 </div>
               </div>
               
-              <div *ngIf="calculateCapacityPercentage() >= 90" 
-                  class="capacity-alert"
-                  [ngStyle]="{'background': getCapacityAlert().color + '20'}">
-                <mat-icon [color]="getCapacityAlert().color">
-                  {{ getCapacityAlert().icon }}
-                </mat-icon>
-                <span [style.color]="getCapacityAlert().color">
-                  {{ getCapacityAlert().message }}
+              <div class="client-group-stats">
+                <div class="client-stat" [matTooltip]="'Nombre de commandes'">
+                  <mat-icon class="stat-icon">inventory</mat-icon>
+                  <span class="stat-text">{{ group.orders.length }} cmd</span>
+                </div>
+                
+                <div class="client-stat" [matTooltip]="'Poids total du client'">
+                  <mat-icon class="stat-icon">scale</mat-icon>
+                  <span class="stat-text">{{ calculateGroupTotalWeight(group.customerId).toFixed(2) }} {{ loadingUnit }}</span>
+                </div>
+                
+                <div class="client-stat" [matTooltip]="'Pourcentage de la capacité du camion'">
+                  <span class="percentage-badge" 
+                        [ngClass]="getCapacityLevelClass(calculateGroupCapacityPercentage(group.customerId))">
+                    {{ calculateGroupCapacityPercentage(group.customerId) | number:'1.0-0' }}%
+                  </span>
+                </div>
+              </div>
+            </div>
+            
+            <mat-icon class="expand-icon">
+              {{ isCapacityGroupExpanded(group.customerId) ? 'expand_less' : 'expand_more' }}
+            </mat-icon>
+          </div>
+          
+          <div class="client-orders-details" *ngIf="isCapacityGroupExpanded(group.customerId)">
+            <div class="orders-header">
+              <h6>Détail des commandes</h6>
+              <span class="orders-weight-total">
+                Total: {{ calculateGroupTotalWeight(group.customerId).toFixed(2) }} {{ loadingUnit }}
+              </span>
+            </div>
+            
+            <div *ngFor="let order of group.orders; let orderIndex = index" 
+                class="order-item-breakdown">
+              
+              <div class="order-sequence">
+                <span class="sequence-number">#{{ orderIndex + 1 }}</span>
+              </div>
+              
+              <div class="order-details">
+                <div class="order-main">
+                  <span class="order-ref" [matTooltip]="order.reference">
+                    {{ order.reference | truncate:15 }}
+                  </span>
+                  <span class="order-type">{{ order.type || 'Standard' }}</span>
+                </div>
+                
+                <div class="order-weight-info">
+                  <div class="order-weight">
+                    <mat-icon class="weight-icon">scale</mat-icon>
+                    <span class="weight-value">{{ order.weight }} {{ loadingUnit }}</span>
+                  </div>
+                  <div class="order-percentage">
+                    {{ calculateOrderCapacityPercentage(order.weight) | number:'1.1-1' }}%
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div class="client-progress">
+              <div class="progress-label">
+                <span>Utilisation de la capacité pour ce client</span>
+                <span class="progress-percentage">
+                  {{ calculateGroupCapacityPercentage(group.customerId) | number:'1.1-1' }}%
                 </span>
               </div>
-            </div>
-            
-            <div class="capacity-progress">
-              <div class="progress-bar">
-                <div class="progress-fill"
-                    [style.width.%]="calculateCapacityPercentage()"
-                    [style.background]="getProgressBarColor()">
-                </div>
-                
-                <div class="threshold-marker" style="left: 70%">
-                  <div class="threshold-dot" style="background: #3b82f6"></div>
-                  <span class="threshold-label">70%</span>
-                </div>
-                
-                <div class="threshold-marker" style="left: 90%">
-                  <div class="threshold-dot" style="background: #f59e0b"></div>
-                  <span class="threshold-label">90%</span>
-                </div>
-                
-                <div class="threshold-marker" style="left: 100%">
-                  <div class="threshold-dot" style="background: #ef4444"></div>
-                  <span class="threshold-label">Max</span>
-                </div>
-              </div>
-              
-              <div class="progress-legend">
-                <div class="legend-item">
-                  <span class="legend-color" style="background: #10b981"></span>
-                  <span>Normal</span>
-                </div>
-                <div class="legend-item">
-                  <span class="legend-color" style="background: #3b82f6"></span>
-                  <span>Élevé</span>
-                </div>
-                <div class="legend-item">
-                  <span class="legend-color" style="background: #f59e0b"></span>
-                  <span>Attention</span>
-                </div>
-                <div class="legend-item">
-                  <span class="legend-color" style="background: #ef4444"></span>
-                  <span>Dépassé</span>
-                </div>
-              </div>
-            </div>
-            
-            <div class="capacity-breakdown-virtual" *ngIf="getGroupedDeliveries().length > 0">
-              <div class="breakdown-header">
-                <h5>Détail du chargement par client</h5>
-                <div class="breakdown-summary">
-                  <span class="summary-item">
-                    <mat-icon>groups</mat-icon>
-                    {{ getGroupedDeliveries().length }} client(s)
-                  </span>
-                  <span class="summary-item">
-                    <mat-icon>inventory</mat-icon>
-                    {{ deliveries.length }} commande(s)
-                  </span>
-                  <span class="summary-item">
-                    <mat-icon>scale</mat-icon>
-                    {{ calculateTotalWeight() | number:'1.2-2' }} {{ loadingUnit }}
-                  </span>
-                </div>
-              </div>
-              
-
-              <div class="virtual-scroll-container capacity-virtual-container">
-                <cdk-virtual-scroll-viewport
-                  #capacityViewport
-                  [itemSize]="120"
-                  class="capacity-virtual-viewport"
-                  minBufferPx="200"
-                  maxBufferPx="400"
-                  (scrolledIndexChange)="onCapacityScroll($event)">
-                  
-
-                  <div *cdkVirtualFor="let group of getGroupedDeliveries(); 
-                                      let i = index;
-                                      let last = last;
-                                      trackBy: trackByGroupId"
-                      class="client-group-item-virtual"
-                      [class.expanded]="isCapacityGroupExpanded(group.customerId)"
-                      [class.last-item]="last">
-                    
-
-                    <div class="client-group-header" 
-                        (click)="toggleCapacityGroupExpanded(group.customerId)">
-                      
-                      <div class="client-group-info">
-                        <div class="client-group-name">
-                          <mat-icon class="client-icon">person</mat-icon>
-                          <div class="client-name-container">
-                            <span class="client-name">{{ getClientName(group.customerId) }}</span>
-                            <span class="group-index">Client #{{ i + 1 }}</span>
-                          </div>
-                        </div>
-                        
-                        <div class="client-group-stats">
-                          <div class="client-stat" [matTooltip]="'Nombre de commandes'">
-                            <mat-icon class="stat-icon">inventory</mat-icon>
-                            <span class="stat-text">{{ group.orders.length }} cmd</span>
-                          </div>
-                          
-                          <div class="client-stat" [matTooltip]="'Poids total du client'">
-                            <mat-icon class="stat-icon">scale</mat-icon>
-                            <span class="stat-text">{{ calculateGroupTotalWeight(group.customerId).toFixed(2) }} {{ loadingUnit }}</span>
-                          </div>
-                          
-                          <div class="client-stat" [matTooltip]="'Pourcentage de la capacité du camion'">
-                            <span class="percentage-badge" 
-                                  [ngClass]="getCapacityLevelClass(calculateGroupCapacityPercentage(group.customerId))">
-                              {{ calculateGroupCapacityPercentage(group.customerId) | number:'1.0-0' }}%
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                      
-                      <mat-icon class="expand-icon">
-                        {{ isCapacityGroupExpanded(group.customerId) ? 'expand_less' : 'expand_more' }}
-                      </mat-icon>
-                    </div>
-                    
-
-                    <div class="client-orders-details" *ngIf="isCapacityGroupExpanded(group.customerId)">
-                      <div class="orders-header">
-                        <h6>Détail des commandes</h6>
-                        <span class="orders-weight-total">
-                          Total: {{ calculateGroupTotalWeight(group.customerId).toFixed(2) }} {{ loadingUnit }}
-                        </span>
-                      </div>
-                      
-                      <div *ngFor="let order of group.orders; let orderIndex = index" 
-                          class="order-item-breakdown">
-                        
-                        <div class="order-sequence">
-                          <span class="sequence-number">#{{ orderIndex + 1 }}</span>
-                        </div>
-                        
-                        <div class="order-details">
-                          <div class="order-main">
-                            <span class="order-ref" [matTooltip]="order.reference">
-                              {{ order.reference | truncate:15 }}
-                            </span>
-                            <span class="order-type">{{ order.type || 'Standard' }}</span>
-                          </div>
-                          
-                          <div class="order-weight-info">
-                            <div class="order-weight">
-                              <mat-icon class="weight-icon">scale</mat-icon>
-                              <span class="weight-value">{{ order.weight }} {{ loadingUnit }}</span>
-                            </div>
-                            <div class="order-percentage">
-                              {{ calculateOrderCapacityPercentage(order.weight) | number:'1.1-1' }}%
-                            </div>
-                          </div>
-                        </div>
-                        
-                      </div>
-                      
-
-                      <div class="client-progress">
-                        <div class="progress-label">
-                          <span>Utilisation de la capacité pour ce client</span>
-                          <span class="progress-percentage">
-                            {{ calculateGroupCapacityPercentage(group.customerId) | number:'1.1-1' }}%
-                          </span>
-                        </div>
-                        <div class="progress-bar-mini">
-                          <div class="progress-fill-mini"
-                              [style.width.%]="calculateGroupCapacityPercentage(group.customerId)"
-                              [style.background]="getProgressBarColorForPercentage(calculateGroupCapacityPercentage(group.customerId))">
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </cdk-virtual-scroll-viewport>
-                
-                <div class="virtual-scroll-info">
-                  <div class="scroll-info-item">
-                    <mat-icon class="info-icon">pie_chart</mat-icon>
-                    <div class="info-content">
-                      <span class="info-text">{{ getCapacityDistributionSummary() }}</span>
-                      <small class="info-subtext">Répartition par client</small>
-                    </div>
-                  </div>
-                  
-                  <div class="scroll-info-item" *ngIf="getVisibleCapacityRange()">
-                    <mat-icon class="info-icon">visibility</mat-icon>
-                    <div class="info-content">
-                      <span class="info-text">{{ getVisibleCapacityRange() }}</span>
-                      <small class="info-subtext">Clients visibles</small>
-                    </div>
-                  </div>
-                  
-                  <div class="scroll-actions">
-                    <button mat-icon-button 
-                            type="button" 
-                            (click)="scrollCapacityToTop()"
-                            matTooltip="Premier client">
-                      <mat-icon>keyboard_arrow_up</mat-icon>
-                    </button>
-                    <button mat-icon-button 
-                            type="button" 
-                            (click)="scrollCapacityToBottom()"
-                            matTooltip="Dernier client">
-                      <mat-icon>keyboard_arrow_down</mat-icon>
-                    </button>
-                  </div>
-                </div>
-              </div>
-              
-
-              <div class="capacity-total-summary">
-                <div class="total-row">
-                  <div class="total-label">
-                    <mat-icon>summarize</mat-icon>
-                    <span>Résumé total du chargement</span>
-                  </div>
-                  
-                  <div class="total-values">
-                    <div class="total-item">
-                      <mat-icon class="total-icon">groups</mat-icon>
-                      <div class="total-content">
-                        <div class="total-value">{{ getGroupedDeliveries().length }}</div>
-                        <div class="total-label-text">Clients</div>
-                      </div>
-                    </div>
-                    
-                    <div class="total-item">
-                      <mat-icon class="total-icon">inventory</mat-icon>
-                      <div class="total-content">
-                        <div class="total-value">{{ deliveries.length }}</div>
-                        <div class="total-label-text">Commandes</div>
-                      </div>
-                    </div>
-                    
-                    <div class="total-item">
-                      <mat-icon class="total-icon">scale</mat-icon>
-                      <div class="total-content">
-                        <div class="total-value">{{ calculateTotalWeight() | number:'1.2-2' }}</div>
-                        <div class="total-label-text">{{ loadingUnit }}s</div>
-                      </div>
-                    </div>
-                    
-                    <div class="total-item">
-                      <mat-icon class="total-icon">speed</mat-icon>
-                      <div class="total-content">
-                        <div class="total-value">{{ calculateCapacityPercentage() | number:'1.0-0' }}%</div>
-                        <div class="total-label-text">Capacité</div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                
-
-                <div *ngIf="calculateCapacityPercentage() >= 70" 
-                    class="capacity-warning-summary"
-                    [ngClass]="calculateCapacityPercentage() >= 90 ? 'warning-critical' : 'warning-high'">
-                  <mat-icon class="warning-icon">
-                    {{ calculateCapacityPercentage() >= 90 ? 'error' : 'warning' }}
-                  </mat-icon>
-                  <div class="warning-content">
-                    <div class="warning-title">
-                      {{ calculateCapacityPercentage() >= 90 ? 'DÉPASSEMENT IMMINENT' : 'CAPACITÉ ÉLEVÉE' }}
-                    </div>
-                    <div class="warning-text">
-                      {{ getCapacityAlert().message }}
-                    </div>
-                  </div>
+              <div class="progress-bar-mini">
+                <div class="progress-fill-mini"
+                    [style.width.%]="calculateGroupCapacityPercentage(group.customerId)"
+                    [style.background]="getProgressBarColorForPercentage(calculateGroupCapacityPercentage(group.customerId))">
                 </div>
               </div>
             </div>
           </div>
+          
+          <!-- Delivery Details - MOVED OUTSIDE client-orders-details -->
+          <div class="delivery-details" *ngIf="isCapacityGroupExpanded(group.customerId)">
+            <div class="detail-item full-width">
+              <mat-icon class="detail-icon">location_on</mat-icon>
+              <div class="detail-content">
+                <div class="detail-label">Adresse de livraison</div>
+                <mat-form-field appearance="outline" class="delivery-address-field">
+                  <input matInput
+                         [formControlName]="'deliveryAddress_' + group.customerId"
+                         (blur)="onDeliveryAddressBlur(group.customerId)"
+                         (input)="onAddressInput($event, group.customerId)"
+                         [matAutocomplete]="autoAddress"
+                         placeholder="Tapez une adresse..."
+                         value="{{ group.deliveryGroup.get('deliveryAddress')?.value || '' }}">
+                  <button mat-icon-button matSuffix type="button" 
+                          (click)="showAddressSuggestions(group.customerId)"
+                          matTooltip="Rechercher des adresses"
+                          matTooltipPosition="above">
+                    <mat-icon>search</mat-icon>
+                  </button>
+                  <mat-autocomplete #autoAddress="matAutocomplete" 
+                                    (optionSelected)="onAddressSelected($event, group.customerId)">
+                    <mat-option *ngFor="let suggestion of getAddressSuggestions(group.customerId)" 
+                                [value]="suggestion">
+                      <div style="display: flex; align-items: center; gap: 8px;">
+                        <mat-icon>location_on</mat-icon>
+                        <span>{{ suggestion.address }}</span>
+                      </div>
+                    </mat-option>
+                  </mat-autocomplete>
+                  <mat-hint>Adresse où livrer les commandes de ce client</mat-hint>
+                </mat-form-field>
+              </div>
+            </div>
+
+            <div class="detail-row">
+              <div class="detail-item">
+                <mat-icon class="detail-icon">schedule</mat-icon>
+                <div class="detail-content">
+                  <div class="detail-label">Heure prévue</div>
+                  <div class="detail-value">{{ group.deliveryGroup.get('plannedTime')?.value || 'Non définie' }}</div>
+                </div>
+              </div>
+
+              <div class="detail-item">
+                <mat-icon class="detail-icon">note</mat-icon>
+                <div class="detail-content">
+                  <div class="detail-label">Notes</div>
+                  <div class="detail-value">{{ group.deliveryGroup.get('notes')?.value || 'Aucune note' }}</div>
+                </div>
+              </div>
+
+              <div class="detail-item">
+                <mat-icon class="detail-icon">percent</mat-icon>
+                <div class="detail-content">
+                  <div class="detail-label">% du camion</div>
+                  <div class="detail-value">{{ calculateGroupCapacityPercentage(group.customerId) | number:'1.1-1' }}%</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- End of Delivery Details -->
+          
+        </div>
+      </cdk-virtual-scroll-viewport>
+      
+      <div class="virtual-scroll-info">
+        <div class="scroll-info-item">
+          <mat-icon class="info-icon">pie_chart</mat-icon>
+          <div class="info-content">
+            <span class="info-text">{{ getCapacityDistributionSummary() }}</span>
+            <small class="info-subtext">Répartition par client</small>
+          </div>
+        </div>
+        
+        <div class="scroll-info-item" *ngIf="getVisibleCapacityRange()">
+          <mat-icon class="info-icon">visibility</mat-icon>
+          <div class="info-content">
+            <span class="info-text">{{ getVisibleCapacityRange() }}</span>
+            <small class="info-subtext">Clients visibles</small>
+          </div>
+        </div>
+        
+        <div class="scroll-actions">
+          <button mat-icon-button 
+                  type="button" 
+                  (click)="scrollCapacityToTop()"
+                  matTooltip="Premier client">
+            <mat-icon>keyboard_arrow_up</mat-icon>
+          </button>
+          <button mat-icon-button 
+                  type="button" 
+                  (click)="scrollCapacityToBottom()"
+                  matTooltip="Dernier client">
+            <mat-icon>keyboard_arrow_down</mat-icon>
+          </button>
+        </div>
+      </div>
+    </div>
+    
+    <div class="capacity-total-summary">
+      <div class="total-row">
+        <div class="total-label">
+          <mat-icon>summarize</mat-icon>
+          <span>Résumé total du chargement</span>
+        </div>
+        
+        <div class="total-values">
+          <div class="total-item">
+            <mat-icon class="total-icon">groups</mat-icon>
+            <div class="total-content">
+              <div class="total-value">{{ getGroupedDeliveries().length }}</div>
+              <div class="total-label-text">Clients</div>
+            </div>
+          </div>
+          
+          <div class="total-item">
+            <mat-icon class="total-icon">inventory</mat-icon>
+            <div class="total-content">
+              <div class="total-value">{{ deliveries.length }}</div>
+              <div class="total-label-text">Commandes</div>
+            </div>
+          </div>
+          
+          <div class="total-item">
+            <mat-icon class="total-icon">scale</mat-icon>
+            <div class="total-content">
+              <div class="total-value">{{ calculateTotalWeight() | number:'1.2-2' }}</div>
+              <div class="total-label-text">{{ loadingUnit }}s</div>
+            </div>
+          </div>
+          
+          <div class="total-item">
+            <mat-icon class="total-icon">speed</mat-icon>
+            <div class="total-content">
+              <div class="total-value">{{ calculateCapacityPercentage() | number:'1.0-0' }}%</div>
+              <div class="total-label-text">Capacité</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div *ngIf="calculateCapacityPercentage() >= 70" 
+          class="capacity-warning-summary"
+          [ngClass]="calculateCapacityPercentage() >= 90 ? 'warning-critical' : 'warning-high'">
+        <mat-icon class="warning-icon">
+          {{ calculateCapacityPercentage() >= 90 ? 'error' : 'warning' }}
+        </mat-icon>
+        <div class="warning-content">
+          <div class="warning-title">
+            {{ calculateCapacityPercentage() >= 90 ? 'DÉPASSEMENT IMMINENT' : 'CAPACITÉ ÉLEVÉE' }}
+          </div>
+          <div class="warning-text">
+            {{ getCapacityAlert().message }}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 
           <!-- Timeline Summary -->
           <div class="timeline-summary" *ngIf="shouldShowTimelineSummary()" [class.loading]="isDragging">

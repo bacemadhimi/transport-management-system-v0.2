@@ -1,0 +1,210 @@
+<div class="optimisation-page">
+  <!-- Header -->
+  <div class="page-header">
+    <div class="header-left">
+      <h1>🛣️ Optimisation des Itinéraires</h1>
+      <p class="subtitle">Optimisez vos trajets pour réduire distance, temps et coûts</p>
+    </div>
+  </div>
+
+  <div class="main-content">
+    <!-- Error -->
+    <div class="error-toast" *ngIf="error">
+      {{ error }}
+    </div>
+
+    <!-- Quick Tools -->
+    <div class="quick-tools">
+      <!-- Distance Calculator -->
+      <div class="tool-card">
+        <div class="tool-header">
+          <span class="tool-icon">📏</span>
+          <h3>Calculateur de Distance</h3>
+        </div>
+        <div class="tool-body">
+          <div class="input-group">
+            <label>Point de départ</label>
+            <div class="coord-inputs">
+              <input type="number" [(ngModel)]="point1Lat" placeholder="Latitude" step="0.0001">
+              <input type="number" [(ngModel)]="point1Lng" placeholder="Longitude" step="0.0001">
+            </div>
+          </div>
+          <div class="input-group">
+            <label>Point d'arrivée</label>
+            <div class="coord-inputs">
+              <input type="number" [(ngModel)]="point2Lat" placeholder="Latitude" step="0.0001">
+              <input type="number" [(ngModel)]="point2Lng" placeholder="Longitude" step="0.0001">
+            </div>
+          </div>
+          <button class="btn-calc" (click)="calculateDistance()" [disabled]="calculating">
+            {{ calculating ? 'Calcul...' : '📏 Calculer' }}
+          </button>
+          <div class="result-display" *ngIf="calculatedDistance !== null">
+            <span class="result-label">Distance</span>
+            <span class="result-value">{{ formatNumber(calculatedDistance) }} km</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Time & Cost Estimator -->
+      <div class="tool-card">
+        <div class="tool-header">
+          <span class="tool-icon">⏱️</span>
+          <h3>Estimation Temps & Coût</h3>
+        </div>
+        <div class="tool-body">
+          <div class="input-group">
+            <label>Distance (km)</label>
+            <input type="number" [(ngModel)]="distanceInput" placeholder="Ex: 150" step="1">
+          </div>
+          <button class="btn-calc" (click)="estimateTime()" [disabled]="calculating">
+            {{ calculating ? 'Calcul...' : '⏱️ Estimer' }}
+          </button>
+          <div class="result-display" *ngIf="estimatedTime !== null">
+            <div class="result-row">
+              <span class="result-label">⏱️ Temps</span>
+              <span class="result-value">{{ formatNumber(estimatedTime) }} h</span>
+            </div>
+            <div class="result-row">
+              <span class="result-label">💰 Coût</span>
+              <span class="result-value">{{ formatNumber(estimatedCost) }} TND</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Trip Selection & Map -->
+    <div class="trip-section">
+      <div class="section-header">
+        <h2>🚚 Optimiser un Trajet</h2>
+      </div>
+      
+      <div class="trip-selector">
+        <label>Sélectionner un trajet à optimiser :</label>
+        <select [(ngModel)]="selectedTripId" (change)="selectTrip()">
+          <option [ngValue]="null">-- Choisir un trajet --</option>
+          <option *ngFor="let trip of trips" [ngValue]="trip.id">
+            {{ trip.tripReference || 'Trajet #' + trip.id }} 
+            ({{ trip.tripStatus }})
+          </option>
+        </select>
+      </div>
+
+      <!-- Delivery Points List -->
+      <div class="delivery-points" *ngIf="deliveryPoints.length > 0">
+        <h4>📍 Points de livraison ({{ deliveryPoints.length }})</h4>
+        <div class="points-list">
+          <div class="point-item" *ngFor="let point of deliveryPoints; let i = index">
+            <div class="point-num">{{ i + 1 }}</div>
+            <div class="point-info">
+              <span class="point-name">{{ point.name }}</span>
+              <span class="point-address">{{ point.address }}</span>
+            </div>
+          </div>
+        </div>
+        
+        <button class="btn-optimize" (click)="optimizeRoute()" [disabled]="optimizing || deliveryPoints.length < 2">
+          <span *ngIf="!optimizing">⚡</span>
+          <span *ngIf="optimizing" class="spinner"></span>
+          {{ optimizing ? 'Optimisation...' : '🚀 Optimiser l\'itinéraire' }}
+        </button>
+      </div>
+
+      <!-- No trip selected -->
+      <div class="empty-trip" *ngIf="!selectedTrip && trips.length === 0 && !loading">
+        <span class="empty-icon">🛣️</span>
+        <p>Aucun trajet disponible</p>
+        <span class="hint">Créez d'abord un trajet depuis l'interface de gestion</span>
+      </div>
+    </div>
+
+    <!-- Map -->
+    <div class="map-section" *ngIf="deliveryPoints.length > 0 || optimizationResult">
+      <div id="optimization-map" class="map-container"></div>
+    </div>
+
+    <!-- Optimization Results -->
+    <div class="results-section" *ngIf="optimizationResult">
+      <div class="results-header">
+        <span class="check-icon">✅</span>
+        <h2>Résultats de l'Optimisation</h2>
+      </div>
+
+      <!-- Savings Cards -->
+      <div class="savings-cards">
+        <div class="savings-card">
+          <div class="savings-icon">📏</div>
+          <div class="savings-content">
+            <span class="savings-value">-{{ formatNumber(optimizationResult.distanceSaved) }} km</span>
+            <span class="savings-label">Économie distance</span>
+            <span class="savings-percent">{{ formatNumber(optimizationResult.distanceSavedPercent) }}%</span>
+          </div>
+        </div>
+        <div class="savings-card">
+          <div class="savings-icon">⏱️</div>
+          <div class="savings-content">
+            <span class="savings-value">-{{ formatNumber(optimizationResult.timeSaved) }} min</span>
+            <span class="savings-label">Économie temps</span>
+            <span class="savings-percent">{{ formatNumber(optimizationResult.timeSavedPercent) }}%</span>
+          </div>
+        </div>
+        <div class="savings-card">
+          <div class="savings-icon">💰</div>
+          <div class="savings-content">
+            <span class="savings-value">-{{ formatNumber(optimizationResult.costSaved) }} TND</span>
+            <span class="savings-label">Économie coût</span>
+            <span class="savings-percent">{{ formatNumber((optimizationResult.costSaved / optimizationResult.originalCost) * 100) }}%</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Comparison Table -->
+      <div class="comparison-table">
+        <h4>Comparaison Avant / Après</h4>
+        <table>
+          <thead>
+            <tr>
+              <th>Métrique</th>
+              <th>Avant</th>
+              <th>Après</th>
+              <th>Économie</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>📏 Distance</td>
+              <td>{{ formatNumber(optimizationResult.originalDistance) }} km</td>
+              <td class="optimized">{{ formatNumber(optimizationResult.optimizedDistance) }} km</td>
+              <td class="saved">-{{ formatNumber(optimizationResult.distanceSaved) }} km</td>
+            </tr>
+            <tr>
+              <td>⏱️ Temps</td>
+              <td>{{ formatNumber(optimizationResult.originalTime) }} h</td>
+              <td class="optimized">{{ formatNumber(optimizationResult.optimizedTime) }} h</td>
+              <td class="saved">-{{ formatNumber(optimizationResult.timeSaved) }} h</td>
+            </tr>
+            <tr>
+              <td>💰 Coût</td>
+              <td>{{ formatNumber(optimizationResult.originalCost) }} TND</td>
+              <td class="optimized">{{ formatNumber(optimizationResult.optimizedCost) }} TND</td>
+              <td class="saved">-{{ formatNumber(optimizationResult.costSaved) }} TND</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Optimized Route Order -->
+      <div class="route-order">
+        <h4>🔄 Nouvel ordre des livraisons</h4>
+        <div class="order-flow">
+          <div class="order-item" *ngFor="let point of optimizationResult.optimizedRoute; let i = index">
+            <div class="order-num">{{ i + 1 }}</div>
+            <span class="order-name">{{ point.name }}</span>
+            <span class="order-arrow" *ngIf="i < optimizationResult.optimizedRoute.length - 1">→</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
