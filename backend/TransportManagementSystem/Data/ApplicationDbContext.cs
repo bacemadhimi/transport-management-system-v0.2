@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using TransportManagementSystem.Entity;
+using TransportManagementSystem.Entity.PlantIt;
 
 namespace TransportManagementSystem.Data
 {
@@ -51,6 +52,8 @@ namespace TransportManagementSystem.Data
         public DbSet<TruckGeographicalEntity> TruckGeographicalEntities { get; set; }
         public DbSet<DriverGeographicalEntity> DriverGeographicalEntities { get; set; }
         public DbSet<CustomerGeographicalEntity> CustomerGeographicalEntities { get; set; }
+        public DbSet<Warehouse> Warehouses { get; set; }
+        public DbSet<Zone> Zones { get; set; }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);

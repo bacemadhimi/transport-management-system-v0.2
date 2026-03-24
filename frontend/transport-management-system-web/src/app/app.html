@@ -550,6 +550,17 @@
           <a matListItemTitle class="sidebar-text">{{ t('ORDERS') }}</a>
         </mat-list-item>
 
+        <!-- Warehouse -->
+<mat-list-item
+  *ngIf="authService.hasRole('SuperAdmin') || authService.hasEntityAccess('WAREHOUSE')"
+  routerLink="/warehouse"
+  routerLinkActive="active-menu-item"
+  class="sidebar-item"
+>
+  <mat-icon matListItemIcon class="sidebar-icon">warehouse</mat-icon>
+  <a matListItemTitle class="sidebar-text">{{ t('WAREHOUSE') || 'Warehouse' }}</a>
+</mat-list-item>
+
         <!-- Divider -->
         <div class="menu-divider"></div>
 
