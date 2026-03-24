@@ -5,6 +5,7 @@ import { Router, RouterModule } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../services/auth.service';
+import { environment } from 'src/environments/environment';
  
 
 @Component({
@@ -25,7 +26,6 @@ export class LoginPage implements AfterViewInit {
   @ViewChild('usernameInput') usernameInput!: IonInput;
   @ViewChild('passwordInput') passwordInput!: IonInput;
  
-  apiUrl = 'http://localhost:5191/api/Auth/login';
  
   isLoading = false;
   errorMessage = '';
@@ -156,7 +156,7 @@ export class LoginPage implements AfterViewInit {
     password: password
   };
 
-  this.http.post<any>(this.apiUrl, body).subscribe(
+  this.http.post<any>(`${environment.apiUrl}/api/Auth/login`, body).subscribe(
     async (res) => {
       const roles = res.roles || [];
 
