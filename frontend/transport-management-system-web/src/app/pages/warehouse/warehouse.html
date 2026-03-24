@@ -1,22 +1,20 @@
-<div class="warehouse-page">
+<div class="warehouse-plantit-page">
+  <div class="page-header">
+    <h2>Gestion des Entrepôts Plant IT</h2>
+    <button mat-raised-button color="primary" >
+      <mat-icon>add</mat-icon>
+      Nouvel entrepôt
+    </button>
+  </div>
 
   <div class="filters">
-    <mat-form-field appearance="outline">
+    <mat-form-field appearance="outline" class="filter-field">
       <mat-label>Rechercher</mat-label>
-      <input matInput placeholder="Référence ou matière" [formControl]="filterControl">
+      <input matInput placeholder="Code ou nom" [formControl]="filterControl">
+      <mat-icon matSuffix>search</mat-icon>
     </mat-form-field>
 
-    <mat-form-field appearance="outline">
-      <mat-label>Matière</mat-label>
-      <mat-select [formControl]="materialControl">
-        <mat-option [value]="null">Toutes</mat-option>
-        <mat-option *ngFor="let option of materialOptions" [value]="option.id">
-          {{ option.label }}
-        </mat-option>
-      </mat-select>
-    </mat-form-field>
-
-    <mat-form-field appearance="outline">
+    <mat-form-field appearance="outline" class="filter-field">
       <mat-label>Statut</mat-label>
       <mat-select [formControl]="statusControl">
         <mat-option [value]="null">Tous</mat-option>
@@ -25,49 +23,93 @@
         </mat-option>
       </mat-select>
     </mat-form-field>
+
+    <mat-form-field appearance="outline" class="filter-field">
+      <mat-label>Unité de traitement</mat-label>
+      <mat-select [formControl]="processUnitControl">
+        <mat-option [value]="null">Toutes</mat-option>
+        <mat-option *ngFor="let option of processUnitOptions" [value]="option.id">
+          {{ option.label }}
+        </mat-option>
+      </mat-select>
+    </mat-form-field>
   </div>
 
   <mat-card>
+    <div class="loading-overlay" *ngIf="isLoading">
+      <mat-spinner diameter="40"></mat-spinner>
+    </div>
+
     <table mat-table [dataSource]="dataSource" matSort class="mat-elevation-z8">
-
-      <!-- Référence -->
-      <ng-container matColumnDef="reference">
-        <th mat-header-cell *matHeaderCellDef mat-sort-header>Référence</th>
-        <td mat-cell *matCellDef="let element">{{ element.reference }}</td>
+      <!-- Code (Nom du dépôt) -->
+      <ng-container matColumnDef="code">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>Code dépôt</th>
+        <td mat-cell *matCellDef="let element">
+          <strong>{{ element.warehouseCode }}</strong>
+         </td>
       </ng-container>
 
-      <!-- Matière -->
-      <ng-container matColumnDef="material">
-        <th mat-header-cell *matHeaderCellDef mat-sort-header>Matière</th>
-        <td mat-cell *matCellDef="let element">{{ element.material }}</td>
+      <!-- Nom (Description) -->
+      <ng-container matColumnDef="name">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>Nom dépôt</th>
+        <td mat-cell *matCellDef="let element">{{ element.warehouseName }}</td>
       </ng-container>
 
-      <!-- Quantité -->
-      <ng-container matColumnDef="quantity">
-        <th mat-header-cell *matHeaderCellDef mat-sort-header>Quantité</th>
-        <td mat-cell *matCellDef="let element">{{ element.quantity }}</td>
+      <!-- Nombre de pipes -->
+      <ng-container matColumnDef="pipeCount">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>Nb Pipes</th>
+        <td mat-cell *matCellDef="let element" class="center">
+          {{ element.pipeCount }}
+        </td>
       </ng-container>
 
-      <!-- Zone -->
-      <ng-container matColumnDef="zone">
-        <th mat-header-cell *matHeaderCellDef mat-sort-header>Zone</th>
-        <td mat-cell *matCellDef="let element">{{ element.zone }}</td>
+      <!-- Support docking multiple -->
+      <ng-container matColumnDef="supportMultipleDocking">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>Docking Multiple</th>
+        <td mat-cell *matCellDef="let element" class="center">
+          <mat-icon *ngIf="element.supportMultipleDocking" color="primary">check_circle</mat-icon>
+          <mat-icon *ngIf="!element.supportMultipleDocking" color="warn">cancel</mat-icon>
+        </td>
+      </ng-container>
+
+      <!-- Mode parallèle -->
+      <ng-container matColumnDef="containerParallelUsageMode">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>Mode Parallèle</th>
+        <td mat-cell *matCellDef="let element" class="center">
+          <mat-icon *ngIf="element.containerParallelUsageMode" color="primary">check_circle</mat-icon>
+          <mat-icon *ngIf="!element.containerParallelUsageMode" color="warn">cancel</mat-icon>
+        </td>
       </ng-container>
 
       <!-- Statut -->
       <ng-container matColumnDef="status">
         <th mat-header-cell *matHeaderCellDef mat-sort-header>Statut</th>
-        <td mat-cell *matCellDef="let element">{{ element.status }}</td>
+        <td mat-cell *matCellDef="let element">
+          <mat-chip [color]="element.isActivated ? 'primary' : 'warn'" selected>
+            {{ element.isActivated ? 'Actif' : 'Inactif' }}
+          </mat-chip>
+        </td>
+      </ng-container>
+
+      <!-- Dernière modification -->
+      <ng-container matColumnDef="lastModified">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>Dernière modif.</th>
+        <td mat-cell *matCellDef="let element">
+          {{ formatDate(element.lastModified) }}
+        </td>
       </ng-container>
 
       <!-- Actions -->
       <ng-container matColumnDef="action">
-        <th mat-header-cell *matHeaderCellDef>Action</th>
+        <th mat-header-cell *matHeaderCellDef>Actions</th>
         <td mat-cell *matCellDef="let element">
-          <button mat-icon-button color="primary" (click)="edit(element)">
+          <button mat-icon-button color="primary" (click)="edit(element)" matTooltip="Modifier">
             <mat-icon>edit</mat-icon>
           </button>
-          <button mat-icon-button color="warn" (click)="delete(element)">
+          <button mat-icon-button color="accent" (click)="viewDetails(element)" matTooltip="Détails">
+            <mat-icon>visibility</mat-icon>
+          </button>
+          <button mat-icon-button color="warn" (click)="delete(element)" matTooltip="Supprimer">
             <mat-icon>delete</mat-icon>
           </button>
         </td>
@@ -77,6 +119,11 @@
       <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
     </table>
 
-    <mat-paginator [pageSize]="10" showFirstLastButtons></mat-paginator>
+    <mat-paginator 
+      [pageSize]="pageSize"
+      [pageSizeOptions]="[5, 10, 25, 50]"
+      [length]="totalItems"
+      showFirstLastButtons>
+    </mat-paginator>
   </mat-card>
 </div>

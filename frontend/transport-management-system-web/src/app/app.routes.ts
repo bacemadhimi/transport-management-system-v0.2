@@ -33,7 +33,7 @@ import { TypeTruck } from './pages/type-truck/type-truck';
 import { Categories } from './pages/categories/categories';
 import { Marque } from './pages/marque/marque';
 import { GeneralSettings } from './pages/general-settings/general-settings';
-import { WarehouseComponent } from './pages/warehouse/warehouse';
+import { WarehousePlantItComponent } from './pages/warehouse/warehouse';
 
 
 export const routes: Routes = [
@@ -197,7 +197,7 @@ export const routes: Routes = [
 },
 {
   path: 'warehouse',
-  component: WarehouseComponent,
+  component: WarehousePlantItComponent,
   canActivate: [AuthGuard],
 
 },

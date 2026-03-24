@@ -2,7 +2,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using TransportManagementSystem.Data;
-using TransportManagementSystem.Entity;
 using TransportManagementSystem.Entity.PlantIt;
 using TransportManagementSystem.Models;
 
@@ -13,32 +12,59 @@ namespace TransportManagementSystem.Controllers;
 [Authorize]
 public class WarehouseController : ControllerBase
 {
-    private readonly IRepository<Warehouse> _warehouseRepository;
     private readonly ApplicationDbContext _context;
 
-    public WarehouseController(IRepository<Warehouse> warehouseRepository, ApplicationDbContext context)
+    public WarehouseController(ApplicationDbContext context)
     {
-        _warehouseRepository = warehouseRepository;
         _context = context;
     }
 
     [HttpGet("PaginationAndSearch")]
     public async Task<IActionResult> GetWarehouses([FromQuery] WarehouseSearchOptions searchOptions)
     {
-        var query = _context.Warehouses.Include(w => w.Zones).AsQueryable();
+        // Jointure entre tblPMMWarehouse et tblCPDataX
+        var query = from w in _context.PMMWarehouse
+                    join c in _context.CPDataX on w.DataXLink equals c.Key
+                    select new WarehousePlantItDTO
+                    {
+                        // Données de tblPMMWarehouse
+                        Key = w.Key,
+                        DataXLink = w.DataXLink,
+                        LastModified = w.LastModified,
+                        ProcessUnitClassLink = w.ProcessUnitClassLink,
+                        PipeCount = w.PipeCount,
+                        SupportMultipleDocking = w.SupportMultipleDocking,
+                        ContainerParallelUsageMode = w.ContainerParallelUsageMode,
 
+                        // Données de tblCPDataX
+                        WarehouseCode = c.Name,
+                        WarehouseName = c.Description,
+                        IsActivated = c.Activated,
+                        UidKey = c.UidKey,
+                        ParentLink = c.ParentLink,
+                        StructureLink = c.StructureLink
+                    };
+
+        // Filtre par recherche
         if (!string.IsNullOrWhiteSpace(searchOptions.Search))
         {
             var search = searchOptions.Search.ToLower();
             query = query.Where(w =>
-                w.Code.ToLower().Contains(search) ||
-                w.Name.ToLower().Contains(search)
+                w.WarehouseCode.ToLower().Contains(search) ||
+                w.WarehouseName.ToLower().Contains(search)
             );
         }
 
-        if (searchOptions.Type.HasValue)
+        // Filtre par statut
+        if (searchOptions.Status.HasValue)
         {
-            query = query.Where(w => w.Type == searchOptions.Type.Value);
+            query = query.Where(w => w.IsActivated == searchOptions.Status.Value);
+        }
+
+        // Filtre par ProcessUnitClassLink
+        if (searchOptions.ProcessUnitClassLink.HasValue)
+        {
+            query = query.Where(w => w.ProcessUnitClassLink == searchOptions.ProcessUnitClassLink.Value);
         }
 
         var totalCount = await query.CountAsync();
@@ -49,15 +75,16 @@ public class WarehouseController : ControllerBase
             bool ascending = string.Equals(searchOptions.SortDirection, "asc", StringComparison.OrdinalIgnoreCase);
             query = searchOptions.SortField.ToLower() switch
             {
-                "code" => ascending ? query.OrderBy(w => w.Code) : query.OrderByDescending(w => w.Code),
-                "name" => ascending ? query.OrderBy(w => w.Name) : query.OrderByDescending(w => w.Name),
-                "type" => ascending ? query.OrderBy(w => w.Type) : query.OrderByDescending(w => w.Type),
-                _ => query.OrderByDescending(w => w.Id)
+                "code" => ascending ? query.OrderBy(w => w.WarehouseCode) : query.OrderByDescending(w => w.WarehouseCode),
+                "name" => ascending ? query.OrderBy(w => w.WarehouseName) : query.OrderByDescending(w => w.WarehouseName),
+                "pipecount" => ascending ? query.OrderBy(w => w.PipeCount) : query.OrderByDescending(w => w.PipeCount),
+                "lastmodified" => ascending ? query.OrderBy(w => w.LastModified) : query.OrderByDescending(w => w.LastModified),
+                _ => query.OrderByDescending(w => w.Key)
             };
         }
         else
         {
-            query = query.OrderByDescending(w => w.Id);
+            query = query.OrderByDescending(w => w.Key);
         }
 
         // Pagination
@@ -70,25 +97,39 @@ public class WarehouseController : ControllerBase
 
         var warehouses = await query.ToListAsync();
 
-        var result = warehouses.Select(w => new WarehouseDTO
-        {
-            Id = w.Id,
-            Code = w.Code,
-            Name = w.Name,
-            Type = w.Type,
-            Zones = w.Zones.Select(z => new ZoneDTO
-            {
-                Id = z.Id,
-                Code = z.Code,
-                Name = z.Name,
-                ZoneType = z.ZoneType
-            }).ToList()
-        }).ToList();
-
-        return Ok(new ApiResponse(true, "Dépôts récupérés avec succès", new PagedData<WarehouseDTO>
+        return Ok(new ApiResponse(true, "Entrepôts récupérés avec succès", new PagedData<WarehousePlantItDTO>
         {
             TotalData = totalCount,
-            Data = result
+            Data = warehouses
         }));
+    }
+
+    [HttpGet("{id}")]
+    public async Task<IActionResult> GetWarehouseById(int id)
+    {
+        var warehouse = await (from w in _context.PMMWarehouse
+                               join c in _context.CPDataX on w.DataXLink equals c.Key
+                               where w.Key == id
+                               select new WarehousePlantItDTO
+                               {
+                                   Key = w.Key,
+                                   DataXLink = w.DataXLink,
+                                   LastModified = w.LastModified,
+                                   ProcessUnitClassLink = w.ProcessUnitClassLink,
+                                   PipeCount = w.PipeCount,
+                                   SupportMultipleDocking = w.SupportMultipleDocking,
+                                   ContainerParallelUsageMode = w.ContainerParallelUsageMode,
+                                   WarehouseCode = c.Name,
+                                   WarehouseName = c.Description,
+                                   IsActivated = c.Activated,
+                                   UidKey = c.UidKey,
+                                   ParentLink = c.ParentLink,
+                                   StructureLink = c.StructureLink
+                               }).FirstOrDefaultAsync();
+
+        if (warehouse == null)
+            return NotFound(new ApiResponse(false, "Entrepôt non trouvé"));
+
+        return Ok(new ApiResponse(true, "Entrepôt récupéré avec succès", warehouse));
     }
 }

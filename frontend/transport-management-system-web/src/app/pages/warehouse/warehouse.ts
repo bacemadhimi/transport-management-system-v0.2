@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, ViewChild, ElementRef, HostListener, inject } from '@angular/core';
+import { Component, OnInit, OnDestroy, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormControl } from '@angular/forms';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -6,28 +6,22 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatCardModule } from '@angular/material/card';
 import { MatTableModule, MatTableDataSource } from '@angular/material/table';
-import { MatPaginatorModule } from '@angular/material/paginator';
+import { MatPaginatorModule, MatPaginator } from '@angular/material/paginator';
 import { MatSortModule, MatSort } from '@angular/material/sort';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatChipsModule } from '@angular/material/chips';
+import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { Subject, takeUntil, debounceTime } from 'rxjs';
-
-
-import { Auth } from '../../services/auth';
+import { WarehousePlantIt, WarehouseSearchOptions } from '../../types/WarehouseDTO';
 import { Http } from '../../services/http';
+import { WarehouseService } from '../../services/warehouse.service';
 
-interface WarehouseItem {
-  id: number;
-  reference: string;
-  material: string;
-  quantity: number;
-  zone: string;
-  status: string;
-}
 
 @Component({
-  selector: 'app-warehouse',
+  selector: 'app-warehouse-plantit',
   standalone: true,
   imports: [
     CommonModule,
@@ -42,55 +36,83 @@ interface WarehouseItem {
     MatSortModule,
     MatButtonModule,
     MatIconModule,
-    MatSnackBarModule
+    MatSnackBarModule,
+    MatChipsModule,
+    MatTooltipModule,
+    MatProgressSpinnerModule
   ],
   templateUrl: './warehouse.html',
   styleUrls: ['./warehouse.scss']
 })
-export class WarehouseComponent implements OnInit, OnDestroy {
+export class WarehousePlantItComponent implements OnInit, OnDestroy {
   @ViewChild(MatSort) sort!: MatSort;
+  @ViewChild(MatPaginator) paginator!: MatPaginator;
 
-  dataSource = new MatTableDataSource<WarehouseItem>([]);
-  displayedColumns: string[] = ['reference', 'material', 'quantity', 'zone', 'status', 'action'];
+  dataSource = new MatTableDataSource<WarehousePlantIt>([]);
+  displayedColumns: string[] = ['code', 'name', 'pipeCount', 'supportMultipleDocking', 'status', 'lastModified', 'action'];
 
   filterControl = new FormControl('');
-  materialControl = new FormControl('');
   statusControl = new FormControl('');
-
-  materialOptions = [
-    { id: 1, label: 'Acier' },
-    { id: 2, label: 'Aluminium' },
-    { id: 3, label: 'Cuivre' }
-  ];
+  processUnitControl = new FormControl('');
 
   statusOptions = [
-    { id: 'pending', label: 'En attente' },
-    { id: 'ready', label: 'Prêt' },
-    { id: 'done', label: 'Terminé' }
+    { id: true, label: 'Actif' },
+    { id: false, label: 'Inactif' }
   ];
+
+  processUnitOptions = [
+    { id: 1, label: 'Unité 1' },
+    { id: 2, label: 'Unité 2' },
+    { id: 3, label: 'Unité 3' }
+  ];
+
+  isLoading = false;
+  totalItems = 0;
+  pageSize = 10;
+  pageIndex = 0;
 
   private destroy$ = new Subject<void>();
 
-  constructor(public auth: Auth, private http: Http, private snackBar: MatSnackBar) {}
+  constructor(
+    private http: WarehouseService,
+    private snackBar: MatSnackBar
+  ) {}
 
   ngOnInit() {
     this.loadData();
 
     this.filterControl.valueChanges
       .pipe(debounceTime(300), takeUntil(this.destroy$))
-      .subscribe(value => this.applyFilters());
-
-    this.materialControl.valueChanges
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(() => this.applyFilters());
+      .subscribe(() => {
+        this.pageIndex = 0;
+        this.loadData();
+      });
 
     this.statusControl.valueChanges
       .pipe(takeUntil(this.destroy$))
-      .subscribe(() => this.applyFilters());
+      .subscribe(() => {
+        this.pageIndex = 0;
+        this.loadData();
+      });
+
+    this.processUnitControl.valueChanges
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(() => {
+        this.pageIndex = 0;
+        this.loadData();
+      });
   }
 
   ngAfterViewInit() {
     this.dataSource.sort = this.sort;
+    
+    if (this.paginator) {
+      this.paginator.page.pipe(takeUntil(this.destroy$)).subscribe(() => {
+        this.pageIndex = this.paginator.pageIndex;
+        this.pageSize = this.paginator.pageSize;
+        this.loadData();
+      });
+    }
   }
 
   ngOnDestroy() {
@@ -99,34 +121,71 @@ export class WarehouseComponent implements OnInit, OnDestroy {
   }
 
   loadData() {
-    // Ici tu appelles ton API pour récupérer la liste
-    //this.http.getWarehouseItems().subscribe((data: WarehouseItem[]) => {
-   //   this.dataSource.data = data;
-  //  });
-  }
-
-  applyFilters() {
-    const filterText = this.filterControl.value?.toLowerCase() || '';
-    const materialId = this.materialControl.value;
-    const status = this.statusControl.value;
-
-    this.dataSource.filterPredicate = (item: WarehouseItem) => {
-      const matchesText = item.reference.toLowerCase().includes(filterText) || item.material.toLowerCase().includes(filterText);
-      //const matchesMaterial = materialId ? item.material === this.materialOptions.find(m => m.id === materialId)?.label : true;
-      const matchesStatus = status ? item.status === status : true;
-      return matchesText  && matchesStatus;
+    this.isLoading = true;
+    
+    const searchOptions: WarehouseSearchOptions = {
+      search: this.filterControl.value || '',
+      status: this.statusControl.value !== null ? (this.statusControl.value === 'true') : undefined,
+      processUnitClassLink: this.processUnitControl.value ? Number(this.processUnitControl.value) : undefined,
+      pageIndex: this.pageIndex,
+      pageSize: this.pageSize,
+      sortField: this.sort?.active || 'key',
+      sortDirection: this.sort?.direction || 'desc'
     };
 
-    this.dataSource.filter = '' + Math.random(); // trigger filter
+    this.http.getWarehousesPlantIt(searchOptions).subscribe({
+      next: (response: any) => {
+        this.isLoading = false;
+        if (response.success) {
+          const warehouses = response.data.data.map((w: any) => ({
+            ...w,
+            lastModified: new Date(w.lastModified)
+          }));
+          this.dataSource.data = warehouses;
+          this.totalItems = response.data.totalData;
+          
+          if (this.paginator) {
+            this.paginator.length = this.totalItems;
+          }
+        }
+      },
+      error: (error: any) => {
+        this.isLoading = false;
+        console.error('Erreur lors du chargement des entrepôts:', error);
+        this.snackBar.open('Erreur lors du chargement des données', 'Fermer', { duration: 3000 });
+      }
+    });
   }
 
-  edit(item: WarehouseItem) {
-    alert('Modifier : ' + item.reference);
+  formatDate(date: Date): string {
+    return new Date(date).toLocaleDateString('fr-FR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
   }
 
-  delete(item: WarehouseItem) {
-    if (confirm('Supprimer ' + item.reference + ' ?')) {
-      alert('Supprimé !');
+  edit(item: WarehousePlantIt) {
+    console.log('Modifier:', item);
+  }
+
+  delete(item: WarehousePlantIt) {
+    if (confirm(`Supprimer l'entrepôt ${item.warehouseCode} - ${item.warehouseName} ?`)) {
+      this.http.deleteWarehousePlantIt(item.key).subscribe({
+        next: (response) => {
+          this.snackBar.open('Entrepôt supprimé avec succès', 'Fermer', { duration: 3000 });
+          this.loadData();
+        },
+        error: (error) => {
+          this.snackBar.open('Erreur lors de la suppression', 'Fermer', { duration: 3000 });
+        }
+      });
     }
+  }
+
+  viewDetails(item: WarehousePlantIt) {
+    console.log('Détails:', item);
   }
 }
