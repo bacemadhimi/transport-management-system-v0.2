@@ -30,34 +30,17 @@ export const routes: Routes = [
   },
   {
     path: 'profile',
-    loadComponent: () => import('./pages/profile/profile.page').then( m => m.ProfilePage),
+    loadComponent: () => import('./profile/profile.page').then( m => m.ProfilePage)
+  },
+{
+    path: 'chat',
+    loadComponent: () => import('./pages/chat/chat.component').then( m => m.ChatComponent),
     canActivate: [authGuard]
   },
   {
-    path: 'trip/:tripId',
-    loadComponent: () => import('./pages/trip-workflow/trip-workflow.page').then( m => m.TripWorkflowPage),
-    canActivate: [authGuard]
-  },
-  {
-    path: 'trip/:tripId/gps',
-    loadComponent: () => import('./pages/gps-tracking/gps-tracking.page').then( m => m.GPSTrackingPage),
-    canActivate: [authGuard]
-  },
-  {
-    path: 'gps-tracking',
-    loadComponent: () => import('./pages/gps-tracking/gps-tracking.page').then( m => m.GPSTrackingPage),
-    canActivate: [authGuard]
-  },
-  {
-    path: 'my-trips',
-    loadComponent: () => import('./pages/my-trips/my-trips.page').then( m => m.MyTripsPage),
-    canActivate: [authGuard]
-  },
-  {
-    path: 'trip-history',
-    loadComponent: () => import('./pages/trip-history/trip-history.page').then( m => m.TripHistoryPage),
+    path: 'barcode-test',
+    loadComponent: () => import('./pages/barcode-test/barcode-test.page').then( m => m.BarcodeTestPage),
     canActivate: [authGuard]
   }
-
-  // Future routes will be added here
+ 
 ];
