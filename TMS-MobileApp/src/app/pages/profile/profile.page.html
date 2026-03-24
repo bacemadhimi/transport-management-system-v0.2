@@ -1,0 +1,86 @@
+<ion-header>
+  <ion-toolbar color="primary">
+    <ion-title>Mon Profil</ion-title>
+    <ion-buttons slot="end">
+      <ion-button (click)="logout()">
+        <ion-icon slot="icon-only" name="log-out"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="profile-content">
+  
+  <!-- Photo de profil -->
+  <div class="profile-header">
+    <div class="photo-container">
+      <div class="photo-placeholder" *ngIf="!profilePhoto">
+        <ion-icon name="person"></ion-icon>
+      </div>
+      <img [src]="profilePhoto" alt="Profile" class="profile-photo" *ngIf="profilePhoto">
+      <label for="photo-upload" class="photo-edit-btn">
+        <ion-icon name="camera"></ion-icon>
+      </label>
+      <input type="file" id="photo-upload" accept="image/*" (change)="onPhotoSelected($event)" hidden>
+    </div>
+    <h2>{{ user?.name || 'Utilisateur' }}</h2>
+    <p>{{ user?.email || '' }}</p>
+  </div>
+
+  <!-- Formulaire Update Profil -->
+  <ion-card class="update-card">
+    <ion-card-header>
+      <ion-card-title>
+        <ion-icon name="create"></ion-icon>
+        Modifier le Profil
+      </ion-card-title>
+    </ion-card-header>
+    <ion-card-content>
+      <ion-item>
+        <ion-label position="floating">Nom</ion-label>
+        <ion-input [(ngModel)]="profileForm.name"></ion-input>
+      </ion-item>
+
+      <ion-item>
+        <ion-label position="floating">Email</ion-label>
+        <ion-input [(ngModel)]="profileForm.email" type="email"></ion-input>
+      </ion-item>
+
+      <ion-item>
+        <ion-label position="floating">Téléphone</ion-label>
+        <ion-input [(ngModel)]="profileForm.phone" type="tel"></ion-input>
+      </ion-item>
+
+      <ion-button expand="block" (click)="updateProfile()" class="mt-3">
+        <ion-icon slot="start" name="save"></ion-icon>
+        Enregistrer
+      </ion-button>
+    </ion-card-content>
+  </ion-card>
+
+  <!-- Changer mot de passe -->
+  <ion-card class="password-card">
+    <ion-card-header>
+      <ion-card-title>
+        <ion-icon name="key"></ion-icon>
+        Sécurité
+      </ion-card-title>
+    </ion-card-header>
+    <ion-card-content>
+      <ion-item>
+        <ion-label position="floating">Mot de passe actuel</ion-label>
+        <ion-input [(ngModel)]="profileForm.currentPassword" type="password"></ion-input>
+      </ion-item>
+
+      <ion-item>
+        <ion-label position="floating">Nouveau mot de passe</ion-label>
+        <ion-input [(ngModel)]="profileForm.newPassword" type="password"></ion-input>
+      </ion-item>
+
+      <ion-button expand="block" (click)="changePassword()" color="secondary">
+        Changer le mot de passe
+      </ion-button>
+    </ion-card-content>
+  </ion-card>
+
+</ion-content>

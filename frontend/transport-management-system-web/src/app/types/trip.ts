@@ -46,6 +46,7 @@ export interface IDelivery {
   customerId: number;
   orderId: number;
   deliveryAddress: string;
+  geolocation?: string; // Coordonnées GPS au format "lat,lng"
   sequence: number;
   plannedTime?: string;
   actualArrivalTime?: string;
@@ -55,8 +56,16 @@ export interface IDelivery {
   proofOfDelivery?: string;
 
 
+  // Relations (optionnelles)
   customer?: ICustomer;
   order?: IOrder;
+  
+  // Champs supplémentaires pour les coordonnées (selon API)
+  latitude?: number;
+  longitude?: number;
+  deliveryLatitude?: number;
+  deliveryLongitude?: number;
+  customerName?: string;
 }
 
 export enum TripStatus {

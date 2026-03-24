@@ -15,12 +15,12 @@
     </div>
 
     <div class="header-actions">
-      <div class="notification-wrapper">
-        <ion-button fill="clear" class="notification-btn" (click)="openNotifications()">
+      <div class="notification-wrapper" (click)="openNotifications()" style="cursor: pointer;">
+        <ion-button fill="clear" class="notification-btn">
           <ion-icon name="notifications-outline"></ion-icon>
         </ion-button>
-        <span *ngIf="cancelledTripsCount > 0" class="notification-badge">
-          {{ cancelledTripsCount > 99 ? '99+' : cancelledTripsCount }}
+        <span *ngIf="unreadNotificationsCount > 0" class="notification-badge">
+          {{ unreadNotificationsCount > 99 ? '99+' : unreadNotificationsCount }}
         </span>
       </div>
       <ion-button fill="clear" (click)="logout()" class="logout-btn">
@@ -74,7 +74,33 @@
     </div>
   </div>
 
- 
+
+  <!-- Quick Actions - GPS & Trips -->
+  <div class="quick-actions-section">
+    <h2 class="section-title">Navigation Rapide</h2>
+    
+    <div class="quick-actions-grid">
+      <ion-card class="action-card" button routerLink="/my-trips">
+        <ion-icon name="map" class="action-icon"></ion-icon>
+        <h3>Mes Trajets</h3>
+        <p>Trajets en cours</p>
+      </ion-card>
+
+      <ion-card class="action-card" button routerLink="/trip-history">
+        <ion-icon name="time" class="action-icon"></ion-icon>
+        <h3>Historique</h3>
+        <p>Anciens trajets</p>
+      </ion-card>
+
+      <ion-card class="action-card" button routerLink="/gps-tracking">
+        <ion-icon name="location" class="action-icon"></ion-icon>
+        <h3>Suivi GPS</h3>
+        <p>Carte en temps réel</p>
+      </ion-card>
+    </div>
+  </div>
+
+
   <div class="trips-section">
     <div class="section-header">
       <h2>Recent Trips</h2>

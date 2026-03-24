@@ -8,7 +8,6 @@ using TransportManagementSystem.Entity;
 using TransportManagementSystem.Hubs;
 using TransportManagementSystem.Interfaces;
 using TransportManagementSystem.Repositories;
-using TransportManagementSystem.Service;
 using TransportManagementSystem.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -24,22 +23,19 @@ builder.Services
 builder.Services.AddHttpClient();
 builder.Services.AddOpenApi();
 
-
 builder.Services.AddCors(options =>
 {
-
     options.AddPolicy("SignalRCors", policy =>
     {
         policy.WithOrigins(
             "http://localhost:4200",
-            "http://localhost:8100"  
+            "http://localhost:8100"
         )
         .AllowAnyHeader()
         .AllowAnyMethod()
         .AllowCredentials();
     });
 
-  
     options.AddPolicy("AllowCrosOrigin", policy =>
     {
         policy.AllowAnyOrigin()
@@ -94,6 +90,13 @@ builder.Services.AddScoped<IStatisticsService, StatisticsService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddScoped<INotificationRepository, NotificationRepository>();
 
+// GPS & Geocoding services
+builder.Services.AddScoped<IGeocodingService, GeocodingService>();
+builder.Services.AddHttpClient("Nominatim");
+
+// Notification Hub Service
+builder.Services.AddSingleton<NotificationHubService>();
+
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
@@ -114,11 +117,12 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
                 var accessToken = context.Request.Query["access_token"];
 
                 var path = context.HttpContext.Request.Path;
-               
+
                 if (!string.IsNullOrEmpty(accessToken) &&
-                    (path.StartsWithSegments("/triphub") || path.StartsWithSegments("/chathub")))
+                    (path.StartsWithSegments("/triphub") ||
+                     path.StartsWithSegments("/gpshub") ||
+                     path.StartsWithSegments("/notificationhub")))
                 {
-                    
                     context.Token = accessToken;
                 }
                 return Task.CompletedTask;
@@ -174,17 +178,20 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+app.UseRouting();
 
-app.UseRouting();  
-
-app.UseCors("SignalRCors"); 
+app.UseCors("SignalRCors");
 
 app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
 
+// Map SignalR hubs
 app.MapHub<TripHub>("/triphub");
 app.MapHub<ChatHub>("/chathub");
+app.MapHub<GPSHub>("/gpshub");
+app.MapHub<NotificationHub>("/notificationhub");
+
 app.MapControllers();
 
 app.Run();

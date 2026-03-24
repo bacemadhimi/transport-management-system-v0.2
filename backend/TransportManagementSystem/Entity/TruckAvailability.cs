@@ -28,5 +28,14 @@ public class TruckAvailability
 
     // Navigation
     [ForeignKey(nameof(TruckId))]
-    public virtual Truck Truck { get; set; }
+    public virtual Truck? Truck { get; set; }
+
+    // Propriétés pour les requêtes (pour compatibilité avec DriverAvailability)
+    [NotMapped]
+    public DateTime? StartDate { get => Date; set { if (value.HasValue) Date = value.Value; } }
+
+    [NotMapped]
+    public DateTime? EndDate { get => Date; set { if (value.HasValue) Date = value.Value; } }
+
+    public string? TripReference { get; set; }
 }

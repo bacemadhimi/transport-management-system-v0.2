@@ -814,3 +814,163 @@
     &.status-delayed { background: rgba(146, 64, 14, 0.2); color: #fbbf24; }
   }
 }
+
+// ============================================
+// QUICK ACTIONS - PROFESSIONAL DESIGN
+// ============================================
+
+.quick-actions-section {
+  padding: 24px;
+  animation: fadeInUp 0.8s ease-out 0.4s both;
+
+  .section-title {
+    font-size: 20px;
+    font-weight: 700;
+    color: #2d3748;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+
+    &::before {
+      content: '';
+      width: 4px;
+      height: 24px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border-radius: 2px;
+    }
+  }
+
+  .quick-actions-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+  }
+
+  .action-card {
+    --background: white;
+    --color: inherit;
+    border-radius: 20px;
+    padding: 20px 16px;
+    text-align: center;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    border: 2px solid transparent;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    position: relative;
+    overflow: hidden;
+    margin: 0;
+    height: 140px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+
+    &::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%);
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    &:hover {
+      transform: translateY(-8px);
+      box-shadow: 0 12px 40px rgba(102, 126, 234, 0.25);
+      border-color: rgba(102, 126, 234, 0.2);
+
+      &::before {
+        opacity: 1;
+      }
+
+      .action-icon {
+        transform: scale(1.15) rotate(5deg);
+      }
+    }
+
+    &:active {
+      transform: translateY(-4px) scale(0.98);
+    }
+
+    .action-icon {
+      font-size: 42px;
+      margin-bottom: 8px;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      z-index: 1;
+
+      // Individual colors for each card
+      &:nth-child(1) {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+      }
+
+      &:nth-child(2) {
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+      }
+
+      &:nth-child(3) {
+        background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+      }
+    }
+
+    h3 {
+      font-size: 15px;
+      font-weight: 700;
+      color: #2d3748;
+      margin: 0;
+      position: relative;
+      z-index: 1;
+    }
+
+    p {
+      font-size: 12px;
+      color: #718096;
+      margin: 0;
+      line-height: 1.4;
+      position: relative;
+      z-index: 1;
+    }
+  }
+}
+
+// Responsive for quick actions
+@media (max-width: 480px) {
+  .quick-actions-section {
+    padding: 20px 16px;
+
+    .quick-actions-grid {
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+    }
+
+    .action-card {
+      padding: 16px 12px;
+      height: 120px;
+
+      .action-icon {
+        font-size: 36px;
+      }
+
+      h3 {
+        font-size: 13px;
+      }
+
+      p {
+        font-size: 11px;
+      }
+    }
+  }
+}

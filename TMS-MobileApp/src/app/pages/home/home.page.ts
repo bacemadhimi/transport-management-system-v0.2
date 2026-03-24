@@ -11,6 +11,8 @@ import { ITrip, TripStatus } from '../../types/trip';
 import { Observable, Subscription } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { NotificationService } from '../../services/notification.service';
+import { GPSTrackingService } from '../../services/gps-tracking.service';
+import { NotificationStorageService } from '../../services/notification-storage.service';
 
 @Component({
   selector: 'app-home',
@@ -27,11 +29,16 @@ export class HomePage implements OnInit, OnDestroy {
   alertController = inject(AlertController);
   notificationService = inject(NotificationService);
   modalController = inject(ModalController);
+  gpsService = inject(GPSTrackingService);
+  notificationStorage = inject(NotificationStorageService);
 
   trips$: Observable<ITrip[]> | null = null;
   totalDistance: number = 0;
   cancelledTripsCount: number = 0;
+  unreadNotificationsCount: number = 0;
   private _notifSub: Subscription | null = null;
+  private _gpsSub: Subscription | null = null;
+  private _unreadSub: Subscription | null = null;
 
   constructor() {}
 
@@ -41,11 +48,151 @@ export class HomePage implements OnInit, OnDestroy {
     this._notifSub = this.notificationService.cancelledCount$.subscribe(count => {
       this.cancelledTripsCount = count;
     });
+
+    // Subscribe to unread count
+    this._unreadSub = this.notificationStorage.unreadCount$.subscribe(count => {
+      this.unreadNotificationsCount = count;
+      console.log('🔔 Unread notifications:', count);
+    });
+
+    // Connect to GPS Hub for real-time notifications
+    setTimeout(() => {
+      this.connectToGPSHub();
+    }, 1000);
+  }
+
+  async connectToGPSHub() {
+    const user = this.authService.currentUser();
+    if (!user) return;
+
+    // Get driver ID - use user.id as fallback
+    let driverId = (user as any).driverId;
+
+    if (!driverId) {
+      driverId = user.id || 1;
+      console.log('⚠️ No driverId, using:', driverId);
+    }
+
+    console.log('🔌 Connecting to GPS Hub for driver:', driverId);
+    console.log('📋 User data:', user);
+
+    await this.gpsService.connect(driverId);
+
+    // Listen for new trip notifications - ALL drivers receive it
+    this._gpsSub = this.gpsService.getNotifications().subscribe(notification => {
+      console.log('🔔🔔🔔 NOTIFICATION REÇUE:', notification);
+
+      // Show alert immediately for NEW_TRIP_ASSIGNMENT
+      if (notification.type === 'NEW_TRIP_ASSIGNMENT') {
+        console.log('✅ Showing notification for trip:', notification.tripReference);
+        this.showTripNotification(notification);
+      }
+    });
+  }
+
+  async showTripNotification(notification: any) {
+    const alert = await this.alertController.create({
+      header: notification.title || 'Nouvelle Mission',
+      message: `
+        <p><strong>Trip:</strong> ${notification.tripReference}</p>
+        <p><strong>Destination:</strong> ${notification.destination}</p>
+        <p><strong>Distance:</strong> ${notification.estimatedDistance} km</p>
+        <p><strong>Duration:</strong> ${notification.estimatedDuration}h</p>
+      `,
+      buttons: [
+        {
+          text: 'Refuser',
+          role: 'cancel',
+          handler: () => {
+            this.rejectTrip(notification.tripId);
+          }
+        },
+        {
+          text: 'Accepter',
+          handler: () => {
+            this.acceptTrip(notification.tripId);
+          }
+        }
+      ]
+    });
+
+    await alert.present();
+  }
+
+  async acceptTrip(tripId: number) {
+    try {
+      await this.gpsService.acceptTrip(tripId);
+      const toast = await this.toastController.create({
+        message: 'Trip accepté avec succès!',
+        duration: 2000,
+        color: 'success'
+      });
+      await toast.present();
+    } catch (error) {
+      console.error('Error accepting trip:', error);
+    }
+  }
+
+  async rejectTrip(tripId: number) {
+    const alert = await this.alertController.create({
+      header: 'Raison du refus',
+      inputs: [
+        {
+          name: 'reason',
+          type: 'radio',
+          label: 'Mauvais temps',
+          value: 'BadWeather'
+        },
+        {
+          name: 'reason',
+          type: 'radio',
+          label: 'Camion non disponible',
+          value: 'Unavailable'
+        },
+        {
+          name: 'reason',
+          type: 'radio',
+          label: 'Problème technique',
+          value: 'Technical'
+        },
+        {
+          name: 'reason',
+          type: 'radio',
+          label: 'Raison médicale',
+          value: 'Medical'
+        },
+        {
+          name: 'reason',
+          type: 'radio',
+          label: 'Autre',
+          value: 'Other'
+        }
+      ],
+      buttons: [
+        {
+          text: 'Annuler',
+          role: 'cancel'
+        },
+        {
+          text: 'Refuser',
+          handler: (data: any) => {
+            if (data.reason) {
+              this.gpsService.rejectTrip(tripId, data.reason, data.reason);
+            }
+          }
+        }
+      ]
+    });
+
+    await alert.present();
   }
 
   ngOnDestroy(): void {
     this._notifSub?.unsubscribe();
+    this._gpsSub?.unsubscribe();
+    this._unreadSub?.unsubscribe();
     this.notificationService.stopPolling();
+    this.gpsService.disconnect();
   }
 
   loadTrips() {
