@@ -1,0 +1,142 @@
+<ion-header>
+  <ion-toolbar color="primary">
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/home"></ion-back-button>
+    </ion-buttons>
+    <ion-title>
+      <div class="header-title">
+        <ion-icon name="sparkles" class="ai-icon"></ion-icon>
+        <span>Assistant IA</span>
+        <ion-badge class="ai-status-badge" [color]="isOllamaConnected ? 'success' : 'warning'">
+          {{ isOllamaConnected ? 'IA Active' : 'Mode Hors Ligne' }}
+        </ion-badge>
+      </div>
+    </ion-title>
+    <ion-buttons slot="end">
+      <ion-button (click)="clearChat()" title="Effacer la conversation">
+        <ion-icon slot="icon-only" name="trash-outline"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="chatbot-content">
+  
+  <!-- Chat Messages -->
+  <div #chatContainer class="chat-container">
+    
+    <!-- Welcome Card -->
+    <div class="welcome-card" *ngIf="messages.length <= 1">
+      <ion-card>
+        <ion-card-header>
+          <ion-card-title>
+            <ion-icon name="sparkles" color="primary"></ion-icon>
+            Assistant Intelligent
+          </ion-card-title>
+          <ion-card-subtitle>Toujours là pour vous aider</ion-card-subtitle>
+        </ion-card-header>
+        <ion-card-content>
+          <p>Je suis votre assistant personnel pour :</p>
+          <ion-list lines="none">
+            <ion-item>
+              <ion-icon slot="start" name="map" color="primary"></ion-icon>
+              <ion-label>Trajets en cours</ion-label>
+            </ion-item>
+            <ion-item>
+              <ion-icon slot="start" name="package" color="primary"></ion-icon>
+              <ion-label>Livraisons</ion-label>
+            </ion-item>
+            <ion-item>
+              <ion-icon slot="start" name="shield-checkmark" color="primary"></ion-icon>
+              <ion-label>Sécurité</ion-label>
+            </ion-item>
+            <ion-item>
+              <ion-icon slot="start" name="help-circle" color="primary"></ion-icon>
+              <ion-label>Questions</ion-label>
+            </ion-item>
+          </ion-list>
+        </ion-card-content>
+      </ion-card>
+    </div>
+
+    <!-- Messages -->
+    <div *ngFor="let message of messages" 
+         [class]="'message message-' + message.role"
+         [class.typing]="message.isTyping">
+      
+      <div class="message-avatar" *ngIf="message.role === 'assistant'">
+        <ion-icon name="robot"></ion-icon>
+      </div>
+      
+      <div class="message-content">
+        <div class="message-bubble">
+          {{ message.content }}
+        </div>
+        <div class="message-time">
+          {{ message.timestamp | date:'HH:mm' }}
+        </div>
+      </div>
+      
+      <div class="message-avatar" *ngIf="message.role === 'user'">
+        <ion-icon name="person"></ion-icon>
+      </div>
+    </div>
+
+    <!-- Loading Indicator -->
+    <div *ngIf="isLoading" class="message message-assistant typing">
+      <div class="message-avatar">
+        <ion-icon name="robot"></ion-icon>
+      </div>
+      <div class="message-content">
+        <div class="typing-indicator">
+          <span></span>
+          <span></span>
+          <span></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Suggested Questions -->
+  <div class="suggestions-container" *ngIf="messages.length <= 2">
+    <ion-label class="suggestions-title">💡 Questions suggérées :</ion-label>
+    <div class="suggestions-list">
+      <ion-chip *ngFor="let question of suggestedQuestions" 
+                (click)="sendSuggestion(question)"
+                outline>
+        <ion-label>{{ question }}</ion-label>
+      </ion-chip>
+    </div>
+  </div>
+
+</ion-content>
+
+<ion-footer>
+  <ion-toolbar>
+    <ion-grid>
+      <ion-row>
+        <ion-col size="10">
+          <ion-item lines="none">
+            <ion-textarea #messageInput
+                          [(ngModel)]="inputMessage"
+                          placeholder="Posez votre question..."
+                          rows="1"
+                          max-rows="4"
+                          (ionInput)="autoResize($event)"
+                          (keydown.enter)="sendMessage()">
+            </ion-textarea>
+          </ion-item>
+        </ion-col>
+        <ion-col size="2">
+          <ion-button fill="solid" 
+                      color="primary" 
+                      (click)="sendMessage()"
+                      [disabled]="!inputMessage.trim() || isLoading"
+                      class="send-button">
+            <ion-icon slot="icon-only" name="send"></ion-icon>
+          </ion-button>
+        </ion-col>
+      </ion-row>
+    </ion-grid>
+  </ion-toolbar>
+</ion-footer>

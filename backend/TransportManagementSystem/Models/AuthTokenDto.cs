@@ -8,6 +8,7 @@
         public List<string> Roles { get; set; } = new();
         public List<string> Permissions { get; set; } = new();
         public DateTime Expiry { get; set; }
+        public int? DriverId { get; set; } // ✅ Driver ID for driver users
     }
 
 }

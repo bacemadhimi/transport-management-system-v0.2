@@ -145,7 +145,7 @@ public class OrdersController : ControllerBase
             Reference = o.Reference,
             Type = o.Type,
             Weight = o.Weight,
-            WeightUnit = o.WeightUnit,
+            WeightUnit = o.WeightUnit ?? "",
             Status = o.Status,
             SourceSystem = o.SourceSystem == DataSource.QAD ? "QAD" : "TMS",
             CreatedDate = o.CreatedDate,
@@ -206,7 +206,7 @@ public class OrdersController : ControllerBase
             Reference = o.Reference,
             Type = o.Type,
             Weight = o.Weight,
-            WeightUnit = o.WeightUnit,
+            WeightUnit = o.WeightUnit ?? "",
             Status = o.Status,
             CreatedDate = o.CreatedDate,
             DeliveryAddress = o.DeliveryAddress,
@@ -281,7 +281,8 @@ public class OrdersController : ControllerBase
     {
         if (!ModelState.IsValid)
             return BadRequest(new ApiResponse(false, "Données invalides", ModelState));
-        string reference = model.Reference;
+        
+        string? reference = model.Reference;
         if (string.IsNullOrWhiteSpace(reference))
         {
             var lastOrder = await _orderRepository.Query()

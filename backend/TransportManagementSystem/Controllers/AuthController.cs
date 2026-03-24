@@ -18,11 +18,13 @@ namespace TransportManagementSystem.Controllers
     {
         private readonly IRepository<User> _userRepository;
         private readonly IConfiguration _configuration;
+        private readonly ApplicationDbContext _dbContext;
 
-        public AuthController(IRepository<User> userRepository, IConfiguration configuration)
+        public AuthController(IRepository<User> userRepository, IConfiguration configuration, ApplicationDbContext dbContext)
         {
             _userRepository = userRepository;
             _configuration = configuration;
+            _dbContext = dbContext;
         }
 
         [HttpPost("login")]
@@ -67,7 +69,26 @@ namespace TransportManagementSystem.Controllers
 
             var expClaim = jwtToken.Claims.First(c => c.Type == JwtRegisteredClaimNames.Exp).Value;
             var expTimestamp = long.Parse(expClaim);
-            var expiryDate = DateTimeOffset.FromUnixTimeSeconds(expTimestamp).ToLocalTime().DateTime;
+            var expDate = DateTimeOffset.FromUnixTimeSeconds(expTimestamp).ToLocalTime().DateTime;
+
+            // Try to find the associated Driver for this user (by matching Email)
+            var driver = await _dbContext.Drivers
+                .FirstOrDefaultAsync(d => d.Email == user.Email);
+
+            // ✅ FIX PERMANENT: If driver found but not linked, link it now
+            if (driver != null && driver.user_id == null)
+            {
+                driver.user_id = user.Id;
+                await _dbContext.SaveChangesAsync();
+            }
+
+            // ✅ Also handle the reverse case: if user exists but driver not linked
+            if (driver == null)
+            {
+                // Try to find driver by user_id (in case it was set but email differs)
+                driver = await _dbContext.Drivers
+                    .FirstOrDefaultAsync(d => d.user_id == user.Id);
+            }
 
             return Ok(new AuthTokenDto
             {
@@ -76,7 +97,8 @@ namespace TransportManagementSystem.Controllers
                 Token = token,
                 Roles = roles,
                 Permissions = permissions,
-                Expiry = expiryDate
+                Expiry = expDate,
+                DriverId = driver?.Id // ✅ Return driverId if user is a driver
             });
 
         }

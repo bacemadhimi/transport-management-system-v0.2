@@ -57,7 +57,11 @@ export const routes: Routes = [
     path: 'trip-history',
     loadComponent: () => import('./pages/trip-history/trip-history.page').then( m => m.TripHistoryPage),
     canActivate: [authGuard]
+  },  {
+    path: 'chatbot',
+    loadComponent: () => import('./pages/chatbot/chatbot.page').then( m => m.ChatbotPage)
   }
+
 
   // Future routes will be added here
 ];

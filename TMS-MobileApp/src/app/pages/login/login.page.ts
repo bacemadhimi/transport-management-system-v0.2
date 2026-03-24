@@ -170,8 +170,10 @@ export class LoginPage implements AfterViewInit {
         return;
       }
 
-      // Create auth token object
-      const authToken = {
+      console.log('📋 Login response:', JSON.stringify(res, null, 2));
+
+      // Create auth token object - include driverId if available
+      const authToken: any = {
         id: res.id,
         email: res.email,
         token: res.token,
@@ -179,9 +181,23 @@ export class LoginPage implements AfterViewInit {
         permissions: res.permissions || []
       };
 
+      // If driverId is returned in response, save it
+      if (res.driverId) {
+        authToken.driverId = res.driverId;
+        console.log('✅ driverId from login:', res.driverId);
+      } else if (res.DriverId) {
+        authToken.driverId = res.DriverId;
+        console.log('✅ DriverId from login:', res.DriverId);
+      } else {
+        // Fallback: use user id as driverId (might work if they're the same)
+        authToken.driverId = res.id;
+        console.log('⚠️ Using user id as driverId:', res.id);
+      }
+
       // Save token
       this.authService.saveToken(authToken);
       console.log('Token saved, isLoggedIn:', this.authService.isLoggedIn());
+      console.log('Saved authToken:', JSON.stringify(authToken, null, 2));
 
       await this.showToast('Login successful!', 1500);
 

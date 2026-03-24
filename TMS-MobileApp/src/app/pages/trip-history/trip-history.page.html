@@ -1,51 +1,180 @@
-<ion-header>
+<ion-header [translucent]="true">
   <ion-toolbar color="primary">
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/tabs/my-trips" color="light"></ion-back-button>
+    </ion-buttons>
     <ion-title>Historique des Trajets</ion-title>
+    <ion-buttons slot="end">
+      <ion-button (click)="loadHistory()" *ngIf="!refreshing">
+        <ion-icon slot="icon-only" name="refresh" [class.spinning]="refreshing"></ion-icon>
+      </ion-button>
+    </ion-buttons>
   </ion-toolbar>
 </ion-header>
 
-<ion-content class="history-content">
+<ion-content class="history-content" [class.has-header]="true">
   
-  <!-- Filtres -->
-  <div class="filter-bar">
-    <ion-segment [(ngModel)]="filterStatus" (ngModelChange)="applyFilter()">
+  <!-- Statistics Cards -->
+  <div class="stats-container" *ngIf="!loading && history.length > 0">
+    <div class="stat-card">
+      <div class="stat-icon total">
+        <ion-icon name="document-text"></ion-icon>
+      </div>
+      <div class="stat-info">
+        <span class="stat-value">{{ stats.total }}</span>
+        <span class="stat-label">Total</span>
+      </div>
+    </div>
+    
+    <div class="stat-card">
+      <div class="stat-icon completed">
+        <ion-icon name="checkmark-done-circle"></ion-icon>
+      </div>
+      <div class="stat-info">
+        <span class="stat-value">{{ stats.completed }}</span>
+        <span class="stat-label">Terminés</span>
+      </div>
+    </div>
+    
+    <div class="stat-card">
+      <div class="stat-icon cancelled">
+        <ion-icon name="close-circle"></ion-icon>
+      </div>
+      <div class="stat-info">
+        <span class="stat-value">{{ stats.cancelled + stats.refused }}</span>
+        <span class="stat-label">Annulés</span>
+      </div>
+    </div>
+    
+    <div class="stat-card">
+      <div class="stat-icon distance">
+        <ion-icon name="navigate"></ion-icon>
+      </div>
+      <div class="stat-info">
+        <span class="stat-value">{{ (stats.totalDistance / 1000).toFixed(1) }}k</span>
+        <span class="stat-label">Km</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filter Segment -->
+  <div class="filter-section" *ngIf="!loading && history.length > 0">
+    <ion-segment [(ngModel)]="filterStatus" (ngModelChange)="applyFilter()" scrollable>
       <ion-segment-button value="all">
         <ion-label>Tous</ion-label>
       </ion-segment-button>
-      <ion-segment-button value="Completed">
+      <ion-segment-button value="completed">
         <ion-label>Terminés</ion-label>
       </ion-segment-button>
       <ion-segment-button value="Cancelled">
         <ion-label>Annulés</ion-label>
       </ion-segment-button>
+      <ion-segment-button value="Refused">
+        <ion-label>Refusés</ion-label>
+      </ion-segment-button>
     </ion-segment>
   </div>
 
-  <!-- Liste des trajets -->
-  <ion-list *ngIf="filteredHistory.length > 0">
-    <ion-item-sliding *ngFor="let trip of filteredHistory">
-      <ion-item>
-        <ion-icon [name]="getStatusIcon(trip.status)" [color]="getStatusColor(trip.status)" slot="start"></ion-icon>
-        <ion-label>
-          <h3>{{ trip.tripReference }}</h3>
-          <p>{{ formatDate(trip.date) }} • {{ trip.distance }} km • {{ trip.deliveriesCount }} livraisons</p>
-        </ion-label>
-        <ion-badge [color]="getStatusColor(trip.status)" slot="end">{{ trip.status }}</ion-badge>
-      </ion-item>
-      
-      <ion-item-options side="end">
-        <ion-item-option color="primary" (click)="viewDetails(trip)">
-          <ion-icon slot="icon-only" name="eye"></ion-icon>
-        </ion-item-option>
-      </ion-item-options>
-    </ion-item-sliding>
-  </ion-list>
-
-  <!-- Empty state -->
-  <div class="empty-state" *ngIf="filteredHistory.length === 0">
-    <ion-icon name="document-outline"></ion-icon>
-    <h3>Aucun trajet trouvé</h3>
-    <p>Votre historique de trajets apparaîtra ici</p>
+  <!-- Loading State -->
+  <div class="loading-container" *ngIf="loading">
+    <ion-spinner name="crescent" color="primary"></ion-spinner>
+    <p class="loading-text">Chargement de l'historique...</p>
   </div>
+
+  <!-- Error State -->
+  <div class="error-container" *ngIf="error && !loading">
+    <ion-icon name="alert-circle-outline" color="danger"></ion-icon>
+    <h3>Oups!</h3>
+    <p>{{ error }}</p>
+    <ion-button expand="outline" (click)="loadHistory()">
+      Réessayer
+    </ion-button>
+  </div>
+
+  <!-- Empty State -->
+  <div class="empty-state" *ngIf="!loading && !error && filteredHistory.length === 0">
+    <div class="empty-icon">
+      <ion-icon name="document-outline"></ion-icon>
+    </div>
+    <h3>Aucun trajet trouvé</h3>
+    <p *ngIf="history.length === 0">
+      Votre historique de trajets apparaîtra ici une fois que vous aurez commencé vos missions
+    </p>
+    <p *ngIf="history.length > 0 && filteredHistory.length === 0">
+      Aucun trajet ne correspond à ce filtre
+    </p>
+    <ion-button *ngIf="history.length > 0" expand="outline" (click)="applyFilter()">
+      Voir tout l'historique
+    </ion-button>
+  </div>
+
+  <!-- History List -->
+  <div class="history-list" *ngIf="!loading && !error && filteredHistory.length > 0">
+    <ion-list>
+      <ion-item-sliding *ngFor="let trip of filteredHistory; let i = index">
+        <ion-item class="trip-item" button (click)="viewDetails(trip)" detail="false">
+          <div class="trip-item-start" slot="start">
+            <div class="status-icon" [class]="getStatusColor(trip.status)">
+              <ion-icon [name]="getStatusIcon(trip.status)"></ion-icon>
+            </div>
+          </div>
+          
+          <ion-label class="trip-label">
+            <div class="trip-header">
+              <h3 class="trip-reference">{{ trip.tripReference }}</h3>
+              <ion-badge [color]="getStatusColor(trip.status)" class="status-badge">
+                {{ getStatusText(trip.status) }}
+              </ion-badge>
+            </div>
+            
+            <p class="trip-destination">
+              <ion-icon name="location-outline" class="icon-small"></ion-icon>
+              {{ trip.destination }}
+            </p>
+            
+            <div class="trip-details">
+              <span class="trip-detail">
+                <ion-icon name="calendar-outline"></ion-icon>
+                {{ formatDate(trip.date) }}
+              </span>
+              <span class="trip-detail">
+                <ion-icon name="speedometer-outline"></ion-icon>
+                {{ formatDistance(trip.distance) }}
+              </span>
+              <span class="trip-detail" *ngIf="trip.deliveriesCount > 0">
+                <ion-icon name="package-outline"></ion-icon>
+                {{ trip.deliveriesCount }} livraison{{ trip.deliveriesCount > 1 ? 's' : '' }}
+              </span>
+            </div>
+            
+            <div class="trip-truck" *ngIf="trip.truckImmatriculation">
+              <ion-icon name="car-outline"></ion-icon>
+              {{ trip.truckImmatriculation }}
+            </div>
+          </ion-label>
+          
+          <ion-icon name="chevron-forward" slot="end" class="chevron"></ion-icon>
+        </ion-item>
+
+        <ion-item-options side="end">
+          <ion-item-option color="primary" (click)="viewDetails(trip)">
+            <ion-icon slot="icon-only" name="eye"></ion-icon>
+          </ion-item-option>
+        </ion-item-options>
+      </ion-item-sliding>
+    </ion-list>
+    
+    <!-- Bottom padding for better scroll -->
+    <div class="list-padding"></div>
+  </div>
+
+  <!-- Pull to refresh -->
+  <ion-refresher slot="fixed" (ionRefresh)="doRefresh($event)">
+    <ion-refresher-content
+      pullingIcon="arrow-down"
+      pullingText="Tirer pour rafraîchir"
+      refreshingSpinner="crescent">
+    </ion-refresher-content>
+  </ion-refresher>
 
 </ion-content>

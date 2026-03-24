@@ -108,15 +108,62 @@ public class TripAssignmentsController : ControllerBase
 
             _logger.LogInformation($"📨 Sending notification to User ID {userIdForNotification} and group driver-{request.DriverId}");
 
-            // Method 1: Send to User ID (SignalR uses JWT User ID)
-            await _gpsHub.Clients.User(userIdForNotification.ToString()).SendAsync("NewTripAssigned", notification);
-            _logger.LogInformation($"✅ Sent to User {userIdForNotification}");
+            // ✅ SAUVEGARDER LA NOTIFICATION EN BASE DE DONNÉES (pour persistance)
+            // IMPORTANT: Use DriverId as UserId so driver can retrieve notification when reconnecting
+            var notificationEntity = new Notification
+            {
+                Type = "NEW_TRIP_ASSIGNMENT",
+                Title = "Nouvelle Mission",
+                Message = $"Vous avez été assigné au trip {trip.TripReference}",
+                Timestamp = DateTime.UtcNow,
+                TripId = trip.Id,
+                TripReference = trip.TripReference,
+                DriverName = driver.Name,
+                TruckImmatriculation = trip.Truck?.Immatriculation,
+                AdditionalData = System.Text.Json.JsonSerializer.Serialize(new
+                {
+                    assignmentId = assignment.Id,
+                    destination = destination,
+                    estimatedDistance = trip.EstimatedDistance,
+                    estimatedDuration = trip.EstimatedDuration,
+                    expiresAt = assignment.ExpiresAt,
+                    deliveriesCount = trip.Deliveries.Count,
+                    customerName = trip.Deliveries.FirstOrDefault()?.Customer?.Name
+                }),
+                CreatedAt = DateTime.UtcNow
+            };
 
-            // Method 2: Send to driver group
-            await _gpsHub.Clients.Group($"driver-{request.DriverId}").SendAsync("NewTripAssigned", notification);
-            _logger.LogInformation($"✅ Sent to group driver-{request.DriverId}");
+            _context.Notifications.Add(notificationEntity);
+            await _context.SaveChangesAsync();
 
-            // Broadcast à tous les admins
+            // ✅ FIX PERMANENT: Use the actual User ID linked to the driver
+            // Now that we have driver.user_id properly set, use it for notifications
+            int actualUserId = driver.user_id ?? request.DriverId; // Fallback to DriverId if user_id not set
+            
+            // Créer la notification utilisateur liée
+            var userNotification = new UserNotification
+            {
+                NotificationId = notificationEntity.Id,
+                UserId = actualUserId, // Use the linked User ID
+                IsRead = false,
+                ReadAt = null
+            };
+
+            _context.UserNotifications.Add(userNotification);
+            await _context.SaveChangesAsync();
+
+            _logger.LogInformation($"✅ UserNotification created - UserId: {actualUserId}, DriverId: {request.DriverId}, NotificationId: {notificationEntity.Id}");
+            _logger.LogInformation($"✅ Notification SAVED to database - ID: {notificationEntity.Id}");
+
+            // ✅ Send notification ONLY to the specific assigned driver (NOT to all drivers in group)
+            // Method 1: Send to User ID (SignalR uses JWT User ID from token)
+            await _gpsHub.Clients.User(actualUserId.ToString()).SendAsync("NewTripAssigned", notification);
+            _logger.LogInformation($"✅ Sent to User {actualUserId} (SPECIFIC DRIVER ONLY)");
+
+            // ❌ DO NOT send to driver group (would send to ALL drivers)
+            // await _gpsHub.Clients.Group($"driver-{request.DriverId}").SendAsync("NewTripAssigned", notification);
+
+            // Broadcast to admins only (they need to know)
             await _gpsHub.Clients.Group("Admins").SendAsync("TripAssigned", new
             {
                 tripId = trip.Id,
@@ -207,15 +254,15 @@ public class TripAssignmentsController : ControllerBase
             {
                 a.Id,
                 a.TripId,
-                TripReference = a.Trip != null ? a.Trip.TripReference : null,
+                TripReference = a.Trip.TripReference,
                 Status = a.Status.ToString(),
                 a.AssignedAt,
                 a.RespondedAt,
                 a.ExpiresAt,
                 RejectionReason = a.RejectionReason,
-                TripStatus = a.Trip != null ? a.Trip.TripStatus.ToString() : null,
-                TruckImmatriculation = a.Trip != null && a.Trip.Truck != null ? a.Trip.Truck.Immatriculation : null,
-                DeliveriesCount = a.Trip != null ? a.Trip.Deliveries.Count : 0
+                TripStatus = a.Trip.TripStatus.ToString(),
+                TruckImmatriculation = a.Trip.Truck.Immatriculation,
+                DeliveriesCount = a.Trip.Deliveries.Count
             })
             .ToListAsync();
 

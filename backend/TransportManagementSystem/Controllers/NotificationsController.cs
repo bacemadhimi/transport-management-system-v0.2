@@ -38,8 +38,12 @@ public class NotificationsController : ControllerBase
         try
         {
             var userId = GetCurrentUserId();
+            _logger.LogInformation($"📢 GetNotifications called - UserId: {userId}, PageIndex: {filter.PageIndex}, PageSize: {filter.PageSize}");
+            
             var notifications = await _notificationService.GetUserNotifications(userId, filter);
             var unreadCount = await _notificationService.GetUnreadCount(userId);
+
+            _logger.LogInformation($"📦 Found {notifications.Count()} notifications for user {userId}, Unread: {unreadCount}");
 
             return Ok(new ApiResponse(true, "Notifications retrieved successfully", new
             {
