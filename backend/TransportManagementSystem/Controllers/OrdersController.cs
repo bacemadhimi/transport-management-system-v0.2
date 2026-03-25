@@ -147,7 +147,7 @@ public class OrdersController : ControllerBase
             Weight = o.Weight,
             WeightUnit = o.WeightUnit,
             Status = o.Status,
-            SourceSystem = o.SourceSystem == DataSource.QAD ? "QAD" : "TMS",
+            SourceSystem = o.SourceSystem,
             CreatedDate = o.CreatedDate,
             DeliveryDate = o.DeliveryDate
         }).ToList();
@@ -164,27 +164,29 @@ public class OrdersController : ControllerBase
     [HttpGet]
     public async Task<IActionResult> GetOrders()
     {
-        var orderDtos = await _orderRepository.Query()
-            .OrderByDescending(o => o.CreatedDate)
+        var query = _orderRepository.Query()
+            .AsNoTracking() // ✅ move early
             .Select(o => new OrderDto
             {
                 Id = o.Id,
                 CustomerId = o.CustomerId,
-                CustomerName = o.Customer.Name,
-                CustomerMatricule = o.Customer.Matricule,
+                CustomerName = o.Customer != null ? o.Customer.Name : null,
+                CustomerMatricule = o.Customer != null ? o.Customer.Matricule : null,
                 Reference = o.Reference,
                 Type = o.Type,
                 Weight = o.Weight,
                 WeightUnit = o.WeightUnit,
                 Status = o.Status,
-                SourceSystem = o.SourceSystem == DataSource.QAD ? "QAD" : "TMS",
+                SourceSystem = o.SourceSystem, 
                 CreatedDate = o.CreatedDate,
                 DeliveryDate = o.DeliveryDate
-            })
-            .AsNoTracking()
+            });
+
+        var data = await query
+            .OrderByDescending(o => o.CreatedDate)
             .ToListAsync();
 
-        return Ok(new ApiResponse(true, "Commandes récupérées avec succès", orderDtos));
+        return Ok(new ApiResponse(true, "Commandes récupérées avec succès", data));
     }
 
     [HttpGet("pending")]

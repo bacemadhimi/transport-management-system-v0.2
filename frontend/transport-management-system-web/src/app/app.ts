@@ -19,6 +19,7 @@ import { Subscription } from 'rxjs';
 import { Translation } from './services/Translation';
 import { environment } from '../environments/environment';
 import { IGeneralSettings } from './types/general-settings';
+import { LogoService } from './services/logo.service';
 
 @Component({
   selector: 'app-root',
@@ -71,7 +72,7 @@ export class App implements OnInit, OnDestroy {
 
   selectedNotificationTab: 'all' | 'unread' = 'all';
 
-
+  private logoService = inject(LogoService);
   showOnlineDot = true;
 
   private notificationsSubscription!: Subscription;
@@ -83,6 +84,9 @@ export class App implements OnInit, OnDestroy {
   ) {
     this.themes = this.themeService.getThemes();
     this.currentTheme = this.themeService.getCurrentTheme();
+    this.logoService.logo$.subscribe(logo => {
+      this.companyLogo = logo;
+    });
   }
 
 

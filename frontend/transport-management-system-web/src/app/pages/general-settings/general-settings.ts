@@ -19,6 +19,7 @@ import { MatDividerModule } from '@angular/material/divider';
 import { Auth } from '../../services/auth';
 import { CommonModule } from '@angular/common';
 import Swal from 'sweetalert2';
+import { LogoService } from '../../services/logo.service';
 
 @Component({
   selector: 'app-general-settings',
@@ -92,7 +93,7 @@ export class GeneralSettings implements OnInit {
   companyLogoPreview: string | null = null;
   companyFileError: string | null = null;
   hasCompanyLogo = false;
-
+  private logoService = inject(LogoService);
 
   private orderControlMap: { [key: string]: string } = {
     'ALLOW_EDIT_ORDER': 'ALLOW_EDIT_ORDER',
@@ -646,6 +647,7 @@ export class GeneralSettings implements OnInit {
                 this.isSavingLogo = false;
                 this.showWarning('Aucun logo à supprimer');
               }
+               this.logoService.refresh();
             },
             error: (error) => {
               this.isSavingLogo = false;
@@ -695,6 +697,7 @@ export class GeneralSettings implements OnInit {
             this.isSavingLogo = false;
             this.showSuccess('Logo enregistré avec succès');
             this.loadCompanyLogo();
+            this.logoService.refresh();
           },
           error: (error) => {
             this.isSavingLogo = false;
