@@ -22,12 +22,13 @@ public class WarehouseController : ControllerBase
     [HttpGet("PaginationAndSearch")]
     public async Task<IActionResult> GetWarehouses([FromQuery] WarehouseSearchOptions searchOptions)
     {
-        // Jointure entre tblPMMWarehouse et tblCPDataX
+        // Jointure entre tblPMMWarehouse et tblCPDataX (entrepôt) et son parent
         var query = from w in _context.PMMWarehouse
                     join c in _context.CPDataX on w.DataXLink equals c.Key
+                    join parent in _context.CPDataX on c.ParentLink equals parent.Key into parentJoin
+                    from parent in parentJoin.DefaultIfEmpty()
                     select new WarehousePlantItDTO
                     {
-                        // Données de tblPMMWarehouse
                         Key = w.Key,
                         DataXLink = w.DataXLink,
                         LastModified = w.LastModified,
@@ -35,14 +36,15 @@ public class WarehouseController : ControllerBase
                         PipeCount = w.PipeCount,
                         SupportMultipleDocking = w.SupportMultipleDocking,
                         ContainerParallelUsageMode = w.ContainerParallelUsageMode,
-
-                        // Données de tblCPDataX
                         WarehouseCode = c.Name,
                         WarehouseName = c.Description,
                         IsActivated = c.Activated,
                         UidKey = c.UidKey,
                         ParentLink = c.ParentLink,
-                        StructureLink = c.StructureLink
+                        StructureLink = c.StructureLink,
+                        ParentCode = parent != null ? parent.Name : null,
+                        ParentName = parent != null ? parent.Description : null,
+                        ParentIsActivated = parent != null ? parent.Activated : (bool?)null
                     };
 
         // Filtre par recherche
@@ -51,7 +53,9 @@ public class WarehouseController : ControllerBase
             var search = searchOptions.Search.ToLower();
             query = query.Where(w =>
                 w.WarehouseCode.ToLower().Contains(search) ||
-                w.WarehouseName.ToLower().Contains(search)
+                w.WarehouseName.ToLower().Contains(search) ||
+                (w.ParentCode != null && w.ParentCode.ToLower().Contains(search)) ||
+                (w.ParentName != null && w.ParentName.ToLower().Contains(search))
             );
         }
 
@@ -61,10 +65,17 @@ public class WarehouseController : ControllerBase
             query = query.Where(w => w.IsActivated == searchOptions.Status.Value);
         }
 
-        // Filtre par ProcessUnitClassLink
-        if (searchOptions.ProcessUnitClassLink.HasValue)
+        // NOUVEAU: Filtre par type d'entrepôt (RAW_MATERIAL = 70604, FINISHED_PRODUCT = 70603)
+        if (searchOptions.WarehouseType.HasValue)
         {
-            query = query.Where(w => w.ProcessUnitClassLink == searchOptions.ProcessUnitClassLink.Value);
+            // Filtrer par ParentLink qui correspond au type d'entrepôt
+            query = query.Where(w => w.ParentLink == searchOptions.WarehouseType.Value);
+        }
+
+        // Filtre par ParentLink
+        if (searchOptions.ParentLink.HasValue)
+        {
+            query = query.Where(w => w.ParentLink == searchOptions.ParentLink.Value);
         }
 
         var totalCount = await query.CountAsync();
@@ -78,6 +89,7 @@ public class WarehouseController : ControllerBase
                 "code" => ascending ? query.OrderBy(w => w.WarehouseCode) : query.OrderByDescending(w => w.WarehouseCode),
                 "name" => ascending ? query.OrderBy(w => w.WarehouseName) : query.OrderByDescending(w => w.WarehouseName),
                 "pipecount" => ascending ? query.OrderBy(w => w.PipeCount) : query.OrderByDescending(w => w.PipeCount),
+                "parentcode" => ascending ? query.OrderBy(w => w.ParentCode) : query.OrderByDescending(w => w.ParentCode),
                 "lastmodified" => ascending ? query.OrderBy(w => w.LastModified) : query.OrderByDescending(w => w.LastModified),
                 _ => query.OrderByDescending(w => w.Key)
             };
@@ -102,6 +114,19 @@ public class WarehouseController : ControllerBase
             TotalData = totalCount,
             Data = warehouses
         }));
+    }
+    [HttpGet("ParentOptions")]
+    public async Task<IActionResult> GetParentOptions()
+    {
+        var parentOptions = await (from w in _context.PMMWarehouse
+                                   join c in _context.CPDataX on w.DataXLink equals c.Key
+                                   where c.ParentLink > 0
+                                   select new { id = c.ParentLink, label = c.Name })
+                                   .Distinct()
+                                   .OrderBy(p => p.label)
+                                   .ToListAsync();
+
+        return Ok(new ApiResponse(true, "Options parent récupérées", parentOptions));
     }
 
     [HttpGet("{id}")]

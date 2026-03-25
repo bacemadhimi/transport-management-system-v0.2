@@ -56,7 +56,7 @@ namespace TransportManagementSystem.Data
 
         public DbSet<PMMWarehouse> PMMWarehouse { get; set; }
         public DbSet<CPDataX> CPDataX { get; set; }
-
+        public DbSet<SyncHistoryPlantItToTms> SyncHistoryPlantItToTms { get; set; }
         public DbSet<GeocodingCache> GeocodingCache { get; set; }
         public DbSet<PositionGPS> PositionsGPS { get; set; }
         public DbSet<ResultatOptimisation> ResultatOptimisations { get; set; }

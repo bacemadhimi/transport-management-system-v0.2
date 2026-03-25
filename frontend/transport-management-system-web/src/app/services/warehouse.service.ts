@@ -16,7 +16,12 @@ export class WarehouseService {
 
   constructor(private http: HttpClient) {}
 
-// Méthode pour récupérer les entrepôts Plant IT avec pagination et recherche
+  // warehouse.service.ts
+getParentOptions(): Observable<any> {
+  return this.http.get(`${this.baseUrl}/ParentOptions`);
+}
+
+// warehouse.service.ts
 getWarehousesPlantIt(searchOptions: any): Observable<any> {
   let params = new HttpParams();
   
@@ -26,8 +31,12 @@ getWarehousesPlantIt(searchOptions: any): Observable<any> {
   if (searchOptions.status !== undefined && searchOptions.status !== null) {
     params = params.set('status', searchOptions.status.toString());
   }
-  if (searchOptions.processUnitClassLink !== undefined && searchOptions.processUnitClassLink !== null) {
-    params = params.set('processUnitClassLink', searchOptions.processUnitClassLink.toString());
+  // NOUVEAU: Remplacer processUnitClassLink par warehouseType
+  if (searchOptions.warehouseType !== undefined && searchOptions.warehouseType !== null) {
+    params = params.set('warehouseType', searchOptions.warehouseType.toString());
+  }
+  if (searchOptions.parentLink !== undefined && searchOptions.parentLink !== null) {
+    params = params.set('parentLink', searchOptions.parentLink.toString());
   }
   if (searchOptions.pageIndex !== undefined) {
     params = params.set('pageIndex', searchOptions.pageIndex.toString());

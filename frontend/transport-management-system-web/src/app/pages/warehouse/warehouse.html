@@ -1,11 +1,11 @@
 <div class="warehouse-plantit-page">
   <div class="page-header">
     <h2>Gestion des Entrepôts Plant IT</h2>
-    <button mat-raised-button color="primary" >
-      <mat-icon>add</mat-icon>
-      Nouvel entrepôt
-    </button>
-  </div>
+    <div class="header-actions">
+
+      
+    
+
 
   <div class="filters">
     <mat-form-field appearance="outline" class="filter-field">
@@ -25,10 +25,20 @@
     </mat-form-field>
 
     <mat-form-field appearance="outline" class="filter-field">
-      <mat-label>Unité de traitement</mat-label>
-      <mat-select [formControl]="processUnitControl">
-        <mat-option [value]="null">Toutes</mat-option>
-        <mat-option *ngFor="let option of processUnitOptions" [value]="option.id">
+      <mat-label>Type d'entrepôt</mat-label>
+      <mat-select [formControl]="warehouseTypeControl">
+        <mat-option [value]="null">Tous</mat-option>
+        <mat-option *ngFor="let option of warehouseTypeOptions" [value]="option.id">
+          {{ option.label }}
+        </mat-option>
+      </mat-select>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="filter-field">
+      <mat-label>Entrepôt parent</mat-label>
+      <mat-select [formControl]="parentLinkControl">
+        <mat-option [value]="null">Tous</mat-option>
+        <mat-option *ngFor="let option of parentOptions" [value]="option.id">
           {{ option.label }}
         </mat-option>
       </mat-select>
@@ -53,6 +63,18 @@
       <ng-container matColumnDef="name">
         <th mat-header-cell *matHeaderCellDef mat-sort-header>Nom dépôt</th>
         <td mat-cell *matCellDef="let element">{{ element.warehouseName }}</td>
+      </ng-container>
+
+      <!-- Colonne parent -->
+      <ng-container matColumnDef="parent">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>Parent</th>
+        <td mat-cell *matCellDef="let element">
+          <div *ngIf="element.parentCode">
+            <strong>{{ element.parentCode }}</strong>
+            <div class="parent-name">{{ element.parentName }}</div>
+          </div>
+          <span *ngIf="!element.parentCode" class="no-parent">-</span>
+        </td>
       </ng-container>
 
       <!-- Nombre de pipes -->
