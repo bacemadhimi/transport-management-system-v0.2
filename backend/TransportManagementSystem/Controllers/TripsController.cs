@@ -1,14 +1,14 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
 using System.Security.Claims;
 using TransportManagementSystem.Data;
 using TransportManagementSystem.Entity;
+using TransportManagementSystem.Hubs;
 using TransportManagementSystem.Models;
 using TransportManagementSystem.Services;
-using TransportManagementSystem.Hubs;
-using Microsoft.AspNetCore.SignalR;
 using static TransportManagementSystem.Entity.Delivery;
 
 namespace TransportManagementSystem.Controllers;
@@ -22,132 +22,19 @@ public class TripsController : ControllerBase
     private readonly IRepository<Delivery> deliveryRepository;
     private readonly ApplicationDbContext context;
     private readonly INotificationService _notificationService;
-    private readonly NotificationHubService _notificationHubService;
     private readonly IHubContext<GPSHub> _gpsHub;
-    private readonly ILogger<TripsController> _logger;
-
     public TripsController(
         IRepository<Trip> tripRepository,
         IRepository<Delivery> deliveryRepository,
         ApplicationDbContext context,
-        INotificationService notificationService,
-        NotificationHubService notificationHubService,
-        IHubContext<GPSHub> gpsHub,
-        ILogger<TripsController> logger)
+        INotificationService notificationService, 
+        IHubContext<GPSHub> gpsHub)
     {
         this.tripRepository = tripRepository;
         this.deliveryRepository = deliveryRepository;
         this.context = context;
         this._notificationService = notificationService;
-        this._notificationHubService = notificationHubService;
         this._gpsHub = gpsHub;
-        this._logger = logger;
-    }
-
-    /// <summary>
-    /// Get all trips (simplified endpoint for mobile)
-    /// </summary>
-    [HttpGet("list")]
-    public async Task<IActionResult> GetTripsList([FromQuery] string? status = null)
-    {
-        try
-        {
-            var query = context.Trips
-                .Include(t => t.Driver)
-                .Include(t => t.Truck)
-                .Include(t => t.Deliveries)
-                .AsQueryable();
-
-            if (!string.IsNullOrEmpty(status))
-            {
-                if (Enum.TryParse<TripStatus>(status, out var parsedStatus))
-                {
-                    query = query.Where(t => t.TripStatus == parsedStatus);
-                }
-            }
-
-            var trips = await query
-                .OrderByDescending(t => t.CreatedAt)
-                .Select(t => new
-                {
-                    t.Id,
-                    t.TripReference,
-                    t.BookingId,
-                    Status = t.TripStatus.ToString(),
-                    DriverName = t.Driver != null ? t.Driver.Name : null,
-                    TruckImmatriculation = t.Truck != null ? t.Truck.Immatriculation : null,
-                    t.EstimatedDistance,
-                    t.EstimatedDuration,
-                    t.CreatedAt,
-                    DeliveriesCount = t.Deliveries.Count
-                })
-                .ToListAsync();
-
-            return Ok(trips);
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new { message = "Error loading trips", error = ex.Message });
-        }
-    }
-
-    /// <summary>
-    /// Get trips with pagination and filters
-    /// </summary>
-    [HttpGet]
-    public async Task<IActionResult> GetTrips(
-        [FromQuery] string? status = null,
-        [FromQuery] int page = 1,
-        [FromQuery] int pageSize = 10)
-    {
-        try
-        {
-            var query = context.Trips
-                .Include(t => t.Driver)
-                .Include(t => t.Truck)
-                .Include(t => t.Deliveries)
-                .AsQueryable();
-
-            if (!string.IsNullOrEmpty(status))
-            {
-                if (Enum.TryParse<TripStatus>(status, out var parsedStatus))
-                {
-                    query = query.Where(t => t.TripStatus == parsedStatus);
-                }
-            }
-
-            var totalItems = await query.CountAsync();
-            var trips = await query
-                .Skip((page - 1) * pageSize)
-                .Take(pageSize)
-                .Select(t => new
-                {
-                    t.Id,
-                    t.TripReference,
-                    t.BookingId,
-                    Status = t.TripStatus.ToString(),
-                    DriverName = t.Driver != null ? t.Driver.Name : null,
-                    TruckImmatriculation = t.Truck != null ? t.Truck.Immatriculation : null,
-                    t.EstimatedDistance,
-                    t.EstimatedDuration,
-                    t.CreatedAt,
-                    DeliveriesCount = t.Deliveries.Count
-                })
-                .ToListAsync();
-
-            return Ok(new
-            {
-                data = trips,
-                total = totalItems,
-                page = page,
-                pageSize = pageSize,
-                totalPages = Math.Ceiling(totalItems / (double)pageSize)
-            });
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new { message = "Error loading trips", error = ex.Message });
-        }
     }
 
     [HttpGet("PaginationAndSearch")]
@@ -171,11 +58,9 @@ public class TripsController : ControllerBase
                 (t.Truck != null && t.Truck.Immatriculation.Contains(search)) ||
                 (t.Driver != null && t.Driver.Name.Contains(search)) ||
                 (t.Convoyeur != null && t.Convoyeur.Name.Contains(search)) ||
-                (t.Truck != null && t.Truck.Immatriculation != null ? t.Truck.Immatriculation.Contains(search) : false) ||
-                (t.Driver != null && t.Driver.Name != null ? t.Driver.Name.Contains(search) : false) ||
                 t.Deliveries.Any(d =>
                     d.Customer != null &&
-                    d.Customer.Name != null ? d.Customer.Name.Contains(search) : false
+                    d.Customer.Name.Contains(search)
                 )
             );
         }
@@ -197,7 +82,7 @@ public class TripsController : ControllerBase
             query = query.Where(t =>
                 t.Deliveries.Any(d =>
                     d.Customer != null &&
-                    d.Customer.Name != null ? d.Customer.Name.Contains(customerName) : false
+                    d.Customer.Name.Contains(customerName)
                 )
             );
         }
@@ -228,6 +113,7 @@ public class TripsController : ControllerBase
                 t.EstimatedStartDate.Value <= searchOptions.EndDate.Value);
         }
 
+
         bool ascending = string.Equals(
             searchOptions.SortDirection,
             "asc",
@@ -252,12 +138,12 @@ public class TripsController : ControllerBase
                 : query.OrderByDescending(t => t.EstimatedEndDate),
 
             "truck" => ascending
-                ? query.OrderBy(t => t.Truck != null ? t.Truck.Immatriculation : string.Empty)
-                : query.OrderByDescending(t => t.Truck != null ? t.Truck.Immatriculation : string.Empty),
+                ? query.OrderBy(t => t.Truck.Immatriculation)
+                : query.OrderByDescending(t => t.Truck.Immatriculation),
 
             "driver" => ascending
-                ? query.OrderBy(t => t.Driver != null ? t.Driver.Name : string.Empty)
-                : query.OrderByDescending(t => t.Driver != null ? t.Driver.Name : string.Empty),
+                ? query.OrderBy(t => t.Driver.Name)
+                : query.OrderByDescending(t => t.Driver.Name),
 
             "convoyeur" => ascending
                 ? query.OrderBy(t => t.Convoyeur.Name)
@@ -270,7 +156,9 @@ public class TripsController : ControllerBase
             _ => query.OrderByDescending(t => t.CreatedAt)
         };
 
+
         var totalCount = await query.CountAsync();
+
 
         if (searchOptions.PageIndex.HasValue && searchOptions.PageSize.HasValue)
         {
@@ -278,6 +166,7 @@ public class TripsController : ControllerBase
                 .Skip(searchOptions.PageIndex.Value * searchOptions.PageSize.Value)
                 .Take(searchOptions.PageSize.Value);
         }
+
 
         var tripDtos = await query
             .Select(t => new TripListDto
@@ -318,7 +207,7 @@ public class TripsController : ControllerBase
                         .Where(u => u.Id == t.UpdatedById.Value)
                         .Select(u => u.Name)
                         .FirstOrDefault()
-                    : string.Empty
+                    : null
             })
             .ToListAsync();
 
@@ -330,6 +219,7 @@ public class TripsController : ControllerBase
 
         return Ok(new ApiResponse(true, "Voyages récupérés avec succès", result));
     }
+
 
     [HttpGet("{id}")]
     public async Task<IActionResult> GetTripById(int id)
@@ -347,6 +237,7 @@ public class TripsController : ControllerBase
 
         if (trip == null)
             return NotFound(new ApiResponse(false, $"Trajet {id} non trouvé"));
+
 
         var tripDetails = new TripDetailsDto
         {
@@ -368,7 +259,7 @@ public class TripsController : ControllerBase
             Truck = trip.Truck != null ? new TruckDto
             {
                 Id = trip.Truck.Id,
-                Immatriculation = trip.Truck.Immatriculation ?? string.Empty,
+                Immatriculation = trip.Truck.Immatriculation,
                 MarqueTruckId = trip.Truck.MarqueTruckId,
                 Color = trip.Truck.Color,
                 Status = trip.Truck.Status,
@@ -379,8 +270,9 @@ public class TripsController : ControllerBase
                 TypeTruck = trip.Truck.TypeTruck != null ? new TypeTruckDto
                 {
                     Id = trip.Truck.TypeTruck.Id,
-                    Type = trip.Truck.TypeTruck.Type ?? string.Empty,
+                    Type = trip.Truck.TypeTruck.Type,
                     Capacity = trip.Truck.TypeTruck.Capacity,
+
                 } : null,
             } : null,
 
@@ -411,12 +303,12 @@ public class TripsController : ControllerBase
                     Id = d.Id,
                     Sequence = d.Sequence,
                     CustomerId = d.CustomerId,
-                    CustomerName = d.Customer?.Name ?? string.Empty,
-                    CustomerMatricule = d.Customer?.Matricule ?? string.Empty,
+                    CustomerName = d.Customer?.Name,
+                    CustomerMatricule = d.Customer?.Matricule,
                     OrderId = d.OrderId,
-                    OrderReference = d.Order?.Reference ?? string.Empty,
+                    OrderReference = d.Order?.Reference,
                     OrderWeight = d.Order?.Weight ?? 0,
-                    DeliveryAddress = d.DeliveryAddress ?? string.Empty,
+                    DeliveryAddress = d.DeliveryAddress,
                     Geolocation = d.Geolocation,
                     Latitude = d.Location != null ? d.Location.Latitude : (double?)null,
                     Longitude = d.Location != null ? d.Location.Longitude : (double?)null,
@@ -424,7 +316,7 @@ public class TripsController : ControllerBase
                     ActualArrivalTime = d.ActualArrivalTime,
                     ActualDepartureTime = d.ActualDepartureTime,
                     Status = d.Status,
-                    Notes = d.Notes ?? string.Empty
+                    Notes = d.Notes
                 }).ToList()
         };
 
@@ -437,26 +329,31 @@ public class TripsController : ControllerBase
         if (!ModelState.IsValid)
             return BadRequest(new ApiResponse(false, "Données invalides", ModelState));
 
+
         if (model.EstimatedEndDate <= model.EstimatedStartDate)
         {
             return BadRequest(new ApiResponse(false,
                 "La date de fin estimée doit être après la date de début"));
         }
 
+
         var truck = await context.Trucks.FindAsync(model.TruckId);
         if (truck == null)
             return BadRequest(new ApiResponse(false, "Camion non trouvé"));
 
+        // Use Set<Driver>() to get driver from Employees table
         var driver = await context.Set<Driver>().FindAsync(model.DriverId);
         if (driver == null)
             return BadRequest(new ApiResponse(false, "Chauffeur non trouvé"));
 
+        // Check convoyeur if provided
         if (model.ConvoyeurId.HasValue)
         {
             var convoyeur = await context.Set<Convoyeur>().FindAsync(model.ConvoyeurId.Value);
             if (convoyeur == null)
                 return BadRequest(new ApiResponse(false, "Convoyeur non trouvé"));
         }
+
 
         var lastBookingId = await tripRepository.Query()
             .OrderByDescending(t => t.Id)
@@ -469,7 +366,6 @@ public class TripsController : ControllerBase
             if (int.TryParse(lastBookingId[3..], out var lastNumber))
                 nextNumber = lastNumber + 1;
         }
-
         var year = model.EstimatedStartDate.Year;
 
         var lastTripReference = await tripRepository.Query()
@@ -482,6 +378,7 @@ public class TripsController : ControllerBase
 
         if (!string.IsNullOrEmpty(lastTripReference))
         {
+
             var parts = lastTripReference.Split('-');
             if (parts.Length == 3 && int.TryParse(parts[2], out var lastNumber))
             {
@@ -512,10 +409,12 @@ public class TripsController : ControllerBase
         await tripRepository.AddAsync(trip);
         await tripRepository.SaveChangesAsync();
 
+
         truck.Status = "En mission";
         driver.Status = "En mission";
         context.Trucks.Update(truck);
         context.Set<Driver>().Update(driver);
+
 
         await UpdateDriverAvailabilityForTrip(model.DriverId, model.EstimatedStartDate, model.EstimatedEndDate, trip.Id, tripReference);
         await UpdateTruckAvailabilityForTrip(model.TruckId, model.EstimatedStartDate, model.EstimatedEndDate, tripReference);
@@ -539,62 +438,15 @@ public class TripsController : ControllerBase
         }
 
         await context.SaveChangesAsync();
-
         var tripWithDeliveries = await context.Trips
-            .Include(t => t.Deliveries)
-                .ThenInclude(d => d.Order)
-            .FirstAsync(t => t.Id == trip.Id);
-
+        .Include(t => t.Deliveries)
+            .ThenInclude(d => d.Order)
+        .FirstAsync(t => t.Id == trip.Id);
         await UpdateOrderStatusesBasedOnTripStatus(tripWithDeliveries, TripStatus.Planned);
         await context.SaveChangesAsync();
 
-        // Send notification to driver
-        try
-        {
-            _logger.LogInformation($"📢 START sending notification for trip {trip.TripReference} to driver {model.DriverId}");
-
-            var firstDelivery = tripWithDeliveries.Deliveries.FirstOrDefault();
-            var lastDelivery = tripWithDeliveries.Deliveries.LastOrDefault();
-            var destination = lastDelivery?.DeliveryAddress ?? "Non définie";
-            var customerName = firstDelivery?.Customer?.Name ?? "Inconnu";
-
-            var driverUser = await context.Users
-                .FirstOrDefaultAsync(u => u.Email == driver.Email);
-
-            int userIdForNotification = driverUser?.Id ?? model.DriverId;
-            _logger.LogInformation($"🔍 Driver {model.DriverId} ({driver.Email}) -> User ID: {userIdForNotification}");
-
-            var notification = new
-            {
-                type = "NEW_TRIP_ASSIGNMENT",
-                title = "Nouvelle Mission",
-                message = $"Trip {trip.TripReference} assigné - Destination: {destination}",
-                tripId = trip.Id,
-                tripReference = trip.TripReference,
-                assignmentId = (int?)null,
-                driverId = model.DriverId,
-                driverName = driver.Name,
-                truckImmatriculation = truck.Immatriculation,
-                destination = destination,
-                customerName = customerName,
-                deliveriesCount = tripWithDeliveries.Deliveries.Count,
-                estimatedDistance = trip.EstimatedDistance,
-                estimatedDuration = trip.EstimatedDuration,
-                estimatedStartDate = trip.EstimatedStartDate,
-                estimatedEndDate = trip.EstimatedEndDate,
-                timestamp = DateTime.UtcNow
-            };
-
-            _logger.LogInformation($"📨 Sending notification via NotificationHubService to User ID {userIdForNotification}");
-            await _notificationHubService.SendTripAssignment(userIdForNotification, notification);
-            _logger.LogInformation($"✅ NOTIFICATION SENT ONLY to driver {model.DriverId} (User ID: {userIdForNotification}) for trip {trip.TripReference}");
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, $"❌ ERREUR NOTIFICATION: {ex.Message}");
-        }
-
-        var createdTrip = await GetTripById(trip.Id);
+        var createdTrip = await GetTripByIdInternal(trip.Id);
+        //await _notificationService.NotifyNewTripCreated(trip.Id, trip.TripReference ?? trip.BookingId, userId);
 
         return CreatedAtAction(nameof(GetTripById),
             new { id = trip.Id },
@@ -688,6 +540,16 @@ public class TripsController : ControllerBase
             }
         }
 
+        // Handle convoyeur changes
+        if (oldConvoyeurId != model.ConvoyeurId)
+        {
+            if (oldConvoyeurId.HasValue && oldStartDate.HasValue && oldEndDate.HasValue)
+            {
+                // Restore convoyeur availability if needed
+                // You might want to implement a separate availability system for convoyeurs
+            }
+        }
+
         // Handle truck changes
         if (oldTruckId != model.TruckId)
         {
@@ -735,7 +597,6 @@ public class TripsController : ControllerBase
                 CustomerId = d.CustomerId,
                 OrderId = d.OrderId,
                 DeliveryAddress = d.DeliveryAddress,
-                Geolocation = d.Geolocation,
                 Sequence = d.Sequence,
                 PlannedTime = d.PlannedTime,
                 Status = DeliveryStatus.Pending,
@@ -806,8 +667,9 @@ public class TripsController : ControllerBase
             TripReference = trip.TripReference ?? trip.BookingId,
             OldStatus = TripStatusTransitions.GetStatusLabel(oldStatus),
             NewStatus = TripStatusTransitions.GetStatusLabel(model.Status),
-            DriverName = trip.Driver?.Name ?? string.Empty,
-            TruckImmatriculation = trip.Truck?.Immatriculation ?? string.Empty,
+            DriverName = trip.Driver?.Name,
+            ConvoyeurName = trip.Convoyeur?.Name,
+            TruckImmatriculation = trip.Truck?.Immatriculation,
             Message = model.Notes,
             ChangedAt = DateTime.UtcNow,
             ChangedBy = userName ?? userId.ToString() ?? "System"
@@ -826,172 +688,15 @@ public class TripsController : ControllerBase
     }
 
     private static readonly Dictionary<TripStatus, OrderStatus> OrderStatusMap =
-        new()
-        {
-            [TripStatus.Planned] = OrderStatus.Planned,
-            [TripStatus.Accepted] = OrderStatus.Accepted,
-            [TripStatus.LoadingInProgress] = OrderStatus.LoadingInProgress,
-            [TripStatus.DeliveryInProgress] = OrderStatus.DeliveryInProgress,
-            [TripStatus.Receipt] = OrderStatus.Receipt,
-            [TripStatus.Cancelled] = OrderStatus.Cancelled
-        };
-
-    private async Task UpdateDriverAvailabilityForTrip(int driverId, DateTime startDate, DateTime endDate, int tripId, string tripReference)
+    new()
     {
-        var currentDate = startDate.Date;
-        var endDateOnly = endDate.Date;
-
-        while (currentDate <= endDateOnly)
-        {
-            var isWeekend = currentDate.DayOfWeek == DayOfWeek.Sunday ||
-                            currentDate.DayOfWeek == DayOfWeek.Saturday;
-
-            var isCompanyDayOff = await context.DayOffs
-                .AnyAsync(d => d.Date == currentDate);
-
-            if (!isWeekend && !isCompanyDayOff)
-            {
-                var existingAvailability = await context.DriverAvailabilities
-                    .FirstOrDefaultAsync(da => da.DriverId == driverId && da.Date == currentDate);
-
-                if (existingAvailability != null)
-                {
-                    existingAvailability.IsAvailable = false;
-                    existingAvailability.IsDayOff = false;
-                    existingAvailability.Reason = $"Affecté au voyage: {tripReference}";
-                    existingAvailability.UpdatedAt = DateTime.UtcNow;
-                }
-                else
-                {
-                    var newAvailability = new DriverAvailability
-                    {
-                        DriverId = driverId,
-                        Date = currentDate,
-                        IsAvailable = false,
-                        IsDayOff = false,
-                        Reason = $"Affecté au voyage: {tripReference}",
-                        CreatedAt = DateTime.UtcNow,
-                        UpdatedAt = DateTime.UtcNow,
-                    };
-
-                    await context.DriverAvailabilities.AddAsync(newAvailability);
-                }
-            }
-
-            currentDate = currentDate.AddDays(1);
-        }
-
-        await context.SaveChangesAsync();
-    }
-
-    private async Task RestoreDriverAvailabilityForTrip(int driverId, DateTime startDate, DateTime endDate, string tripReference)
-    {
-        var start = startDate.Date;
-        var end = endDate.Date;
-
-        var rowsToDelete = await context.DriverAvailabilities
-            .Where(da =>
-                da.DriverId == driverId &&
-                da.Date >= start &&
-                da.Date <= end &&
-                da.Reason != null &&
-                da.Reason.Contains($"Affecté au voyage: {tripReference}")
-            )
-            .ToListAsync();
-
-        if (rowsToDelete.Any())
-        {
-            context.DriverAvailabilities.RemoveRange(rowsToDelete);
-            await context.SaveChangesAsync();
-        }
-    }
-
-    private async Task UpdateTruckAvailabilityForTrip(int truckId, DateTime startDate, DateTime endDate, string tripReference)
-    {
-        var currentDate = startDate.Date;
-        var endDateOnly = endDate.Date;
-
-        while (currentDate <= endDateOnly)
-        {
-            var isWeekend = currentDate.DayOfWeek == DayOfWeek.Sunday ||
-                            currentDate.DayOfWeek == DayOfWeek.Saturday;
-
-            var isCompanyDayOff = await context.DayOffs
-                .AnyAsync(d => d.Date == currentDate);
-
-            if (!isWeekend && !isCompanyDayOff)
-            {
-                var existingAvailability = await context.TruckAvailabilities
-                    .FirstOrDefaultAsync(ta => ta.TruckId == truckId && ta.Date == currentDate);
-
-                if (existingAvailability != null)
-                {
-                    existingAvailability.IsAvailable = false;
-                    existingAvailability.Reason = $"Affecté au voyage: {tripReference}";
-                    existingAvailability.UpdatedAt = DateTime.UtcNow;
-                }
-                else
-                {
-                    var newAvailability = new TruckAvailability
-                    {
-                        TruckId = truckId,
-                        Date = currentDate,
-                        IsAvailable = false,
-                        Reason = $"Affecté au voyage: {tripReference}",
-                        CreatedAt = DateTime.UtcNow,
-                        UpdatedAt = DateTime.UtcNow,
-                    };
-
-                    await context.TruckAvailabilities.AddAsync(newAvailability);
-                }
-            }
-
-            currentDate = currentDate.AddDays(1);
-        }
-
-        await context.SaveChangesAsync();
-    }
-
-    private async Task RestoreTruckAvailabilityForTrip(int truckId, DateTime startDate, DateTime endDate, string tripReference)
-    {
-        var start = startDate.Date;
-        var end = endDate.Date;
-
-        var rowsToDelete = await context.TruckAvailabilities
-            .Where(ta =>
-                ta.TruckId == truckId &&
-                ta.Date >= start &&
-                ta.Date <= end &&
-                ta.Reason != null &&
-                ta.Reason.Contains($"Affecté au voyage: {tripReference}")
-            )
-            .ToListAsync();
-
-        if (rowsToDelete.Any())
-        {
-            context.TruckAvailabilities.RemoveRange(rowsToDelete);
-            await context.SaveChangesAsync();
-        }
-    }
-
-    private async Task UpdateOrderStatusesBasedOnTripStatus(Trip trip, TripStatus newStatus)
-    {
-        if (trip.Deliveries.Any())
-        {
-            var orderIds = trip.Deliveries.Select(d => d.OrderId).ToList();
-            var orders = await context.Orders.Where(o => orderIds.Contains(o.Id)).ToListAsync();
-
-            foreach (var order in orders)
-            {
-                if (OrderStatusMap.TryGetValue(newStatus, out var orderStatus))
-                {
-                    order.Status = orderStatus;
-                }
-            }
-
-            await context.SaveChangesAsync();
-        }
-    }
+        [TripStatus.Planned] = OrderStatus.Planned,
+        [TripStatus.Accepted] = OrderStatus.Accepted,
+        [TripStatus.LoadingInProgress] = OrderStatus.LoadingInProgress,
+        [TripStatus.DeliveryInProgress] = OrderStatus.DeliveryInProgress,
+        [TripStatus.Receipt] = OrderStatus.Receipt,
+        [TripStatus.Cancelled] = OrderStatus.Cancelled
+    };
 
     [HttpPut("{id}/cancel")]
     public async Task<IActionResult> CancelTrip(int id, [FromBody] CancelTripDto model)
@@ -1010,8 +715,10 @@ public class TripsController : ControllerBase
         if (trip.TripStatus == TripStatus.Receipt || trip.TripStatus == TripStatus.Cancelled)
             return BadRequest(new ApiResponse(false, "Ce voyage ne peut pas être annulé"));
 
-        var driverName = trip.Driver?.Name ?? string.Empty;
-        var truckImmatriculation = trip.Truck?.Immatriculation ?? string.Empty;
+        // Store driver and truck info before cancellation
+        var driverName = trip.Driver?.Name;
+        var convoyeurName = trip.Convoyeur?.Name;
+        var truckImmatriculation = trip.Truck?.Immatriculation;
         var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
 
         if (trip.DriverId != 0 && trip.EstimatedStartDate.HasValue && trip.EstimatedEndDate.HasValue)
@@ -1049,17 +756,18 @@ public class TripsController : ControllerBase
         trip.ActualEndDate ??= DateTime.UtcNow;
 
         tripRepository.Update(trip);
+
         await context.SaveChangesAsync();
 
         // Send SignalR notification for cancellation
         await _notificationService.NotifyTripCancelled(
-            trip.Id,
-            trip.TripReference ?? trip.BookingId,
-            model.Message,
-            driverName,
-            truckImmatriculation,
-            userId
-        );
+          trip.Id,
+          trip.TripReference ?? trip.BookingId,
+          model.Message,
+          driverName,
+          truckImmatriculation,
+          userId
+         );
 
         return Ok(new ApiResponse(true, "Voyage annulé avec succès", new
         {
@@ -1070,11 +778,54 @@ public class TripsController : ControllerBase
         }));
     }
 
+    private Task UpdateOrderStatusesBasedOnTripStatus(
+        Trip trip,
+        TripStatus newTripStatus)
+    {
+        if (!OrderStatusMap.TryGetValue(newTripStatus, out var orderStatus))
+            return Task.CompletedTask;
+
+        foreach (var delivery in trip.Deliveries)
+        {
+            delivery.Status = newTripStatus switch
+            {
+                TripStatus.Planned => DeliveryStatus.Pending,
+                TripStatus.Accepted => DeliveryStatus.Pending,
+                TripStatus.LoadingInProgress => DeliveryStatus.Pending,
+                TripStatus.DeliveryInProgress => DeliveryStatus.EnRoute,
+                TripStatus.Receipt => DeliveryStatus.Delivered,
+                TripStatus.Cancelled => DeliveryStatus.Cancelled,
+                _ => delivery.Status
+            };
+
+            if (delivery.Order != null)
+            {
+                delivery.Order.Status = orderStatus;
+                delivery.Order.UpdatedDate = DateTime.UtcNow;
+
+                if (orderStatus == OrderStatus.Receipt)
+                {
+                    delivery.Order.DeliveryDate = DateTime.UtcNow;
+                }
+            }
+        }
+
+        return Task.CompletedTask;
+    }
+
+    public class UpdateTripStatusDto
+    {
+        [Required]
+        public TripStatus Status { get; set; }
+
+        public string? Notes { get; set; }
+    }
+
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteTrip(int id)
     {
         var trip = await tripRepository.Query()
-            .Include(t => t.Truck)
+           .Include(t => t.Truck)
                 .ThenInclude(t => t.TypeTruck)
             .Include(t => t.Driver)
             .Include(t => t.Convoyeur)
@@ -1193,12 +944,630 @@ public class TripsController : ControllerBase
         return Ok(new ApiResponse(true, "Livraisons récupérées", deliveries));
     }
 
+
+    private async Task<TripDetailsDto> GetTripByIdInternal(int id)
+    {
+        var trip = await tripRepository.Query()
+            .Include(t => t.Truck)
+                .ThenInclude(t => t.TypeTruck)
+            .Include(t => t.Driver)
+            .Include(t => t.Convoyeur)
+            .Include(t => t.Deliveries)
+                .ThenInclude(d => d.Customer)
+            .Include(t => t.Deliveries)
+                .ThenInclude(d => d.Order)
+            .FirstOrDefaultAsync(t => t.Id == id);
+
+        if (trip == null) return null;
+
+        return new TripDetailsDto
+        {
+            Id = trip.Id,
+            TruckId = trip.TruckId,
+            DriverId = trip.DriverId,
+            ConvoyeurId = trip.ConvoyeurId,
+            BookingId = trip.BookingId,
+            TripReference = trip.TripReference,
+            TripStatus = trip.TripStatus,
+            EstimatedDistance = trip.EstimatedDistance,
+            EstimatedDuration = trip.EstimatedDuration,
+            EstimatedStartDate = trip.EstimatedStartDate ?? DateTime.MinValue,
+            EstimatedEndDate = trip.EstimatedEndDate ?? DateTime.MinValue,
+            ActualStartDate = trip.ActualStartDate,
+            ActualEndDate = trip.ActualEndDate,
+            TrajectId = trip.TrajectId,
+            CreatedAt = trip.CreatedAt,
+            CreatedBy = trip.CreatedById,
+            UpdatedAt = trip.UpdatedAt,
+            UpdatedBy = trip.UpdatedById,
+
+            Truck = trip.Truck != null ? new TruckDto
+            {
+                Id = trip.Truck.Id,
+                Immatriculation = trip.Truck.Immatriculation,
+                MarqueTruckId = trip.Truck.MarqueTruckId,
+                Color = trip.Truck.Color,
+                Status = trip.Truck.Status,
+                TechnicalVisitDate = trip.Truck.TechnicalVisitDate,
+                DateOfFirstRegistration = trip.Truck.DateOfFirstRegistration,
+                EmptyWeight = trip.Truck.EmptyWeight,
+                TypeTruckId = trip.Truck.TypeTruckId,
+                TypeTruck = trip.Truck.TypeTruck != null ? new TypeTruckDto
+                {
+                    Id = trip.Truck.TypeTruck.Id,
+                    Type = trip.Truck.TypeTruck.Type,
+                    Capacity = trip.Truck.TypeTruck.Capacity,
+
+                } : null,
+            } : null,
+
+            Driver = trip.Driver != null ? new DriverDto
+            {
+                Id = trip.Driver.Id,
+                Name = trip.Driver.Name,
+                DrivingLicense = trip.Driver.DrivingLicense,
+                PhoneNumber = trip.Driver.PhoneNumber,
+                Status = trip.Driver.Status,
+                PhoneCountry = trip.Driver.PhoneCountry
+            } : null,
+
+            Convoyeur = trip.Convoyeur != null ? new ConvoyeurDto
+            {
+                Id = trip.Convoyeur.Id,
+                Name = trip.Convoyeur.Name,
+                Matricule = trip.Convoyeur.Matricule,
+                Phone = trip.Convoyeur.PhoneNumber,
+                Status = trip.Convoyeur.Status,
+                PhoneCountry = trip.Convoyeur.PhoneCountry
+            } : null,
+
+            Deliveries = trip.Deliveries
+                .OrderBy(d => d.Sequence)
+                .Select(d => new DeliveryDetailsDto
+                {
+                    Id = d.Id,
+                    Sequence = d.Sequence,
+                    CustomerId = d.CustomerId,
+                    CustomerName = d.Customer?.Name,
+                    CustomerMatricule = d.Customer?.Matricule,
+                    OrderId = d.OrderId,
+                    OrderReference = d.Order?.Reference,
+                    OrderWeight = d.Order?.Weight ?? 0,
+                    DeliveryAddress = d.DeliveryAddress,
+                    PlannedTime = d.PlannedTime,
+                    ActualArrivalTime = d.ActualArrivalTime,
+                    ActualDepartureTime = d.ActualDepartureTime,
+                    Status = d.Status,
+                    Notes = d.Notes
+                }).ToList()
+        };
+    }
+
+    private async Task UpdateDriverAvailabilityForTrip(int driverId, DateTime startDate, DateTime endDate, int tripId, string tripReference)
+    {
+        var currentDate = startDate.Date;
+        var endDateOnly = endDate.Date;
+
+        while (currentDate <= endDateOnly)
+        {
+            var isWeekend = currentDate.DayOfWeek == DayOfWeek.Sunday ||
+                            currentDate.DayOfWeek == DayOfWeek.Saturday;
+
+            var isCompanyDayOff = await context.DayOffs
+                .AnyAsync(d => d.Date == currentDate);
+
+            if (!isWeekend && !isCompanyDayOff)
+            {
+                var existingAvailability = await context.DriverAvailabilities
+                    .FirstOrDefaultAsync(da => da.DriverId == driverId && da.Date == currentDate);
+
+                if (existingAvailability != null)
+                {
+                    existingAvailability.IsAvailable = false;
+                    existingAvailability.IsDayOff = false;
+                    existingAvailability.Reason = $"Affecté au voyage: {tripReference}";
+                    existingAvailability.UpdatedAt = DateTime.UtcNow;
+                }
+                else
+                {
+                    var newAvailability = new DriverAvailability
+                    {
+                        DriverId = driverId,
+                        Date = currentDate,
+                        IsAvailable = false,
+                        IsDayOff = false,
+                        Reason = $"Affecté au voyage: {tripReference}",
+                        CreatedAt = DateTime.UtcNow,
+                        UpdatedAt = DateTime.UtcNow,
+                    };
+
+                    await context.DriverAvailabilities.AddAsync(newAvailability);
+                }
+            }
+
+            currentDate = currentDate.AddDays(1);
+        }
+    }
+
+    private async Task RestoreDriverAvailabilityForTrip(int driverId, DateTime startDate, DateTime endDate, string tripReference)
+    {
+        var start = startDate.Date;
+        var end = endDate.Date;
+
+        var rowsToDelete = await context.DriverAvailabilities
+            .Where(da =>
+                da.DriverId == driverId &&
+                da.Date >= start &&
+                da.Date <= end &&
+                da.Reason != null &&
+                da.Reason.Contains($"Affecté au voyage: {tripReference}")
+            )
+            .ToListAsync();
+
+        if (rowsToDelete.Any())
+        {
+            context.DriverAvailabilities.RemoveRange(rowsToDelete);
+            await context.SaveChangesAsync();
+        }
+    }
+
+    [HttpGet("list")]
+    public async Task<ActionResult<IEnumerable<Trip>>> GetTrips()
+    {
+        return await context.Trips
+            .Include(t => t.Driver)
+            .Include(t => t.Convoyeur)
+            .ToListAsync();
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> GetTrips(
+       [FromQuery] string? status = null,
+       [FromQuery] int page = 1,
+       [FromQuery] int pageSize = 10)
+    {
+        try
+        {
+            var query = context.Trips
+                .Include(t => t.Driver)
+                .Include(t => t.Truck)
+                .Include(t => t.Deliveries)
+                .AsQueryable();
+
+            if (!string.IsNullOrEmpty(status))
+            {
+                if (Enum.TryParse<TripStatus>(status, out var parsedStatus))
+                {
+                    query = query.Where(t => t.TripStatus == parsedStatus);
+                }
+            }
+
+            var totalItems = await query.CountAsync();
+            var trips = await query
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .Select(t => new
+                {
+                    t.Id,
+                    t.TripReference,
+                    t.BookingId,
+                    Status = t.TripStatus.ToString(),
+                    DriverName = t.Driver != null ? t.Driver.Name : null,
+                    TruckImmatriculation = t.Truck != null ? t.Truck.Immatriculation : null,
+                    t.EstimatedDistance,
+                    t.EstimatedDuration,
+                    t.CreatedAt,
+                    DeliveriesCount = t.Deliveries.Count
+                })
+                .ToListAsync();
+
+            return Ok(new
+            {
+                data = trips,
+                total = totalItems,
+                page = page,
+                pageSize = pageSize,
+                totalPages = Math.Ceiling(totalItems / (double)pageSize)
+            });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = "Error loading trips", error = ex.Message });
+        }
+    }
+    [HttpGet("statistics/date/{date}")]
+    public async Task<IActionResult> GetDateStatistics(string date)
+    {
+        if (!DateTime.TryParse(date, out var targetDate))
+        {
+            return BadRequest(new ApiResponse(false, "Format de date invalide. Utilisez yyyy-MM-dd"));
+        }
+
+        try
+        {
+            var tripsOnDate = await context.Trips
+                .Include(t => t.Deliveries)
+                    .ThenInclude(d => d.Order)
+                .Where(t => t.TripStatus == TripStatus.Planned &&
+                           t.EstimatedStartDate.HasValue &&
+                           t.EstimatedStartDate.Value.Date == targetDate.Date)
+                .ToListAsync();
+
+            var assignedOrderIds = tripsOnDate
+                .SelectMany(t => t.Deliveries)
+                .Where(d => d.Order != null)
+                .Select(d => d.Order.Id)
+                .Distinct()
+                .ToList();
+
+            var clientsWithOrders = await context.Customers
+                .Include(c => c.Orders)
+                .Where(c => c.Orders.Any(o =>
+                    o.Status == OrderStatus.ReadyToLoad &&
+                    !assignedOrderIds.Contains(o.Id)))
+                .Select(c => new
+                {
+                    c.Id,
+                    c.Name,
+                    OrdersCount = c.Orders.Count(o =>
+                        o.Status == OrderStatus.ReadyToLoad &&
+                        !assignedOrderIds.Contains(o.Id))
+                })
+                .ToListAsync();
+
+            var totalClients = clientsWithOrders.Count;
+            var totalOrders = clientsWithOrders.Sum(c => c.OrdersCount);
+
+            var plannedTrips = await context.Trips
+                .Include(t => t.Deliveries)
+                .Where(t => t.TripStatus == TripStatus.Planned &&
+                           t.EstimatedStartDate.HasValue &&
+                           t.EstimatedStartDate.Value.Date == targetDate.Date)
+                .Select(t => new
+                {
+                    t.Id,
+                    t.TripReference,
+                    DeliveriesCount = t.Deliveries.Count,
+                    OrdersCount = t.Deliveries.Count,
+                    TotalWeight = t.Deliveries.Sum(d => d.Order.Weight)
+                })
+                .ToListAsync();
+
+            var plannedTripsCount = plannedTrips.Count;
+            var totalOrdersInTrips = plannedTrips.Sum(t => t.OrdersCount);
+            var totalWeightInTrips = plannedTrips.Sum(t => t.TotalWeight);
+
+            // Use Set<Driver>() to get drivers from Employees table
+            var disponibleDrivers = await context.Set<Driver>()
+                .Where(d => d.Status == "Disponible" && d.IsEnable)
+                .Where(d => !context.DriverAvailabilities
+                    .Any(da => da.DriverId == d.Id &&
+                               da.Date == targetDate.Date &&
+                               (!da.IsAvailable || da.IsDayOff)))
+                .CountAsync();
+
+            var assignedDrivers = await context.Trips
+                .Include(t => t.Driver)
+                .Where(t => t.TripStatus == TripStatus.Planned &&
+                           t.EstimatedStartDate.HasValue &&
+                           t.EstimatedStartDate.Value.Date == targetDate.Date &&
+                           t.DriverId != 0)
+                .Select(t => t.DriverId)
+                .Distinct()
+                .CountAsync();
+
+            var allTrucks = await context.Trucks.ToListAsync();
+
+            var disponibleTrucks = await context.Trucks
+                .Where(t => t.Status == "Disponible" && t.IsEnable)
+                .Where(t => !context.TruckAvailabilities
+                    .Any(ta => ta.TruckId == t.Id &&
+                               ta.Date == targetDate.Date &&
+                               !ta.IsAvailable))
+                .CountAsync();
+
+            var ordersByStatus = await context.Orders
+                .GroupBy(o => o.Status)
+                .Select(g => new
+                {
+                    Status = g.Key,
+                    Count = g.Count(),
+                    TotalWeight = g.Sum(o => o.Weight)
+                })
+                .ToListAsync();
+
+            var allClientsWithReadyOrders = await context.Customers
+                .Include(c => c.Orders)
+                .Where(c => c.Orders.Any(o => o.Status == OrderStatus.ReadyToLoad))
+                .Select(c => new
+                {
+                    c.Id,
+                    c.Name,
+                    TotalOrders = c.Orders.Count(o => o.Status == OrderStatus.ReadyToLoad)
+                })
+                .ToListAsync();
+
+            var allReadyOrdersCount = allClientsWithReadyOrders.Sum(c => c.TotalOrders);
+
+            var result = new
+            {
+                Date = targetDate.ToString("yyyy-MM-dd"),
+                FormattedDate = targetDate.ToString("dd/MM/yyyy"),
+                DayOfWeek = targetDate.ToString("dddd"),
+                IsWeekend = targetDate.DayOfWeek == DayOfWeek.Saturday || targetDate.DayOfWeek == DayOfWeek.Sunday,
+
+                Summary = new
+                {
+                    TotalClients = totalClients,
+                    TotalOrdersReady = totalOrders,
+                    PlannedTrips = plannedTripsCount,
+                    OrdersInTrips = totalOrdersInTrips,
+                    WeightInTrips = totalWeightInTrips,
+                    DisponibleDrivers = disponibleDrivers,
+                    AssignedDrivers = assignedDrivers,
+                    DisponibleTrucks = disponibleTrucks,
+                    AllReadyOrders = allReadyOrdersCount
+                },
+
+                PlannedTripsDetails = plannedTrips.Select(t => new
+                {
+                    t.Id,
+                    t.TripReference,
+                    t.DeliveriesCount,
+                    t.OrdersCount,
+                    t.TotalWeight
+                }),
+
+                Clients = clientsWithOrders.Select(c => new
+                {
+                    c.Id,
+                    c.Name,
+                    c.OrdersCount
+                }),
+
+                OrderStatusBreakdown = ordersByStatus.Select(s => new
+                {
+                    Status = s.Status.ToString(),
+                    s.Count,
+                    s.TotalWeight
+                }),
+
+                AllClientsWithReadyOrders = allClientsWithReadyOrders.Select(c => new
+                {
+                    c.Id,
+                    c.Name,
+                    c.TotalOrders
+                }),
+
+                ResourceStatus = new
+                {
+                    DriversDisponible = disponibleDrivers,
+                    DriversNeeded = plannedTripsCount,
+                    DriversShortage = Math.Max(0, plannedTripsCount - disponibleDrivers),
+                    TrucksDisponible = disponibleTrucks,
+                    TrucksNeeded = plannedTripsCount,
+                    TrucksShortage = Math.Max(0, plannedTripsCount - disponibleTrucks)
+                },
+
+                Recommendations = GetRecommendations(
+                    totalOrders,
+                    plannedTripsCount,
+                    disponibleDrivers,
+                    assignedDrivers,
+                    disponibleTrucks,
+                    allReadyOrdersCount,
+                    targetDate)
+            };
+
+            return Ok(new ApiResponse(true, $"Statistiques pour le {targetDate:dd/MM/yyyy}", result));
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Erreur statistiques date: {ex.Message}\n{ex.StackTrace}");
+
+            var fallbackResult = new
+            {
+                Date = targetDate.ToString("yyyy-MM-dd"),
+                FormattedDate = targetDate.ToString("dd/MM/yyyy"),
+                Summary = new
+                {
+                    TotalClients = 0,
+                    TotalOrdersReady = 0,
+                    PlannedTrips = 0,
+                    OrdersInTrips = 0,
+                    WeightInTrips = 0m,
+                    DisponibleDrivers = 0,
+                    AssignedDrivers = 0,
+                    DisponibleTrucks = 0,
+                    AllReadyOrders = 0
+                },
+                Clients = new List<object>(),
+                PlannedTripsDetails = new List<object>(),
+                OrderStatusBreakdown = new List<object>(),
+                AllClientsWithReadyOrders = new List<object>(),
+                Recommendations = new List<string>()
+            };
+
+            return Ok(new ApiResponse(true, $"Statistiques pour le {targetDate:dd/MM/yyyy}", fallbackResult));
+        }
+    }
+
+    private List<string> GetRecommendations(
+        int ordersReady,
+        int plannedTrips,
+        int disponibleDrivers,
+        int assignedDrivers,
+        int disponibleTrucks,
+        int allReadyOrders,
+        DateTime date)
+    {
+        var recommendations = new List<string>();
+
+        if (date.DayOfWeek == DayOfWeek.Saturday || date.DayOfWeek == DayOfWeek.Sunday)
+        {
+            recommendations.Add("⚠️ Jour de weekend - Vérifiez les disponibilités des chauffeurs");
+        }
+
+        if (ordersReady > 0 && plannedTrips == 0)
+        {
+            recommendations.Add($"📦 {ordersReady} commande(s) prête(s) - Créez un nouveau voyage");
+        }
+        else if (ordersReady > 0 && ordersReady > (plannedTrips * 5))
+        {
+            recommendations.Add($"📊 Charge élevée: {ordersReady} commandes pour {plannedTrips} voyages - Pensez à ajouter un voyage");
+        }
+
+        if (disponibleDrivers == 0 && plannedTrips > 0)
+        {
+            recommendations.Add("🚫 Aucun chauffeur disponible - Vérifiez les disponibilités");
+        }
+        else if (disponibleDrivers < plannedTrips)
+        {
+            var shortage = plannedTrips - disponibleDrivers;
+            recommendations.Add($"👥 Manque de {shortage} chauffeur(s) - {plannedTrips} voyages vs {disponibleDrivers} disponibles");
+        }
+        else if (disponibleDrivers > (plannedTrips + 2))
+        {
+            recommendations.Add($"✅ Excédent de {disponibleDrivers - plannedTrips} chauffeur(s) - Optimisation possible");
+        }
+
+        if (disponibleTrucks == 0 && plannedTrips > 0)
+        {
+            recommendations.Add("🚚 Aucun camion disponible - Vérifiez le parc");
+        }
+        else if (disponibleTrucks < plannedTrips)
+        {
+            var shortage = plannedTrips - disponibleTrucks;
+            recommendations.Add($"🚛 Manque de {shortage} camion(s) - {plannedTrips} voyages vs {disponibleTrucks} disponibles");
+        }
+
+        if (allReadyOrders > 50)
+        {
+            recommendations.Add("📈 Charge globale élevée: " + allReadyOrders + " commandes en attente au total");
+        }
+
+        if (ordersReady == 0 && plannedTrips == 0)
+        {
+            recommendations.Add("✅ Aucune activité planifiée pour cette date");
+        }
+
+        if (recommendations.Count == 0)
+        {
+            recommendations.Add("✅ Situation optimale - Toutes les ressources sont bien allouées");
+        }
+
+        return recommendations;
+    }
+
+    [HttpGet("statistics/date/{date}/trip/{tripId}")]
+    public async Task<IActionResult> GetTripStatisticsForDate(int tripId, string date)
+    {
+        if (!DateTime.TryParse(date, out var targetDate))
+        {
+            return BadRequest(new ApiResponse(false, "Format de date invalide"));
+        }
+
+        var trip = await context.Trips
+            .Include(t => t.Driver)
+            .Include(t => t.Convoyeur)
+            .Include(t => t.Truck)
+                .ThenInclude(t => t.TypeTruck)
+            .Include(t => t.Deliveries)
+                .ThenInclude(d => d.Customer)
+            .Include(t => t.Deliveries)
+                .ThenInclude(d => d.Order)
+            .FirstOrDefaultAsync(t => t.Id == tripId &&
+                                     t.EstimatedStartDate.HasValue &&
+                                     t.EstimatedStartDate.Value.Date == targetDate.Date);
+
+        if (trip == null)
+        {
+            return NotFound(new ApiResponse(false, $"Voyage non trouvé pour cette date"));
+        }
+
+        var tripStats = new
+        {
+            Trip = new
+            {
+                trip.Id,
+                trip.TripReference,
+                trip.TripStatus,
+                Driver = trip.Driver?.Name,
+                Convoyeur = trip.Convoyeur?.Name,
+                Truck = trip.Truck?.Immatriculation,
+                EstimatedDate = trip.EstimatedStartDate?.ToString("dd/MM/yyyy HH:mm"),
+                DeliveriesCount = trip.Deliveries.Count
+            },
+            Deliveries = trip.Deliveries
+                .OrderBy(d => d.Sequence)
+                .Select(d => new
+                {
+                    d.Sequence,
+                    Customer = d.Customer?.Name,
+                    Order = d.Order?.Reference,
+                    Weight = d.Order?.Weight,
+                    Address = d.DeliveryAddress,
+                    PlannedTime = d.PlannedTime?.ToString("HH:mm")
+                }),
+            Summary = new
+            {
+                TotalWeight = trip.Deliveries.Sum(d => d.Order.Weight),
+                TotalOrders = trip.Deliveries.Count,
+                CustomersCount = trip.Deliveries.Select(d => d.CustomerId).Distinct().Count()
+            }
+        };
+
+        return Ok(new ApiResponse(true, $"Détails du voyage {tripId}", tripStats));
+    }
+
+    private async Task RestoreTruckAvailabilityForTrip(int truckId, DateTime startDate, DateTime endDate, string tripReference)
+    {
+        var start = startDate.Date;
+        var end = endDate.Date;
+
+        var rowsToDelete = await context.TruckAvailabilities
+            .Where(ta =>
+                ta.TruckId == truckId &&
+                ta.Date >= start &&
+                ta.Date <= end &&
+                ta.Reason != null &&
+                ta.Reason.Contains($"Affecté au voyage: {tripReference}")
+            )
+            .ToListAsync();
+
+        if (rowsToDelete.Any())
+        {
+            context.TruckAvailabilities.RemoveRange(rowsToDelete);
+            await context.SaveChangesAsync();
+        }
+    }
+
+    private async Task UpdateTruckAvailabilityForTrip(int truckId, DateTime startDate, DateTime endDate, string tripReference)
+    {
+        var dates = Enumerable.Range(0, (endDate.Date - startDate.Date).Days + 1)
+            .Select(d => startDate.Date.AddDays(d));
+
+        foreach (var date in dates)
+        {
+            var ta = new TruckAvailability
+            {
+                TruckId = truckId,
+                Date = date,
+                IsAvailable = false,
+                Reason = $"Affecté au voyage: {tripReference}"
+            };
+            await context.TruckAvailabilities.AddAsync(ta);
+        }
+
+        await context.SaveChangesAsync();
+    }
+
     [HttpGet("list_filtered")]
-    public async Task<ActionResult<IEnumerable<TripMapDto>>> GetTripsByDateRange(
-        [FromQuery] DateTime? startDate = null,
-        [FromQuery] DateTime? endDate = null,
-        [FromQuery] string? status = null,
-        [FromQuery] int? zoneId = null)
+    public async Task<ActionResult<IEnumerable<TripDto>>> GetTripsByDateRange(
+    [FromQuery] DateTime? startDate = null,
+    [FromQuery] DateTime? endDate = null,
+    [FromQuery] string? status = null,
+    [FromQuery] int? zoneId = null)
     {
         var query = context.Trips
             .AsNoTracking()
@@ -1244,18 +1613,22 @@ public class TripsController : ControllerBase
                 ActualStartDate = t.ActualStartDate,
                 ActualEndDate = t.ActualEndDate,
 
+                // Driver
                 DriverId = t.Driver.Id,
                 DriverName = t.Driver.Name,
                 DriverPhone = t.Driver.PhoneNumber,
                 DriverEmail = t.Driver.Email,
 
+                // Convoyeur
                 ConvoyeurId = t.Convoyeur != null ? t.Convoyeur.Id : null,
                 ConvoyeurName = t.Convoyeur != null ? t.Convoyeur.Name : null,
 
+                // Truck
                 TruckId = t.Truck.Id,
                 TruckImmatriculation = t.Truck.Immatriculation,
                 MarqueTruckId = t.Truck.MarqueTruckId,
 
+                // Deliveries
                 Deliveries = t.Deliveries.Select(d => new DeliveryMapDto
                 {
                     Id = d.Id,
@@ -1266,10 +1639,12 @@ public class TripsController : ControllerBase
                     ActualArrivalTime = d.ActualArrivalTime,
                     Notes = d.Notes,
 
+                    // Customer
                     CustomerId = d.Customer.Id,
                     CustomerName = d.Customer.Name,
                     CustomerPhone = d.Customer.Phone,
 
+                    // Order
                     OrderId = d.Order.Id,
                     OrderReference = d.Order.Reference,
                     OrderWeight = d.Order.Weight,
@@ -1281,6 +1656,7 @@ public class TripsController : ControllerBase
         return Ok(trips);
     }
 
+
     [HttpGet("today-count")]
     public async Task<ActionResult<TripCountDto>> GetTodayTripCount()
     {
@@ -1288,6 +1664,7 @@ public class TripsController : ControllerBase
         {
             var today = DateTime.UtcNow.Date;
             var tomorrow = today.AddDays(1);
+
 
             var tripSettings = await context.GeneralSettings
                 .Where(s => s.ParameterType == "TRIP" &&
@@ -1301,6 +1678,7 @@ public class TripsController : ControllerBase
                 var value = tripSettings.ParameterCode.Split('=')[1];
                 int.TryParse(value, out maxTripsPerDay);
             }
+
 
             var tripsToday = await context.Trips
                 .Where(t => t.CreatedAt >= today &&
@@ -1321,14 +1699,6 @@ public class TripsController : ControllerBase
         {
             return StatusCode(500, new { error = ex.Message });
         }
-    }
-
-    public class UpdateTripStatusDto
-    {
-        [Required]
-        public TripStatus Status { get; set; }
-
-        public string? Notes { get; set; }
     }
 }
 

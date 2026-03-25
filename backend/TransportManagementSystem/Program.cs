@@ -121,7 +121,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
                 if (!string.IsNullOrEmpty(accessToken) &&
                     (path.StartsWithSegments("/triphub") ||
                      path.StartsWithSegments("/gpshub") ||
-                     path.StartsWithSegments("/notificationhub")))
+                     path.StartsWithSegments("/notificationhub")|| path.StartsWithSegments("/chathub")))
                 {
                     context.Token = accessToken;
                 }
