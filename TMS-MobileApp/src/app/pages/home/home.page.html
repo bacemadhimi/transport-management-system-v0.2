@@ -181,54 +181,62 @@
             </div>
           </div>
 
-          <div class="status-update-section" *ngIf="trip.tripStatus !== 'Receipt' && trip.tripStatus !== 'Cancelled'">
-            <ion-button 
-              expand="block" 
-              color="primary" 
-              *ngIf="trip.tripStatus === 'Planned'" 
-              [disabled]="trip.updating"
-              (click)="$event.stopPropagation(); updateTripStatus(trip, 'Accepted')">
-              <ion-spinner *ngIf="trip.updating" slot="start" name="crescent"></ion-spinner>
-              Accepter
-            </ion-button>
-            <ion-button 
-              expand="block" 
-              color="primary" 
-              *ngIf="trip.tripStatus === 'Accepted'" 
-              [disabled]="trip.updating"
-              (click)="$event.stopPropagation(); updateTripStatus(trip, 'LoadingInProgress')">
-              <ion-spinner *ngIf="trip.updating" slot="start" name="crescent"></ion-spinner>
-              Chargement
-            </ion-button>
-            <ion-button 
-              expand="block" 
-              color="primary" 
-              *ngIf="trip.tripStatus === 'LoadingInProgress'" 
-              [disabled]="trip.updating"
-              (click)="$event.stopPropagation(); updateTripStatus(trip, 'DeliveryInProgress')">
-              <ion-spinner *ngIf="trip.updating" slot="start" name="crescent"></ion-spinner>
-              Livraison
-            </ion-button>
-            <ion-button 
-              expand="block" 
-              color="success" 
-              *ngIf="trip.tripStatus === 'DeliveryInProgress'" 
-              [disabled]="trip.updating"
-              (click)="$event.stopPropagation(); updateTripStatus(trip, 'Receipt')">
-              <ion-spinner *ngIf="trip.updating" slot="start" name="crescent"></ion-spinner>
-              Réception
-            </ion-button>
+<div class="status-update-section" *ngIf="trip.tripStatus !== 'Receipt' && trip.tripStatus !== 'Cancelled'">
+  <!-- Accepter - CHANGED -->
+  <ion-button 
+    expand="block" 
+    class="btn-orange"
+    *ngIf="trip.tripStatus === 'Planned'" 
+    [disabled]="trip.updating"
+    (click)="$event.stopPropagation(); updateTripStatus(trip, 'Accepted')">
+    <ion-spinner *ngIf="trip.updating" slot="start" name="crescent"></ion-spinner>
+    Accepter
+  </ion-button>
+  
+  <!-- Chargement - CHANGED -->
+  <ion-button 
+    expand="block" 
+    class="btn-orange"
+    *ngIf="trip.tripStatus === 'Accepted'" 
+    [disabled]="trip.updating"
+    (click)="$event.stopPropagation(); updateTripStatus(trip, 'LoadingInProgress')">
+    <ion-spinner *ngIf="trip.updating" slot="start" name="crescent"></ion-spinner>
+    Chargement
+  </ion-button>
+  
+  <!-- Livraison - CHANGED -->
+  <ion-button 
+    expand="block" 
+    class="btn-orange"
+    *ngIf="trip.tripStatus === 'LoadingInProgress'" 
+    [disabled]="trip.updating"
+    (click)="$event.stopPropagation(); updateTripStatus(trip, 'DeliveryInProgress')">
+    <ion-spinner *ngIf="trip.updating" slot="start" name="crescent"></ion-spinner>
+    Livraison
+  </ion-button>
+  
+  <!-- Réception - keep green -->
+  <ion-button 
+    expand="block" 
+    color="success" 
+    *ngIf="trip.tripStatus === 'DeliveryInProgress'" 
+    [disabled]="trip.updating"
+    (click)="$event.stopPropagation(); updateTripStatus(trip, 'Receipt')">
+    <ion-spinner *ngIf="trip.updating" slot="start" name="crescent"></ion-spinner>
+    Réception
+  </ion-button>
 
-            <ion-button 
-              expand="block" 
-              color="danger" 
-              fill="outline"
-              *ngIf="canCancelTrip(trip.tripStatus)"
-              (click)="$event.stopPropagation(); showCancelConfirmation(trip)">
-              <ion-icon name="close-circle-outline" slot="start"></ion-icon>
-              Annuler
-            </ion-button>
-          </div>
+  <!-- Annuler - keep danger -->
+  <ion-button 
+    expand="block" 
+    color="danger" 
+    fill="outline"
+    *ngIf="canCancelTrip(trip.tripStatus)"
+    (click)="$event.stopPropagation(); showCancelConfirmation(trip)">
+    <ion-icon name="close-circle-outline" slot="start"></ion-icon>
+    Annuler
+  </ion-button>
+</div>
         </div>
       </div>
 

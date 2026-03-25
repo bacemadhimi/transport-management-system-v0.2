@@ -415,7 +415,8 @@ export class GPSTrackingPage implements OnInit, OnDestroy {
   private startGPSTracking() {
     const user = this.authService.currentUser();
     if (!user) return;
-
+console.log(user);
+console.log(navigator.geolocation);
     // Connect to SignalR
     this.gpsService.connect((user as any).id);
 

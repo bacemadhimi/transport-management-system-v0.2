@@ -678,3 +678,141 @@
     }
   }
 }
+/* Custom Orange Button */
+.btn-orange {
+  --background: linear-gradient(135deg, #ff8c00, #ffcc00);
+  --background-hover: linear-gradient(135deg, #ff7c00, #ffbc00);
+  --color: #000000;
+  --border-radius: 12px;
+  --padding-top: 14px;
+  --padding-bottom: 14px;
+  font-weight: 700;
+  font-size: 14px;
+  text-transform: none;
+  margin: 0;
+  box-shadow: 0 4px 12px rgba(255, 140, 0, 0.3);
+  transition: all 0.3s ease;
+}
+
+.btn-orange:active {
+  transform: scale(0.98);
+}
+
+/* Status badge colors */
+.trip-status {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Statut Planned */
+.trip-status.status-planned {
+  background: rgba(255, 140, 0, 0.2);
+  color: #ff8c00;
+  border: 1px solid rgba(255, 140, 0, 0.5);
+}
+
+/* Statut Accepted - CHANGED to orange */
+.trip-status.status-accepted {
+  background: rgba(255, 140, 0, 0.2);
+  color: #ff8c00;
+  border: 1px solid rgba(255, 140, 0, 0.5);
+}
+
+/* Statut LoadingInProgress - CHANGED to orange */
+.trip-status.status-loadinginprogress {
+  background: rgba(255, 140, 0, 0.2);
+  color: #ff8c00;
+  border: 1px solid rgba(255, 140, 0, 0.5);
+}
+
+/* Statut DeliveryInProgress - CHANGED to orange */
+.trip-status.status-deliveryinprogress {
+  background: rgba(255, 140, 0, 0.2);
+  color: #ff8c00;
+  border: 1px solid rgba(255, 140, 0, 0.5);
+}
+
+/* Statut Receipt - green */
+.trip-status.status-receipt {
+  background: rgba(76, 175, 80, 0.2);
+  color: #4caf50;
+  border: 1px solid rgba(76, 175, 80, 0.5);
+}
+
+/* Statut Cancelled - red */
+.trip-status.status-cancelled {
+  background: rgba(244, 67, 54, 0.2);
+  color: #f44336;
+  border: 1px solid rgba(244, 67, 54, 0.5);
+}
+
+/* View all button */
+.view-all-btn {
+  --color: #ff8c00;
+  font-size: 14px;
+  font-weight: 500;
+  text-transform: none;
+
+  ion-icon {
+    color: #ff8c00;
+  }
+}
+
+/* Spinner color */
+.loading-card ion-spinner {
+  --color: #ff8c00;
+}
+
+/* Trip arrow */
+.trip-arrow {
+  color: #ff8c00;
+}
+
+/* Info icon backgrounds */
+.info-icon {
+  &.calendar, &.time, &.distance, &.truck {
+    background: linear-gradient(135deg, #ff8c00, #ffcc00);
+  }
+}
+
+/* Driver avatar */
+.driver-avatar {
+  background: linear-gradient(135deg, #ff8c00, #ffcc00);
+}
+
+/* Driver label */
+.driver-label {
+  color: #ff8c00;
+}
+
+/* Section header */
+.section-header h2 {
+  color: #ff8c00;
+}
+
+/* Stat card active trips */
+.stat-card.active-trips {
+  .stat-icon {
+    background: linear-gradient(135deg, #ff8c00, #ffcc00);
+  }
+  
+  .stat-info h4 {
+    color: #ff8c00;
+  }
+}
+
+/* Stat card total distance */
+.stat-card.total-distance {
+  .stat-icon {
+    background: linear-gradient(135deg, #ff8c00, #ffcc00);
+  }
+  
+  .stat-info h4 {
+    color: #ff8c00;
+  }
+}
