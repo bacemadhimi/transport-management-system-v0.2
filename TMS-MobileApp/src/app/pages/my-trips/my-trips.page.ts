@@ -4,6 +4,7 @@ import { IonicModule } from '@ionic/angular';
 import { Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { HttpClient } from '@angular/common/http';
+import { environment } from 'src/environments/environment.prod';
 
 interface MyTrip {
   id: number;
@@ -37,7 +38,7 @@ export class MyTripsPage implements OnInit {
   driverId: number | null = null;
   error: string | null = null;
 
-  private readonly API_URL = 'http://localhost:5191/api/Trips';
+  private readonly API_URL = `${environment.apiUrl}/api/Trips`;
 
   constructor(
     private authService: AuthService,

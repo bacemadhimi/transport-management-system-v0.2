@@ -5,6 +5,7 @@ import { GPSTrackingService, GPSPosition } from '../../services/gps-tracking.ser
 import { AuthService } from '../../services/auth.service';
 import { ActivatedRoute, Router } from '@angular/router';
 import * as L from 'leaflet';
+import { environment } from 'src/environments/environment';
 
 @Component({
   selector: 'app-gps-tracking',
@@ -91,7 +92,7 @@ export class GPSTrackingPage implements OnInit, OnDestroy {
 
       console.log('📡 Fetching trip details from API...');
       
-      const response = await fetch(`http://localhost:5191/api/Trips/${this.tripId}`, {
+      const response = await fetch(`${environment.apiUrl}/api/Trips/${this.tripId}`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -416,7 +417,7 @@ export class GPSTrackingPage implements OnInit, OnDestroy {
     if (!user) return;
 
     // Connect to SignalR
-    this.gpsService.connect((user as any).driverId);
+    this.gpsService.connect((user as any).id);
 
     // Obtenir la position actuelle
     if (navigator.geolocation) {
@@ -435,7 +436,7 @@ export class GPSTrackingPage implements OnInit, OnDestroy {
 
           // Démarrer le tracking continu (toutes les 5 secondes)
           this.gpsService.startTracking(
-            (user as any).driverId,
+            (user as any).id,
             undefined,
             this.tripId
           );

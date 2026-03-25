@@ -36,11 +36,12 @@ export class GpsService {
 
   private async initStorage() {
     try {
-      this.storage = await Storage.create({
-        name: 'gps_offline_db'
-      });
+      // ✅ Correction - créer l'instance d'abord, puis appeler create()
+      const storage = new Storage();
+      this.storage = await storage.create();
+      console.log('✅ Storage initialized');
     } catch (error) {
-      console.error('Error initializing storage:', error);
+      console.error('❌ Error initializing storage:', error);
     }
   }
 
@@ -180,9 +181,9 @@ export class GpsService {
       positions.forEach(p => p.isSynchronized = true);
       await this.storage.set('offline_positions', positions);
 
-      console.log(`Synced ${unsyncedPositions.length} positions`);
+      console.log(`✅ Synced ${unsyncedPositions.length} positions`);
     } catch (error) {
-      console.error('Error syncing offline positions:', error);
+      console.error('❌ Error syncing offline positions:', error);
     }
   }
 

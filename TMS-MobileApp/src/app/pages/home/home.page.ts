@@ -9,7 +9,7 @@ import { Router } from '@angular/router';
 import { TripService } from '../../services/trip.service';
 import { ITrip, TripStatus } from '../../types/trip';
 import { Observable, Subscription, of } from 'rxjs';
-import { map, catchError } from 'rxjs/operators';
+import { map, catchError, take } from 'rxjs/operators';
 import { NotificationService } from '../../services/notification.service';
 import { SignalRService, TripNotification } from '../../services/signalr.service';
 import { SignalRChatService } from 'src/app/services/signalr-chat.service';
@@ -635,4 +635,112 @@ export class HomePage implements OnInit, OnDestroy {
     }
     return '';
   }
+  // Ajoutez ces méthodes dans votre classe HomePage
+
+/**
+ * Naviguer vers la page Mes Trajets
+ */
+navigateToMyTrips() {
+  console.log('Navigating to My Trips');
+  if (!this.isOnline) {
+    this.showToast('Mode hors ligne - Données limitées', 2000, 'warning');
+  }
+  this.router.navigate(['/my-trips'], {
+    queryParams: { offline: !this.isOnline }
+  });
+}
+
+/**
+ * Naviguer vers l'historique des trajets
+ */
+navigateToTripHistory() {
+  console.log('Navigating to Trip History');
+  if (!this.isOnline) {
+    this.showToast('Mode hors ligne - Historique limité', 2000, 'warning');
+  }
+  this.router.navigate(['/trip-history'], {
+    queryParams: { offline: !this.isOnline }
+  });
+}
+
+navigateToGPSTracking() {
+  console.log('🚀 Navigating to GPS Tracking');
+  
+  if (!this.isOnline) {
+    this.showToast('Mode hors ligne - GPS limité', 2000, 'warning');
+  }
+  
+  // Vérifier que trips$ existe
+  if (!this.trips$) {
+    console.error('❌ trips$ is null');
+    this.showToast('Erreur: Données non disponibles', 2000, 'danger');
+    return;
+  }
+  
+  // Prendre la première valeur et garder l'abonnement jusqu'à la navigation
+  this.trips$.pipe(take(1)).subscribe(trips => {
+    console.log('📋 Trips disponibles:', trips?.length || 0);
+    
+    if (!trips || trips.length === 0) {
+      console.log('❌ Aucun trajet trouvé');
+      this.showToast('Aucun trajet trouvé pour le GPS', 2000, 'warning');
+      return;
+    }
+    
+    // Chercher un trajet en cours
+    const activeTrip = trips.find(t => 
+      t.tripStatus === 'Accepted' || 
+      t.tripStatus === 'LoadingInProgress' || 
+      t.tripStatus === 'DeliveryInProgress'
+    );
+    
+    const tripToUse = activeTrip || trips[0];
+    
+    console.log('✅ Trajet sélectionné:', {
+      id: tripToUse.id,
+      reference: tripToUse.tripReference,
+      status: tripToUse.tripStatus
+    });
+    
+    const destination = this.getTripDestination(tripToUse);
+    console.log('📍 Destination:', destination);
+    
+    // Navigation avec vérification
+    this.router.navigate(['/gps-tracking'], {
+      queryParams: {
+        tripId: tripToUse.id,
+        tripReference: tripToUse.tripReference,
+        destination: destination
+      }
+    }).then(success => {
+      if (success) {
+        console.log('✅ Navigation réussie vers GPS');
+      } else {
+        console.log('❌ Navigation échouée');
+        this.showToast('Erreur de navigation', 2000, 'danger');
+      }
+    }).catch(error => {
+      console.error('❌ Erreur navigation:', error);
+      this.showToast('Erreur: ' + error.message, 2000, 'danger');
+    });
+  });
+}
+/**
+ * Récupérer la destination d'un trajet
+ */
+private getTripDestination(trip: ITrip): string {
+  if (trip.deliveries && trip.deliveries.length > 0) {
+    const lastDelivery = trip.deliveries[trip.deliveries.length - 1];
+    return lastDelivery.deliveryAddress || '';
+  }
+  return '';
+}
+
+/**
+ * Naviguer vers tous les trajets
+ */
+navigateToAllTrips() {
+  console.log('Navigating to All Trips');
+  this.router.navigate(['/trips']);
+}
 }

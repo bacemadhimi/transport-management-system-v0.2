@@ -2,46 +2,45 @@
   <!-- Background Image with Truck Theme -->
   <div class="background-image"></div>
   
-<!-- Header Section -->
-<div class="header-section">
-  <div class="user-welcome" (click)="goToProfile()" style="cursor: pointer;">
-    <div class="user-avatar">
-      <!-- Check if profile image exists, show image, otherwise show icon -->
-      <ng-container *ngIf="authService.currentUser()?.profileImage; else avatarIcon">
-        <img [src]="getProfileImageUrl()" alt="Profile" class="profile-image" />
-      </ng-container>
-      <ng-template #avatarIcon>
-        <ion-icon name="person-circle-outline"></ion-icon>
-      </ng-template>
+  <!-- Header Section -->
+  <div class="header-section">
+    <div class="user-welcome" (click)="goToProfile()" style="cursor: pointer;">
+      <div class="user-avatar">
+        <ng-container *ngIf="authService.currentUser()?.profileImage; else avatarIcon">
+          <img [src]="getProfileImageUrl()" alt="Profile" class="profile-image" />
+        </ng-container>
+        <ng-template #avatarIcon>
+          <ion-icon name="person-circle-outline"></ion-icon>
+        </ng-template>
+      </div>
+      <div class="user-info">
+        <h3>Bon retour, Chauffeur!</h3>
+        <p>{{ authService.currentUser()?.email }}</p>
+      </div>
     </div>
-    <div class="user-info">
-      <h3>Bon retour, Chauffeur!</h3>
-      <p>{{ authService.currentUser()?.email }}</p>
-    </div>
-  </div>
 
-  <div class="header-actions">
-    <div class="chat-wrapper">
-      <ion-button fill="clear" class="chat-btn" (click)="openChat()">
-        <ion-icon name="chatbubble-outline"></ion-icon>
+    <div class="header-actions">
+      <div class="chat-wrapper">
+        <ion-button fill="clear" class="chat-btn" (click)="openChat()">
+          <ion-icon name="chatbubble-outline"></ion-icon>
+        </ion-button>
+        <span *ngIf="unreadMessagesCount > 0" class="chat-badge">
+          {{ unreadMessagesCount > 99 ? '99+' : unreadMessagesCount }}
+        </span>
+      </div>
+      <div class="notification-wrapper">
+        <ion-button fill="clear" class="notification-btn" (click)="openNotifications()">
+          <ion-icon name="notifications-outline"></ion-icon>
+        </ion-button>
+        <span *ngIf="cancelledTripsCount > 0" class="notification-badge">
+          {{ cancelledTripsCount > 99 ? '99+' : cancelledTripsCount }}
+        </span>
+      </div>
+      <ion-button fill="clear" (click)="logout()" class="logout-btn">
+        <ion-icon name="log-out-outline"></ion-icon>
       </ion-button>
-      <span *ngIf="unreadMessagesCount > 0" class="chat-badge">
-        {{ unreadMessagesCount > 99 ? '99+' : unreadMessagesCount }}
-      </span>
     </div>
-    <div class="notification-wrapper">
-      <ion-button fill="clear" class="notification-btn" (click)="openNotifications()">
-        <ion-icon name="notifications-outline"></ion-icon>
-      </ion-button>
-      <span *ngIf="cancelledTripsCount > 0" class="notification-badge">
-        {{ cancelledTripsCount > 99 ? '99+' : cancelledTripsCount }}
-      </span>
-    </div>
-    <ion-button fill="clear" (click)="logout()" class="logout-btn">
-      <ion-icon name="log-out-outline"></ion-icon>
-    </ion-button>
   </div>
-</div>
 
   <!-- Stats Section -->
   <div class="stats-section">
@@ -68,16 +67,42 @@
     </div>
   </div>
 
+  <!-- ==================== NAVIGATION RAPIDE ==================== -->
+  <div class="quick-actions-section">
+    <h2 class="section-title">Navigation Rapide</h2>
+    
+    <div class="quick-actions-grid">
+      <ion-card class="action-card" button (click)="navigateToMyTrips()">
+        <ion-icon name="map" class="action-icon"></ion-icon>
+        <h3>Mes Trajets</h3>
+        <p>Trajets en cours</p>
+      </ion-card>
+
+      <ion-card class="action-card" button (click)="navigateToTripHistory()">
+        <ion-icon name="time" class="action-icon"></ion-icon>
+        <h3>Historique</h3>
+        <p>Anciens trajets</p>
+      </ion-card>
+
+      <ion-card class="action-card" button (click)="navigateToGPSTracking()">
+        <ion-icon name="location" class="action-icon"></ion-icon>
+        <h3>Suivi GPS</h3>
+        <p>Carte en temps réel</p>
+      </ion-card>
+    </div>
+  </div>
+  <!-- ========================================================= -->
+
   <!-- Trips Section -->
   <div class="trips-section">
     <div class="section-header">
       <h2>Trajets Récents</h2>
       <div class="header-actions">
-        <ion-button fill="clear" size="small" class="view-all-btn" routerLink="/cancelled-trips" (click)="navigateToCancelledTrips()">
+        <ion-button fill="clear" size="small" class="view-all-btn" (click)="navigateToCancelledTrips()">
           <ion-icon name="close-circle-outline" slot="start"></ion-icon>
           Trajets Annulés
         </ion-button>
-        <ion-button fill="clear" size="small" class="view-all-btn">
+        <ion-button fill="clear" size="small" class="view-all-btn" (click)="navigateToAllTrips()">
           Voir Tout
           <ion-icon name="chevron-forward" slot="end"></ion-icon>
         </ion-button>
