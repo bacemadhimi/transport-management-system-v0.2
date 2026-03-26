@@ -191,7 +191,7 @@ showCols = [
       
       return {
         value: code, // e.g., "DRIVER"
-        label: category.description || code // Use description as label, fallback to code
+        label: category.parameterCode || code // Use description as label, fallback to code
       };
     });
   }

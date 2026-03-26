@@ -502,7 +502,8 @@
   "YES_ENABLE": "Yes, enable",
   "EXPORT_EXCEL": "Export Excel",
   "EXPORT_CSV": "Export CSV",
-  "EXPORT_PDF": "Export PDF"
+  "EXPORT_PDF": "Export PDF",
+  "CATEGORY_REQUIRED": "Category Required"
 
 
 }

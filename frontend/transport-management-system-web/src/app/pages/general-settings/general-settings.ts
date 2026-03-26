@@ -20,6 +20,8 @@ import { Auth } from '../../services/auth';
 import { CommonModule } from '@angular/common';
 import Swal from 'sweetalert2';
 import { LogoService } from '../../services/logo.service';
+import * as XLSX from 'xlsx';
+import { saveAs } from 'file-saver';
 
 @Component({
   selector: 'app-general-settings',
@@ -45,7 +47,7 @@ import { LogoService } from '../../services/logo.service';
 })
 export class GeneralSettings implements OnInit {
   constructor(public auth: Auth, private fb: FormBuilder) {}
-
+  showHelp = true; 
   httpService = inject(Http);
   readonly dialog = inject(MatDialog);
 
@@ -77,6 +79,7 @@ export class GeneralSettings implements OnInit {
   isSavingGeographical = false;
   isSavingLogo = false;
   isSavingUnits = false;
+  isImporting = false;
 
 
   entityLevelFilter = new FormControl('all');
@@ -90,6 +93,7 @@ export class GeneralSettings implements OnInit {
 
  
   @ViewChild('companyFileInput') companyFileInput!: ElementRef;
+  @ViewChild('fileInput') fileInput!: ElementRef;
   companyLogoPreview: string | null = null;
   companyFileError: string | null = null;
   hasCompanyLogo = false;
@@ -1052,17 +1056,511 @@ export class GeneralSettings implements OnInit {
     });
   }
 
- 
+  // ==================== MÉTHODES D'IMPORT/EXPORT EXCEL ====================
+
+  /**
+   * Exporte les catégories d'employés existantes vers un fichier Excel
+   */
+  exportCategoriesToExcel() {
+    if (this.employeeCategories.length === 0) {
+      this.showWarning('Aucune catégorie à exporter');
+      return;
+    }
+
+    try {
+      // Préparer les données pour l'export
+      const exportData = this.employeeCategories.map(category => ({
+        'Code': this.extractCode(category.parameterCode),
+        'Description': category.description,
+        'Valeur': this.extractValue(category.parameterCode),
+        'ID': category.id,
+        'Type': category.parameterType
+      }));
+
+      // Créer une feuille de calcul
+      const worksheet = XLSX.utils.json_to_sheet(exportData);
+      
+      // Ajuster la largeur des colonnes
+      worksheet['!cols'] = [
+        { wch: 25 }, // Code
+        { wch: 40 }, // Description
+        { wch: 20 }, // Valeur
+        { wch: 10 }, // ID
+        { wch: 20 }  // Type
+      ];
+
+      // Créer un classeur
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Categories_Employes');
+
+      // Générer le fichier Excel
+      const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+      
+      // Sauvegarder le fichier avec la date
+      const fileName = `categories_employes_${new Date().toISOString().split('T')[0]}.xlsx`;
+      saveAs(new Blob([excelBuffer], { type: 'application/octet-stream' }), fileName);
+      
+      this.showSuccess('Export réussi');
+    } catch (error) {
+      console.error('Erreur lors de l\'export:', error);
+      this.showError('Erreur lors de l\'export des données');
+    }
+  }
+
+  /**
+   * Télécharge un modèle Excel vide pour les catégories d'employés
+   */
+  downloadEmptyTemplate() {
+    try {
+      // Créer un modèle vide avec seulement les en-têtes
+      const templateData = [
+        {
+          'Code': '',
+          'Description': '',
+          'Valeur': ''
+        }
+      ];
+
+      const worksheet = XLSX.utils.json_to_sheet(templateData);
+      
+      // Définir la largeur des colonnes
+      worksheet['!cols'] = [
+        { wch: 25 }, // Code
+        { wch: 40 }, // Description
+        { wch: 20 }  // Valeur
+      ];
+
+      // Ajouter une feuille d'instructions
+      const instructions = [
+        ['📋 INSTRUCTIONS D\'UTILISATION DU MODÈLE'],
+        [''],
+        ['1. Colonne "Code" :', 'Code unique de la catégorie (ex: INGENIEUR, CHAUFFEUR, MANUTENTIONNAIRE)'],
+        ['   - Utilisez des majuscules, chiffres et underscores uniquement'],
+        ['   - Maximum 50 caractères'],
+        ['   - Doit être unique dans le système'],
+        [''],
+        ['2. Colonne "Description" :', 'Description complète de la catégorie'],
+        ['   - Exemple: "Ingénieur en logistique", "Chauffeur poids lourd"'],
+        ['   - Maximum 255 caractères'],
+        [''],
+        ['3. Colonne "Valeur" :', 'Code court ou abréviation (ex: ING, CHF, MAN)'],
+        ['   - Utilisez des majuscules, chiffres et underscores uniquement'],
+        ['   - Maximum 50 caractères'],
+        [''],
+        ['⚠️ RÈGLES IMPORTANTES :'],
+        ['• Tous les champs sont obligatoires'],
+        ['• Ne modifiez pas les noms des colonnes'],
+        ['• Supprimez la ligne d\'exemple avant de remplir vos données'],
+        ['• Le système créera automatiquement les catégories avec le format: Code=Valeur'],
+        [''],
+        ['📝 EXEMPLE DE DONNÉES VALIDES :'],
+        ['Code           | Description                    | Valeur'],
+        ['INGENIEUR      | Ingénieur en logistique        | ING'],
+        ['CHAUFFEUR      | Chauffeur poids lourd          | CHF'],
+        ['MANUTENTIONNAIRE| Agent de manutention           | MAN'],
+        ['SUPERVISEUR    | Superviseur d\'exploitation     | SUP'],
+        [''],
+        ['✅ APRÈS REMPLISSAGE :'],
+        ['1. Sauvegardez votre fichier'],
+        ['2. Cliquez sur "Importer" dans l\'application'],
+        ['3. Sélectionnez votre fichier rempli'],
+        ['4. Confirmez l\'importation']
+      ];
+      
+      const instructionsSheet = XLSX.utils.aoa_to_sheet(instructions);
+      
+      // Ajuster la largeur des colonnes pour les instructions
+      instructionsSheet['!cols'] = [
+        { wch: 25 },
+        { wch: 60 }
+      ];
+
+      // Créer le classeur avec deux feuilles
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Modele_Categories');
+      XLSX.utils.book_append_sheet(workbook, instructionsSheet, 'Instructions');
+      
+      // Générer et sauvegarder le fichier
+      const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+      saveAs(new Blob([excelBuffer], { type: 'application/octet-stream' }), 'modele_categories_employes_vide.xlsx');
+      
+      this.showSuccess('Modèle téléchargé avec succès');
+    } catch (error) {
+      console.error('Erreur lors du téléchargement du modèle:', error);
+      this.showError('Erreur lors du téléchargement du modèle');
+    }
+  }
+
+  /**
+   * Déclenche le sélecteur de fichier pour l'import
+   */
+  triggerFileInput() {
+    this.fileInput.nativeElement.click();
+  }
+
+  /**
+   * Gère la sélection du fichier pour l'import
+   */
+  onFileSelected(event: any) {
+    const file: File = event.target.files[0];
+    if (!file) return;
+
+    // Vérifier l'extension du fichier
+    const allowedExtensions = ['xlsx', 'xls', 'csv'];
+    const fileExtension = file.name.split('.').pop()?.toLowerCase();
+    
+    if (!fileExtension || !allowedExtensions.includes(fileExtension)) {
+      this.showError('Format de fichier non supporté. Utilisez .xlsx, .xls ou .csv');
+      this.clearFileInput();
+      return;
+    }
+
+    this.isImporting = true;
+    
+    // Afficher une notification de chargement
+    Swal.fire({
+      title: 'Import en cours...',
+      text: 'Veuillez patienter pendant le traitement du fichier',
+      allowOutsideClick: false,
+      didOpen: () => {
+        Swal.showLoading();
+      }
+    });
+
+    const reader = new FileReader();
+    
+    reader.onload = (e: any) => {
+      try {
+        const data = new Uint8Array(e.target.result);
+        const workbook = XLSX.read(data, { type: 'array' });
+        const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+        const jsonData = XLSX.utils.sheet_to_json(firstSheet);
+        
+        Swal.close();
+        
+        if (jsonData.length === 0) {
+          this.showWarning('Le fichier est vide');
+          this.isImporting = false;
+          this.clearFileInput();
+          return;
+        }
+        
+        // Filtrer les lignes vides
+        const validData = jsonData.filter((row: any) => {
+          const code = row['Code']?.trim();
+          const description = row['Description']?.trim();
+          const value = row['Valeur']?.trim();
+          return code && description && value;
+        });
+        
+        if (validData.length === 0) {
+          this.showWarning('Aucune donnée valide trouvée dans le fichier');
+          this.isImporting = false;
+          this.clearFileInput();
+          return;
+        }
+        
+        // Valider et importer les données
+        this.importCategoriesFromData(validData);
+      } catch (error) {
+        console.error('Erreur lors de la lecture du fichier:', error);
+        Swal.close();
+        this.showError('Erreur lors de la lecture du fichier');
+        this.isImporting = false;
+        this.clearFileInput();
+      }
+    };
+    
+    reader.onerror = () => {
+      Swal.close();
+      this.showError('Erreur lors de la lecture du fichier');
+      this.isImporting = false;
+      this.clearFileInput();
+    };
+    
+    reader.readAsArrayBuffer(file);
+  }
+
+  /**
+   * Importe les catégories à partir des données du fichier
+   */
+  async importCategoriesFromData(data: any[]) {
+    try {
+      // Valider les données
+      const validation = this.validateImportData(data);
+      if (!validation.isValid) {
+        this.showError(`Erreur de validation:\n${validation.errors.join('\n')}`);
+        this.isImporting = false;
+        this.clearFileInput();
+        return;
+      }
+
+      // Prévisualiser les données à importer
+      const previewData = data.slice(0, 5).map((row, index) => ({
+        '#': index + 1,
+        'Code': row['Code']?.trim().toUpperCase(),
+        'Description': row['Description']?.trim(),
+        'Valeur': row['Valeur']?.trim().toUpperCase()
+      }));
+
+      const previewHtml = `
+        <div style="max-height: 400px; overflow: auto;">
+          <table style="width: 100%; border-collapse: collapse;">
+            <thead>
+              <tr style="background-color: #f5f5f5;">
+                <th style="padding: 8px; border: 1px solid #ddd;">#</th>
+                <th style="padding: 8px; border: 1px solid #ddd;">Code</th>
+                <th style="padding: 8px; border: 1px solid #ddd;">Description</th>
+                <th style="padding: 8px; border: 1px solid #ddd;">Valeur</th>
+               </tr>
+            </thead>
+            <tbody>
+              ${previewData.map(item => `
+                 <tr>
+                  <td style="padding: 8px; border: 1px solid #ddd;">${item['#']}</td>
+                  <td style="padding: 8px; border: 1px solid #ddd;"><strong>${item['Code']}</strong></td>
+                  <td style="padding: 8px; border: 1px solid #ddd;">${item['Description']}</td>
+                  <td style="padding: 8px; border: 1px solid #ddd;">${item['Valeur']}</td>
+                 </tr>
+              `).join('')}
+            </tbody>
+           </table>
+          ${data.length > 5 ? `<p style="margin-top: 10px; text-align: center;">... et ${data.length - 5} autre(s) ligne(s)</p>` : ''}
+        </div>
+      `;
+
+      // Vérifier les doublons avec les données existantes
+      const existingCodes = new Set(this.employeeCategories.map(c => this.extractCode(c.parameterCode)));
+      const duplicates = data.filter(row => {
+        const code = row['Code']?.trim().toUpperCase();
+        return existingCodes.has(code);
+      });
+
+      let warningMessage = '';
+      if (duplicates.length > 0) {
+        warningMessage = `
+          <p style="margin-top: 10px; color: #f59e0b;">
+            <strong>⚠️ Attention:</strong> ${duplicates.length} catégorie(s) existent déjà dans le système.
+            Ces catégories ne seront pas importées pour éviter les doublons.
+          </p>
+          <p style="color: #f59e0b; font-size: 12px;">
+            Codes existants: ${duplicates.map(d => d['Code']).join(', ')}
+          </p>
+        `;
+      }
+
+      // Demander confirmation avec aperçu
+      const result = await Swal.fire({
+        title: 'Confirmation d\'import',
+        html: `
+          <div style="text-align: left;">
+            <p>Vous allez importer <strong>${data.length}</strong> nouvelle(s) catégorie(s) d'employés.</p>
+            ${warningMessage}
+            <p style="margin-top: 10px;"><strong>Aperçu des données:</strong></p>
+            ${previewHtml}
+          </div>
+        `,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'Oui, importer',
+        cancelButtonText: 'Annuler',
+        width: '800px'
+      });
+
+      if (!result.isConfirmed) {
+        this.isImporting = false;
+        this.clearFileInput();
+        return;
+      }
+
+      // Afficher la progression
+      Swal.fire({
+        title: 'Import en cours...',
+        html: 'Veuillez patienter pendant l\'importation des données',
+        allowOutsideClick: false,
+        didOpen: () => {
+          Swal.showLoading();
+        }
+      });
+
+      // Filtrer les doublons pour ne garder que les nouvelles catégories
+      const newCategories = data.filter(row => {
+        const code = row['Code']?.trim().toUpperCase();
+        return !existingCodes.has(code);
+      });
+
+      // Préparer et importer les nouvelles catégories
+      const categoriesToImport = this.prepareCategoriesForImport(newCategories);
+      
+      let successCount = 0;
+      let errorCount = 0;
+      const errors: string[] = [];
+
+      for (const category of categoriesToImport) {
+        try {
+          // Créer le paramètre avec le format Code=Valeur (sans le =true)
+          const categoryData: any = {
+            parameterType: 'EMPLOYEE_CATEGORY',
+            parameterCode: `${category.code}=${category.value}`,
+            description: category.description
+          };
+
+          await this.httpService.addGeneralSettings(categoryData).toPromise();
+          successCount++;
+        } catch (error) {
+          errorCount++;
+          errors.push(`${category.code}: ${error instanceof Error ? error.message : 'Erreur inconnue'}`);
+          console.error(`Erreur lors de l'import de ${category.code}:`, error);
+        }
+      }
+
+      Swal.close();
+
+      // Afficher le résultat détaillé
+      if (successCount > 0) {
+        let resultMessage = `✅ ${successCount} catégorie(s) importée(s) avec succès`;
+        if (duplicates.length > 0) {
+          resultMessage += `\n⚠️ ${duplicates.length} doublon(s) ignoré(s)`;
+        }
+        if (errorCount > 0) {
+          resultMessage += `\n❌ ${errorCount} erreur(s)`;
+        }
+        this.showSuccess(resultMessage);
+        this.loadEmployeeCategories(); // Recharger les données
+      } else {
+        if (duplicates.length > 0) {
+          this.showWarning(`${duplicates.length} doublon(s) trouvé(s). Aucune nouvelle catégorie à importer.`);
+        } else {
+          this.showError('Aucune catégorie n\'a pu être importée');
+        }
+      }
+
+      if (errors.length > 0 && errors.length <= 5) {
+        setTimeout(() => {
+          Swal.fire({
+            title: 'Détails des erreurs',
+            html: `<div style="text-align: left;">${errors.map(e => `• ${e}`).join('<br>')}</div>`,
+            icon: 'warning',
+            confirmButtonText: 'OK'
+          });
+        }, 500);
+      }
+    } catch (error) {
+      console.error('Erreur lors de l\'import:', error);
+      Swal.close();
+      this.showError('Erreur lors de l\'import des données');
+    } finally {
+      this.isImporting = false;
+      this.clearFileInput();
+    }
+  }
+
+  /**
+   * Valide les données d'import
+   */
+  validateImportData(data: any[]): { isValid: boolean; errors: string[] } {
+    const errors: string[] = [];
+    const requiredColumns = ['Code', 'Description', 'Valeur'];
+    const codesSet = new Set<string>();
+    
+    if (data.length === 0) {
+      errors.push('Le fichier est vide');
+      return { isValid: false, errors };
+    }
+
+    // Vérifier les colonnes requises
+    const firstRow = data[0];
+    const missingColumns = requiredColumns.filter(col => !firstRow.hasOwnProperty(col));
+    
+    if (missingColumns.length > 0) {
+      errors.push(`Colonnes manquantes: ${missingColumns.join(', ')}`);
+      return { isValid: false, errors };
+    }
+
+    // Valider chaque ligne
+    data.forEach((row, index) => {
+      const code = row['Code']?.trim();
+      const description = row['Description']?.trim();
+      const value = row['Valeur']?.trim();
+      const lineNum = index + 1;
+
+      // Validation du code
+      if (!code) {
+        errors.push(`Ligne ${lineNum}: Code requis`);
+      } else {
+        if (code.length > 50) {
+          errors.push(`Ligne ${lineNum}: Code trop long (max 50 caractères)`);
+        }
+        if (!/^[A-Z0-9_]+$/i.test(code)) {
+          errors.push(`Ligne ${lineNum}: Code doit contenir uniquement des lettres, chiffres et underscores`);
+        }
+        if (codesSet.has(code.toUpperCase())) {
+          errors.push(`Ligne ${lineNum}: Code dupliqué "${code}" dans le fichier`);
+        }
+        codesSet.add(code.toUpperCase());
+      }
+
+      // Validation de la description
+      if (!description) {
+        errors.push(`Ligne ${lineNum}: Description requise`);
+      } else if (description.length > 255) {
+        errors.push(`Ligne ${lineNum}: Description trop longue (max 255 caractères)`);
+      }
+
+      // Validation de la valeur
+      if (!value) {
+        errors.push(`Ligne ${lineNum}: Valeur requise`);
+      } else if (value.length > 50) {
+        errors.push(`Ligne ${lineNum}: Valeur trop longue (max 50 caractères)`);
+      } else if (!/^[A-Z0-9_]+$/i.test(value)) {
+        errors.push(`Ligne ${lineNum}: Valeur doit contenir uniquement des lettres, chiffres et underscores`);
+      }
+    });
+
+    return {
+      isValid: errors.length === 0,
+      errors: errors.slice(0, 20)
+    };
+  }
+
+  /**
+   * Prépare les catégories pour l'import
+   */
+  prepareCategoriesForImport(data: any[]): Array<{code: string, description: string, value: string}> {
+    return data.map(row => ({
+      code: row['Code'].trim().toUpperCase(),
+      description: row['Description'].trim(),
+      value: row['Valeur'].trim().toUpperCase()
+    }));
+  }
+
+  /**
+   * Nettoie l'input file
+   */
+  clearFileInput() {
+    if (this.fileInput) {
+      this.fileInput.nativeElement.value = '';
+    }
+  }
+
+  // ==================== FIN MÉTHODES D'IMPORT/EXPORT ====================
+
+  /**
+   * Affiche un message de succès
+   */
   showSuccess(message: string) {
     Swal.fire({
       icon: 'success',
       title: 'Succès',
       text: message,
-      timer: 2000,
+      timer: 3000,
       showConfirmButton: false
     });
   }
 
+  /**
+   * Affiche un message de succès temporaire
+   */
   showTemporarySuccess(message: string) {
     Swal.fire({
       icon: 'success',
@@ -1074,6 +1572,9 @@ export class GeneralSettings implements OnInit {
     });
   }
 
+  /**
+   * Affiche un message d'erreur
+   */
   showError(message: string) {
     Swal.fire({
       icon: 'error',
@@ -1083,6 +1584,9 @@ export class GeneralSettings implements OnInit {
     });
   }
 
+  /**
+   * Affiche un message d'avertissement
+   */
   showWarning(message: string) {
     Swal.fire({
       icon: 'warning',
@@ -1092,6 +1596,9 @@ export class GeneralSettings implements OnInit {
     });
   }
 
+  /**
+   * Gère les erreurs HTTP
+   */
   handleError(error: any) {
     console.error('Error:', error);
     let errorMessage = 'Une erreur est survenue';
@@ -1110,6 +1617,9 @@ export class GeneralSettings implements OnInit {
     this.showError(errorMessage);
   }
 
+  /**
+   * Getter pour le FormArray des niveaux géographiques
+   */
   get geographicalLevelsArray(): FormArray {
     return this.geographicalLevelsForm.get('levels') as FormArray;
   }
