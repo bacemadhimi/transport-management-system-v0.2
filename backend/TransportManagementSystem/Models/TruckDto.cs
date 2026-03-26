@@ -17,7 +17,8 @@ public class TruckDto
     public int TypeTruckId { get; set; }
     public TypeTruckDto? TypeTruck { get; set; }
     public List<TruckGeographicalEntityDto> GeographicalEntities { get; set; }
-    
+    public int? DriverId { get; set; }
+
 }
 public class TruckGeographicalEntityDto
 {
