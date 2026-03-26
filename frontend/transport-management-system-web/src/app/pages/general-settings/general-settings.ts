@@ -82,6 +82,46 @@ export class GeneralSettings implements OnInit {
   isImporting = false;
 
 
+hasAtLeastOneActiveLevel(): boolean {
+  const levelsArray = this.geographicalLevelsForm.get('levels') as FormArray;
+  return levelsArray.controls.some(level => level.get('isActive')?.value === true);
+}
+
+
+saveGeographicalLevels() {
+  
+  if (!this.hasAtLeastOneActiveLevel()) {
+    this.showError('Au moins un niveau géographique doit être actif pour pouvoir enregistrer');
+    return;
+  }
+  
+  if (this.geographicalLevelsForm.invalid) {
+    this.showError('Veuillez remplir tous les champs requis');
+    return;
+  }
+
+  this.isSavingGeographical = true;
+  const levels = this.geographicalLevelsForm.value.levels;
+
+  this.httpService.updateGeographicalLevels(levels).subscribe({
+    next: () => {
+      this.showSuccess('Niveaux géographiques enregistrés avec succès');
+      this.loadGeographicalLevels();
+    },
+    error: (error) => {
+      console.error('Error saving geographical levels:', error);
+      this.showError('Erreur lors de l\'enregistrement des niveaux géographiques');
+    },
+    complete: () => {
+      this.isSavingGeographical = false;
+    }
+  });
+}
+
+
+hasAtLeastOneActiveEntity(): boolean {
+  return this.filteredEntities.some(entity => entity.isActive);
+}
   entityLevelFilter = new FormControl('all');
 
 
@@ -826,30 +866,6 @@ export class GeneralSettings implements OnInit {
       });
   }
 
-  saveGeographicalLevels() {
-    if (this.geographicalLevelsForm.invalid) {
-      this.showError('Veuillez remplir tous les champs requis');
-      return;
-    }
-
-    this.isSavingGeographical = true;
-    const levels = this.geographicalLevelsForm.value.levels;
-
-    this.httpService.updateGeographicalLevels(levels).subscribe({
-      next: () => {
-        this.showSuccess('Niveaux géographiques enregistrés avec succès');
-        this.loadGeographicalLevels();
-      },
-      error: (error) => {
-        console.error('Error saving geographical levels:', error);
-        this.showError('Erreur lors de l\'enregistrement des niveaux géographiques');
-      },
-      complete: () => {
-        this.isSavingGeographical = false;
-      }
-    });
-  }
-
   getDescriptionForKey(key: string): string {
     const descriptions: { [key: string]: string } = {
       'ALLOW_EDIT_ORDER': 'Allow editing orders',
@@ -1056,11 +1072,7 @@ export class GeneralSettings implements OnInit {
     });
   }
 
-  // ==================== MÉTHODES D'IMPORT/EXPORT EXCEL ====================
 
-  /**
-   * Exporte les catégories d'employés existantes vers un fichier Excel
-   */
   exportCategoriesToExcel() {
     if (this.employeeCategories.length === 0) {
       this.showWarning('Aucune catégorie à exporter');
@@ -1068,7 +1080,7 @@ export class GeneralSettings implements OnInit {
     }
 
     try {
-      // Préparer les données pour l'export
+     
       const exportData = this.employeeCategories.map(category => ({
         'Code': this.extractCode(category.parameterCode),
         'Description': category.description,
@@ -1077,10 +1089,10 @@ export class GeneralSettings implements OnInit {
         'Type': category.parameterType
       }));
 
-      // Créer une feuille de calcul
+      
       const worksheet = XLSX.utils.json_to_sheet(exportData);
       
-      // Ajuster la largeur des colonnes
+     
       worksheet['!cols'] = [
         { wch: 25 }, // Code
         { wch: 40 }, // Description
