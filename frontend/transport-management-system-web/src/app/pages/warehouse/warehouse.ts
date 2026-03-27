@@ -1,4 +1,3 @@
-// warehouse.component.ts
 import { Component, OnInit, OnDestroy, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormControl } from '@angular/forms';
@@ -16,6 +15,7 @@ import { MatChipsModule } from '@angular/material/chips';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { Subject, takeUntil, debounceTime, interval } from 'rxjs';
+import { Router } from '@angular/router';  // 👈 Ajoutez cette importation
 import { WarehousePlantIt, WarehouseSearchOptions } from '../../types/WarehouseDTO';
 import { WarehouseService } from '../../services/warehouse.service';
 
@@ -81,7 +81,8 @@ export class WarehousePlantItComponent implements OnInit, OnDestroy {
 
   constructor(
     private warehouseService: WarehouseService,
-    private snackBar: MatSnackBar
+    private snackBar: MatSnackBar,
+    private router: Router  // 👈 Ajoutez le Router ici
   ) {}
 
   ngOnInit() {
@@ -305,7 +306,9 @@ export class WarehousePlantItComponent implements OnInit, OnDestroy {
     }
   }
 
+  // 👈 MODIFIEZ CETTE MÉTHODE POUR NAVIGUER VERS LA PAGE DES LIEUX DE STOCKAGE
   viewDetails(item: WarehousePlantIt) {
-    console.log('Détails:', item);
+    // Navigation vers la page des lieux de stockage avec l'ID du dépôt
+    this.router.navigate(['/warehouse', item.key, 'storage-locations']);
   }
 }

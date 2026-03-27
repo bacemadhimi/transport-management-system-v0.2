@@ -37,6 +37,7 @@ import { GeneralSettings } from './pages/general-settings/general-settings';
 import { WarehousePlantItComponent } from './pages/warehouse/warehouse';
 
 import { LiveGPSTrackingPage } from './pages/live-gps-tracking/live-gps-tracking.page';
+import { StorageLocationDetailsComponent } from './pages/storage-location-details/storage-location-details';
 
 
 
@@ -213,6 +214,12 @@ export const routes: Routes = [
   {
     path: 'gps-tracking',
     component: LiveGPSTrackingPage,
+    canActivate: [AuthGuard],
+  },
+  
+  {
+    path: 'warehouse/:id/storage-locations',
+    component: StorageLocationDetailsComponent,
     canActivate: [AuthGuard],
   },
   {
