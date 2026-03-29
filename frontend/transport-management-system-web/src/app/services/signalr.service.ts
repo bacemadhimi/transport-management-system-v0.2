@@ -160,17 +160,63 @@ export class SignalRService {
 
     this.hubConnection.on('ReceiveNotification', (notification: TripNotification) => {
     console.log('🔔 Received new notification:', notification);
-   
-    this.addNotification(notification, 20); 
+
+    this.addNotification(notification, 20);
   });
 
-   
+    // Handler for Trip Accepted by driver
+    this.hubConnection.on('TripAccepted', (data: any) => {
+      console.log('✅ Trip Accepted by driver:', data);
+      
+      const notification: TripNotification = {
+        id: Date.now(),
+        type: 'TRIP_ACCEPTED',
+        title: '✅ Mission Acceptée',
+        message: `Le chauffeur ${data.DriverName || 'inconnu'} a accepté la mission ${data.TripReference || ''}`,
+        timestamp: new Date(),
+        tripId: data.TripId,
+        tripReference: data.TripReference,
+        driverName: data.DriverName,
+        truckImmatriculation: data.TruckImmatriculation,
+        newStatus: 'Acceptée',
+        isRead: false,
+        additionalData: data
+      };
+
+      this.addNotification(notification, 20);
+      this.showBrowserNotification(notification);
+    });
+
+    // Handler for Trip Rejected by driver
+    this.hubConnection.on('TripRejected', (data: any) => {
+      console.log('❌ Trip Rejected by driver:', data);
+      
+      const notification: TripNotification = {
+        id: Date.now(),
+        type: 'TRIP_REJECTED',
+        title: '❌ Mission Refusée',
+        message: `Le chauffeur ${data.DriverName || 'inconnu'} a refusé la mission ${data.TripReference || ''}. Raison: ${data.Reason || 'Non spécifiée'}`,
+        timestamp: new Date(),
+        tripId: data.TripId,
+        tripReference: data.TripReference,
+        driverName: data.DriverName,
+        truckImmatriculation: data.TruckImmatriculation,
+        newStatus: 'Refusée',
+        isRead: false,
+        additionalData: data
+      };
+
+      this.addNotification(notification, 20);
+      this.showBrowserNotification(notification);
+    });
+
+
     this.hubConnection.on('UpdateUnreadCount', (count: number) => {
       console.log('📊 Unread count updated:', count);
       this.unreadCountSubject.next(count);
     });
 
-   
+
     this.hubConnection.on('UserConnected', (userId: string) => {
       console.log('User connected:', userId);
     });

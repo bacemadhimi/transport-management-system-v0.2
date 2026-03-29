@@ -96,7 +96,7 @@ export class GPSTrackingPage implements OnInit, OnDestroy {
       }
 
       console.log('📡 Fetching trip details from API...');
-      
+
       const response = await fetch(`http://localhost:5191/api/Trips/${this.tripId}`, {
         method: 'GET',
         headers: {
@@ -109,52 +109,57 @@ export class GPSTrackingPage implements OnInit, OnDestroy {
         console.error(`❌ API error: ${response.status} ${response.statusText}`);
         return;
       }
-      
+
       const result = await response.json();
       console.log('📦 Trip details received:', result);
-      
+
       if (result && result.data) {
         const trip = result.data;
-        
+
         // Get destination from last delivery
         if (trip.deliveries && trip.deliveries.length > 0) {
           const lastDelivery = trip.deliveries[trip.deliveries.length - 1];
-          
+
           console.log('📦 Last delivery:', lastDelivery);
-          
+
           // Try to get coordinates from geolocation field
           if (lastDelivery.geolocation) {
             const parts = lastDelivery.geolocation.split(',');
             if (parts.length >= 2) {
               const lat = parseFloat(parts[0].trim());
               const lng = parseFloat(parts[1].trim());
-              
+
               if (!isNaN(lat) && !isNaN(lng)) {
                 this.destination = {
                   lat,
                   lng,
                   address: lastDelivery.deliveryAddress || 'Destination'
                 };
-                
+
                 console.log('✅ Destination loaded from geolocation:', this.destination);
-                
+
                 // Add destination marker if map is ready
                 if (this.map) {
                   this.addDestinationMarker();
-                  this.updateRoute();
+                  // Wait a bit for map to be ready then update route
+                  setTimeout(() => {
+                    this.updateRoute();
+                  }, 500);
                 }
                 return;
               }
             }
           }
-          
+
           // Fallback to address text and geocode it
           this.destinationAddress = lastDelivery.deliveryAddress || '';
           console.log('📝 Destination address from delivery:', this.destinationAddress);
-          
+
           if (this.destinationAddress && this.destinationAddress.trim().length > 0) {
             await this.geocodeAddress(this.destinationAddress);
           }
+        } else {
+          console.warn('⚠️ No deliveries found for this trip');
         }
       }
     } catch (error) {
@@ -166,7 +171,12 @@ export class GPSTrackingPage implements OnInit, OnDestroy {
    * Add destination marker to map
    */
   private addDestinationMarker() {
-    if (!this.destination || !this.map) return;
+    if (!this.destination || !this.map) {
+      console.log('⚠️ Cannot add destination marker: missing destination or map');
+      return;
+    }
+
+    console.log('🏁 Adding destination marker at:', this.destination);
 
     const destIcon = this.createDestinationIcon();
     this.destinationMarker = L.marker(
@@ -180,6 +190,12 @@ export class GPSTrackingPage implements OnInit, OnDestroy {
         <span style="color: #666; font-size: 12px;">${this.destination?.address || 'Non définie'}</span>
       </div>
     `);
+
+    // Update route after adding marker
+    setTimeout(() => {
+      console.log('🔄 Updating route after adding destination marker...');
+      this.updateRoute();
+    }, 300);
   }
 
   ngOnDestroy() {
@@ -198,13 +214,15 @@ export class GPSTrackingPage implements OnInit, OnDestroy {
       return;
     }
 
+    console.log('🗺️ Initializing map...');
+
     // Centre sur la Tunisie
     const tunisiaCenter: [number, number] = [36.8065, 10.1815];
 
     this.map = L.map('map', {
       center: tunisiaCenter,
       zoom: 10,
-      minZoom: 8,
+      minZoom: 6,
       maxZoom: 16,
       zoomControl: true,
       attributionControl: true,
@@ -215,12 +233,13 @@ export class GPSTrackingPage implements OnInit, OnDestroy {
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '© OpenStreetMap contributors',
       maxZoom: 16,
-      minZoom: 8
+      minZoom: 6
     }).addTo(this.map);
 
     setTimeout(() => {
       if (this.map) {
         this.map.invalidateSize();
+        console.log('✅ Map initialized and size invalidated');
       }
     }, 500);
 
@@ -231,7 +250,10 @@ export class GPSTrackingPage implements OnInit, OnDestroy {
 
     // Géocoder la destination si fournie
     if (this.destinationAddress) {
+      console.log('📍 Geocoding destination from address:', this.destinationAddress);
       this.geocodeAddress(this.destinationAddress);
+    } else {
+      console.log('⏳ No destination address, waiting for fetchTripDetails...');
     }
   }
 
@@ -240,8 +262,12 @@ export class GPSTrackingPage implements OnInit, OnDestroy {
    */
   private async geocodeAddress(address: string) {
     try {
-      const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&limit=1`);
+      console.log('🔍 Geocoding address:', address);
+      
+      const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&limit=3`);
       const data = await response.json();
+
+      console.log('📡 Geocoding result:', data);
 
       if (data && data.length > 0) {
         const result = data[0];
@@ -254,7 +280,7 @@ export class GPSTrackingPage implements OnInit, OnDestroy {
           address: result.display_name || address
         };
 
-        console.log('Destination géocodée:', this.destination);
+        console.log('✅ Destination géocodée:', this.destination);
 
         // Ajouter le marker de destination
         const destIcon = this.createDestinationIcon();
@@ -265,13 +291,13 @@ export class GPSTrackingPage implements OnInit, OnDestroy {
 
         this.destinationMarker.bindPopup(`
           <div style="text-align: center;">
-            <b>Destination</b><br>
+            <b>🏁 Destination</b><br>
             <span style="color: #666; font-size: 12px;">${this.destination.address}</span>
           </div>
         `);
 
-        // Mettre à jour la route
-        this.updateRoute();
+        // Mettre à jour la route IMMÉDIATEMENT
+        await this.updateRoute();
 
         // Ajuster la vue pour voir les deux markers
         if (this.currentLocation) {
@@ -656,11 +682,13 @@ export class GPSTrackingPage implements OnInit, OnDestroy {
   }
 
   /**
-   * Mettre à jour la route avec OSRM
+   * Mettre à jour la route avec OSRM - Affiche le trajet complet même pour les longues distances
    */
   private async updateRoute() {
     if (!this.currentLocation || !this.destination) {
       console.log('⚠️ Missing location or destination for route');
+      console.log('Current location:', this.currentLocation);
+      console.log('Destination:', this.destination);
       return;
     }
 
@@ -669,47 +697,99 @@ export class GPSTrackingPage implements OnInit, OnDestroy {
       const osrmUrl = `https://router.project-osrm.org/route/v1/driving/${this.currentLocation.lng},${this.currentLocation.lat};${this.destination.lng},${this.destination.lat}?overview=full&geometries=geojson&steps=true&annotations=true`;
 
       console.log('🗺️ Fetching route from OSRM:', osrmUrl);
+      console.log('From:', this.currentLocation);
+      console.log('To:', this.destination);
 
       const response = await fetch(osrmUrl);
       const data = await response.json();
+
+      console.log('📡 OSRM Response:', data);
 
       if (data.code === 'Ok' && data.routes && data.routes.length > 0) {
         const route = data.routes[0];
         const coordinates = route.geometry.coordinates.map((coord: number[]) => [coord[1], coord[0]] as [number, number]);
 
         console.log(`✅ Route fetched: ${route.distance}m, ${route.duration}s`);
+        console.log('Route coordinates count:', coordinates.length);
 
-        // Draw the complete route on map
+        // Remove existing polylines before adding new ones
+        if (this.map) {
+          this.map.eachLayer((layer) => {
+            if (layer instanceof L.Polyline && layer !== this.routePolyline) {
+              this.map.removeLayer(layer);
+            }
+          });
+        }
+
+        // Draw the complete route on map with enhanced visibility - PROFESSIONAL STYLE
         if (this.routePolyline) {
           this.routePolyline.setLatLngs(coordinates);
         } else {
           this.routePolyline = L.polyline(coordinates, {
-            color: '#667eea',
-            weight: 6,
-            opacity: 0.9,
+            color: '#2563eb', // Modern blue
+            weight: 8,
+            opacity: 1,
             lineCap: 'round',
             lineJoin: 'round'
           }).addTo(this.map);
         }
 
-        // Add a lighter outer line for better visibility
+        // Add a glowing outer line for better visibility - MODERN EFFECT
         const outerPolyline = L.polyline(coordinates, {
+          color: '#60a5fa', // Lighter blue glow
+          weight: 14,
+          opacity: 0.5,
+          lineCap: 'round',
+          lineJoin: 'round'
+        }).addTo(this.map);
+
+        // Add a subtle white border for contrast
+        const borderPolyline = L.polyline(coordinates, {
           color: '#ffffff',
-          weight: 10,
+          weight: 16,
           opacity: 0.3,
           lineCap: 'round',
           lineJoin: 'round'
         }).addTo(this.map);
 
         // Adjust map bounds to show the COMPLETE route and destination
+        // For long distances, use a larger padding and appropriate zoom
         const bounds = L.latLngBounds(coordinates);
-        
-        // Add padding to ensure full route is visible
-        this.map.fitBounds(bounds, { 
-          padding: [80, 80],
-          maxZoom: 14,
-          minZoom: 10
+        const distanceKm = route.distance / 1000;
+
+        console.log('📏 Distance:', distanceKm, 'km');
+
+        // Dynamic padding and zoom based on distance - CRITICAL FOR LONG DISTANCES
+        let padding = [80, 80];
+        let maxZoom = 14;
+
+        if (distanceKm > 200) {
+          padding = [120, 120];
+          maxZoom = 10;
+        } else if (distanceKm > 100) {
+          padding = [110, 110];
+          maxZoom = 11;
+        } else if (distanceKm > 50) {
+          padding = [100, 100];
+          maxZoom = 12;
+        } else if (distanceKm > 20) {
+          padding = [90, 90];
+          maxZoom = 13;
+        }
+
+        // FORCE map to fit bounds with the complete route
+        this.map.fitBounds(bounds, {
+          padding: padding as [number, number],
+          maxZoom: maxZoom,
+          animate: true,
+          duration: 1.5 // Smooth animation
         });
+
+        // Ensure destination marker is visible
+        if (!this.destinationMarker && this.destination) {
+          console.log('Adding destination marker...');
+          this.addDestinationMarker();
+        }
 
         // Provide voice navigation instructions if enabled
         if (this.voiceNavigationEnabled) {
@@ -721,6 +801,18 @@ export class GPSTrackingPage implements OnInit, OnDestroy {
           distance: route.distance,
           duration: route.duration
         };
+
+        // Force map refresh
+        setTimeout(() => {
+          if (this.map) {
+            this.map.invalidateSize();
+            this.map.fitBounds(bounds, {
+              padding: padding as [number, number],
+              maxZoom: maxZoom,
+              animate: false
+            });
+          }
+        }, 100);
 
       } else {
         console.warn('⚠️ No route found from OSRM, using fallback');
@@ -781,8 +873,17 @@ export class GPSTrackingPage implements OnInit, OnDestroy {
           this.accuracy = position.coords.accuracy;
           this.lastUpdate = new Date();
 
+          console.log('📍 GPS Position obtained:', this.currentLocation);
+
           this.updateTruckPosition(lat, lng);
-          this.updateRoute();
+          
+          // Update route if destination is already loaded
+          if (this.destination) {
+            console.log('✅ Destination already loaded, updating route...');
+            this.updateRoute();
+          } else {
+            console.log('⏳ Waiting for destination to be loaded...');
+          }
 
           // Démarrer le tracking continu (toutes les 5 secondes)
           this.gpsService.startTracking(
@@ -799,19 +900,23 @@ export class GPSTrackingPage implements OnInit, OnDestroy {
           // Position par défaut si GPS non disponible
           this.currentLocation = { lat: 36.8, lng: 10.1 };
           this.updateTruckPosition(36.8, 10.1);
-          this.updateRoute();
+          
+          // Try to update route anyway
+          if (this.destination) {
+            this.updateRoute();
+          }
+          
           this.isTracking = true;
         },
         {
           enableHighAccuracy: true,
-          timeout: 10000,
+          timeout: 15000,
           maximumAge: 3000
         }
       );
     } else {
       this.currentLocation = { lat: 36.8, lng: 10.1 };
       this.updateTruckPosition(36.8, 10.1);
-      this.updateRoute();
       this.isTracking = true;
     }
   }
