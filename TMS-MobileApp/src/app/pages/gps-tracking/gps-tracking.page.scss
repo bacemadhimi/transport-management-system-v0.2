@@ -1,6 +1,33 @@
 .gps-tracking-content {
   --background: #f8fafc;
 
+  // Header toolbar styling
+  ion-header {
+    ion-toolbar {
+      --background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      --border-width: 0;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+
+      ion-buttons {
+        ion-button {
+          --color: white;
+          opacity: 1;
+          
+          ion-icon {
+            font-size: 24px;
+            color: white !important;
+          }
+        }
+      }
+
+      ion-title {
+        font-weight: 600;
+        font-size: 18px;
+        letter-spacing: 0.3px;
+      }
+    }
+  }
+
   .connection-status {
     position: fixed;
     top: 100px;
@@ -377,7 +404,7 @@
   }
 }
 
-// ==================== PROFESSIONAL TRUCK STYLES ====================
+// ==================== WHITE TRUCK STYLES ====================
 
 // GPS indicator pulse animation
 @keyframes gps-pulse {
@@ -388,13 +415,13 @@
   }
   50% {
     transform: scale(1.2);
-    opacity: 0.9;
+    opacity: 0.4;
     box-shadow: 0 3px 15px rgba(34, 197, 94, 1);
   }
 }
 
-// Modern professional truck marker
-.truck-marker-professional {
+// White/Gray truck marker
+.truck-marker-white {
   transition: all 0.2s ease-out;
 
   .truck-marker-container {
@@ -404,17 +431,18 @@
   }
 
   &:hover {
-    filter: drop-shadow(0 6px 16px rgba(59, 130, 246, 0.6)) !important;
-    transform: scale(1.1);
+    filter: drop-shadow(0 5px 12px rgba(0,0,0,0.4)) !important;
+    transform: scale(1.15);
   }
 }
 
-// Map container
+// Map container - CRITICAL for visibility
 #map {
   background: #e5e7eb;
   width: 100%;
   height: 100%;
   z-index: 1;
+  position: relative;
 }
 
 // Destination marker

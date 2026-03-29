@@ -365,91 +365,86 @@ export class GPSTrackingPage implements OnInit, OnDestroy {
   }
 
   /**
-   * Créer l'icône du camion - Style PROFESSIONNEL et MODERNE
-   * Design épuré et élégant pour application enterprise
+   * Créer l'icône du camion - Style BLANC/GRIS professionnel
+   * Design minimaliste et élégant
    */
   private createTruckIcon(color?: string): L.DivIcon {
-    const truckColor = color || '#3b82f6'; // Bleu professionnel
-
     return L.divIcon({
       html: `
         <div class="truck-marker-container" style="
           position: relative;
-          width: 50px;
-          height: 50px;
-          filter: drop-shadow(0 4px 12px rgba(59, 130, 246, 0.5));
+          width: 48px;
+          height: 48px;
+          filter: drop-shadow(0 3px 8px rgba(0,0,0,0.3));
           transition: all 0.2s ease-out;
         ">
-          <!-- Modern Professional Truck Icon -->
-          <svg width="50" height="50" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+          <!-- Modern White/Gray Truck Icon -->
+          <svg width="48" height="48" viewBox="0 0 96 96" xmlns="http://www.w3.org/2000/svg">
             <defs>
-              <!-- Modern gradient body -->
-              <linearGradient id="truckBodyGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" style="stop-color:${truckColor};stop-opacity:1" />
-                <stop offset="100%" style="stop-color:#1d4ed8;stop-opacity:1" />
+              <!-- White body gradient -->
+              <linearGradient id="truckWhiteBody" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" style="stop-color:#ffffff;stop-opacity:1" />
+                <stop offset="100%" style="stop-color:#e5e7eb;stop-opacity:1" />
               </linearGradient>
 
-              <!-- Cab gradient -->
-              <linearGradient id="truckCabGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-                <stop offset="0%" style="stop-color:#60a5fa;stop-opacity:1" />
-                <stop offset="100%" style="stop-color:#3b82f6;stop-opacity:1" />
+              <!-- Gray cab gradient -->
+              <linearGradient id="truckGrayCab" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" style="stop-color:#9ca3af;stop-opacity:1" />
+                <stop offset="100%" style="stop-color:#6b7280;stop-opacity:1" />
               </linearGradient>
 
-              <!-- Glass gradient -->
-              <linearGradient id="truckGlass" x1="0%" y1="0%" x2="0%" y2="100%">
-                <stop offset="0%" style="stop-color:#dbeafe;stop-opacity:0.9" />
-                <stop offset="100%" style="stop-color:#93c5fd;stop-opacity:0.8" />
+              <!-- Dark glass -->
+              <linearGradient id="truckDarkGlass" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" style="stop-color:#4b5563;stop-opacity:0.8" />
+                <stop offset="100%" style="stop-color:#374151;stop-opacity:0.9" />
               </linearGradient>
 
-              <!-- Wheel gradient -->
-              <radialGradient id="wheelGrad" cx="50%" cy="50%" r="50%">
-                <stop offset="0%" style="stop-color:#6b7280;stop-opacity:1" />
+              <!-- Black wheel -->
+              <radialGradient id="blackWheel" cx="50%" cy="50%" r="50%">
+                <stop offset="0%" style="stop-color:#4b5563;stop-opacity:1" />
                 <stop offset="100%" style="stop-color:#1f2937;stop-opacity:1" />
               </radialGradient>
             </defs>
 
             <!-- Shadow -->
-            <ellipse cx="50" cy="92" rx="40" ry="6" fill="rgba(0,0,0,0.2)"/>
+            <ellipse cx="48" cy="88" rx="38" ry="5" fill="rgba(0,0,0,0.15)"/>
 
-            <!-- Cargo body - modern rounded rectangle -->
-            <rect x="8" y="25" width="50" height="40" rx="6" fill="url(#truckBodyGrad)"/>
+            <!-- Cargo body - white rounded rectangle -->
+            <rect x="6" y="22" width="52" height="42" rx="5" fill="url(#truckWhiteBody)" stroke="#d1d5db" stroke-width="1"/>
 
-            <!-- Body highlight -->
-            <rect x="12" y="28" width="42" height="8" rx="3" fill="white" opacity="0.2"/>
+            <!-- Body accent line -->
+            <line x1="10" y1="35" x2="54" y2="35" stroke="#e5e7eb" stroke-width="2"/>
 
-            <!-- Company logo placeholder -->
-            <circle cx="33" cy="45" r="8" fill="white" opacity="0.9"/>
-            <text x="33" y="48" text-anchor="middle" fill="${truckColor}" font-size="10" font-weight="bold">T</text>
+            <!-- TMS Logo -->
+            <circle cx="32" cy="43" r="9" fill="#3b82f6" opacity="0.9"/>
+            <text x="32" y="47" text-anchor="middle" fill="white" font-size="10" font-weight="bold">T</text>
 
-            <!-- Cab section -->
-            <rect x="60" y="30" width="28" height="35" rx="5" fill="url(#truckCabGrad)"/>
+            <!-- Cab section - gray -->
+            <rect x="60" y="28" width="30" height="36" rx="4" fill="url(#truckGrayCab)"/>
 
-            <!-- Windshield -->
-            <path d="M 65 35 L 85 35 L 85 50 L 65 50 Z" fill="url(#truckGlass)" rx="2"/>
+            <!-- Windshield - dark -->
+            <rect x="64" y="32" width="22" height="14" rx="2" fill="url(#truckDarkGlass)"/>
 
             <!-- Headlight -->
-            <circle cx="88" cy="45" r="3" fill="#fef3c7"/>
-            <circle cx="88" cy="45" r="2" fill="#fbbf24"/>
+            <ellipse cx="90" cy="46" r="3" fill="#fef3c7"/>
 
-            <!-- Wheels -->
-            <circle cx="25" cy="70" r="8" fill="url(#wheelGrad)"/>
-            <circle cx="25" cy="70" r="5" fill="#374151"/>
-            <circle cx="25" cy="70" r="2" fill="#9ca3af"/>
+            <!-- Wheels - black -->
+            <circle cx="24" cy="68" r="9" fill="url(#blackWheel)" stroke="#374151" stroke-width="1"/>
+            <circle cx="24" cy="68" r="4" fill="#6b7280"/>
 
-            <circle cx="73" cy="70" r="8" fill="url(#wheelGrad)"/>
-            <circle cx="73" cy="70" r="5" fill="#374151"/>
-            <circle cx="73" cy="70" r="2" fill="#9ca3af"/>
+            <circle cx="74" cy="68" r="9" fill="url(#blackWheel)" stroke="#374151" stroke-width="1"/>
+            <circle cx="74" cy="68" r="4" fill="#6b7280"/>
 
-            <!-- GPS indicator -->
-            <circle cx="85" cy="28" r="5" fill="#22c55e">
-              <animate attributeName="opacity" values="1;0.5;1" dur="1.5s" repeatCount="indefinite"/>
+            <!-- GPS indicator - pulsing green -->
+            <circle cx="82" cy="26" r="5" fill="#22c55e">
+              <animate attributeName="opacity" values="1;0.4;1" dur="1.5s" repeatCount="indefinite"/>
             </circle>
           </svg>
         </div>
       `,
-      className: 'truck-marker-professional',
-      iconSize: [50, 50],
-      iconAnchor: [25, 25]
+      className: 'truck-marker-white',
+      iconSize: [48, 48],
+      iconAnchor: [24, 24]
     });
   }
 
@@ -549,7 +544,8 @@ export class GPSTrackingPage implements OnInit, OnDestroy {
   }
 
   /**
-   * Mettre à jour la route avec OSRM - Affiche le trajet complet même pour les longues distances
+   * Mettre à jour la route avec OSRM - Style GOOGLE MAPS
+   * Ligne bleue épaisse avec bordure blanche pour visibilité optimale
    */
   private async updateRoute() {
     if (!this.currentLocation || !this.destination) {
@@ -560,12 +556,10 @@ export class GPSTrackingPage implements OnInit, OnDestroy {
     }
 
     try {
-      // Fetch route from OSRM with full geometry and turn-by-turn instructions
-      const osrmUrl = `https://router.project-osrm.org/route/v1/driving/${this.currentLocation.lng},${this.currentLocation.lat};${this.destination.lng},${this.destination.lat}?overview=full&geometries=geojson&steps=true&annotations=true`;
+      // Fetch route from OSRM with full geometry
+      const osrmUrl = `https://router.project-osrm.org/route/v1/driving/${this.currentLocation.lng},${this.currentLocation.lat};${this.destination.lng},${this.destination.lat}?overview=full&geometries=geojson&steps=true`;
 
       console.log('🗺️ Fetching route from OSRM:', osrmUrl);
-      console.log('From:', this.currentLocation);
-      console.log('To:', this.destination);
 
       const response = await fetch(osrmUrl);
       const data = await response.json();
@@ -579,7 +573,7 @@ export class GPSTrackingPage implements OnInit, OnDestroy {
         console.log(`✅ Route fetched: ${route.distance}m, ${route.duration}s`);
         console.log('Route coordinates count:', coordinates.length);
 
-        // Remove existing polylines before adding new ones
+        // Remove existing route layers
         if (this.map) {
           this.map.eachLayer((layer) => {
             if (layer instanceof L.Polyline && layer !== this.routePolyline) {
@@ -588,82 +582,64 @@ export class GPSTrackingPage implements OnInit, OnDestroy {
           });
         }
 
-        // Draw the complete route on map with enhanced visibility - PROFESSIONAL STYLE
+        // GOOGLE MAPS STYLE: Blue route line with white border
+        // Layer 1: White border (thicker for glow effect)
+        const routeBorder = L.polyline(coordinates, {
+          color: '#ffffff',
+          weight: 10,
+          opacity: 1,
+          lineCap: 'round',
+          lineJoin: 'round'
+        }).addTo(this.map);
+
+        // Layer 2: Main blue line (Google Maps blue)
         if (this.routePolyline) {
           this.routePolyline.setLatLngs(coordinates);
         } else {
           this.routePolyline = L.polyline(coordinates, {
-            color: '#2563eb', // Modern blue
-            weight: 8,
+            color: '#4285f4', // Google Maps blue
+            weight: 6,
             opacity: 1,
             lineCap: 'round',
             lineJoin: 'round'
           }).addTo(this.map);
         }
 
-        // Add a glowing outer line for better visibility - MODERN EFFECT
-        const outerPolyline = L.polyline(coordinates, {
-          color: '#60a5fa', // Lighter blue glow
-          weight: 14,
-          opacity: 0.5,
-          lineCap: 'round',
-          lineJoin: 'round'
-        }).addTo(this.map);
-
-        // Add a subtle white border for contrast
-        const borderPolyline = L.polyline(coordinates, {
-          color: '#ffffff',
-          weight: 16,
-          opacity: 0.3,
-          lineCap: 'round',
-          lineJoin: 'round'
-        }).addTo(this.map);
-
-        // Adjust map bounds to show the COMPLETE route and destination
-        // For long distances, use a larger padding and appropriate zoom
+        // Adjust map bounds to show the COMPLETE route
         const bounds = L.latLngBounds(coordinates);
         const distanceKm = route.distance / 1000;
 
         console.log('📏 Distance:', distanceKm, 'km');
 
-        // Dynamic padding and zoom based on distance - CRITICAL FOR LONG DISTANCES
-        let padding = [80, 80];
-        let maxZoom = 14;
+        // Dynamic padding based on distance
+        let padding = [70, 70];
+        let maxZoom = 15;
 
-        if (distanceKm > 200) {
-          padding = [120, 120];
-          maxZoom = 10;
-        } else if (distanceKm > 100) {
-          padding = [110, 110];
+        if (distanceKm > 100) {
+          padding = [100, 100];
           maxZoom = 11;
         } else if (distanceKm > 50) {
-          padding = [100, 100];
+          padding = [90, 90];
           maxZoom = 12;
         } else if (distanceKm > 20) {
-          padding = [90, 90];
+          padding = [80, 80];
           maxZoom = 13;
         }
 
-        // FORCE map to fit bounds with the complete route
+        // Fit bounds to show entire route
         this.map.fitBounds(bounds, {
           padding: padding as [number, number],
           maxZoom: maxZoom,
-          animate: true,
-          duration: 1.5 // Smooth animation
+          animate: true
         });
 
-        // Ensure destination marker is visible
+        // Ensure destination marker exists
         if (!this.destinationMarker && this.destination) {
-          console.log('Adding destination marker...');
+          console.log('🏁 Adding destination marker...');
           this.addDestinationMarker();
         }
 
-        // Provide voice navigation instructions if enabled
-        if (this.voiceNavigationEnabled) {
-          this.provideNavigationInstructions();
-        }
-
-        // Store route info for display
+        // Store route info
         this.routeInfo = {
           distance: route.distance,
           duration: route.duration
