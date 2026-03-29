@@ -377,7 +377,7 @@
   }
 }
 
-// ==================== ULTRA REALISTIC TRUCK ANIMATIONS ====================
+// ==================== PROFESSIONAL TRUCK STYLES ====================
 
 // GPS indicator pulse animation
 @keyframes gps-pulse {
@@ -393,44 +393,36 @@
   }
 }
 
-// Truck subtle bounce (suspension effect)
-@keyframes truck-bounce {
-  0%, 100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-1px);
-  }
-}
+// Modern professional truck marker
+.truck-marker-professional {
+  transition: all 0.2s ease-out;
 
-// Engine idle vibration
-@keyframes engine-idle {
-  0%, 100% {
-    transform: translateX(0) translateY(0);
-  }
-  25% {
-    transform: translateX(0.2px) translateY(0.1px);
-  }
-  50% {
-    transform: translateX(-0.1px) translateY(0.2px);
-  }
-  75% {
-    transform: translateX(0.1px) translateY(-0.1px);
-  }
-}
-
-// Ultra realistic truck marker
-.truck-marker-ultra-realistic {
-  transition: transform 0.15s ease-out;
-  
   .truck-marker-container {
     will-change: transform;
     backface-visibility: hidden;
     -webkit-backface-visibility: hidden;
   }
-  
+
   &:hover {
-    filter: drop-shadow(0 5px 14px rgba(0,0,0,0.5)) !important;
+    filter: drop-shadow(0 6px 16px rgba(59, 130, 246, 0.6)) !important;
+    transform: scale(1.1);
+  }
+}
+
+// Map container
+#map {
+  background: #e5e7eb;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+}
+
+// Destination marker
+.destination-marker-pro {
+  transition: transform 0.2s ease;
+
+  &:hover {
+    transform: scale(1.1);
   }
 }
 
@@ -447,28 +439,4 @@
     transform: scale(1);
     opacity: 1;
   }
-}
-
-// Map container
-#map {
-  background: #e5e7eb;
-}
-
-// Destination marker
-.destination-marker-pro {
-  transition: transform 0.2s ease;
-  
-  &:hover {
-    transform: scale(1.1);
-  }
-}
-
-// Speed badge
-.speed-badge {
-  transition: all 0.2s ease;
-}
-
-// GPS indicator
-.gps-indicator {
-  z-index: 10;
 }
