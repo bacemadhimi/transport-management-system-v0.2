@@ -238,28 +238,54 @@ public class GPSHub : Hub
     /// </summary>
     public async Task AcceptTrip(int tripId)
     {
-        await UpdateTripStatus(tripId, TripStatus.Accepted.ToString(), "Trip accepté");
-        
-        // Mettre à jour l'assignment
-        var assignment = await _context.TripAssignments
-            .Where(a => a.TripId == tripId)
-            .OrderByDescending(a => a.AssignedAt)
-            .FirstOrDefaultAsync();
-        
-        if (assignment != null)
+        try
         {
-            assignment.Status = AssignmentStatus.Accepted;
-            assignment.RespondedAt = DateTime.UtcNow;
-            await _context.SaveChangesAsync();
-            
-            // Notifier les admins
-            await Clients.Group("Admins").SendAsync("TripAccepted", new
+            await UpdateTripStatus(tripId, TripStatus.Accepted.ToString(), "Trip accepté");
+
+            // Mettre à jour l'assignment
+            var assignment = await _context.TripAssignments
+                .Where(a => a.TripId == tripId)
+                .OrderByDescending(a => a.AssignedAt)
+                .FirstOrDefaultAsync();
+
+            if (assignment != null)
             {
-                TripId = tripId,
-                TripReference = assignment.Trip?.TripReference,
-                DriverId = assignment.DriverId,
-                Timestamp = DateTime.UtcNow
-            });
+                assignment.Status = AssignmentStatus.Accepted;
+                assignment.RespondedAt = DateTime.UtcNow;
+                await _context.SaveChangesAsync();
+
+                // Get trip details for notification
+                var trip = await _context.Trips
+                    .Include(t => t.Driver)
+                    .Include(t => t.Truck)
+                    .Include(t => t.Deliveries)
+                    .FirstOrDefaultAsync(t => t.Id == tripId);
+
+                // Notifier les admins en temps réel avec détails complets
+                await Clients.Group("Admins").SendAsync("TripAccepted", new
+                {
+                    TripId = tripId,
+                    TripReference = trip?.TripReference,
+                    DriverId = assignment.DriverId,
+                    DriverName = trip?.Driver?.Name,
+                    TruckImmatriculation = trip?.Truck?.Immatriculation,
+                    Destination = trip?.Deliveries?.LastOrDefault()?.DeliveryAddress,
+                    EstimatedDistance = trip?.EstimatedDistance,
+                    EstimatedDuration = trip?.EstimatedDuration,
+                    EstimatedStartDate = trip?.EstimatedStartDate,
+                    EstimatedEndDate = trip?.EstimatedEndDate,
+                    Status = "Acceptée",
+                    Timestamp = DateTime.UtcNow,
+                    NotificationType = "TRIP_ACCEPTED"
+                });
+
+                _logger.LogInformation($"Trip {tripId} accepted by driver {assignment.DriverId}");
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error accepting trip");
+            await Clients.Caller.SendAsync("Error", $"Erreur: {ex.Message}");
         }
     }
 
@@ -268,31 +294,51 @@ public class GPSHub : Hub
     /// </summary>
     public async Task RejectTrip(int tripId, string reason, string reasonCode)
     {
-        await UpdateTripStatus(tripId, TripStatus.Refused.ToString(), reason);
-        
-        var assignment = await _context.TripAssignments
-            .Where(a => a.TripId == tripId)
-            .OrderByDescending(a => a.AssignedAt)
-            .FirstOrDefaultAsync();
-        
-        if (assignment != null)
+        try
         {
-            assignment.Status = AssignmentStatus.Rejected;
-            assignment.RejectionReason = reason;
-            assignment.RejectionReasonCode = reasonCode;
-            assignment.RespondedAt = DateTime.UtcNow;
-            await _context.SaveChangesAsync();
-            
-            // Notifier les admins
-            await Clients.Group("Admins").SendAsync("TripRejected", new
+            await UpdateTripStatus(tripId, TripStatus.Refused.ToString(), reason);
+
+            var assignment = await _context.TripAssignments
+                .Where(a => a.TripId == tripId)
+                .OrderByDescending(a => a.AssignedAt)
+                .FirstOrDefaultAsync();
+
+            if (assignment != null)
             {
-                TripId = tripId,
-                TripReference = assignment.Trip?.TripReference,
-                DriverId = assignment.DriverId,
-                Reason = reason,
-                ReasonCode = reasonCode,
-                Timestamp = DateTime.UtcNow
-            });
+                assignment.Status = AssignmentStatus.Rejected;
+                assignment.RejectionReason = reason;
+                assignment.RejectionReasonCode = reasonCode;
+                assignment.RespondedAt = DateTime.UtcNow;
+                await _context.SaveChangesAsync();
+
+                // Get trip details for notification
+                var trip = await _context.Trips
+                    .Include(t => t.Driver)
+                    .Include(t => t.Truck)
+                    .FirstOrDefaultAsync(t => t.Id == tripId);
+
+                // Notifier les admins en temps réel avec détails complets
+                await Clients.Group("Admins").SendAsync("TripRejected", new
+                {
+                    TripId = tripId,
+                    TripReference = trip?.TripReference,
+                    DriverId = assignment.DriverId,
+                    DriverName = trip?.Driver?.Name,
+                    TruckImmatriculation = trip?.Truck?.Immatriculation,
+                    Reason = reason,
+                    ReasonCode = reasonCode,
+                    Status = "Refusée",
+                    Timestamp = DateTime.UtcNow,
+                    NotificationType = "TRIP_REJECTED"
+                });
+
+                _logger.LogInformation($"Trip {tripId} rejected by driver {assignment.DriverId}: {reason}");
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error rejecting trip");
+            await Clients.Caller.SendAsync("Error", $"Erreur: {ex.Message}");
         }
     }
 

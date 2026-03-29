@@ -39,6 +39,12 @@ export class GPSTrackingPage implements OnInit, OnDestroy {
   // Mission status
   missionStatus: string = 'pending'; // pending, accepted, loading, delivery, completed
 
+  // Voice Navigation
+  voiceNavigationEnabled: boolean = false;
+  isSpeaking: boolean = false;
+  lastNavigationInstruction: string = '';
+  navigationInstructions: string[] = [];
+
   constructor(
     private gpsService: GPSTrackingService,
     private authService: AuthService,
@@ -659,35 +665,63 @@ export class GPSTrackingPage implements OnInit, OnDestroy {
     }
 
     try {
-      // Fetch route from OSRM
-      const osrmUrl = `https://router.project-osrm.org/route/v1/driving/${this.currentLocation.lng},${this.currentLocation.lat};${this.destination.lng},${this.destination.lat}?overview=full&geometries=geojson`;
-      
+      // Fetch route from OSRM with full geometry and turn-by-turn instructions
+      const osrmUrl = `https://router.project-osrm.org/route/v1/driving/${this.currentLocation.lng},${this.currentLocation.lat};${this.destination.lng},${this.destination.lat}?overview=full&geometries=geojson&steps=true&annotations=true`;
+
       console.log('🗺️ Fetching route from OSRM:', osrmUrl);
-      
+
       const response = await fetch(osrmUrl);
       const data = await response.json();
 
       if (data.code === 'Ok' && data.routes && data.routes.length > 0) {
         const route = data.routes[0];
         const coordinates = route.geometry.coordinates.map((coord: number[]) => [coord[1], coord[0]] as [number, number]);
-        
+
         console.log(`✅ Route fetched: ${route.distance}m, ${route.duration}s`);
 
+        // Draw the complete route on map
         if (this.routePolyline) {
           this.routePolyline.setLatLngs(coordinates);
         } else {
           this.routePolyline = L.polyline(coordinates, {
             color: '#667eea',
-            weight: 5,
-            opacity: 0.8,
+            weight: 6,
+            opacity: 0.9,
             lineCap: 'round',
             lineJoin: 'round'
           }).addTo(this.map);
         }
 
-        // Adjust map to show full route
+        // Add a lighter outer line for better visibility
+        const outerPolyline = L.polyline(coordinates, {
+          color: '#ffffff',
+          weight: 10,
+          opacity: 0.3,
+          lineCap: 'round',
+          lineJoin: 'round'
+        }).addTo(this.map);
+
+        // Adjust map bounds to show the COMPLETE route and destination
         const bounds = L.latLngBounds(coordinates);
-        this.map.fitBounds(bounds, { padding: [50, 50] });
+        
+        // Add padding to ensure full route is visible
+        this.map.fitBounds(bounds, { 
+          padding: [80, 80],
+          maxZoom: 14,
+          minZoom: 10
+        });
+
+        // Provide voice navigation instructions if enabled
+        if (this.voiceNavigationEnabled) {
+          this.provideNavigationInstructions();
+        }
+
+        // Store route info for display
+        this.routeInfo = {
+          distance: route.distance,
+          duration: route.duration
+        };
+
       } else {
         console.warn('⚠️ No route found from OSRM, using fallback');
         this.drawFallbackRoute();
@@ -697,6 +731,9 @@ export class GPSTrackingPage implements OnInit, OnDestroy {
       this.drawFallbackRoute();
     }
   }
+
+  // Store route information
+  private routeInfo: { distance: number; duration: number } | null = null;
 
   /**
    * Draw fallback straight line route if OSRM fails
@@ -936,13 +973,38 @@ export class GPSTrackingPage implements OnInit, OnDestroy {
    * Estimer le temps restant
    */
   getEstimatedTime(): string {
+    // Use route info if available (more accurate)
+    if (this.routeInfo && this.routeInfo.duration > 0) {
+      const minutes = Math.round(this.routeInfo.duration / 60);
+      if (minutes < 60) {
+        return `${minutes} min`;
+      }
+      const hours = Math.floor(minutes / 60);
+      const mins = minutes % 60;
+      return `${hours}h ${mins}min`;
+    }
+
+    // Fallback to speed-based calculation
     const distance = this.getDistanceRemaining();
     if (!this.speed || distance === 0) return '-- min';
 
     const timeHours = distance / this.speed;
     const timeMinutes = Math.round(timeHours * 60);
-
     return `${timeMinutes} min`;
+  }
+
+  /**
+   * Get total route distance from OSRM
+   */
+  getRouteDistance(): string {
+    if (this.routeInfo && this.routeInfo.distance > 0) {
+      const km = this.routeInfo.distance / 1000;
+      if (km >= 1) {
+        return `${km.toFixed(1)} km`;
+      }
+      return `${Math.round(this.routeInfo.distance)} m`;
+    }
+    return '';
   }
 
   /**
@@ -988,63 +1050,32 @@ export class GPSTrackingPage implements OnInit, OnDestroy {
    * Accept mission directly
    */
   async acceptMission() {
-    await this.updateMissionStatus('accepted');
-  }
+    if (!this.tripId) return;
 
-  /**
-   * Start loading directly
-   */
-  async startLoading() {
-    await this.updateMissionStatus('loading');
-  }
+    try {
+      // Update local status
+      this.missionStatus = 'accepted';
+      
+      // Send acceptance via SignalR - this will notify admin
+      await this.gpsService.acceptTrip(this.tripId);
+      
+      // Show success feedback
+      await this.showToast('✅ Mission acceptée', 'success');
+      
+      // Speak confirmation if voice navigation is enabled
+      if (this.voiceNavigationEnabled) {
+        this.speak('Mission acceptée. Je vais vous guider vers la destination.');
+      }
 
-  /**
-   * Start delivery directly
-   */
-  async startDelivery() {
-    await this.updateMissionStatus('delivery');
-  }
+      // Start navigation to destination
+      setTimeout(() => {
+        this.provideNavigationInstructions();
+      }, 1000);
 
-  /**
-   * Complete mission directly
-   */
-  async completeMission() {
-    await this.updateMissionStatus('completed');
-  }
-
-  /**
-   * Show mission status action sheet
-   */
-  async showStatusActions() {
-    const alert = await this.alertController.create({
-      header: 'État de la mission',
-      subHeader: `Trip ${this.tripReference}`,
-      buttons: [
-        {
-          text: '✅ Accepter',
-          handler: () => this.updateMissionStatus('accepted')
-        },
-        {
-          text: '📦 Chargement',
-          handler: () => this.updateMissionStatus('loading')
-        },
-        {
-          text: '🚚 Livraison',
-          handler: () => this.updateMissionStatus('delivery')
-        },
-        {
-          text: '🎉 Terminé',
-          handler: () => this.updateMissionStatus('completed')
-        },
-        {
-          text: '❌ Refuser',
-          role: 'cancel',
-          handler: () => this.rejectMission()
-        }
-      ]
-    });
-
-    await alert.present();
+    } catch (error) {
+      console.error('Error accepting mission:', error);
+      await this.showToast('Erreur lors de l\'acceptation', 'danger');
+    }
   }
 
   /**
@@ -1096,9 +1127,21 @@ export class GPSTrackingPage implements OnInit, OnDestroy {
           text: 'Refuser',
           handler: async (data: any) => {
             if (data.reason && this.tripId) {
-              await this.gpsService.rejectTrip(this.tripId, data.reason, data.reason);
-              await this.showToast('❌ Mission refusée', 'danger');
-              this.router.navigate(['/home']);
+              try {
+                // Send rejection via SignalR - this will notify admin
+                await this.gpsService.rejectTrip(this.tripId, data.reason, data.reason);
+                
+                // Update local status
+                this.missionStatus = 'refused';
+                
+                await this.showToast('❌ Mission refusée', 'danger');
+                
+                // Navigate back home
+                this.router.navigate(['/home']);
+              } catch (error) {
+                console.error('Error rejecting mission:', error);
+                await this.showToast('Erreur lors du refus', 'danger');
+              }
             }
           }
         }
@@ -1106,6 +1149,27 @@ export class GPSTrackingPage implements OnInit, OnDestroy {
     });
 
     await alert.present();
+  }
+
+  /**
+   * Start loading directly
+   */
+  async startLoading() {
+    await this.updateMissionStatus('loading');
+  }
+
+  /**
+   * Start delivery directly
+   */
+  async startDelivery() {
+    await this.updateMissionStatus('delivery');
+  }
+
+  /**
+   * Complete mission directly
+   */
+  async completeMission() {
+    await this.updateMissionStatus('completed');
   }
 
   /**
@@ -1161,5 +1225,221 @@ export class GPSTrackingPage implements OnInit, OnDestroy {
       case 'completed': return 'Mission terminée';
       default: return 'État inconnu';
     }
+  }
+
+  /**
+   * Toggle Voice Navigation
+   */
+  toggleVoiceNavigation() {
+    this.voiceNavigationEnabled = !this.voiceNavigationEnabled;
+    
+    if (this.voiceNavigationEnabled) {
+      this.showToast('🔊 Navigation vocale activée', 'success');
+      this.speak('Navigation vocale activée. Je vais vous guider vers la destination.');
+      
+      // Start providing navigation instructions
+      this.provideNavigationInstructions();
+    } else {
+      this.showToast('🔇 Navigation vocale désactivée', 'medium');
+      this.stopSpeaking();
+    }
+  }
+
+  /**
+   * Provide intelligent navigation instructions based on route
+   */
+  private async provideNavigationInstructions() {
+    if (!this.voiceNavigationEnabled || !this.currentLocation || !this.destination) {
+      return;
+    }
+
+    try {
+      // Fetch route with turn-by-turn instructions from OSRM
+      const osrmUrl = `https://router.project-osrm.org/route/v1/driving/${this.currentLocation.lng},${this.currentLocation.lat};${this.destination.lng},${this.destination.lat}?overview=full&geometries=geojson&steps=true&annotations=true`;
+
+      const response = await fetch(osrmUrl);
+      const data = await response.json();
+
+      if (data.code === 'Ok' && data.routes && data.routes.length > 0) {
+        const route = data.routes[0];
+        const legs = route.legs;
+        
+        if (legs && legs.length > 0) {
+          const steps = legs[0].steps;
+          const instructions: string[] = [];
+
+          // Extract navigation instructions from route steps
+          steps.forEach((step: any, index: number) => {
+            const maneuver = step.maneuver;
+            const instruction = this.convertManeuverToInstruction(maneuver.type, maneuver.modifier, step.name);
+            const distance = step.distance;
+            
+            if (instruction && distance) {
+              const distanceText = this.formatDistance(distance);
+              instructions.push(`${instruction} dans ${distanceText}`);
+            }
+          });
+
+          this.navigationInstructions = instructions;
+
+          // Speak next instruction if not already speaking
+          if (instructions.length > 0 && !this.isSpeaking) {
+            const nextInstruction = instructions[0];
+            if (nextInstruction !== this.lastNavigationInstruction) {
+              this.speak(nextInstruction);
+              this.lastNavigationInstruction = nextInstruction;
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching navigation instructions:', error);
+    }
+  }
+
+  /**
+   * Convert OSRM maneuver to French instruction
+   */
+  private convertManeuverToInstruction(type: string, modifier?: string, streetName?: string): string {
+    const streetText = streetName ? `sur ${streetName}` : '';
+    
+    switch (type) {
+      case 'depart':
+        return 'Départ';
+      case 'turn':
+        const turnInstructions: { [key: string]: string } = {
+          'left': 'Tournez à gauche',
+          'right': 'Tournez à droite',
+          'sharp left': 'Tournez franchement à gauche',
+          'sharp right': 'Tournez franchement à droite',
+          'slight left': 'Obliquez légèrement à gauche',
+          'slight right': 'Obliquez légèrement à droite',
+          'uturn': 'Faites demi-tour'
+        };
+        return `${turnInstructions[modifier || 'straight'] || 'Continuez'} ${streetText}`;
+      case 'new name':
+        return `Continuez ${streetText}`;
+      case 'continue':
+        return `Continuez tout droit ${streetText}`;
+      case 'roundabout':
+        return `Prenez le rond-point ${streetText}`;
+      case 'rotary':
+        return `Prenez le giratoire ${streetText}`;
+      case 'merge':
+        return `Rejoignez la route ${streetText}`;
+      case 'fork':
+        return `Prenez la fourche ${streetText}`;
+      case 'end of road':
+        return `À la fin de la route ${streetText}`;
+      case 'arrive':
+        return 'Vous êtes arrivé à destination';
+      default:
+        return `Continuez ${streetText}`;
+    }
+  }
+
+  /**
+   * Format distance for display
+   */
+  private formatDistance(meters: number): string {
+    if (meters >= 1000) {
+      return `${(meters / 1000).toFixed(1)} km`;
+    }
+    return `${Math.round(meters)} mètres`;
+  }
+
+  /**
+   * Speak text using Text-to-Speech
+   */
+  private speak(text: string) {
+    if (!this.voiceNavigationEnabled || !text) return;
+
+    // Stop any ongoing speech
+    this.stopSpeaking();
+
+    if ('speechSynthesis' in window) {
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = 'fr-FR'; // French
+      utterance.rate = 0.9; // Slightly slower for clarity
+      utterance.pitch = 1.0;
+      utterance.volume = 1.0;
+
+      utterance.onstart = () => {
+        this.isSpeaking = true;
+      };
+
+      utterance.onend = () => {
+        this.isSpeaking = false;
+      };
+
+      utterance.onerror = (event) => {
+        console.error('Speech synthesis error:', event);
+        this.isSpeaking = false;
+      };
+
+      speechSynthesis.speak(utterance);
+    } else {
+      console.warn('Text-to-Speech not supported');
+    }
+  }
+
+  /**
+   * Stop current speech
+   */
+  private stopSpeaking() {
+    if ('speechSynthesis' in window) {
+      speechSynthesis.cancel();
+    }
+    this.isSpeaking = false;
+  }
+
+  /**
+   * Announce direction based on bearing to destination
+   */
+  private announceDirection() {
+    if (!this.currentLocation || !this.destination) return;
+
+    const bearing = this.calculateBearingToDestination();
+    const direction = this.getBearingDirection(bearing);
+    
+    const distance = this.getDistanceRemaining();
+    const distanceText = this.formatDistance(distance * 1000); // Convert km to meters
+
+    if (distance < 0.5) { // Less than 500m
+      this.speak(`Vous êtes arrivé à destination dans ${distanceText}`);
+    } else if (distance < 2) { // Less than 2km
+      this.speak(`Continuez vers ${direction}, destination dans ${distanceText}`);
+    }
+  }
+
+  /**
+   * Calculate bearing to destination
+   */
+  private calculateBearingToDestination(): number {
+    if (!this.currentLocation || !this.destination) return 0;
+
+    const lat1 = this.toRad(this.currentLocation.lat);
+    const lat2 = this.toRad(this.destination.lat);
+    const dLng = this.toRad(this.destination.lng - this.currentLocation.lng);
+
+    const y = Math.sin(dLng) * Math.cos(lat2);
+    const x = Math.cos(lat1) * Math.sin(lat2) -
+              Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLng);
+
+    const bearing = Math.atan2(y, x);
+    return (this.toDeg(bearing) + 360) % 360;
+  }
+
+  /**
+   * Convert bearing to direction text
+   */
+  private getBearingDirection(bearing: number): string {
+    const directions = ['Nord', 'Nord-Est', 'Est', 'Sud-Est', 'Sud', 'Sud-Ouest', 'Ouest', 'Nord-Ouest'];
+    const index = Math.round(bearing / 45) % 8;
+    return directions[index];
+  }
+
+  private toDeg(rad: number): number {
+    return rad * 180 / Math.PI;
   }
 }

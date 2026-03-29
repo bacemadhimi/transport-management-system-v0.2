@@ -5,6 +5,13 @@
     </ion-buttons>
     <ion-title>Suivi GPS - {{ tripReference }}</ion-title>
     <ion-buttons slot="end">
+      <!-- Voice Navigation Toggle -->
+      <ion-button (click)="toggleVoiceNavigation()">
+        <ion-icon slot="icon-only" 
+                  [name]="voiceNavigationEnabled ? 'volume-high' : 'volume-mute'"
+                  [color]="voiceNavigationEnabled ? 'success' : 'medium'">
+        </ion-icon>
+      </ion-button>
       <ion-button (click)="refreshPosition()">
         <ion-icon slot="icon-only" name="refresh"></ion-icon>
       </ion-button>
@@ -49,6 +56,11 @@
           <div class="info-footer">
             <ion-icon name="time" color="tertiary"></ion-icon>
             <span>Temps estimé: <strong>{{ getEstimatedTime() }}</strong></span>
+          </div>
+
+          <div class="route-info" *ngIf="getRouteDistance()">
+            <ion-icon name="road" color="primary"></ion-icon>
+            <span>Distance du trajet: <strong>{{ getRouteDistance() }}</strong></span>
           </div>
 
           <div class="accuracy-info" *ngIf="accuracy">

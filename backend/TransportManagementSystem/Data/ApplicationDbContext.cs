@@ -257,6 +257,19 @@ namespace TransportManagementSystem.Data
                 .HasForeignKey(un => un.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
 
+            // Fix decimal precision warnings
+            modelBuilder.Entity<Trip>()
+                .Property(t => t.EstimatedDistance)
+                .HasPrecision(18, 2);
+
+            modelBuilder.Entity<Trip>()
+                .Property(t => t.EstimatedDuration)
+                .HasPrecision(18, 2);
+
+            modelBuilder.Entity<Maintenance>()
+                .Property(m => m.OilQuantity)
+                .HasPrecision(18, 2);
+
         }
 
         public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
