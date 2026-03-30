@@ -1034,6 +1034,7 @@ public class TripsController : ControllerBase
                     OrderReference = d.Order?.Reference,
                     OrderWeight = d.Order?.Weight ?? 0,
                     DeliveryAddress = d.DeliveryAddress,
+                    Geolocation = d.Geolocation,
                     PlannedTime = d.PlannedTime,
                     ActualArrivalTime = d.ActualArrivalTime,
                     ActualDepartureTime = d.ActualDepartureTime,
@@ -1643,6 +1644,61 @@ public class TripsController : ControllerBase
         catch (Exception ex)
         {
             return StatusCode(500, new { error = ex.Message });
+        }
+    }
+    [HttpGet]
+    public async Task<IActionResult> GetTrips(
+    [FromQuery] string? status = null,
+    [FromQuery] int page = 1,
+    [FromQuery] int pageSize = 10)
+    {
+        try
+        {
+            var query = context.Trips
+                .Include(t => t.Driver)
+                .Include(t => t.Truck)
+                .Include(t => t.Deliveries)
+                .AsQueryable();
+
+            if (!string.IsNullOrEmpty(status))
+            {
+                if (Enum.TryParse<TripStatus>(status, out var parsedStatus))
+                {
+                    query = query.Where(t => t.TripStatus == parsedStatus);
+                }
+            }
+
+            var totalItems = await query.CountAsync();
+            var trips = await query
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .Select(t => new
+                {
+                    t.Id,
+                    t.TripReference,
+                    t.BookingId,
+                    Status = t.TripStatus.ToString(),
+                    DriverName = t.Driver != null ? t.Driver.Name : null,
+                    TruckImmatriculation = t.Truck != null ? t.Truck.Immatriculation : null,
+                    t.EstimatedDistance,
+                    t.EstimatedDuration,
+                    t.CreatedAt,
+                    DeliveriesCount = t.Deliveries.Count
+                })
+                .ToListAsync();
+
+            return Ok(new
+            {
+                data = trips,
+                total = totalItems,
+                page = page,
+                pageSize = pageSize,
+                totalPages = Math.Ceiling(totalItems / (double)pageSize)
+            });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = "Error loading trips", error = ex.Message });
         }
     }
 }
