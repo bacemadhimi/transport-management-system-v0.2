@@ -607,3 +607,76 @@
     }
   }
 }
+.driver-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  
+  .driver-name {
+    font-weight: 500;
+  }
+  
+  .driver-license {
+    font-size: 12px;
+    color: #6c757d;
+    font-family: monospace;
+  }
+}
+
+.flex {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  
+  .mr-2 {
+    margin-right: 8px;
+  }
+}
+
+.text-gray-500 {
+  color: #6c757d;
+}
+
+.italic {
+  font-style: italic;
+}
+.driver-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  
+  .driver-name {
+    font-weight: 500;
+    color: #1f2937;
+  }
+  
+  .driver-license {
+    font-size: 12px;
+    color: #6c757d;
+    font-family: monospace;
+  }
+  
+  .driver-phone {
+    font-size: 12px;
+    color: #10b981;
+  }
+}
+
+.flex {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  
+  .mr-2 {
+    margin-right: 8px;
+  }
+}
+
+.text-gray-500 {
+  color: #6c757d;
+}
+
+.italic {
+  font-style: italic;
+}

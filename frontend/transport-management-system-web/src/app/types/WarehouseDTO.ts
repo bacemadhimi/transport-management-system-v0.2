@@ -7,18 +7,23 @@ export interface WarehousePlantIt {
   pipeCount: number;
   supportMultipleDocking: boolean;
   containerParallelUsageMode: boolean;
-  warehouseCode: string;      // Nom du dépôt (de tblCPDataX.szName)
-  warehouseName: string;      // Description (de tblCPDataX.szDescription)
+  warehouseCode: string;
+  warehouseName: string;
   isActivated: boolean;
   uidKey: string;
   parentLink: number;
   structureLink: number;
+  parentCode?: string;
+  parentName?: string;
+  parentIsActivated?: boolean;
 }
 
 export interface WarehouseSearchOptions {
   search?: string;
   status?: boolean;
   processUnitClassLink?: number;
+  warehouseType?: number;  // NOUVEAU: Remplacer processUnitClassLink
+  parentLink?: number;
   pageIndex?: number;
   pageSize?: number;
   sortField?: string;

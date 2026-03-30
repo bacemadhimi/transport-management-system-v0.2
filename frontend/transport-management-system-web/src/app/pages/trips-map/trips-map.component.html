@@ -1,13 +1,12 @@
-<div class="trips-map-container">
-  <div class="filters-bar" (click)="$event.stopPropagation()" (touchstart)="$event.stopPropagation()">
+<div class="trips-stats-container">
+  <!-- Filters Bar -->
+  <div class="filters-bar">
     <div class="filters-left">
       <div class="filter-group">
         <label>Statut:</label>
         <select [(ngModel)]="statusFilter" (change)="applyFilters()" class="filter-select">
           <option value="all">Tous les statuts</option>
-          <option *ngFor="let status of tripStatusOptions" [value]="status.value">
-            {{ status.label }}
-          </option>
+          <option *ngFor="let status of tripStatusOptions" [value]="status.value">{{ status.label }}</option>
         </select>
       </div>
       
@@ -22,327 +21,126 @@
       <div class="filter-group date-range">
         <label>Période:</label>
         <div class="date-inputs">
-          <div class="date-input-wrapper">
-            <i class="fas fa-calendar-alt"></i>
-            <input 
-              type="date" 
-              [(ngModel)]="startDateFilter" 
-              (change)="applyFilters()" 
-              class="filter-input date-input"
-              [max]="endDateFilter">
-          </div>
+          <input type="date" [(ngModel)]="startDateFilter" (change)="applyFilters()" class="filter-input">
           <span class="date-separator">→</span>
-          <div class="date-input-wrapper">
-            <i class="fas fa-calendar-alt"></i>
-            <input 
-              type="date" 
-              [(ngModel)]="endDateFilter" 
-              (change)="applyFilters()" 
-              class="filter-input date-input"
-              [min]="startDateFilter">
-          </div>
+          <input type="date" [(ngModel)]="endDateFilter" (change)="applyFilters()" class="filter-input">
         </div>
       </div>
 
       <div class="current-month-indicator" *ngIf="!startDateFilter && !endDateFilter">
-        <i class="fas fa-calendar-check"></i>
-        <span>Mois courant: {{ currentMonthLabel }}</span>
+        <span>📅 Mois courant: {{ currentMonthLabel }}</span>
       </div>
     </div>
     
     <div class="filters-right">
-      <button class="btn btn-outline" (click)="resetToCurrentMonth(); $event.stopPropagation()" title="Revenir au mois courant">
-        <i class="fas fa-calendar-week"></i> Mois courant
-      </button>
-      <button class="btn btn-outline" (click)="resetFilters(); $event.stopPropagation()">
-        <i class="fas fa-undo"></i> Réinitialiser
-      </button>
-      <button class="btn btn-primary" (click)="refreshData(); $event.stopPropagation()">
-        <i class="fas fa-sync-alt"></i> Actualiser
-      </button>
+      <button class="btn-outline" (click)="resetToCurrentMonth()">📅 Mois courant</button>
+      <button class="btn-outline" (click)="resetFilters()">↺ Réinitialiser</button>
+      <button class="btn-primary" (click)="refreshData()">⟳ Actualiser</button>
     </div>
   </div>
 
-  <div class="month-shortcuts" *ngIf="showMonthShortcuts">
-    <button class="month-shortcut" (click)="setCurrentMonth(); $event.stopPropagation()" [class.active]="isCurrentMonthSelected()">
-      <i class="fas fa-calendar"></i> Ce mois
-    </button>
-    <button class="month-shortcut" (click)="setPreviousMonth(); $event.stopPropagation()">
-      <i class="fas fa-calendar-minus"></i> Mois dernier
-    </button>
-    <button class="month-shortcut" (click)="setNextMonth(); $event.stopPropagation()">
-      <i class="fas fa-calendar-plus"></i> Mois prochain
-    </button>
-    <button class="month-shortcut" (click)="clearDates(); $event.stopPropagation()">
-      <i class="fas fa-times"></i> Effacer
-    </button>
-  </div>
-
+  <!-- Stats Cards -->
   <div class="stats-cards">
     <div class="stat-card">
-      <div class="stat-icon" style="background: linear-gradient(135deg, #667eea, #764ba2);">
-        <i class="fas fa-route"></i>
-      </div>
+      <div class="stat-icon">📦</div>
       <div class="stat-content">
         <span class="stat-value">{{ tripStats.total }}</span>
         <span class="stat-label">Tournées totales</span>
       </div>
     </div>
-    
     <div class="stat-card">
-      <div class="stat-icon" style="background: linear-gradient(135deg, #4e73df, #224abe);">
-        <i class="fas fa-truck"></i>
-      </div>
+      <div class="stat-icon">🚚</div>
       <div class="stat-content">
         <span class="stat-value">{{ tripStats.inProgress }}</span>
         <span class="stat-label">En cours</span>
       </div>
     </div>
-    
     <div class="stat-card">
-      <div class="stat-icon" style="background: linear-gradient(135deg, #1cc88a, #13855c);">
-        <i class="fas fa-check-double"></i>
-      </div>
+      <div class="stat-icon">✅</div>
       <div class="stat-content">
         <span class="stat-value">{{ tripStats.completed }}</span>
         <span class="stat-label">Livrées</span>
       </div>
     </div>
-    
     <div class="stat-card">
-      <div class="stat-icon" style="background: linear-gradient(135deg, #36b9cc, #258391);">
-        <i class="fas fa-map-marker-alt"></i>
-      </div>
-      <div class="stat-content">
-        <span class="stat-value">{{ tripStats.activeEntities }}</span>
-        <span class="stat-label">Entités actives</span>
-      </div>
-    </div>
-    
-    <div class="stat-card">
-      <div class="stat-icon" style="background: linear-gradient(135deg, #f6c23e, #dda20a);">
-        <i class="fas fa-road"></i>
-      </div>
+      <div class="stat-icon">📏</div>
       <div class="stat-content">
         <span class="stat-value">{{ tripStats.totalDistance }} km</span>
         <span class="stat-label">Distance totale</span>
       </div>
     </div>
-    
     <div class="stat-card">
-      <div class="stat-icon" style="background: linear-gradient(135deg, #e74a3b, #be2617);">
-        <i class="fas fa-clock"></i>
-      </div>
+      <div class="stat-icon">📊</div>
       <div class="stat-content">
-        <span class="stat-value">{{ tripStats.onTimePercentage }}%</span>
-        <span class="stat-label">À l'heure</span>
+        <span class="stat-value">{{ overallProgress }}%</span>
+        <span class="stat-label">Progression</span>
       </div>
     </div>
   </div>
 
-  <div class="card main-map-card">
-    <div class="card-header">
-      <div class="header-left">
-        <h3>
-          <i class="fas fa-map-marked-alt"></i>
-          Carte des Tournées par Entité Géographique
-        </h3>
-        <div class="map-status-badge">
-          <span class="live-indicator"></span>
-          <span class="live-text">Temps réel</span>
+  <!-- Charts Section -->
+  <div class="charts-section">
+    <div class="charts-grid">
+      <div class="chart-card">
+        <div class="chart-header">
+          <h3>📊 Distribution par Statut</h3>
+        </div>
+        <div class="chart-body">
+          <canvas id="statusBarChart"></canvas>
         </div>
       </div>
-      <div class="map-actions">
-        <button class="btn btn-icon" (click)="centerMap()" title="Centrer Tunisie">
-          <i class="fas fa-crosshairs"></i>
-        </button>
-        <button class="btn btn-icon" (click)="refreshMap()" title="Actualiser">
-          <i class="fas fa-sync-alt"></i>
-        </button>
-        <button class="btn btn-icon" (click)="toggleRoutes()" [class.active]="showRoutes" title="Afficher/Masquer itinéraires">
-          <i class="fas fa-road"></i>
-        </button>
-      </div>
-    </div>
-    
-    <div class="card-body">
-      <div class="map-container-wrapper">
-        <div id="tripsMap" class="transport-map" 
-             [class.map-loading]="mapLoading"
-             [class.map-error]="mapError"></div>
-        
-        <div *ngIf="mapLoading" class="map-loading-overlay">
-          <div class="loading-content">
-            <div class="spinner-small"></div>
-            <span>Chargement des tournées...</span>
-          </div>
+      <div class="chart-card">
+        <div class="chart-header">
+          <h3>🥧 Taux de Complétion</h3>
         </div>
-        
-        <div *ngIf="mapError && !mapLoading" class="map-error-overlay">
-          <div class="error-content">
-            <i class="fas fa-exclamation-triangle"></i>
-            <span>Erreur de chargement de la carte</span>
-            <button class="btn btn-sm btn-primary" (click)="refreshMap()">
-              <i class="fas fa-redo"></i> Réessayer
-            </button>
-          </div>
-        </div>
-        
-        <div class="map-legend">
-          <h4><i class="fas fa-info-circle"></i> Légende</h4>
-          <div class="legend-grid">
-            <div class="legend-section">
-              <h5>Statut Tournées</h5>
-              <div class="legend-item" *ngFor="let status of tripStatusList">
-                <span class="legend-dot" [style.background]="status.color"></span>
-                <span class="legend-label">{{ status.label }}</span>
-              </div>
-            </div>
-            
-            <div class="legend-section">
-              <h5>Types de Points</h5>
-              <div class="legend-item">
-                <i class="fas fa-flag-checkered" style="color: #f6c23e;"></i>
-                <span class="legend-label">Départ</span>
-              </div>
-              <div class="legend-item">
-                <i class="fas fa-map-pin" style="color: #4e73df;"></i>
-                <span class="legend-label">Livraison</span>
-              </div>
-              <div class="legend-item">
-                <i class="fas fa-flag" style="color: #1cc88a;"></i>
-                <span class="legend-label">Destination finale</span>
-              </div>
-            </div>
-            
-            <div class="legend-section">
-              <h5>Statut Livraison</h5>
-              <div class="legend-item" *ngFor="let status of deliveryStatusList">
-                <span class="legend-dot" [style.background]="status.color"></span>
-                <span class="legend-label">{{ status.label }}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-        
-        <div class="map-progress">
-          <div class="progress-info">
-            <span>Progression globale</span>
-            <span>{{ overallProgress }}%</span>
-          </div>
-          <div class="progress-bar">
-            <div class="progress-fill" [style.width.%]="overallProgress"></div>
-          </div>
+        <div class="chart-body">
+          <canvas id="completionPieChart"></canvas>
         </div>
       </div>
     </div>
   </div>
 
-  <div class="active-trips-section">
-    <h4 class="section-title">
-      <i class="fas fa-truck-moving"></i>
-      Tournées en Cours
-      <span class="badge">{{ activeTrips.length }}</span>
-    </h4>
-    
-    <cdk-virtual-scroll-viewport 
-      [itemSize]="itemSize" 
-      class="virtual-scroll-viewport">
-      
-      <div class="trips-grid">
-        <div *cdkVirtualFor="let trip of activeTrips; trackBy: trackByTripId" 
-             class="trip-card-wrapper">
-          <div class="trip-card" 
-               [class.active]="selectedTripId === trip.id"
-               (click)="focusOnTrip(trip.id)">
-            
-            <div class="trip-header" [style.background]="trip.statusColor + '15'">
-              <div class="trip-icon" [style.background]="trip.statusColor">
-                <i class="fas" [ngClass]="trip.statusIcon || 'fa-truck'"></i>
+  <!-- Entity Statistics Table -->
+  <div class="entity-stats-section">
+    <h3>🏢 Statistiques par Entité</h3>
+    <div class="table-wrapper">
+      <table class="entity-table">
+        <thead>
+          <tr>
+            <th>Entité</th>
+            <th>Total</th>
+            <th>En attente</th>
+            <th>En cours</th>
+            <th>Livrées</th>
+            <th>Progression</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let stat of entityDeliveryStats" (click)="focusOnEntity(stat.entityName)">
+            <td><strong>{{ stat.entityName }}</strong></td>
+            <td>{{ stat.total }}</td>
+            <td class="pending">{{ stat.pending }}</td>
+            <td class="in-progress">{{ stat.inProgress }}</td>
+            <td class="delivered">{{ stat.delivered }}</td>
+            <td>
+              <div class="progress-mini">
+                <div class="progress-bar-mini" [style.width.%]="getEntityCompletionPercentage(stat)"></div>
+                <span>{{ getEntityCompletionPercentage(stat) }}%</span>
               </div>
-              <div class="trip-info">
-                <h5>{{ trip.tripReference || '#' + trip.id }}</h5>
-                <span class="trip-status" [style.color]="trip.statusColor">
-                  {{ trip.statusLabel || trip.tripStatus }}
-                </span>
-              </div>
-              <div class="trip-progress" *ngIf="trip.progress !== undefined">
-                <div class="progress-circle" [style.background]="'conic-gradient(' + trip.statusColor + ' ' + trip.progress + '%, #e9ecef 0)'">
-                  <span>{{ trip.progress }}%</span>
-                </div>
-              </div>
-            </div>
-            
-            <div class="trip-body">
-              <div class="trip-details">
-                <div class="detail-item" title="Camion">
-                  <i class="fas fa-truck"></i>
-                  <span>{{ trip.truck?.immatriculation | slice:0:6 }}</span>
-                </div>
-                <div class="detail-item" title="Chauffeur">
-                  <i class="fas fa-user-tie"></i>
-                  <span>{{ trip.driver?.name | slice:0:8 }}</span>
-                </div>
-                <div class="detail-item" title="Livraisons">
-                  <i class="fas fa-map-pin"></i>
-                  <span>{{ trip.deliveries?.length || 0 }}</span>
-                </div>
-                <div class="detail-item" title="Distance">
-                  <i class="fas fa-road"></i>
-                  <span>{{ trip.estimatedDistance }} km</span>
-                </div>
-              </div>
-              
-              <div class="delivery-preview" *ngIf="trip.deliveries && trip.deliveries.length > 0">
-                <div class="preview-item">
-                  <div class="preview-marker" [style.background]="trip.deliveries[0].statusColor">
-                    {{ trip.deliveries[0].sequence }}
-                  </div>
-                  <div class="preview-info">
-                    <span class="customer-name">{{ trip.deliveries[0].customer?.name | slice:0:12 }}</span>
-                    <span class="delivery-status" [style.color]="trip.deliveries[0].statusColor">
-                      {{ trip.deliveries[0].statusLabel || trip.deliveries[0].status }}
-                    </span>
-                  </div>
-                </div>
-                <div class="more-items" *ngIf="trip.deliveries.length > 1">
-                  +{{ trip.deliveries.length - 1 }} autre(s)
-                </div>
-              </div>
-            </div>
-            
-            <div class="trip-footer">
-              <button class="btn-view" (click)="viewTripDetails(trip.id, $event)">
-                <i class="fas fa-eye"></i>
-              </button>
-              <button class="btn-track" (click)="focusOnTrip(trip.id, $event)">
-                <i class="fas fa-crosshairs"></i>
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-      
-      <div *ngIf="activeTrips.length === 0" class="empty-state">
-        <i class="fas fa-route fa-3x"></i>
-        <p>Aucune tournée en cours</p>
-      </div>
-      
-    </cdk-virtual-scroll-viewport>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
   </div>
 
+  <!-- Trip Details Modal -->
   <div class="modal" *ngIf="showTripModal" (click)="closeModal()">
     <div class="modal-content" (click)="$event.stopPropagation()">
       <div class="modal-header">
-        <h3>
-          <i class="fas fa-route"></i>
-          Détails de la Tournée
-        </h3>
-        <button class="btn-close" (click)="closeModal()">
-          <i class="fas fa-times"></i>
-        </button>
+        <h3>📋 Détails de la Tournée</h3>
+        <button class="btn-close" (click)="closeModal()">✕</button>
       </div>
-      
       <div class="modal-body" *ngIf="selectedTrip">
         <div class="trip-summary">
           <div class="summary-item">
@@ -357,7 +155,7 @@
           </div>
           <div class="summary-item">
             <span class="label">Camion:</span>
-            <span class="value">{{ selectedTrip.truck?.immatriculation }} - {{ selectedTrip.truck?.brand }}</span>
+            <span class="value">{{ selectedTrip.truck?.immatriculation }}</span>
           </div>
           <div class="summary-item">
             <span class="label">Chauffeur:</span>
@@ -367,73 +165,34 @@
             <span class="label">Distance:</span>
             <span class="value">{{ selectedTrip.estimatedDistance }} km</span>
           </div>
-          <div class="summary-item">
-            <span class="label">Début prévu:</span>
-            <span class="value">{{ selectedTrip.estimatedStartDate | date:'dd/MM/yyyy HH:mm' }}</span>
-          </div>
-          <div class="summary-item">
-            <span class="label">Fin prévue:</span>
-            <span class="value">{{ selectedTrip.estimatedEndDate | date:'dd/MM/yyyy HH:mm' }}</span>
-          </div>
-          <div class="summary-item" *ngIf="selectedTrip.actualStartDate">
-            <span class="label">Début réel:</span>
-            <span class="value">{{ selectedTrip.actualStartDate | date:'dd/MM/yyyy HH:mm' }}</span>
-          </div>
         </div>
-        
-        <h4 class="section-subtitle">
-          <i class="fas fa-map-marker-alt"></i>
-          Livraisons ({{ selectedTrip.deliveries?.length }})
-        </h4>
-
-        <div class="deliveries-timeline">
-          <div class="timeline-item" *ngFor="let delivery of selectedTrip.deliveries">
-            <div class="timeline-marker" [style.background]="delivery.statusColor">
+        <h4>📍 Livraisons ({{ selectedTrip.deliveries?.length }})</h4>
+        <div class="deliveries-list">
+          <div class="delivery-item" *ngFor="let delivery of selectedTrip.deliveries">
+            <div class="delivery-marker" [style.background]="delivery.statusColor">
               {{ delivery.sequence }}
             </div>
-            <div class="timeline-content">
+            <div class="delivery-content">
               <div class="delivery-header">
-                <h5>{{ delivery.customer?.name || 'Client #' + delivery.customerId }}</h5>
+                <h5>{{ delivery.customer?.name || 'Client' }}</h5>
                 <span class="delivery-status" [style.background]="delivery.statusColor + '20'" [style.color]="delivery.statusColor">
                   {{ delivery.statusLabel || delivery.status }}
                 </span>
               </div>
-              
               <div class="delivery-details">
                 <div class="detail">
-                  <i class="fas fa-map-pin" style="color: #667eea;"></i>
-                  <span>
-                    <strong style="color: #667eea;">{{ delivery.entityName || 'Entité inconnue' }}</strong>
-                    <span style="color: #6c757d; margin: 0 4px;">•</span>
-                    {{ delivery.deliveryAddress }}
-                  </span>
+                  <span>📍</span> {{ delivery.deliveryAddress }}
                 </div>
-                
-                <div class="detail" *ngIf="delivery.order || delivery.orderId">
-                  <i class="fas fa-shopping-cart"></i>
-                  <span>Commande: {{ delivery.order?.reference || 'ORD-' + delivery.orderId.toString().padStart(4, '0') }}</span>
-                </div>
-                
                 <div class="detail" *ngIf="delivery.plannedTime">
-                  <i class="fas fa-clock"></i>
-                  <span>Prévu: {{ delivery.plannedTime | date:'HH:mm' }}</span>
-                </div>
-                
-                <div class="detail" *ngIf="delivery.actualArrivalTime">
-                  <i class="fas fa-check-circle" style="color: #1cc88a;"></i>
-                  <span>Livré: {{ delivery.actualArrivalTime | date:'HH:mm' }}</span>
+                  <span>🕒</span> Prévu: {{ delivery.plannedTime | date:'HH:mm' }}
                 </div>
               </div>
             </div>
           </div>
         </div>
       </div>
-      
       <div class="modal-footer">
-        <button class="btn btn-secondary" (click)="closeModal()">Fermer</button>
-        <button class="btn btn-primary" (click)="focusOnTrip(selectedTripId, $event)" *ngIf="selectedTripId">
-          <i class="fas fa-crosshairs"></i> Localiser sur la carte
-        </button>
+        <button class="btn-secondary" (click)="closeModal()">Fermer</button>
       </div>
     </div>
   </div>

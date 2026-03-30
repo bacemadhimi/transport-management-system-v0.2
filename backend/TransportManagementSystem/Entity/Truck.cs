@@ -41,4 +41,9 @@ public class Truck
     public int TypeTruckId { get; set; }
     public TypeTruck? TypeTruck { get; set; }
     public virtual ICollection<TruckGeographicalEntity> TruckGeographicalEntities { get; set; }
+
+    public int? DriverId { get; set; }
+
+    [ForeignKey("DriverId")]
+    public virtual Employee? Driver { get; set; }
 }

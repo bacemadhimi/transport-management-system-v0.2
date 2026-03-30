@@ -54,9 +54,26 @@ namespace TransportManagementSystem.Data
         public DbSet<DriverGeographicalEntity> DriverGeographicalEntities { get; set; }
         public DbSet<CustomerGeographicalEntity> CustomerGeographicalEntities { get; set; }
 
-        public DbSet<PMMWarehouse> PMMWarehouse { get; set; }
         public DbSet<CPDataX> CPDataX { get; set; }
+        public DbSet<PMMWarehouse> PMMWarehouse { get; set; }
+        public DbSet<PMMStorageLocation> tblPMMStorageLocation { get; set; }
+        public DbSet<ItpProcessCell> tblItpProcessCell { get; set; }
+        public DbSet<ItpProcessLine> tblItpProcessLine { get; set; }
+        public DbSet<ItpProcessLineUnit> tblItpProcessLineUnit { get; set; }
+        public DbSet<ItpProcessUnit> tblItpProcessUnit { get; set; }
+        public DbSet<ItpProcessUnitClass> tblItpProcessUnitClass { get; set; }
+        public DbSet<ItpProcessUnitClassGroup> tblItpProcessUnitClassGroup { get; set; }
 
+        public DbSet<PMMQuant> tblPMMQuant { get; set; }
+        public DbSet<PMMMaterial> tblPMMMaterial { get; set; }
+        public DbSet<PMMMaterialClass> tblPMMMaterialClass { get; set; }
+
+        public DbSet<PMMMaterialGroup> tblPMMMaterialGroup { get; set; }
+        public DbSet<PMMItemGroup> tblPMMItemGroup { get; set; }
+        public DbSet<IdcLanguage> tblIdcLanguage { get; set; }
+        public DbSet<IdcLanguageText> tblIdcLanguageText { get; set; }
+
+        public DbSet<SyncHistoryPlantItToTms> SyncHistoryPlantItToTms { get; set; }
         public DbSet<GeocodingCache> GeocodingCache { get; set; }
         public DbSet<PositionGPS> PositionsGPS { get; set; }
         public DbSet<ResultatOptimisation> ResultatOptimisations { get; set; }

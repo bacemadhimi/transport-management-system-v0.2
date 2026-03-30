@@ -36,20 +36,20 @@
             </div>
             <div class="form-fields-section flex-1">
               <div class="form-fields-grid">
-              <div class="form-field-wrapper">
-                <mat-form-field appearance="outline" class="full-width">
-                  <mat-label>Unité de chargement</mat-label>
-                  <mat-select formControlName="LOADING_UNIT" required>
-                    <mat-option *ngFor="let unit of savedUnits" [value]="unit">{{unit}}</mat-option>
-                    <mat-option *ngIf="savedUnits.length === 0" disabled value="">Aucune unité disponible</mat-option>
-                  </mat-select>
-                  <mat-icon matSuffix>arrow_drop_down</mat-icon>
-                </mat-form-field>
-                <mat-hint class="field-hint">Unité par défaut pour les chargements</mat-hint>
-                <mat-error *ngIf="orderSettingsForm.get('LOADING_UNIT')?.hasError('required')" class="field-error">
-                  L'unité de chargement est requise
-                </mat-error>
-              </div>
+                <div class="form-field-wrapper">
+                  <mat-form-field appearance="outline" class="full-width">
+                    <mat-label>Unité de chargement</mat-label>
+                    <mat-select formControlName="LOADING_UNIT" required>
+                      <mat-option *ngFor="let unit of savedUnits" [value]="unit">{{unit}}</mat-option>
+                      <mat-option *ngIf="savedUnits.length === 0" disabled value="">Aucune unité disponible</mat-option>
+                    </mat-select>
+                    <mat-icon matSuffix>arrow_drop_down</mat-icon>
+                  </mat-form-field>
+                  <mat-hint class="field-hint">Unité par défaut pour les chargements</mat-hint>
+                  <mat-error *ngIf="orderSettingsForm.get('LOADING_UNIT')?.hasError('required')" class="field-error">
+                    L'unité de chargement est requise
+                  </mat-error>
+                </div>
                 <div class="form-field-wrapper">
                   <mat-form-field appearance="outline" class="full-width">
                     <mat-label>Horizon de planification (jours)</mat-label>
@@ -71,84 +71,85 @@
         </mat-card-actions>
       </mat-card>
 
-<!-- Unit Management Card - WITH SAVE BUTTON -->
-<mat-card class="settings-card fill-card">
-  <mat-card-header>
-    <mat-icon class="card-icon">straighten</mat-icon>
-    <div class="card-header-text">
-      <mat-card-title>Gestion des Unités</mat-card-title>
-      <mat-card-subtitle>Ajoutez des unités personnalisées pour la capacité de chargement</mat-card-subtitle>
-    </div>
-  </mat-card-header>
-  <mat-card-content class="expand-content">
-    <div class="unit-management-section">
-      <!-- Input field with Add button -->
-      <div class="add-unit-row">
-        <mat-form-field appearance="outline" class="unit-input">
-          <mat-label>Ajouter une nouvelle unité</mat-label>
-          <input
-            matInput
-            placeholder="Saisissez une unité"
-            [formControl]="unitInputControl"
-          />
-        </mat-form-field>
-        <button 
-          mat-raised-button 
-          color="primary" 
-          class="add-btn"
-          (click)="addUnit()"
-          [disabled]="!unitInputControl.value?.trim()">
-          <mat-icon>add</mat-icon>
-          Ajouter
-        </button>
-      </div>
+      <!-- Unit Management Card - WITH SAVE BUTTON -->
+      <mat-card class="settings-card fill-card">
+        <mat-card-header>
+          <mat-icon class="card-icon">straighten</mat-icon>
+          <div class="card-header-text">
+            <mat-card-title>Gestion des Unités</mat-card-title>
+            <mat-card-subtitle>Ajoutez des unités personnalisées pour la capacité de chargement</mat-card-subtitle>
+          </div>
+        </mat-card-header>
+        <mat-card-content class="expand-content">
+          <div class="unit-management-section">
+            <!-- Input field with Add button -->
+            <div class="add-unit-row">
+              <mat-form-field appearance="outline" class="unit-input">
+                <mat-label>Ajouter une nouvelle unité</mat-label>
+                <input
+                  matInput
+                  placeholder="Saisissez une unité"
+                  [formControl]="unitInputControl"
+                />
+              </mat-form-field>
+              <button 
+                mat-raised-button 
+                color="primary" 
+                class="add-btn"
+                (click)="addUnit()"
+                [disabled]="!unitInputControl.value?.trim()">
+                <mat-icon>add</mat-icon>
+                Ajouter
+              </button>
+            </div>
 
-      <!-- Display working units (unsaved changes) -->
-      <div class="units-list" *ngIf="workingUnits.length > 0">
-        <div class="units-header">
-          <h4 class="units-subtitle">Unités disponibles:</h4>
-          <span class="badge" *ngIf="hasUnsavedChanges()" class="unsaved-badge">Non enregistré</span>
-        </div>
-        <div class="unit-chips">
-          <span class="unit-chip" *ngFor="let unit of workingUnits">
-            {{unit}}
-            <button class="remove-chip" (click)="removeUnit(unit)" matTooltip="Supprimer">
-              <mat-icon>close</mat-icon>
-            </button>
-          </span>
-        </div>
-      </div>
-      
-      <div class="no-units" *ngIf="workingUnits.length === 0">
-        <p>Aucune unité définie. Ajoutez des unités en utilisant le champ ci-dessus.</p>
-      </div>
+            <!-- Display working units (unsaved changes) -->
+            <div class="units-list" *ngIf="workingUnits.length > 0">
+              <div class="units-header">
+                <h4 class="units-subtitle">Unités disponibles:</h4>
+                <span class="badge" *ngIf="hasUnsavedChanges()" class="unsaved-badge">Non enregistré</span>
+              </div>
+              <div class="unit-chips">
+                <span class="unit-chip" *ngFor="let unit of workingUnits">
+                  {{unit}}
+                  <button class="remove-chip" (click)="removeUnit(unit)" matTooltip="Supprimer">
+                    <mat-icon>close</mat-icon>
+                  </button>
+                </span>
+              </div>
+            </div>
+            
+            <div class="no-units" *ngIf="workingUnits.length === 0">
+              <p>Aucune unité définie. Ajoutez des unités en utilisant le champ ci-dessus.</p>
+            </div>
 
-      <div class="info-text">
-        <mat-icon>info</mat-icon>
-        <span>Les unités sont modifiées localement. Cliquez sur "Enregistrer" pour sauvegarder dans la base de données.</span>
-      </div>
-    </div>
-  </mat-card-content>
-  
-  <!-- Action buttons -->
-  <mat-card-actions align="end" class="unit-actions">
-    <button 
-      mat-button 
-      (click)="cancelUnits()"
-      [disabled]="isSavingUnits || !hasUnsavedChanges()">
-      Annuler
-    </button>
-    <button 
-      mat-raised-button 
-      (click)="saveUnits()"
-      [disabled]="isSavingUnits || workingUnits.length === 0 || !hasUnsavedChanges()"
-      class="theme-primary-btn">
-      <mat-icon>save</mat-icon>
-      <span *ngIf="!isSavingUnits">Enregistrer les unités</span>
-      <span *ngIf="isSavingUnits">Enregistrement...</span>
-    </button>
-  </mat-card-actions>
-</mat-card>
+            <div class="info-text">
+              <mat-icon>info</mat-icon>
+              <span>Les unités sont modifiées localement. Cliquez sur "Enregistrer" pour sauvegarder dans la base de données.</span>
+            </div>
+          </div>
+        </mat-card-content>
+        
+        <!-- Action buttons -->
+        <mat-card-actions align="end" class="unit-actions">
+          <button 
+            mat-button 
+            (click)="cancelUnits()"
+            [disabled]="isSavingUnits || !hasUnsavedChanges()">
+            Annuler
+          </button>
+          <button 
+            mat-raised-button 
+            (click)="saveUnits()"
+            [disabled]="isSavingUnits || workingUnits.length === 0 || !hasUnsavedChanges()"
+            class="theme-primary-btn">
+            <mat-icon>save</mat-icon>
+            <span *ngIf="!isSavingUnits">Enregistrer les unités</span>
+            <span *ngIf="isSavingUnits">Enregistrement...</span>
+          </button>
+        </mat-card-actions>
+      </mat-card>
+
       <!-- Employee Categories Card -->
       <mat-card class="settings-card fill-card">
         <mat-card-header>
@@ -157,14 +158,60 @@
             <mat-card-title>Catégories d'Employés</mat-card-title>
             <mat-card-subtitle>Gérez les catégories d'employés ({{employeeCategories.length}})</mat-card-subtitle>
           </div>
+          <!-- Boutons d'import/export -->
+          <div class="header-actions">
+            <button mat-stroked-button (click)="downloadEmptyTemplate()" class="download-template-btn" matTooltip="Télécharger un modèle Excel vide à remplir">
+              <mat-icon>assignment</mat-icon> Télécharger le modèle
+            </button>
+            <button mat-stroked-button (click)="triggerFileInput()" class="import-btn" [disabled]="isImporting" matTooltip="Importer un fichier Excel rempli">
+              <mat-icon *ngIf="!isImporting">upload</mat-icon>
+              <mat-icon *ngIf="isImporting" class="spinner-icon">autorenew</mat-icon>
+              {{ isImporting ? 'Import en cours...' : 'Importer' }}
+            </button>
+            <button mat-icon-button class="help-btn" 
+                    matTooltip="
+                      📋 COMMENT IMPORTER :
+                      
+                      1️⃣ Télécharger le modèle
+                      - Cliquez sur 'Télécharger le modèle'
+                      
+                      2️⃣ Remplir le fichier
+                      Colonnes à remplir :
+                      • Code : Code unique (ex: INGENIEUR)
+                      • Description : Description du rôle
+                      • Valeur : Abréviation (ex: ING)
+                      
+                      3️⃣ Importer
+                      - Cliquez sur 'Importer'
+                      - Sélectionnez votre fichier
+                      - Confirmez l'import
+                      
+                      ⚠️ RÈGLES :
+                      • Tous les champs sont obligatoires
+                      • Code en MAJUSCULES sans espaces
+                      • Les doublons sont ignorés
+                      • Format final: Code=Valeur (ex: INGENIEUR=ING)
+                    ">
+              <mat-icon>help_outline</mat-icon>
+            </button>
+            <input #fileInput type="file" (change)="onFileSelected($event)" accept=".xlsx, .xls, .csv" style="display: none" />
+          </div>
         </mat-card-header>
+        
         <mat-card-content class="expand-content">
-          <div *ngIf="loadingCategories" class="flex justify-center items-center py-8"><mat-spinner diameter="30"></mat-spinner></div>
+          <div *ngIf="loadingCategories" class="flex justify-center items-center py-8">
+            <mat-spinner diameter="30"></mat-spinner>
+          </div>
+          
           <div *ngIf="!loadingCategories" class="overflow-x-auto h-full">
             <table mat-table [dataSource]="employeeCategories" class="w-full">
               <ng-container matColumnDef="code">
                 <th mat-header-cell *matHeaderCellDef>Code</th>
-                <td mat-cell *matCellDef="let category"><span class="font-mono text-sm font-medium" [style.color]="'var(--primary-color)'">{{extractCode(category.parameterCode)}}</span></td>
+                <td mat-cell *matCellDef="let category">
+                  <span class="font-mono text-sm font-medium" [style.color]="'var(--primary-color)'">
+                    {{extractCode(category.parameterCode)}}
+                  </span>
+                 </td>
               </ng-container>
               <ng-container matColumnDef="description">
                 <th mat-header-cell *matHeaderCellDef>Description</th>
@@ -172,23 +219,48 @@
               </ng-container>
               <ng-container matColumnDef="value">
                 <th mat-header-cell *matHeaderCellDef>Valeur</th>
-                <td mat-cell *matCellDef="let category"><span class="px-2 py-1 rounded-full text-xs" [style.background]="'rgba(var(--primary-color-rgb), 0.1)'" [style.color]="'var(--primary-color)'">{{extractValue(category.parameterCode)}}</span></td>
+                <td mat-cell *matCellDef="let category">
+                  <span class="px-2 py-1 rounded-full text-xs" 
+                        [style.background]="'rgba(var(--primary-color-rgb), 0.1)'" 
+                        [style.color]="'var(--primary-color)'">
+                    {{extractValue(category.parameterCode)}}
+                  </span>
+                </td>
               </ng-container>
               <ng-container matColumnDef="actions">
                 <th mat-header-cell *matHeaderCellDef>Actions</th>
                 <td mat-cell *matCellDef="let category">
-                  <button mat-icon-button (click)="openEditParameterDialog(category)" matTooltip="Modifier" [style.color]="'var(--primary-color)'"><mat-icon>edit</mat-icon></button>
-                  <button mat-icon-button color="warn" (click)="deleteParameter(category)" matTooltip="Supprimer"><mat-icon>delete</mat-icon></button>
+                  <button mat-icon-button (click)="openEditParameterDialog(category)" 
+                          matTooltip="Modifier" 
+                          [style.color]="'var(--primary-color)'">
+                    <mat-icon>edit</mat-icon>
+                  </button>
+                  <button mat-icon-button color="warn" 
+                          (click)="deleteParameter(category)" 
+                          matTooltip="Supprimer">
+                    <mat-icon>delete</mat-icon>
+                  </button>
                 </td>
               </ng-container>
               <tr mat-header-row *matHeaderRowDef="employeeColumns"></tr>
               <tr mat-row *matRowDef="let row; columns: employeeColumns;"></tr>
-              <tr class="mat-row" *matNoDataRow><td class="mat-cell text-center p-8" [attr.colspan]="employeeColumns.length"><div class="flex flex-col items-center gap-2" [style.color]="'var(--text-muted)'"><mat-icon class="text-4xl">badge</mat-icon><p class="text-lg font-medium">Aucune catégorie d'employé</p><p class="text-sm">Cliquez sur "Ajouter une catégorie" pour créer votre première catégorie</p></div></td></tr>
+              <tr class="mat-row" *matNoDataRow>
+                <td class="mat-cell text-center p-8" [attr.colspan]="employeeColumns.length">
+                  <div class="flex flex-col items-center gap-2" [style.color]="'var(--text-muted)'">
+                    <mat-icon class="text-4xl">badge</mat-icon>
+                    <p class="text-lg font-medium">Aucune catégorie d'employé</p>
+                    <p class="text-sm">Cliquez sur "Ajouter une catégorie" pour créer votre première catégorie</p>
+                    <p class="text-sm">ou téléchargez le modèle pour importer plusieurs catégories</p>
+                  </div>
+                </td>
+              </tr>
             </table>
           </div>
         </mat-card-content>
         <mat-card-actions align="end">
-          <button mat-raised-button (click)="openAddParameterDialog()" class="theme-primary-btn"><mat-icon>add</mat-icon> Nouvelle catégorie</button>
+          <button mat-raised-button (click)="openAddParameterDialog()" class="theme-primary-btn">
+            <mat-icon>add</mat-icon> Nouvelle catégorie
+          </button>
         </mat-card-actions>
       </mat-card>
 
@@ -241,8 +313,8 @@
           <form [formGroup]="tripSettingsForm" class="h-full flex flex-col">
             <div class="checkboxes-section">
               <div class="checkbox-grid">
-                <mat-checkbox formControlName="ALLOW_EDIT_TRIPS"  color="primary">Autoriser la modification des voyages</mat-checkbox>
-                <mat-checkbox formControlName="ALLOW_DELETE_TRIPS"  color="primary">Autoriser la suppression des voyages</mat-checkbox>
+                <mat-checkbox formControlName="ALLOW_EDIT_TRIPS" color="primary">Autoriser la modification des voyages</mat-checkbox>
+                <mat-checkbox formControlName="ALLOW_DELETE_TRIPS" color="primary">Autoriser la suppression des voyages</mat-checkbox>
                 <mat-checkbox formControlName="REQUIRE_DELETE_CONFIRMATION" color="primary">Exiger confirmation avant suppression</mat-checkbox>
                 <mat-checkbox formControlName="NOTIFY_ON_TRIP_EDIT" color="primary">Notifier lors de la modification d'un voyage</mat-checkbox>
                 <mat-checkbox formControlName="NOTIFY_ON_TRIP_DELETE" color="primary">Notifier lors de la suppression d'un voyage</mat-checkbox>
@@ -296,19 +368,26 @@
         </mat-card-actions>
       </mat-card>
 
-      <!-- Geographical Levels Card -->
+      <!-- Geographical Levels Card with asterisk and validation -->
       <mat-card class="settings-card fill-card">
         <mat-card-header>
           <mat-icon class="card-icon">layers</mat-icon>
           <div class="card-header-text">
-            <mat-card-title>Niveaux Géographiques</mat-card-title>
-            <mat-card-subtitle>Configurez les niveaux hiérarchiques ({{geographicalLevels.length}}/5 maximum)</mat-card-subtitle>
+            <mat-card-title>
+              Niveaux Géographiques
+              <span class="required-asterisk" *ngIf="geographicalLevelsArray.length === 0">*</span>
+            </mat-card-title>
+            <mat-card-subtitle>
+              Configurez les niveaux hiérarchiques ({{geographicalLevels.length}}/5 maximum)
+              <span class="required-hint" *ngIf="geographicalLevelsArray.length === 0"> - Au moins un niveau actif est requis</span>
+              <span class="required-hint error" *ngIf="geographicalLevelsArray.length > 0 && !hasAtLeastOneActiveLevel()"> - Au moins un niveau doit être actif</span>
+            </mat-card-subtitle>
           </div>
         </mat-card-header>
         <mat-card-content class="expand-content">
           <form [formGroup]="geographicalLevelsForm" class="h-full flex flex-col">
             <div formArrayName="levels" class="levels-container flex-1">
-              <div *ngFor="let level of geographicalLevelsArray.controls; let i = index" [formGroupName]="i" class="level-item">
+              <div *ngFor="let level of geographicalLevelsArray.controls; let i = index" [formGroupName]="i" class="level-item" [class.inactive]="!level.get('isActive')?.value">
                 <div class="level-header">
                   <span class="level-number">Niveau {{i + 1}}</span>
                   <button mat-icon-button color="warn" type="button" (click)="removeGeographicalLevel(i)" matTooltip="Supprimer ce niveau"><mat-icon>delete</mat-icon></button>
@@ -323,17 +402,25 @@
                     <mat-label>Numéro de niveau</mat-label>
                     <input matInput type="number" formControlName="levelNumber" readonly>
                   </mat-form-field>
-                  <mat-checkbox formControlName="isMappable"  color="primary">Cartographiable</mat-checkbox>
+                  <mat-checkbox formControlName="isMappable" color="primary">Cartographiable</mat-checkbox>
                   <mat-checkbox formControlName="isActive" color="primary">Actif</mat-checkbox>
                 </div>
               </div>
               <button *ngIf="geographicalLevelsArray.length < 5" class="add-level-btn" type="button" (click)="addGeographicalLevel()"><mat-icon>add</mat-icon> Ajouter un niveau</button>
               <div *ngIf="geographicalLevelsArray.length >= 5" class="info-message"><mat-icon>info</mat-icon> Maximum de 5 niveaux atteint</div>
+              
+              <!-- Validation message for no active level -->
+              <div *ngIf="geographicalLevelsArray.length > 0 && !hasAtLeastOneActiveLevel()" class="validation-error-message">
+                <mat-icon>error</mat-icon>
+                <span>Au moins un niveau doit être actif pour pouvoir enregistrer</span>
+              </div>
             </div>
           </form>
         </mat-card-content>
         <mat-card-actions align="end">
-          <button mat-raised-button (click)="saveGeographicalLevels()" [disabled]="geographicalLevelsForm.invalid || isSavingGeographical" class="theme-primary-btn">
+          <button mat-raised-button (click)="saveGeographicalLevels()" 
+                  [disabled]="geographicalLevelsForm.invalid || isSavingGeographical || !hasAtLeastOneActiveLevel()" 
+                  class="theme-primary-btn">
             <mat-icon>save</mat-icon> Enregistrer
           </button>
         </mat-card-actions>
@@ -341,14 +428,21 @@
     </div>
   </div>
 
-  <!-- Geographical Entities Card -->
+  <!-- Geographical Entities Card with asterisk and validation -->
   <div *ngIf="!isLoading" class="mt-6">
     <mat-card class="settings-card fill-card">
       <mat-card-header>
         <mat-icon class="card-icon">map</mat-icon>
         <div class="card-header-text">
-          <mat-card-title>Entités Géographiques</mat-card-title>
-          <mat-card-subtitle>Gérez les entités avec leurs coordonnées ({{filteredEntities.length}})</mat-card-subtitle>
+          <mat-card-title>
+            Entités Géographiques
+            <span class="required-asterisk" *ngIf="filteredEntities.length === 0">*</span>
+          </mat-card-title>
+          <mat-card-subtitle>
+            Gérez les entités avec leurs coordonnées ({{filteredEntities.length}})
+            <span class="required-hint" *ngIf="geographicalLevels.length === 0"> - Configurez d'abord des niveaux géographiques</span>
+            <span class="required-hint error" *ngIf="geographicalLevels.length > 0 && filteredEntities.length === 0"> - Au moins une entité est requise</span>
+          </mat-card-subtitle>
         </div>
       </mat-card-header>
       <mat-card-content class="expand-content">
@@ -362,18 +456,69 @@
           </mat-form-field>
           <button mat-raised-button (click)="openAddEntityDialog()" class="theme-primary-btn" [disabled]="geographicalLevels.length === 0"><mat-icon>add_location</mat-icon> Nouvelle entité</button>
         </div>
+        
+        <!-- Warning message if no entities exist -->
+        <div *ngIf="geographicalLevels.length > 0 && filteredEntities.length === 0 && !loadingEntities" class="warning-message">
+          <mat-icon>warning</mat-icon>
+          <div class="warning-content">
+            <strong>Attention:</strong> Aucune entité géographique n'a été créée.
+            <span>Cliquez sur "Nouvelle entité" pour ajouter au moins une entité.</span>
+          </div>
+        </div>
+        
         <div *ngIf="loadingEntities" class="flex justify-center items-center py-8"><mat-spinner diameter="30"></mat-spinner></div>
         <div *ngIf="!loadingEntities" class="overflow-x-auto">
           <table mat-table [dataSource]="filteredEntities" class="w-full">
-            <ng-container matColumnDef="name"><th mat-header-cell *matHeaderCellDef>Nom</th><td mat-cell *matCellDef="let entity">{{entity.name}}</td></ng-container>
-            <ng-container matColumnDef="level"><th mat-header-cell *matHeaderCellDef>Niveau</th><td mat-cell *matCellDef="let entity"><span class="level-badge" [style.background]="'rgba(var(--primary-color-rgb), 0.1)'" [style.color]="'var(--primary-color)'">{{getLevelName(entity.levelId)}}</span></td></ng-container>
-            <ng-container matColumnDef="parent"><th mat-header-cell *matHeaderCellDef>Parent</th><td mat-cell *matCellDef="let entity">{{entity.parentId ? getEntityName(entity.parentId) : '-'}}</td></ng-container>
-            <ng-container matColumnDef="coordinates"><th mat-header-cell *matHeaderCellDef>Coordonnées</th><td mat-cell *matCellDef="let entity"><div *ngIf="entity.latitude && entity.longitude; else noCoords"><span class="coords-badge" matTooltip="Latitude: {{entity.latitude}}, Longitude: {{entity.longitude}}"><mat-icon class="text-sm">location_on</mat-icon>{{entity.latitude | number:'1.4-4'}}, {{entity.longitude | number:'1.4-4'}}</span></div><ng-template #noCoords><span class="text-gray-400 text-sm">-</span></ng-template></td></ng-container>
-            <ng-container matColumnDef="status"><th mat-header-cell *matHeaderCellDef>Statut</th><td mat-cell *matCellDef="let entity"><span class="status-badge" [class.active]="entity.isActive" [class.inactive]="!entity.isActive">{{entity.isActive ? 'Actif' : 'Inactif'}}</span></td></ng-container>
-            <ng-container matColumnDef="actions"><th mat-header-cell *matHeaderCellDef>Actions</th><td mat-cell *matCellDef="let entity"><button mat-icon-button (click)="openEditEntityDialog(entity)" matTooltip="Modifier" [style.color]="'var(--primary-color)'"><mat-icon>edit</mat-icon></button><button mat-icon-button color="warn" (click)="deleteEntity(entity)" matTooltip="Supprimer"><mat-icon>delete</mat-icon></button></td></ng-container>
+            <ng-container matColumnDef="name">
+              <th mat-header-cell *matHeaderCellDef>Nom</th>
+              <td mat-cell *matCellDef="let entity">{{entity.name}}</td>
+            </ng-container>
+            <ng-container matColumnDef="level">
+              <th mat-header-cell *matHeaderCellDef>Niveau</th>
+              <td mat-cell *matCellDef="let entity"><span class="level-badge" [style.background]="'rgba(var(--primary-color-rgb), 0.1)'" [style.color]="'var(--primary-color)'">{{getLevelName(entity.levelId)}}</span></td>
+            </ng-container>
+            <ng-container matColumnDef="parent">
+              <th mat-header-cell *matHeaderCellDef>Parent</th>
+              <td mat-cell *matCellDef="let entity">{{entity.parentId ? getEntityName(entity.parentId) : '-'}}</td>
+            </ng-container>
+            <ng-container matColumnDef="coordinates">
+              <th mat-header-cell *matHeaderCellDef>Coordonnées</th>
+              <td mat-cell *matCellDef="let entity">
+                <div *ngIf="entity.latitude && entity.longitude; else noCoords">
+                  <span class="coords-badge" matTooltip="Latitude: {{entity.latitude}}, Longitude: {{entity.longitude}}">
+                    <mat-icon class="text-sm">location_on</mat-icon>
+                    {{entity.latitude | number:'1.4-4'}}, {{entity.longitude | number:'1.4-4'}}
+                  </span>
+                </div>
+                <ng-template #noCoords><span class="text-gray-400 text-sm">-</span></ng-template>
+              </td>
+            </ng-container>
+            <ng-container matColumnDef="status">
+              <th mat-header-cell *matHeaderCellDef>Statut</th>
+              <td mat-cell *matCellDef="let entity">
+                <span class="status-badge" [class.active]="entity.isActive" [class.inactive]="!entity.isActive">
+                  {{entity.isActive ? 'Actif' : 'Inactif'}}
+                </span>
+              </td>
+            </ng-container>
+            <ng-container matColumnDef="actions">
+              <th mat-header-cell *matHeaderCellDef>Actions</th>
+              <td mat-cell *matCellDef="let entity">
+                <button mat-icon-button (click)="openEditEntityDialog(entity)" matTooltip="Modifier" [style.color]="'var(--primary-color)'"><mat-icon>edit</mat-icon></button>
+                <button mat-icon-button color="warn" (click)="deleteEntity(entity)" matTooltip="Supprimer"><mat-icon>delete</mat-icon></button>
+              </td>
+            </ng-container>
             <tr mat-header-row *matHeaderRowDef="entityColumns"></tr>
             <tr mat-row *matRowDef="let row; columns: entityColumns;"></tr>
-            <tr class="mat-row" *matNoDataRow><td class="mat-cell text-center p-8" [attr.colspan]="entityColumns.length"><div class="flex flex-col items-center gap-2" [style.color]="'var(--text-muted)'"><mat-icon class="text-4xl">map</mat-icon><p class="text-lg font-medium">Aucune entité géographique</p><p class="text-sm">Configurez d'abord des niveaux, puis ajoutez des entités</p></div></td></tr>
+            <tr class="mat-row" *matNoDataRow>
+              <td class="mat-cell text-center p-8" [attr.colspan]="entityColumns.length">
+                <div class="flex flex-col items-center gap-2" [style.color]="'var(--text-muted)'">
+                  <mat-icon class="text-4xl">map</mat-icon>
+                  <p class="text-lg font-medium">Aucune entité géographique</p>
+                  <p class="text-sm">Configurez d'abord des niveaux, puis ajoutez des entités</p>
+                </div>
+              </td>
+            </tr>
           </table>
         </div>
       </mat-card-content>

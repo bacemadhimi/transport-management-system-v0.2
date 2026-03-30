@@ -18,7 +18,7 @@
             public int DataXLink { get; set; }
 
             [Column("tLastModified")]
-            public DateTime LastModified { get; set; }
+            public int LastModified { get; set; }  
 
             [Column("nProcessUnitClassLink")]
             public int ProcessUnitClassLink { get; set; }

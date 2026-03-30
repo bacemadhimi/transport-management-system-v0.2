@@ -14,11 +14,10 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { Subject, takeUntil, debounceTime } from 'rxjs';
+import { Subject, takeUntil, debounceTime, interval } from 'rxjs';
+import { Router } from '@angular/router';  // 👈 Ajoutez cette importation
 import { WarehousePlantIt, WarehouseSearchOptions } from '../../types/WarehouseDTO';
-import { Http } from '../../services/http';
 import { WarehouseService } from '../../services/warehouse.service';
-
 
 @Component({
   selector: 'app-warehouse-plantit',
@@ -49,38 +48,48 @@ export class WarehousePlantItComponent implements OnInit, OnDestroy {
   @ViewChild(MatPaginator) paginator!: MatPaginator;
 
   dataSource = new MatTableDataSource<WarehousePlantIt>([]);
-  displayedColumns: string[] = ['code', 'name', 'pipeCount', 'supportMultipleDocking', 'status', 'lastModified', 'action'];
-
+  displayedColumns: string[] = ['code', 'name', 'parent', 'pipeCount', 'supportMultipleDocking', 'status', 'lastModified', 'action'];
   filterControl = new FormControl('');
-  statusControl = new FormControl('');
-  processUnitControl = new FormControl('');
+  statusControl = new FormControl(null);
+  warehouseTypeControl = new FormControl(null);
+  parentLinkControl = new FormControl(null);
 
   statusOptions = [
     { id: true, label: 'Actif' },
     { id: false, label: 'Inactif' }
   ];
 
-  processUnitOptions = [
-    { id: 1, label: 'Unité 1' },
-    { id: 2, label: 'Unité 2' },
-    { id: 3, label: 'Unité 3' }
+  warehouseTypeOptions = [
+    { id: 70604, label: 'Matière première' },
+    { id: 70603, label: 'Produit fini' }
   ];
+
+  parentOptions: { id: number; label: string }[] = [];
 
   isLoading = false;
   totalItems = 0;
   pageSize = 10;
   pageIndex = 0;
+  
+  // Variables pour le rafraîchissement automatique
+  autoRefreshEnabled = true;
+  refreshInterval = 1000; // 1 seconde
+  lastRefreshTime: Date = new Date();
+  private refreshSubscription: any;
 
   private destroy$ = new Subject<void>();
 
   constructor(
-    private http: WarehouseService,
-    private snackBar: MatSnackBar
+    private warehouseService: WarehouseService,
+    private snackBar: MatSnackBar,
+    private router: Router  // 👈 Ajoutez le Router ici
   ) {}
 
   ngOnInit() {
+    this.loadParentOptions();
     this.loadData();
 
+    // Filtrer par recherche
     this.filterControl.valueChanges
       .pipe(debounceTime(300), takeUntil(this.destroy$))
       .subscribe(() => {
@@ -88,6 +97,7 @@ export class WarehousePlantItComponent implements OnInit, OnDestroy {
         this.loadData();
       });
 
+    // Filtrer par statut
     this.statusControl.valueChanges
       .pipe(takeUntil(this.destroy$))
       .subscribe(() => {
@@ -95,12 +105,24 @@ export class WarehousePlantItComponent implements OnInit, OnDestroy {
         this.loadData();
       });
 
-    this.processUnitControl.valueChanges
+    // Filtrer par type d'entrepôt
+    this.warehouseTypeControl.valueChanges
       .pipe(takeUntil(this.destroy$))
       .subscribe(() => {
         this.pageIndex = 0;
         this.loadData();
       });
+
+    // Filtrer par parent
+    this.parentLinkControl.valueChanges
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(() => {
+        this.pageIndex = 0;
+        this.loadData();
+      });
+
+    // Démarrer le rafraîchissement automatique
+    this.startAutoRefresh();
   }
 
   ngAfterViewInit() {
@@ -116,24 +138,121 @@ export class WarehousePlantItComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy() {
+    this.stopAutoRefresh();
     this.destroy$.next();
     this.destroy$.complete();
   }
 
-  loadData() {
-    this.isLoading = true;
+  // Démarrer le rafraîchissement automatique
+  startAutoRefresh() {
+    if (this.refreshSubscription) {
+      this.refreshSubscription.unsubscribe();
+    }
+    
+    if (this.autoRefreshEnabled) {
+      this.refreshSubscription = interval(this.refreshInterval)
+        .pipe(takeUntil(this.destroy$))
+        .subscribe(() => {
+          this.refreshDataSilently();
+        });
+      console.log('Rafraîchissement automatique démarré (toutes les 1 seconde)');
+    }
+  }
+
+  // Arrêter le rafraîchissement automatique
+  stopAutoRefresh() {
+    if (this.refreshSubscription) {
+      this.refreshSubscription.unsubscribe();
+      this.refreshSubscription = null;
+      console.log('Rafraîchissement automatique arrêté');
+    }
+  }
+
+  // Rafraîchissement silencieux (sans spinner)
+  refreshDataSilently() {
+    if (this.isLoading) return;
     
     const searchOptions: WarehouseSearchOptions = {
       search: this.filterControl.value || '',
-      status: this.statusControl.value !== null ? (this.statusControl.value === 'true') : undefined,
-      processUnitClassLink: this.processUnitControl.value ? Number(this.processUnitControl.value) : undefined,
+      status: this.statusControl.value !== null && this.statusControl.value !== undefined ? this.statusControl.value : undefined,
+      warehouseType: this.warehouseTypeControl.value ? Number(this.warehouseTypeControl.value) : undefined,
+      parentLink: this.parentLinkControl.value ? Number(this.parentLinkControl.value) : undefined,
       pageIndex: this.pageIndex,
       pageSize: this.pageSize,
       sortField: this.sort?.active || 'key',
       sortDirection: this.sort?.direction || 'desc'
     };
 
-    this.http.getWarehousesPlantIt(searchOptions).subscribe({
+    this.warehouseService.getWarehousesPlantIt(searchOptions).subscribe({
+      next: (response: any) => {
+        if (response.success) {
+          const warehouses = response.data.data.map((w: any) => ({
+            ...w,
+            lastModified: new Date(w.lastModified)
+          }));
+          this.dataSource.data = warehouses;
+          this.totalItems = response.data.totalData;
+          this.lastRefreshTime = new Date();
+          
+          if (this.paginator && this.totalItems !== this.paginator.length) {
+            this.paginator.length = this.totalItems;
+          }
+        }
+      },
+      error: (error: any) => {
+        console.error('Erreur refresh auto:', error);
+      }
+    });
+  }
+
+  // Rafraîchissement manuel avec spinner
+  refreshDataManually() {
+    if (this.isLoading) return;
+    this.loadData();
+  }
+
+  // Activer/Désactiver le rafraîchissement auto
+  toggleAutoRefresh() {
+    this.autoRefreshEnabled = !this.autoRefreshEnabled;
+    if (this.autoRefreshEnabled) {
+      this.startAutoRefresh();
+      this.snackBar.open('Rafraîchissement automatique activé (1 seconde)', 'Fermer', { duration: 2000 });
+    } else {
+      this.stopAutoRefresh();
+      this.snackBar.open('Rafraîchissement automatique désactivé', 'Fermer', { duration: 2000 });
+    }
+  }
+
+  loadParentOptions() {
+    this.warehouseService.getParentOptions().subscribe({
+      next: (response: any) => {
+        if (response.success) {
+          this.parentOptions = response.data;
+        }
+      },
+      error: (error) => {
+        console.error('Erreur chargement parents:', error);
+      }
+    });
+  }
+
+  loadData() {
+    this.isLoading = true;
+    
+    const statusValue = this.statusControl.value;
+
+    const searchOptions: WarehouseSearchOptions = {
+      search: this.filterControl.value || '',
+      status: statusValue !== null && statusValue !== undefined ? statusValue : undefined,
+      warehouseType: this.warehouseTypeControl.value ? Number(this.warehouseTypeControl.value) : undefined,
+      parentLink: this.parentLinkControl.value ? Number(this.parentLinkControl.value) : undefined,
+      pageIndex: this.pageIndex,
+      pageSize: this.pageSize,
+      sortField: this.sort?.active || 'key',
+      sortDirection: this.sort?.direction || 'desc'
+    };
+
+    this.warehouseService.getWarehousesPlantIt(searchOptions).subscribe({
       next: (response: any) => {
         this.isLoading = false;
         if (response.success) {
@@ -143,6 +262,7 @@ export class WarehousePlantItComponent implements OnInit, OnDestroy {
           }));
           this.dataSource.data = warehouses;
           this.totalItems = response.data.totalData;
+          this.lastRefreshTime = new Date();
           
           if (this.paginator) {
             this.paginator.length = this.totalItems;
@@ -163,7 +283,8 @@ export class WarehousePlantItComponent implements OnInit, OnDestroy {
       month: '2-digit',
       year: 'numeric',
       hour: '2-digit',
-      minute: '2-digit'
+      minute: '2-digit',
+      second: '2-digit'
     });
   }
 
@@ -173,7 +294,7 @@ export class WarehousePlantItComponent implements OnInit, OnDestroy {
 
   delete(item: WarehousePlantIt) {
     if (confirm(`Supprimer l'entrepôt ${item.warehouseCode} - ${item.warehouseName} ?`)) {
-      this.http.deleteWarehousePlantIt(item.key).subscribe({
+      this.warehouseService.deleteWarehousePlantIt(item.key).subscribe({
         next: (response) => {
           this.snackBar.open('Entrepôt supprimé avec succès', 'Fermer', { duration: 3000 });
           this.loadData();
@@ -185,7 +306,9 @@ export class WarehousePlantItComponent implements OnInit, OnDestroy {
     }
   }
 
+  // 👈 MODIFIEZ CETTE MÉTHODE POUR NAVIGUER VERS LA PAGE DES LIEUX DE STOCKAGE
   viewDetails(item: WarehousePlantIt) {
-    console.log('Détails:', item);
+    // Navigation vers la page des lieux de stockage avec l'ID du dépôt
+    this.router.navigate(['/warehouse', item.key, 'storage-locations']);
   }
 }
