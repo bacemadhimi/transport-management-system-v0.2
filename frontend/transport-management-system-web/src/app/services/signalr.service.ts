@@ -127,31 +127,50 @@ export class SignalRService {
     this.hubConnection
       .start()
       .then(() => {
-        console.log('SignalR connection established');
+        console.log('✅✅✅=================================');
+        console.log('✅ SignalR connection established');
+        console.log('✅ Hub URL:', `${environment.apiUrl}/gpshub`);
+        console.log('✅ Connection ID:', this.hubConnection.connectionId);
+        console.log('✅✅✅=================================');
+        
         this.connectionStatusSubject.next(true);
+
+        // Join Admins group explicitly for real-time notifications
+        this.joinAdminGroup();
+
         this.joinAllTripsGroup();
+
+        // CRITICAL: Load notifications AFTER connection is established
+        setTimeout(() => {
+          console.log('🔄 Loading notifications after SignalR connection...');
+          this.loadInitialNotifications();
+        }, 1000);
       })
       .catch(err => {
-        console.error('Error establishing SignalR connection: ', err);
+        console.error('❌❌❌=================================');
+        console.error('❌ Error establishing SignalR connection: ', err);
+        console.error('❌ Hub URL:', `${environment.apiUrl}/gpshub`);
+        console.error('❌❌❌=================================');
         this.connectionStatusSubject.next(false);
-        
+
         setTimeout(() => this.startConnection(), 5000);
       });
 
     this.hubConnection.onreconnecting(() => {
-      console.log('SignalR reconnecting...');
+      console.log('🔄 SignalR reconnecting...');
       this.connectionStatusSubject.next(false);
     });
 
     this.hubConnection.onreconnected(() => {
-      console.log('SignalR reconnected');
+      console.log('✅ SignalR reconnected');
       this.connectionStatusSubject.next(true);
+      this.joinAdminGroup();
       this.joinAllTripsGroup();
-      this.loadInitialNotifications(); 
+      this.loadInitialNotifications();
     });
 
     this.hubConnection.onclose(() => {
-      console.log('SignalR connection closed');
+      console.log('❌ SignalR connection closed');
       this.connectionStatusSubject.next(false);
     });
   }
@@ -159,15 +178,17 @@ export class SignalRService {
   private registerHandlers() {
 
     this.hubConnection.on('ReceiveNotification', (notification: TripNotification) => {
-    console.log('🔔 Received new notification:', notification);
+      console.log('🔔 Received new notification:', notification);
+      this.addNotification(notification, 20);
+    });
 
-    this.addNotification(notification, 20);
-  });
-
-    // Handler for Trip Accepted by driver
+    // Handler for Trip Accepted by driver - REAL TIME
     this.hubConnection.on('TripAccepted', (data: any) => {
-      console.log('✅ Trip Accepted by driver:', data);
-      
+      console.log('✅✅✅=================================');
+      console.log('✅ Trip Accepted by driver - REAL TIME SIGNALR!');
+      console.log('✅ Data:', JSON.stringify(data, null, 2));
+      console.log('✅✅✅=================================');
+
       const notification: TripNotification = {
         id: Date.now(),
         type: 'TRIP_ACCEPTED',
@@ -185,12 +206,18 @@ export class SignalRService {
 
       this.addNotification(notification, 20);
       this.showBrowserNotification(notification);
+
+      // Reload notifications from DB to ensure sync
+      setTimeout(() => this.loadInitialNotifications(), 500);
     });
 
-    // Handler for Trip Rejected by driver
+    // Handler for Trip Rejected by driver - REAL TIME
     this.hubConnection.on('TripRejected', (data: any) => {
-      console.log('❌ Trip Rejected by driver:', data);
-      
+      console.log('❌❌❌=================================');
+      console.log('❌ Trip Rejected by driver - REAL TIME SIGNALR!');
+      console.log('❌ Data:', JSON.stringify(data, null, 2));
+      console.log('❌❌❌=================================');
+
       const notification: TripNotification = {
         id: Date.now(),
         type: 'TRIP_REJECTED',
@@ -208,6 +235,38 @@ export class SignalRService {
 
       this.addNotification(notification, 20);
       this.showBrowserNotification(notification);
+
+      // Reload notifications from DB to ensure sync
+      setTimeout(() => this.loadInitialNotifications(), 500);
+    });
+
+    // Handler for Trip Cancelled (alternative event name for compatibility)
+    this.hubConnection.on('TripCancelled', (data: any) => {
+      console.log('❌❌❌=================================');
+      console.log('❌ Trip Cancelled received - REAL TIME SIGNALR!');
+      console.log('❌ Data:', JSON.stringify(data, null, 2));
+      console.log('❌❌❌=================================');
+
+      const notification: TripNotification = {
+        id: Date.now(),
+        type: 'TRIP_CANCELLED',
+        title: '❌ Mission Annulée/Refusée',
+        message: `Le chauffeur ${data.DriverName || 'inconnu'} a annulé/refusé la mission ${data.TripReference || ''}`,
+        timestamp: new Date(),
+        tripId: data.TripId,
+        tripReference: data.TripReference,
+        driverName: data.DriverName,
+        truckImmatriculation: data.TruckImmatriculation,
+        newStatus: 'Annulée',
+        isRead: false,
+        additionalData: data
+      };
+
+      this.addNotification(notification, 20);
+      this.showBrowserNotification(notification);
+
+      // Reload notifications from DB to ensure sync
+      setTimeout(() => this.loadInitialNotifications(), 500);
     });
 
 
@@ -230,6 +289,37 @@ export class SignalRService {
       console.log('📍 Received GPS position:', position);
       this.positionSubject.next(position);
     });
+    
+    console.log('✅ All SignalR handlers registered successfully');
+  }
+  
+  /**
+   * Polling de secours - Vérifie les nouvelles notifications toutes les 5 secondes
+   */
+  private notificationPollingInterval: any = null;
+  
+  public startNotificationPolling(): void {
+    if (this.notificationPollingInterval) {
+      clearInterval(this.notificationPollingInterval);
+    }
+    
+    console.log('🔄 Starting notification polling (every 5 seconds)...');
+    
+    // Poll immediately
+    this.loadInitialNotifications();
+    
+    // Then poll every 5 seconds
+    this.notificationPollingInterval = setInterval(() => {
+      this.loadInitialNotifications();
+    }, 5000);
+  }
+  
+  public stopNotificationPolling(): void {
+    if (this.notificationPollingInterval) {
+      clearInterval(this.notificationPollingInterval);
+      this.notificationPollingInterval = null;
+      console.log('⏹️ Notification polling stopped');
+    }
   }
 
 
@@ -300,12 +390,26 @@ private addNotification(notification: TripNotification, pageSize: number = 20) {
 
   joinAllTripsGroup() {
     if (this.hubConnection.state === signalR.HubConnectionState.Connected) {
+      console.log('📢 Joining AllTrips group...');
       this.hubConnection.invoke('JoinAllTripsGroup')
-        .catch(err => console.error('Error joining all trips group:', err));
+        .then(() => console.log('✅✅✅ Joined AllTrips group successfully!'))
+        .catch(err => console.error('❌❌❌ Error joining all trips group:', err));
+    } else {
+      console.warn('⚠️ Cannot join AllTrips group: SignalR not connected');
     }
   }
 
- 
+  joinAdminGroup() {
+    if (this.hubConnection.state === signalR.HubConnectionState.Connected) {
+      console.log('📢 Joining Admins group...');
+      this.hubConnection.invoke('JoinAdminGroup')
+        .then(() => console.log('✅✅✅ Joined Admins group successfully!'))
+        .catch(err => console.error('❌❌❌ Error joining Admins group:', err));
+    } else {
+      console.warn('⚠️ Cannot join Admins group: SignalR not connected');
+    }
+  }
+
   joinTripGroup(tripId: number) {
     if (this.hubConnection.state === signalR.HubConnectionState.Connected) {
       this.hubConnection.invoke('JoinTripGroup', tripId)

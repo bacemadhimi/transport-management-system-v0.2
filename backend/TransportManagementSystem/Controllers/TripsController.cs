@@ -1417,4 +1417,217 @@ return BadRequest(new ApiResponse(false,
             return BadRequest(new { message = "Error", error = ex.Message });
         }
     }
+
+    /// <summary>
+    /// Accept a trip - HTTP fallback for mobile (guarantees notification saved to DB)
+    /// </summary>
+    [HttpPost("{tripId}/accept")]
+    public async Task<IActionResult> AcceptTripHttp(int tripId)
+    {
+        try
+        {
+            _logger.LogInformation($"🔔 HTTP AcceptTrip called - tripId: {tripId}");
+
+            var trip = await context.Trips
+                .Include(t => t.Driver)
+                .Include(t => t.Truck)
+                .Include(t => t.Deliveries)
+                .FirstOrDefaultAsync(t => t.Id == tripId);
+
+            if (trip == null)
+            {
+                _logger.LogWarning($"⚠️ Trip {tripId} not found");
+                return NotFound(new { success = false, message = "Trip not found" });
+            }
+
+            trip.TripStatus = TripStatus.Accepted;
+            await context.SaveChangesAsync();
+
+            _logger.LogInformation($"✅ Trip {tripId} status updated to Accepted");
+
+            // Save notification to database for ALL admins
+            var allUsers = await context.Users.ToListAsync();
+            var adminUsers = allUsers.Where(u => u.Email.Contains("admin") || u.Email.Contains("super")).ToList();
+
+            _logger.LogInformation($"📢 Saving notification for {adminUsers.Count} admins");
+
+            foreach (var adminUser in adminUsers)
+            {
+                var notification = new Notification
+                {
+                    Type = "TRIP_ACCEPTED",
+                    Title = "✅ Mission Acceptée",
+                    Message = $"Le chauffeur {trip.Driver?.Name} a accepté la mission {trip.TripReference}",
+                    Timestamp = DateTime.UtcNow,
+                    TripId = tripId,
+                    TripReference = trip.TripReference,
+                    DriverName = trip.Driver?.Name,
+                    TruckImmatriculation = trip.Truck?.Immatriculation,
+                    AdditionalData = System.Text.Json.JsonSerializer.Serialize(new {
+                        TripId = tripId,
+                        TripReference = trip.TripReference,
+                        DriverName = trip.Driver?.Name,
+                        TruckImmatriculation = trip.Truck?.Immatriculation,
+                        Status = "Acceptée"
+                    }),
+                    CreatedAt = DateTime.UtcNow
+                };
+
+                context.Notifications.Add(notification);
+                _logger.LogInformation($"✅ Notification added for admin {adminUser.Email}");
+
+                var userNotification = new UserNotification
+                {
+                    NotificationId = notification.Id,
+                    UserId = adminUser.Id,
+                    IsRead = false,
+                    ReadAt = null
+                };
+
+                context.UserNotifications.Add(userNotification);
+            }
+
+            await context.SaveChangesAsync();
+
+            _logger.LogInformation($"✅✅✅ HTTP AcceptTrip - Notification saved to DB for {adminUsers.Count} admins");
+
+            // Also broadcast via SignalR
+            var notificationData = new {
+                TripId = tripId,
+                TripReference = trip.TripReference,
+                DriverId = trip.DriverId,
+                DriverName = trip.Driver?.Name,
+                TruckImmatriculation = trip.Truck?.Immatriculation,
+                Status = "Acceptée",
+                Timestamp = DateTime.UtcNow
+            };
+
+            await _gpsHub.Clients.All.SendAsync("TripAccepted", notificationData);
+            _logger.LogInformation($"📢 SignalR TripAccepted broadcast sent to all clients");
+
+            return Ok(new { success = true, message = "Trip accepted successfully" });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, $"❌ Error in HTTP AcceptTrip - {ex.Message}");
+            return BadRequest(new { success = false, message = ex.Message, stackTrace = ex.StackTrace });
+        }
+    }
+
+    /// <summary>
+    /// Reject a trip - HTTP fallback for mobile (guarantees notification saved to DB)
+    /// </summary>
+    [HttpPost("{tripId}/reject")]
+    public async Task<IActionResult> RejectTripHttp(int tripId, [FromQuery] string reason, [FromQuery] string reasonCode)
+    {
+        try
+        {
+            _logger.LogInformation($"🔔 HTTP RejectTrip called - tripId: {tripId}, reason: {reason}");
+
+            var trip = await context.Trips
+                .Include(t => t.Driver)
+                .Include(t => t.Truck)
+                .FirstOrDefaultAsync(t => t.Id == tripId);
+
+            if (trip == null)
+            {
+                return NotFound(new { success = false, message = "Trip not found" });
+            }
+
+            // Update assignment
+            var assignment = await context.TripAssignments
+                .Where(a => a.TripId == tripId)
+                .OrderByDescending(a => a.AssignedAt)
+                .FirstOrDefaultAsync();
+
+            if (assignment == null)
+            {
+                assignment = new TripAssignment
+                {
+                    TripId = tripId,
+                    DriverId = trip.DriverId,
+                    Status = AssignmentStatus.Pending,
+                    AssignedAt = DateTime.UtcNow,
+                    NotificationSent = true
+                };
+                context.TripAssignments.Add(assignment);
+            }
+
+            assignment.Status = AssignmentStatus.Rejected;
+            assignment.RejectionReason = reason;
+            assignment.RejectionReasonCode = reasonCode;
+            assignment.RespondedAt = DateTime.UtcNow;
+
+            trip.TripStatus = TripStatus.Refused;
+            await context.SaveChangesAsync();
+
+            // Save notification to database for ALL admins
+            var allUsers = await context.Users.ToListAsync();
+            var adminUsers = allUsers.Where(u => u.Email.Contains("admin") || u.Email.Contains("super")).ToList();
+
+            foreach (var adminUser in adminUsers)
+            {
+                var notification = new Notification
+                {
+                    Type = "TRIP_REJECTED",
+                    Title = "❌ Mission Refusée",
+                    Message = $"Le chauffeur {trip.Driver?.Name} a refusé la mission {trip.TripReference}. Raison: {reason}",
+                    Timestamp = DateTime.UtcNow,
+                    TripId = tripId,
+                    TripReference = trip.TripReference,
+                    DriverName = trip.Driver?.Name,
+                    TruckImmatriculation = trip.Truck?.Immatriculation,
+                    AdditionalData = System.Text.Json.JsonSerializer.Serialize(new {
+                        TripId = tripId,
+                        TripReference = trip.TripReference,
+                        DriverName = trip.Driver?.Name,
+                        TruckImmatriculation = trip.Truck?.Immatriculation,
+                        Reason = reason,
+                        ReasonCode = reasonCode,
+                        Status = "Refusée"
+                    }),
+                    CreatedAt = DateTime.UtcNow
+                };
+
+                context.Notifications.Add(notification);
+
+                var userNotification = new UserNotification
+                {
+                    NotificationId = notification.Id,
+                    UserId = adminUser.Id,
+                    IsRead = false,
+                    ReadAt = null
+                };
+
+                context.UserNotifications.Add(userNotification);
+            }
+
+            await context.SaveChangesAsync();
+
+            _logger.LogInformation($"✅✅✅ HTTP RejectTrip - Notification saved to DB for {adminUsers.Count} admins");
+
+            // Also broadcast via SignalR
+            var notificationData = new {
+                TripId = tripId,
+                TripReference = trip.TripReference,
+                DriverId = trip.DriverId,
+                DriverName = trip.Driver?.Name,
+                TruckImmatriculation = trip.Truck?.Immatriculation,
+                Reason = reason,
+                ReasonCode = reasonCode,
+                Status = "Refusée",
+                Timestamp = DateTime.UtcNow
+            };
+
+            await _gpsHub.Clients.All.SendAsync("TripRejected", notificationData);
+            _logger.LogInformation($"📢 SignalR TripRejected broadcast sent");
+
+            return Ok(new { success = true, message = "Trip rejected successfully" });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, $"❌ Error in HTTP RejectTrip");
+            return BadRequest(new { success = false, message = ex.Message });
+        }
+    }
 }

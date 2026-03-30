@@ -8,7 +8,7 @@ import { MatSidenavModule } from '@angular/material/sidenav';
 import { MatListModule } from '@angular/material/list';
 import { MatExpansionModule } from '@angular/material/expansion';
 import { CommonModule } from '@angular/common';
-import { HttpClient, HttpClientModule } from '@angular/common/http';
+import { HttpClient, HttpClientModule, HttpHeaders } from '@angular/common/http';
 import { Auth } from './services/auth';
 import { Http } from './services/http';
 import { Theme, ThemeService } from './services/theme.service';
@@ -117,7 +117,16 @@ ngOnInit() {
   }, 30000);
 }
 loadNotificationsFromDatabase(pageIndex: number = 0, pageSize: number = 20) {
-  this.http.get(`${environment.apiUrl}/api/notifications?pageIndex=${pageIndex}&pageSize=${pageSize}`).subscribe({
+  // Get token from localStorage
+  const token = localStorage.getItem('token');
+  
+  // Create headers with authorization
+  const headers = new HttpHeaders({
+    'Authorization': `Bearer ${token}`,
+    'Content-Type': 'application/json'
+  });
+  
+  this.http.get(`${environment.apiUrl}/api/notifications?pageIndex=${pageIndex}&pageSize=${pageSize}`, { headers }).subscribe({
     next: (response: any) => {
       if (response?.success && response?.data) {
         // Get ALL notifications from database and map them
@@ -131,29 +140,31 @@ loadNotificationsFromDatabase(pageIndex: number = 0, pageSize: number = 20) {
         // Store all for reference
         this.allNotifications = allDbNotifications;
 
-        // STRICT FILTER: ONLY keep TRIP_CANCELLED
-        const cancelledNotifications = allDbNotifications.filter((n: TripNotification) =>
-          n.type === 'TRIP_CANCELLED'
-        );
+        // DEBUG: Log all notification types
+        console.log('🔍 Notification types in DB:', allDbNotifications.map(n => ({ type: n.type, title: n.title, message: n.message })));
+
+        // FILTER: Keep ALL notifications (no filter for testing)
+        const relevantNotifications = allDbNotifications; // Take ALL notifications for now
 
         if (pageIndex === 0) {
-          // First page - replace with cancelled only
-          this.notifications = cancelledNotifications;
+          // First page - replace with relevant notifications only
+          this.notifications = relevantNotifications;
         } else {
-          // Subsequent pages - append cancelled only (check duplicates)
+          // Subsequent pages - append (check duplicates)
           const existingIds = new Set(this.notifications.map((n: TripNotification) => n.id));
-          const uniqueNewCancelled = cancelledNotifications.filter((n: TripNotification) => !existingIds.has(n.id));
-          this.notifications = [...this.notifications, ...uniqueNewCancelled];
+          const uniqueNew = relevantNotifications.filter((n: TripNotification) => !existingIds.has(n.id));
+          this.notifications = [...this.notifications, ...uniqueNew];
         }
 
-        // Count ONLY unread cancelled notifications
+        // Count ONLY unread relevant notifications
         this.unreadNotificationsCount = this.notifications.filter((n: TripNotification) => !n.isRead).length;
 
         this.totalNotifications = response.data.totalCount || 0;
         this.hasMoreNotifications = this.notifications.length < this.totalNotifications;
 
-        console.log('📚 DB Load - Cancelled only:', this.notifications.length);
+        console.log('📚 DB Load - Relevant notifications:', this.notifications.length);
         console.log('📚 Unread count:', this.unreadNotificationsCount);
+        console.log('📚 Relevant notifications:', relevantNotifications);
       } else {
         console.warn('⚠️ Invalid notification response:', response);
         // Initialize with empty arrays on invalid response
@@ -186,39 +197,43 @@ initializeSignalR() {
   this.notificationsSubscription = this.signalRService.notifications$.subscribe(
     (realtimeNotifications: TripNotification[]) => {
       console.log('📬 Raw real-time notifications:', realtimeNotifications);
-      
+
       // Ensure isRead is boolean and timestamp is Date
       const processedNotifications = realtimeNotifications.map(n => ({
         ...n,
         isRead: n.isRead === true,
         timestamp: new Date(n.timestamp)
       }));
-      
+
       // Store ALL real-time notifications for reference
       this.allNotifications = [...this.allNotifications, ...processedNotifications];
-      
-      // STRICT FILTER: ONLY keep TRIP_CANCELLED
-      const newCancelled = processedNotifications.filter((n: TripNotification) => 
-        n.type === 'TRIP_CANCELLED'
+
+      // FILTER: Keep ALL relevant notification types (not just cancelled)
+      const newRelevant = processedNotifications.filter((n: TripNotification) =>
+        n.type === 'TRIP_CANCELLED' ||
+        n.type === 'TRIP_ACCEPTED' ||
+        n.type === 'TRIP_REJECTED' ||
+        n.type === 'NEW_TRIP_ASSIGNMENT' ||
+        n.type === 'STATUS_CHANGE'
       );
-      
-      // Add new cancelled to existing notifications (avoid duplicates)
-      if (newCancelled.length > 0) {
+
+      // Add new relevant notifications to existing notifications (avoid duplicates)
+      if (newRelevant.length > 0) {
         // Check for duplicates by ID
         const existingIds = new Set(this.notifications.map((n: TripNotification) => n.id));
-        const uniqueNewCancelled = newCancelled.filter((n: TripNotification) => !existingIds.has(n.id));
-        
+        const uniqueNew = newRelevant.filter((n: TripNotification) => !existingIds.has(n.id));
+
         // Add to beginning of array
-        this.notifications = [...uniqueNewCancelled, ...this.notifications];
-        
-        console.log('✅ Added new cancelled notifications:', uniqueNewCancelled.length);
+        this.notifications = [...uniqueNew, ...this.notifications];
+
+        console.log('✅ Added new relevant notifications:', uniqueNew.length);
       }
-      
-      // Count ONLY unread cancelled notifications
+
+      // Count ONLY unread relevant notifications
       this.unreadNotificationsCount = this.notifications.filter((n: TripNotification) => !n.isRead).length;
-      
-      console.log('📋 Current cancelled notifications:', this.notifications.length);
-      console.log('📋 Unread cancelled count:', this.unreadNotificationsCount);
+
+      console.log('📋 Current notifications:', this.notifications.length);
+      console.log('📋 Unread count:', this.unreadNotificationsCount);
     }
   );
 }
@@ -300,6 +315,12 @@ async markNotificationAsRead(notification: TripNotification) {
         return 'sync';
       case 'TRIP_CANCELLED':
         return 'cancel';
+      case 'TRIP_ACCEPTED':
+        return 'check_circle';
+      case 'TRIP_REJECTED':
+        return 'cancel';
+      case 'NEW_TRIP_ASSIGNMENT':
+        return 'add_circle';
       case 'NEW_TRIP':
         return 'add_circle';
       default:

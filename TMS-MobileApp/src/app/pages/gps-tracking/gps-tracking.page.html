@@ -5,15 +5,113 @@
     </ion-buttons>
     <ion-title>Suivi GPS - {{ tripReference }}</ion-title>
     <ion-buttons slot="end">
-      <!-- Voice Navigation Toggle -->
-      <ion-button (click)="toggleVoiceNavigation()">
-        <ion-icon slot="icon-only" 
-                  [name]="voiceNavigationEnabled ? 'volume-high' : 'volume-mute'"
-                  [color]="voiceNavigationEnabled ? 'success' : 'medium'">
-        </ion-icon>
+      <!-- Voice Navigation Toggle - ULTRA MODERN PROFESSIONAL -->
+      <ion-button (click)="toggleVoiceNavigation()" 
+                  class="voice-nav-btn"
+                  [class.active]="voiceNavigationEnabled"
+                  style="opacity: 1 !important; visibility: visible !important; margin-right: 8px;">
+        <div class="voice-btn-container" style="
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 52px;
+          height: 52px;
+          border-radius: 16px;
+          background: linear-gradient(145deg, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0.05) 100%);
+          border: 2px solid rgba(255,255,255,0.3);
+          transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+          box-shadow: 0 4px 12px rgba(0,0,0,0.15), inset 0 1px 0 rgba(255,255,255,0.2);
+          position: relative;
+          overflow: visible;
+        " [style.background]="voiceNavigationEnabled ? 'linear-gradient(145deg, #3b82f6 0%, #1d4ed8 100%)' : ''"
+           [style.borderColor]="voiceNavigationEnabled ? '#93c5fd' : 'rgba(255,255,255,0.3)'"
+           [style.boxShadow]="voiceNavigationEnabled ? '0 0 24px rgba(59,130,246,0.5), 0 4px 12px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.3)' : ''">
+          
+          <!-- Animated waves when active -->
+          <div *ngIf="voiceNavigationEnabled" class="voice-waves" style="
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+          ">
+            <div style="
+              position: absolute;
+              top: 50%;
+              left: 50%;
+              transform: translate(-50%, -50%);
+              width: 100%;
+              height: 100%;
+              border-radius: 16px;
+              border: 2px solid rgba(59,130,246,0.6);
+              animation: wave-expand 2s ease-out infinite;
+            "></div>
+            <div style="
+              position: absolute;
+              top: 50%;
+              left: 50%;
+              transform: translate(-50%, -50%);
+              width: 100%;
+              height: 100%;
+              border-radius: 16px;
+              border: 2px solid rgba(59,130,246,0.4);
+              animation: wave-expand 2s ease-out 0.5s infinite;
+            "></div>
+          </div>
+          
+          <!-- Icon with modern styling -->
+          <ion-icon slot="icon-only"
+                    [name]="voiceNavigationEnabled ? 'megaphone' : 'volume-mute'"
+                    style="
+                      font-size: 24px; 
+                      color: white !important;
+                      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+                      z-index: 2;
+                      position: relative;
+                      transition: all 0.3s ease;
+                    "
+                    [style.filter]="voiceNavigationEnabled ? 'drop-shadow(0 0 10px rgba(255,255,255,0.6))' : ''">
+          </ion-icon>
+          
+          <!-- Speaking indicator dots -->
+          <div *ngIf="isSpeaking && voiceNavigationEnabled" class="speaking-dots" style="
+            position: absolute;
+            bottom: -6px;
+            display: flex;
+            gap: 3px;
+            align-items: center;
+          ">
+            <div style="
+              width: 4px;
+              height: 4px;
+              background: #60a5fa;
+              border-radius: 50%;
+              animation: dot-bounce 0.6s ease-in-out infinite;
+              box-shadow: 0 0 6px #60a5fa;
+            "></div>
+            <div style="
+              width: 4px;
+              height: 4px;
+              background: #60a5fa;
+              border-radius: 50%;
+              animation: dot-bounce 0.6s ease-in-out 0.2s infinite;
+              box-shadow: 0 0 6px #60a5fa;
+            "></div>
+            <div style="
+              width: 4px;
+              height: 4px;
+              background: #60a5fa;
+              border-radius: 50%;
+              animation: dot-bounce 0.6s ease-in-out 0.4s infinite;
+              box-shadow: 0 0 6px #60a5fa;
+            "></div>
+          </div>
+        </div>
       </ion-button>
-      <ion-button (click)="refreshPosition()">
-        <ion-icon slot="icon-only" name="refresh"></ion-icon>
+      <ion-button (click)="refreshPosition()" style="opacity: 1 !important; visibility: visible !important;">
+        <ion-icon slot="icon-only" name="refresh" style="color: white !important; font-size: 22px;"></ion-icon>
       </ion-button>
     </ion-buttons>
   </ion-toolbar>
@@ -226,6 +324,10 @@
 
   .status-indicator.status-completed {
     background: linear-gradient(135deg, #d4edda, #c3e6cb);
+  }
+
+  .status-indicator.status-refused {
+    background: linear-gradient(135deg, #f8d7da, #f5c6cb);
   }
 
   .status-icon {

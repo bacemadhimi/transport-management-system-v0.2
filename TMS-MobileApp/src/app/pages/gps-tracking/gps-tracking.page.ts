@@ -1,6 +1,6 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { IonicModule, AlertController, ToastController } from '@ionic/angular';
+import { IonicModule, AlertController, ToastController, LoadingController } from '@ionic/angular';
 import { GPSTrackingService, GPSPosition } from '../../services/gps-tracking.service';
 import { AuthService } from '../../services/auth.service';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -44,6 +44,12 @@ export class GPSTrackingPage implements OnInit, OnDestroy {
   isSpeaking: boolean = false;
   lastNavigationInstruction: string = '';
   navigationInstructions: string[] = [];
+  
+  // Intelligent navigation tracking
+  private currentInstruction: string = '';
+  private lastInstructionTime: Date | null = null;
+  private instructionRepeatCount: number = 0;
+  private navigationCheckInterval: any = null;
 
   constructor(
     private gpsService: GPSTrackingService,
@@ -51,7 +57,8 @@ export class GPSTrackingPage implements OnInit, OnDestroy {
     private route: ActivatedRoute,
     private router: Router,
     private alertController: AlertController,
-    private toastController: ToastController
+    private toastController: ToastController,
+    private loadingController: LoadingController
   ) {}
 
   ngOnInit() {
@@ -118,7 +125,26 @@ export class GPSTrackingPage implements OnInit, OnDestroy {
 
         console.log('🔍 Searching for destination in trip data...');
 
-        // Strategy 1: Get destination from last delivery geolocation (MOST ACCURATE)
+        // Strategy 1: Use trip destination coordinates (MOST ACCURATE - from backend)
+        if (trip.destinationLatitude && trip.destinationLongitude) {
+          this.destination = {
+            lat: parseFloat(trip.destinationLatitude),
+            lng: parseFloat(trip.destinationLongitude),
+            address: trip.destination || `Destination: ${trip.tripReference}`
+          };
+
+          console.log('✅ Destination loaded from trip coordinates:', this.destination);
+
+          if (this.map) {
+            this.addDestinationMarker();
+            setTimeout(() => {
+              this.updateRoute();
+            }, 500);
+          }
+          return;
+        }
+
+        // Strategy 2: Get destination from last delivery geolocation
         if (trip.deliveries && trip.deliveries.length > 0) {
           const lastDelivery = trip.deliveries[trip.deliveries.length - 1];
           console.log('📦 Last delivery:', lastDelivery);
@@ -134,12 +160,11 @@ export class GPSTrackingPage implements OnInit, OnDestroy {
                 this.destination = {
                   lat,
                   lng,
-                  address: lastDelivery.deliveryAddress || `Destination: ${lastDelivery.customerName || 'Client'}`
+                  address: lastDelivery.deliveryAddress || lastDelivery.customerAddress || `Destination: ${lastDelivery.customerName || 'Client'}`
                 };
 
                 console.log('✅ Destination loaded from geolocation:', this.destination);
 
-                // Add destination marker if map is ready
                 if (this.map) {
                   this.addDestinationMarker();
                   setTimeout(() => {
@@ -151,7 +176,7 @@ export class GPSTrackingPage implements OnInit, OnDestroy {
             }
           }
 
-          // Strategy 2: Use delivery address text
+          // Strategy 3: Use delivery address text
           if (lastDelivery.deliveryAddress && lastDelivery.deliveryAddress.trim().length > 0) {
             this.destinationAddress = lastDelivery.deliveryAddress;
             console.log('📝 Using delivery address:', this.destinationAddress);
@@ -159,7 +184,7 @@ export class GPSTrackingPage implements OnInit, OnDestroy {
             return;
           }
 
-          // Strategy 3: Use customer address
+          // Strategy 4: Use customer address
           if (lastDelivery.customerAddress && lastDelivery.customerAddress.trim().length > 0) {
             this.destinationAddress = lastDelivery.customerAddress;
             console.log('📝 Using customer address:', this.destinationAddress);
@@ -167,7 +192,7 @@ export class GPSTrackingPage implements OnInit, OnDestroy {
             return;
           }
 
-          // Strategy 4: Use customer name as fallback
+          // Strategy 5: Use customer name as fallback
           if (lastDelivery.customerName) {
             console.log('⚠️ No address, using customer name for geocoding:', lastDelivery.customerName);
             await this.geocodeAddress(lastDelivery.customerName + ', Tunisia');
@@ -175,28 +200,28 @@ export class GPSTrackingPage implements OnInit, OnDestroy {
           }
         }
 
-        // Strategy 5: Use trip dropoff location
+        // Strategy 6: Use trip dropoff location
         if (trip.dropoffLocation) {
           console.log('📍 Using trip dropoff location:', trip.dropoffLocation);
           await this.geocodeAddress(trip.dropoffLocation);
           return;
         }
 
-        // Strategy 6: Use trip destination address
+        // Strategy 7: Use trip destination address
         if (trip.destinationAddress) {
           console.log('📍 Using trip destination address:', trip.destinationAddress);
           await this.geocodeAddress(trip.destinationAddress);
           return;
         }
 
-        // Strategy 7: Use pickup location as fallback
+        // Strategy 8: Use pickup location as fallback
         if (trip.pickupLocation) {
           console.log('⚠️ Using pickup location as fallback:', trip.pickupLocation);
           await this.geocodeAddress(trip.pickupLocation);
           return;
         }
 
-        // Strategy 8: Default to Tunis center
+        // Strategy 9: Default to Tunis center
         console.warn('⚠️ No destination found, using Tunis center as fallback');
         this.destination = {
           lat: 36.8065,
@@ -221,8 +246,14 @@ export class GPSTrackingPage implements OnInit, OnDestroy {
    * Add destination marker to map
    */
   private addDestinationMarker() {
-    if (!this.destination || !this.map) {
-      console.log('⚠️ Cannot add destination marker: missing destination or map');
+    if (!this.destination) {
+      console.log('⚠️ Cannot add destination marker: missing destination');
+      return;
+    }
+
+    if (!this.map) {
+      console.log('⚠️ Map not ready yet, will add destination marker later');
+      // Will be added when map is initialized
       return;
     }
 
@@ -250,6 +281,7 @@ export class GPSTrackingPage implements OnInit, OnDestroy {
 
   ngOnDestroy() {
     this.gpsService.stopTracking();
+    this.stopIntelligentNavigationCheck();
     if (this.map) {
       this.map.remove();
     }
@@ -290,6 +322,12 @@ export class GPSTrackingPage implements OnInit, OnDestroy {
       if (this.map) {
         this.map.invalidateSize();
         console.log('✅ Map initialized and size invalidated');
+        
+        // Check if destination was already loaded (geocoded before map was ready)
+        if (this.destination) {
+          console.log('✅ Destination already loaded, adding marker now...');
+          this.addDestinationMarker();
+        }
       }
     }, 500);
 
@@ -308,15 +346,40 @@ export class GPSTrackingPage implements OnInit, OnDestroy {
   }
 
   /**
-   * Géocoder une adresse avec Nominatim
+   * Géocoder une adresse avec Nominatim - CORRECTION COMPLETE
    */
   private async geocodeAddress(address: string) {
     try {
       console.log('🔍 Geocoding address:', address);
       
-      const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&limit=3`);
-      const data = await response.json();
+      if (!address || address.trim().length === 0) {
+        console.error('❌ Empty address provided!');
+        await this.showToast('Adresse vide', 'danger');
+        return;
+      }
 
+      // Add Tunisia to improve geocoding
+      const searchAddress = address.includes('Tunisia') || address.includes('Tunisie') 
+        ? address 
+        : address + ', Tunisia';
+      
+      console.log('🔍 Searching for:', searchAddress);
+      
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchAddress)}&limit=5&addressdetails=1`,
+        {
+          headers: {
+            'User-Agent': 'TMS-MobileApp/1.0',
+            'Accept-Language': 'fr'
+          }
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`HTTP error: ${response.status} ${response.statusText}`);
+      }
+
+      const data = await response.json();
       console.log('📡 Geocoding result:', data);
 
       if (data && data.length > 0) {
@@ -332,35 +395,57 @@ export class GPSTrackingPage implements OnInit, OnDestroy {
 
         console.log('✅ Destination géocodée:', this.destination);
 
-        // Ajouter le marker de destination
-        const destIcon = this.createDestinationIcon();
-        this.destinationMarker = L.marker(
-          [lat, lng],
-          { icon: destIcon }
-        ).addTo(this.map);
+        // WAIT for map to be ready before adding marker
+        if (this.map) {
+          console.log('✅ Map is ready, adding destination marker...');
+          const destIcon = this.createDestinationIcon();
+          this.destinationMarker = L.marker(
+            [lat, lng],
+            { icon: destIcon }
+          ).addTo(this.map);
 
-        this.destinationMarker.bindPopup(`
-          <div style="text-align: center;">
-            <b>🏁 Destination</b><br>
-            <span style="color: #666; font-size: 12px;">${this.destination.address}</span>
-          </div>
-        `);
+          this.destinationMarker.bindPopup(`
+            <div style="text-align: center;">
+              <b>🏁 Destination</b><br>
+              <span style="color: #666; font-size: 12px;">${this.destination.address}</span>
+            </div>
+          `);
 
-        // Mettre à jour la route IMMÉDIATEMENT
-        await this.updateRoute();
+          // Mettre à jour la route IMMÉDIATEMENT
+          await this.updateRoute();
 
-        // Ajuster la vue pour voir les deux markers
-        if (this.currentLocation) {
-          const group = L.featureGroup([this.truckMarker, this.destinationMarker]);
-          this.map.fitBounds(group.getBounds(), { padding: [50, 50] });
+          // Ajuster la vue pour voir les deux markers
+          if (this.currentLocation) {
+            const group = L.featureGroup([this.truckMarker, this.destinationMarker]);
+            this.map.fitBounds(group.getBounds(), { padding: [50, 50] });
+          }
+
+          await this.showToast('✅ Destination trouvée', 'success');
+        } else {
+          console.log('⏳ Map not ready yet, will add marker when map initializes...');
+          // Map will add marker when it's ready via initMap
         }
       } else {
-        console.warn('Adresse non trouvée:', address);
-        await this.showToast('Adresse non trouvée, utilisation de la destination par défaut', 'warning');
+        console.warn('⚠️ Adresse non trouvée:', searchAddress);
+        await this.showToast('Adresse non trouvée. Essayez une autre adresse.', 'warning');
+        
+        // Fallback to Tunis center
+        this.destination = {
+          lat: 36.8065,
+          lng: 10.1815,
+          address: 'Tunis, Tunisia'
+        };
+        
+        if (this.map) {
+          this.addDestinationMarker();
+          setTimeout(() => {
+            this.updateRoute();
+          }, 500);
+        }
       }
     } catch (error) {
-      console.error('Erreur de géocodage:', error);
-      await this.showToast('Erreur de géocodage', 'danger');
+      console.error('❌ Erreur de géocodage:', error);
+      await this.showToast('Erreur de géocodage: ' + (error as Error).message, 'danger');
     }
   }
 
@@ -544,8 +629,8 @@ export class GPSTrackingPage implements OnInit, OnDestroy {
   }
 
   /**
-   * Mettre à jour la route avec OSRM - Style GOOGLE MAPS
-   * Ligne bleue épaisse avec bordure blanche pour visibilité optimale
+   * Mettre à jour la route avec OSRM - Style PROFESSIONNEL BLEU
+   * Ligne bleue fine et élégante
    */
   private async updateRoute() {
     if (!this.currentLocation || !this.destination) {
@@ -557,7 +642,7 @@ export class GPSTrackingPage implements OnInit, OnDestroy {
 
     try {
       // Fetch route from OSRM with full geometry
-      const osrmUrl = `https://router.project-osrm.org/route/v1/driving/${this.currentLocation.lng},${this.currentLocation.lat};${this.destination.lng},${this.destination.lat}?overview=full&geometries=geojson&steps=true`;
+      const osrmUrl = `https://router.project-osrm.org/route/v1/driving/${this.currentLocation.lng},${this.currentLocation.lat};${this.destination.lng},${this.destination.lat}?overview=full&geometries=geojson`;
 
       console.log('🗺️ Fetching route from OSRM:', osrmUrl);
 
@@ -576,34 +661,20 @@ export class GPSTrackingPage implements OnInit, OnDestroy {
         // Remove existing route layers
         if (this.map) {
           this.map.eachLayer((layer) => {
-            if (layer instanceof L.Polyline && layer !== this.routePolyline) {
+            if (layer instanceof L.Polyline) {
               this.map.removeLayer(layer);
             }
           });
         }
 
-        // GOOGLE MAPS STYLE: Blue route line with white border
-        // Layer 1: White border (thicker for glow effect)
-        const routeBorder = L.polyline(coordinates, {
-          color: '#ffffff',
-          weight: 10,
-          opacity: 1,
+        // PROFESSIONAL BLUE ROUTE - Single clean line
+        this.routePolyline = L.polyline(coordinates, {
+          color: '#1a73e8', // Google Maps blue
+          weight: 5,
+          opacity: 0.9,
           lineCap: 'round',
           lineJoin: 'round'
         }).addTo(this.map);
-
-        // Layer 2: Main blue line (Google Maps blue)
-        if (this.routePolyline) {
-          this.routePolyline.setLatLngs(coordinates);
-        } else {
-          this.routePolyline = L.polyline(coordinates, {
-            color: '#4285f4', // Google Maps blue
-            weight: 6,
-            opacity: 1,
-            lineCap: 'round',
-            lineJoin: 'round'
-          }).addTo(this.map);
-        }
 
         // Adjust map bounds to show the COMPLETE route
         const bounds = L.latLngBounds(coordinates);
@@ -612,17 +683,17 @@ export class GPSTrackingPage implements OnInit, OnDestroy {
         console.log('📏 Distance:', distanceKm, 'km');
 
         // Dynamic padding based on distance
-        let padding = [70, 70];
+        let padding = [60, 60];
         let maxZoom = 15;
 
         if (distanceKm > 100) {
-          padding = [100, 100];
+          padding = [80, 80];
           maxZoom = 11;
         } else if (distanceKm > 50) {
-          padding = [90, 90];
+          padding = [70, 70];
           maxZoom = 12;
         } else if (distanceKm > 20) {
-          padding = [80, 80];
+          padding = [65, 65];
           maxZoom = 13;
         }
 
@@ -995,21 +1066,40 @@ export class GPSTrackingPage implements OnInit, OnDestroy {
   }
 
   /**
-   * Accept mission directly
+   * Accept mission - Admin notified in real-time
    */
   async acceptMission() {
-    if (!this.tripId) return;
+    // Check if tripId is valid
+    if (!this.tripId) {
+      console.error('❌ No tripId available for acceptance!');
+      await this.showToast('❌ Erreur: Trip ID non disponible', 'danger');
+      return;
+    }
 
     try {
+      console.log('✅ Driver accepting mission, tripId:', this.tripId);
+
+      // Show loading
+      const loading = await this.loadingController.create({
+        message: 'Acceptation en cours...',
+        duration: 3000
+      });
+      await loading.present();
+
       // Update local status
       this.missionStatus = 'accepted';
-      
-      // Send acceptance via SignalR - this will notify admin
+
+      // Send acceptance via SignalR - this will notify admin in real-time
       await this.gpsService.acceptTrip(this.tripId);
-      
+
+      console.log('✅ AcceptTrip SignalR call completed - Admin notified');
+
       // Show success feedback
-      await this.showToast('✅ Mission acceptée', 'success');
-      
+      await this.showToast('✅ Mission acceptée - Admin notifié en temps réel', 'success');
+
+      // Dismiss loading
+      await loading.dismiss();
+
       // Speak confirmation if voice navigation is enabled
       if (this.voiceNavigationEnabled) {
         this.speak('Mission acceptée. Je vais vous guider vers la destination.');
@@ -1021,75 +1111,107 @@ export class GPSTrackingPage implements OnInit, OnDestroy {
       }, 1000);
 
     } catch (error) {
-      console.error('Error accepting mission:', error);
+      console.error('❌ Error accepting mission:', error);
       await this.showToast('Erreur lors de l\'acceptation', 'danger');
     }
   }
 
   /**
-   * Reject mission
+   * Reject mission - Admin notified in real-time + Redirect to home
    */
   async rejectMission() {
-    if (!this.tripId) return;
+    if (!this.tripId) {
+      console.error('❌ No tripId for rejectMission');
+      return;
+    }
 
     const alert = await this.alertController.create({
-      header: 'Raison du refus',
+      header: '❌ Raison du refus',
+      subHeader: 'Votre refus sera notifié à l\'admin en temps réel',
       inputs: [
         {
           name: 'reason',
           type: 'radio',
           label: '🌧️ Mauvais temps',
-          value: 'BadWeather'
+          value: 'BadWeather',
+          checked: true // Pre-select first option
         },
         {
           name: 'reason',
           type: 'radio',
           label: '🚛 Camion non disponible',
-          value: 'Unavailable'
+          value: 'Unavailable',
         },
         {
           name: 'reason',
           type: 'radio',
           label: '⚙️ Problème technique',
-          value: 'Technical'
+          value: 'Technical',
         },
         {
           name: 'reason',
           type: 'radio',
           label: '🏥 Raison médicale',
-          value: 'Medical'
+          value: 'Medical',
         },
         {
           name: 'reason',
           type: 'radio',
           label: '📋 Autre',
-          value: 'Other'
+          value: 'Other',
         }
       ],
       buttons: [
         {
           text: 'Annuler',
-          role: 'cancel'
+          role: 'cancel',
+          handler: () => {
+            console.log('❌ Refus annulé');
+          }
         },
         {
           text: 'Refuser',
           handler: async (data: any) => {
-            if (data.reason && this.tripId) {
-              try {
-                // Send rejection via SignalR - this will notify admin
-                await this.gpsService.rejectTrip(this.tripId, data.reason, data.reason);
-                
-                // Update local status
-                this.missionStatus = 'refused';
-                
-                await this.showToast('❌ Mission refusée', 'danger');
-                
-                // Navigate back home
-                this.router.navigate(['/home']);
-              } catch (error) {
-                console.error('Error rejecting mission:', error);
-                await this.showToast('Erreur lors du refus', 'danger');
-              }
+            // Force a reason to be selected
+            const selectedReason = data?.reason || 'BadWeather'; // Default to first option
+            
+            // Check if tripId is valid
+            if (!this.tripId) {
+              console.error('❌ No tripId available for rejection!');
+              await this.showToast('❌ Erreur: Trip ID non disponible', 'danger');
+              return;
+            }
+            
+            try {
+              console.log('❌ Driver rejecting mission, tripId:', this.tripId, 'reason:', selectedReason);
+
+              // Show loading
+              const loading = await this.loadingController.create({
+                message: 'Refus en cours...',
+                duration: 3000
+              });
+              await loading.present();
+
+              // Send rejection via SignalR - this will notify admin in real-time
+              await this.gpsService.rejectTrip(this.tripId, selectedReason, selectedReason);
+
+              console.log('✅ RejectTrip SignalR call completed - Admin notified');
+
+              // Update local status
+              this.missionStatus = 'refused';
+
+              await this.showToast('❌ Mission refusée - Admin notifié en temps réel', 'danger');
+
+              // Dismiss loading
+              await loading.dismiss();
+
+              console.log('🏠 Navigating to home immediately...');
+              // Navigate back home immediately after choosing reason
+              await this.router.navigate(['/home']);
+
+            } catch (error) {
+              console.error('❌ Error rejecting mission:', error);
+              await this.showToast('Erreur lors du refus', 'danger');
             }
           }
         }
@@ -1143,6 +1265,7 @@ export class GPSTrackingPage implements OnInit, OnDestroy {
       case 'loading': return 'cube';
       case 'delivery': return 'boat';
       case 'completed': return 'checkmark-done-circle';
+      case 'refused': return 'close-circle';
       default: return 'help-circle';
     }
   }
@@ -1157,6 +1280,7 @@ export class GPSTrackingPage implements OnInit, OnDestroy {
       case 'loading': return 'success';
       case 'delivery': return 'secondary';
       case 'completed': return 'success';
+      case 'refused': return 'danger';
       default: return 'medium';
     }
   }
@@ -1171,6 +1295,7 @@ export class GPSTrackingPage implements OnInit, OnDestroy {
       case 'loading': return 'Chargement en cours';
       case 'delivery': return 'Livraison en cours';
       case 'completed': return 'Mission terminée';
+      case 'refused': return 'Mission refusée';
       default: return 'État inconnu';
     }
   }
@@ -1180,21 +1305,35 @@ export class GPSTrackingPage implements OnInit, OnDestroy {
    */
   toggleVoiceNavigation() {
     this.voiceNavigationEnabled = !this.voiceNavigationEnabled;
-    
+
     if (this.voiceNavigationEnabled) {
       this.showToast('🔊 Navigation vocale activée', 'success');
-      this.speak('Navigation vocale activée. Je vais vous guider vers la destination.');
+      this.speak('Navigation vocale activée. Je vais vous guider intelligemment vers la destination.');
+      
+      // Reset navigation tracking
+      this.currentInstruction = '';
+      this.lastInstructionTime = null;
+      this.instructionRepeatCount = 0;
       
       // Start providing navigation instructions
-      this.provideNavigationInstructions();
+      setTimeout(() => {
+        this.provideNavigationInstructions();
+      }, 1000);
     } else {
       this.showToast('🔇 Navigation vocale désactivée', 'medium');
       this.stopSpeaking();
+      this.stopIntelligentNavigationCheck();
+      
+      // Reset tracking
+      this.currentInstruction = '';
+      this.lastInstructionTime = null;
+      this.instructionRepeatCount = 0;
     }
   }
 
   /**
-   * Provide intelligent navigation instructions based on route
+   * Provide intelligent navigation instructions based on route - EN FRANÇAIS
+   * Navigation INTELLIGENTE avec répétition si instruction non suivie + TEMPS RÉEL
    */
   private async provideNavigationInstructions() {
     if (!this.voiceNavigationEnabled || !this.currentLocation || !this.destination) {
@@ -1203,7 +1342,7 @@ export class GPSTrackingPage implements OnInit, OnDestroy {
 
     try {
       // Fetch route with turn-by-turn instructions from OSRM
-      const osrmUrl = `https://router.project-osrm.org/route/v1/driving/${this.currentLocation.lng},${this.currentLocation.lat};${this.destination.lng},${this.destination.lat}?overview=full&geometries=geojson&steps=true&annotations=true`;
+      const osrmUrl = `https://router.project-osrm.org/route/v1/driving/${this.currentLocation.lng},${this.currentLocation.lat};${this.destination.lng},${this.destination.lat}?overview=full&geometries=geojson&steps=true`;
 
       const response = await fetch(osrmUrl);
       const data = await response.json();
@@ -1211,33 +1350,86 @@ export class GPSTrackingPage implements OnInit, OnDestroy {
       if (data.code === 'Ok' && data.routes && data.routes.length > 0) {
         const route = data.routes[0];
         const legs = route.legs;
-        
+
         if (legs && legs.length > 0) {
           const steps = legs[0].steps;
           const instructions: string[] = [];
+          let nextCriticalInstruction = '';
+          let distanceToNextInstruction = 0;
+          let currentStepIndex = -1;
+
+          // Calculate current position along route
+          const totalDistance = route.distance;
+          let distanceTraveled = 0;
 
           // Extract navigation instructions from route steps
           steps.forEach((step: any, index: number) => {
             const maneuver = step.maneuver;
             const instruction = this.convertManeuverToInstruction(maneuver.type, maneuver.modifier, step.name);
             const distance = step.distance;
-            
+
             if (instruction && distance) {
               const distanceText = this.formatDistance(distance);
-              instructions.push(`${instruction} dans ${distanceText}`);
+              const fullInstruction = `${instruction} dans ${distanceText}`;
+              instructions.push(fullInstruction);
+
+              // Track current step
+              if (distanceTraveled <= (totalDistance * 0.1) && currentStepIndex === -1) {
+                currentStepIndex = index;
+              }
+              distanceTraveled += distance;
+
+              // Find next critical instruction (turn, roundabout, etc.)
+              if (!nextCriticalInstruction && 
+                  ['turn', 'roundabout', 'rotary', 'fork', 'merge'].includes(maneuver.type) &&
+                  maneuver.type !== 'depart') {
+                nextCriticalInstruction = fullInstruction;
+                distanceToNextInstruction = distance;
+              }
             }
           });
 
           this.navigationInstructions = instructions;
 
-          // Speak next instruction if not already speaking
-          if (instructions.length > 0 && !this.isSpeaking) {
-            const nextInstruction = instructions[0];
-            if (nextInstruction !== this.lastNavigationInstruction) {
-              this.speak(nextInstruction);
-              this.lastNavigationInstruction = nextInstruction;
+          // Calculate remaining distance and time
+          const remainingDistance = this.getDistanceRemaining() * 1000; // meters
+          const remainingTime = route.duration; // seconds
+
+          // INTELLIGENT REPETITION LOGIC
+          const now = new Date();
+          const shouldRepeat = this.shouldRepeatInstruction(nextCriticalInstruction, distanceToNextInstruction, now);
+
+          if (shouldRepeat && nextCriticalInstruction) {
+            const urgency = this.getUrgencyLevel(distanceToNextInstruction);
+            const repeatedInstruction = this.addUrgencyToInstruction(nextCriticalInstruction, urgency);
+            this.speak(repeatedInstruction);
+            this.currentInstruction = nextCriticalInstruction;
+            this.lastInstructionTime = now;
+            this.instructionRepeatCount++;
+            
+            console.log(`🔊 Repeating instruction (${this.instructionRepeatCount}x, ${urgency}): ${repeatedInstruction}`);
+          } else if (nextCriticalInstruction && nextCriticalInstruction !== this.lastNavigationInstruction) {
+            // New instruction - announce with context
+            const contextMessage = this.getContextMessage(remainingDistance, remainingTime);
+            if (contextMessage) {
+              this.speak(contextMessage);
+              setTimeout(() => {
+                this.speak(nextCriticalInstruction);
+              }, 1500);
+            } else {
+              this.speak(nextCriticalInstruction);
             }
+            
+            this.currentInstruction = nextCriticalInstruction;
+            this.lastNavigationInstruction = nextCriticalInstruction;
+            this.lastInstructionTime = now;
+            this.instructionRepeatCount = 1;
+            
+            console.log(`🔊 New instruction: ${nextCriticalInstruction}`);
           }
+
+          // Start intelligent checking interval
+          this.startIntelligentNavigationCheck();
         }
       }
     } catch (error) {
@@ -1246,11 +1438,139 @@ export class GPSTrackingPage implements OnInit, OnDestroy {
   }
 
   /**
-   * Convert OSRM maneuver to French instruction
+   * Get contextual message based on remaining distance/time
+   */
+  private getContextMessage(remainingDistance: number, remainingTime: number): string {
+    const distanceKm = remainingDistance / 1000;
+    const timeMinutes = remainingTime / 60;
+
+    // Only give context message at start or major checkpoints
+    if (distanceKm > 5 && this.instructionRepeatCount <= 1) {
+      const timeText = timeMinutes > 60 
+        ? `${Math.round(timeMinutes / 60)}h${Math.round(timeMinutes % 60)}`
+        : `${Math.round(timeMinutes)} minutes`;
+      const distanceText = distanceKm > 10 
+        ? `${Math.round(distanceKm)} kilomètres`
+        : `${Math.round(distanceKm * 10) / 10} kilomètres`;
+      
+      return `Trajet de ${distanceText}, environ ${timeText}. Je vais vous guider.`;
+    }
+    
+    return '';
+  }
+
+  /**
+   * Determine if instruction should be repeated based on time and distance
+   */
+  private shouldRepeatInstruction(instruction: string, distanceToInstruction: number, now: Date): boolean {
+    if (!this.lastInstructionTime || !this.currentInstruction) {
+      return false;
+    }
+
+    const timeSinceLastInstruction = (now.getTime() - this.lastInstructionTime.getTime()) / 1000; // seconds
+    const distanceKm = distanceToInstruction / 1000;
+
+    // Repeat if:
+    // 1. Same instruction as before
+    // 2. More than 10 seconds since last announcement
+    // 3. Still more than 100m to the maneuver
+    // 4. Less than 3 repeats so far
+    const shouldRepeat = 
+      instruction === this.currentInstruction &&
+      timeSinceLastInstruction > 10 &&
+      distanceKm > 0.1 &&
+      this.instructionRepeatCount < 3;
+
+    return shouldRepeat;
+  }
+
+  /**
+   * Start intelligent navigation checking - repeats instructions if needed
+   */
+  private startIntelligentNavigationCheck() {
+    // Clear previous interval
+    if (this.navigationCheckInterval) {
+      clearInterval(this.navigationCheckInterval);
+    }
+
+    // Check every 5 seconds if instruction needs to be repeated
+    this.navigationCheckInterval = setInterval(() => {
+      if (!this.voiceNavigationEnabled || !this.currentLocation || !this.destination) {
+        this.stopIntelligentNavigationCheck();
+        return;
+      }
+
+      const now = new Date();
+      const shouldRepeat = this.shouldRepeatInstruction(
+        this.currentInstruction, 
+        this.getDistanceToNextManeuver(), 
+        now
+      );
+
+      if (shouldRepeat) {
+        const urgency = this.getUrgencyLevel(this.getDistanceToNextManeuver());
+        const repeatedInstruction = this.addUrgencyToInstruction(this.currentInstruction, urgency);
+        this.speak(repeatedInstruction);
+        
+        console.log(`⚠️ Urgent repetition (${urgency}): ${repeatedInstruction}`);
+      }
+    }, 5000);
+  }
+
+  /**
+   * Stop intelligent navigation checking
+   */
+  private stopIntelligentNavigationCheck() {
+    if (this.navigationCheckInterval) {
+      clearInterval(this.navigationCheckInterval);
+      this.navigationCheckInterval = null;
+    }
+  }
+
+  /**
+   * Get distance to next maneuver
+   */
+  private getDistanceToNextManeuver(): number {
+    // Simplified: return remaining distance to destination
+    return this.getDistanceRemaining() * 1000; // in meters
+  }
+
+  /**
+   * Get urgency level based on distance to maneuver
+   */
+  private getUrgencyLevel(distance: number): 'soon' | 'very-soon' | 'immediate' {
+    const distanceMeters = distance;
+    
+    if (distanceMeters < 50) {
+      return 'immediate';
+    } else if (distanceMeters < 100) {
+      return 'very-soon';
+    } else {
+      return 'soon';
+    }
+  }
+
+  /**
+   * Add urgency to instruction
+   */
+  private addUrgencyToInstruction(instruction: string, urgency: 'soon' | 'very-soon' | 'immediate'): string {
+    switch (urgency) {
+      case 'immediate':
+        return `Maintenant ! ${instruction}`;
+      case 'very-soon':
+        return `Très bientôt ! ${instruction}`;
+      case 'soon':
+      default:
+        return instruction;
+    }
+  }
+
+  /**
+   * Convert OSRM maneuver to French instruction - NAVIGATION INTELLIGENTE
    */
   private convertManeuverToInstruction(type: string, modifier?: string, streetName?: string): string {
     const streetText = streetName ? `sur ${streetName}` : '';
-    
+
     switch (type) {
       case 'depart':
         return 'Départ';
@@ -1297,7 +1617,7 @@ export class GPSTrackingPage implements OnInit, OnDestroy {
   }
 
   /**
-   * Speak text using Text-to-Speech
+   * Speak text using Text-to-Speech - VOIX FRANÇAISE
    */
   private speak(text: string) {
     if (!this.voiceNavigationEnabled || !text) return;
@@ -1308,7 +1628,7 @@ export class GPSTrackingPage implements OnInit, OnDestroy {
     if ('speechSynthesis' in window) {
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.lang = 'fr-FR'; // French
-      utterance.rate = 0.9; // Slightly slower for clarity
+      utterance.rate = 0.95; // Slightly slower for clarity
       utterance.pitch = 1.0;
       utterance.volume = 1.0;
 
