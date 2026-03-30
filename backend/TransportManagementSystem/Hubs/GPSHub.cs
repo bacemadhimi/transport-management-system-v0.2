@@ -250,8 +250,6 @@ public class GPSHub : Hub
     {
         try
         {
-            _logger.LogInformation($"🔔 AcceptTrip CALLED - tripId: {tripId}, ConnectionId: {Context.ConnectionId}");
-
             var trip = await _context.Trips
                 .Include(t => t.Driver)
                 .Include(t => t.Truck)
@@ -260,15 +258,12 @@ public class GPSHub : Hub
 
             if (trip == null)
             {
-                _logger.LogWarning($"⚠️ Trip {tripId} NOT FOUND");
                 await Clients.Caller.SendAsync("Error", "Trip non trouvé");
                 return;
             }
 
             trip.TripStatus = TripStatus.Accepted;
             await _context.SaveChangesAsync();
-
-            _logger.LogInformation($"✅ Trip {tripId} status updated to Accepted");
 
             var notificationData = new
             {
@@ -281,12 +276,8 @@ public class GPSHub : Hub
                 Timestamp = DateTime.UtcNow
             };
 
-            _logger.LogInformation($"📢 Broadcasting TripAccepted to ALL clients");
-            
-            // CRITICAL: Send to ALL clients - this ensures admin receives it
-            await Clients.All.SendAsync("TripAccepted", notificationData);
-            
-            _logger.LogInformation($"✅✅✅ TripAccepted BROADCAST SENT!");
+            // Send via SignalR to Admins group
+            await Clients.Group("Admins").SendAsync("TripAccepted", notificationData);
 
             // Also save to database
             var dbNotification = new Notification
@@ -322,8 +313,6 @@ public class GPSHub : Hub
     {
         try
         {
-            _logger.LogInformation($"🔔 RejectTrip CALLED - tripId: {tripId}, reason: {reason}, ConnectionId: {Context.ConnectionId}");
-
             var trip = await _context.Trips
                 .Include(t => t.Driver)
                 .Include(t => t.Truck)
@@ -331,7 +320,6 @@ public class GPSHub : Hub
 
             if (trip == null)
             {
-                _logger.LogWarning($"⚠️ Trip {tripId} NOT FOUND");
                 await Clients.Caller.SendAsync("Error", "Trip non trouvé");
                 return;
             }
@@ -377,14 +365,8 @@ public class GPSHub : Hub
                 Timestamp = DateTime.UtcNow
             };
 
-            _logger.LogInformation($"📢 Broadcasting TripRejected to ALL clients");
-            
-            // CRITICAL: Send to ALL clients - this ensures admin receives it
-            // Use TRIP_CANCELLED type for consistency with existing notifications
-            await Clients.All.SendAsync("TripRejected", notificationData);
-            await Clients.All.SendAsync("TripCancelled", notificationData); // Also send as cancelled for compatibility
-            
-            _logger.LogInformation($"✅✅✅ TripRejected BROADCAST SENT!");
+            // Send via SignalR to Admins group
+            await Clients.Group("Admins").SendAsync("TripRejected", notificationData);
 
             // Also save to database for all admins
             var allUsers = await _context.Users.ToListAsync();

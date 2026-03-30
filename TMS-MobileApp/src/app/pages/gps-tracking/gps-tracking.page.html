@@ -5,28 +5,30 @@
     </ion-buttons>
     <ion-title>Suivi GPS - {{ tripReference }}</ion-title>
     <ion-buttons slot="end">
-      <!-- Voice Navigation Toggle - ULTRA MODERN PROFESSIONAL -->
-      <ion-button (click)="toggleVoiceNavigation()" 
+      <!-- Voice Navigation Toggle - PROFESSIONAL & SIMPLE -->
+      <ion-button (click)="toggleVoiceNavigation()"
                   class="voice-nav-btn"
                   [class.active]="voiceNavigationEnabled"
                   style="opacity: 1 !important; visibility: visible !important; margin-right: 8px;">
-        <div class="voice-btn-container" style="
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          width: 52px;
-          height: 52px;
-          border-radius: 16px;
-          background: linear-gradient(145deg, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0.05) 100%);
-          border: 2px solid rgba(255,255,255,0.3);
-          transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
-          box-shadow: 0 4px 12px rgba(0,0,0,0.15), inset 0 1px 0 rgba(255,255,255,0.2);
-          position: relative;
-          overflow: visible;
-        " [style.background]="voiceNavigationEnabled ? 'linear-gradient(145deg, #3b82f6 0%, #1d4ed8 100%)' : ''"
-           [style.borderColor]="voiceNavigationEnabled ? '#93c5fd' : 'rgba(255,255,255,0.3)'"
-           [style.boxShadow]="voiceNavigationEnabled ? '0 0 24px rgba(59,130,246,0.5), 0 4px 12px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.3)' : ''">
-          
+        <div class="voice-btn-container" 
+          [ngStyle]="{
+            'background': voiceNavigationEnabled ? 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)' : 'rgba(255, 255, 255, 0.15)',
+            'border-color': voiceNavigationEnabled ? '#93c5fd' : 'rgba(255, 255, 255, 0.3)',
+            'box-shadow': voiceNavigationEnabled ? '0 0 20px rgba(59, 130, 246, 0.4)' : '0 4px 12px rgba(0, 0, 0, 0.15)'
+          }"
+          style="
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            border: 2px solid;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: visible;
+          ">
+
           <!-- Animated waves when active -->
           <div *ngIf="voiceNavigationEnabled" class="voice-waves" style="
             position: absolute;
@@ -44,8 +46,8 @@
               transform: translate(-50%, -50%);
               width: 100%;
               height: 100%;
-              border-radius: 16px;
-              border: 2px solid rgba(59,130,246,0.6);
+              border-radius: 50%;
+              border: 2px solid rgba(59, 130, 246, 0.6);
               animation: wave-expand 2s ease-out infinite;
             "></div>
             <div style="
@@ -55,57 +57,55 @@
               transform: translate(-50%, -50%);
               width: 100%;
               height: 100%;
-              border-radius: 16px;
-              border: 2px solid rgba(59,130,246,0.4);
+              border-radius: 50%;
+              border: 2px solid rgba(59, 130, 246, 0.4);
               animation: wave-expand 2s ease-out 0.5s infinite;
             "></div>
           </div>
-          
+
           <!-- Icon with modern styling -->
           <ion-icon slot="icon-only"
-                    [name]="voiceNavigationEnabled ? 'megaphone' : 'volume-mute'"
+                    [name]="voiceNavigationEnabled ? 'volume-high' : 'volume-mute'"
+                    [ngStyle]="{
+                      'color': voiceNavigationEnabled ? 'white' : 'rgba(255, 255, 255, 0.7)'
+                    }"
                     style="
-                      font-size: 24px; 
-                      color: white !important;
-                      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
-                      z-index: 2;
-                      position: relative;
+                      font-size: 22px;
                       transition: all 0.3s ease;
-                    "
-                    [style.filter]="voiceNavigationEnabled ? 'drop-shadow(0 0 10px rgba(255,255,255,0.6))' : ''">
+                    ">
           </ion-icon>
-          
+
           <!-- Speaking indicator dots -->
           <div *ngIf="isSpeaking && voiceNavigationEnabled" class="speaking-dots" style="
             position: absolute;
-            bottom: -6px;
+            bottom: -4px;
             display: flex;
-            gap: 3px;
+            gap: 2px;
             align-items: center;
           ">
             <div style="
-              width: 4px;
-              height: 4px;
+              width: 3px;
+              height: 3px;
               background: #60a5fa;
               border-radius: 50%;
               animation: dot-bounce 0.6s ease-in-out infinite;
-              box-shadow: 0 0 6px #60a5fa;
+              box-shadow: 0 0 4px #60a5fa;
             "></div>
             <div style="
-              width: 4px;
-              height: 4px;
+              width: 3px;
+              height: 3px;
               background: #60a5fa;
               border-radius: 50%;
               animation: dot-bounce 0.6s ease-in-out 0.2s infinite;
-              box-shadow: 0 0 6px #60a5fa;
+              box-shadow: 0 0 4px #60a5fa;
             "></div>
             <div style="
-              width: 4px;
-              height: 4px;
+              width: 3px;
+              height: 3px;
               background: #60a5fa;
               border-radius: 50%;
               animation: dot-bounce 0.6s ease-in-out 0.4s infinite;
-              box-shadow: 0 0 6px #60a5fa;
+              box-shadow: 0 0 4px #60a5fa;
             "></div>
           </div>
         </div>
@@ -192,60 +192,60 @@
         </div>
 
         <div class="status-actions">
-          <!-- Bouton ACCEPTER -->
+          <!-- Bouton ACCEPTER - Style Moderne -->
           <ion-button
             *ngIf="missionStatus === 'pending'"
             expand="block"
-            color="success"
+            class="modern-btn accept-btn"
             (click)="acceptMission()"
           >
-            <ion-icon slot="start" name="checkmark-circle"></ion-icon>
-            ✅ Accepter la Mission
+            <ion-icon slot="start" name="checkmark-circle-outline"></ion-icon>
+            Accepter la Mission
           </ion-button>
 
-          <!-- Bouton REFSER -->
+          <!-- Bouton REFUSER - Style Moderne -->
           <ion-button
             *ngIf="missionStatus === 'pending'"
             expand="block"
+            class="modern-btn reject-btn"
             fill="outline"
-            color="danger"
             (click)="rejectMission()"
           >
-            <ion-icon slot="start" name="close-circle"></ion-icon>
-            ❌ Refuser la Mission
+            <ion-icon slot="start" name="close-circle-outline"></ion-icon>
+            Refuser la Mission
           </ion-button>
 
-          <!-- BOUTON COMMENCER CHARGEMENT -->
+          <!-- BOUTON COMMENCER CHARGEMENT - Style Moderne -->
           <ion-button
             *ngIf="missionStatus === 'accepted'"
             expand="block"
-            color="primary"
+            class="modern-btn loading-btn"
             (click)="startLoading()"
           >
-            <ion-icon slot="start" name="cube"></ion-icon>
-            📦 Commencer le Chargement
+            <ion-icon slot="start" name="cube-outline"></ion-icon>
+            Commencer le Chargement
           </ion-button>
 
-          <!-- BOUTON COMMENCER LIVRAISON -->
+          <!-- BOUTON COMMENCER LIVRAISON - Style Moderne -->
           <ion-button
             *ngIf="missionStatus === 'loading'"
             expand="block"
-            color="secondary"
+            class="modern-btn delivery-btn"
             (click)="startDelivery()"
           >
-            <ion-icon slot="start" name="boat"></ion-icon>
-            🚚 Commencer la Livraison
+            <ion-icon slot="start" name="navigate-outline"></ion-icon>
+            Commencer la Livraison
           </ion-button>
 
-          <!-- BOUTON TERMINER -->
+          <!-- BOUTON TERMINER - Style Moderne -->
           <ion-button
             *ngIf="missionStatus === 'delivery'"
             expand="block"
-            color="success"
+            class="modern-btn complete-btn"
             (click)="completeMission()"
           >
-            <ion-icon slot="start" name="checkmark-done-circle"></ion-icon>
-            ✅ Livraison Terminée
+            <ion-icon slot="start" name="checkmark-done-circle-outline"></ion-icon>
+            Terminer la Livraison
           </ion-button>
 
           <!-- Message MISSION TERMINEE -->
@@ -348,5 +348,143 @@
 
   .destination-info {
     margin: 0 16px 16px;
+  }
+
+  /* Modern Button Styles */
+  .modern-btn {
+    --border-radius: 12px;
+    --box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    --padding-start: 16px;
+    --padding-end: 16px;
+    --padding-top: 14px;
+    --padding-bottom: 14px;
+    font-weight: 600;
+    font-size: 15px;
+    letter-spacing: 0.3px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    border: none;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .modern-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+    transition: left 0.5s;
+  }
+
+  .modern-btn:active::before {
+    left: 100%;
+  }
+
+  .modern-btn ion-icon {
+    font-size: 20px;
+    margin-right: 8px;
+  }
+
+  /* Accept Button - Green Gradient */
+  .modern-btn.accept-btn {
+    --background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    --background-activated: linear-gradient(135deg, #059669 0%, #047857 100%);
+    color: white;
+  }
+
+  .modern-btn.accept-btn::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 80%;
+    height: 3px;
+    background: linear-gradient(90deg, transparent, #34d399, transparent);
+    border-radius: 2px;
+  }
+
+  /* Reject Button - Red Outline */
+  .modern-btn.reject-btn {
+    --background: transparent;
+    --border-color: #ef4444;
+    --color: #ef4444;
+    --border-radius: 12px;
+    border: 2px solid #ef4444;
+  }
+
+  .modern-btn.reject-btn::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0%;
+    height: 3px;
+    background: linear-gradient(90deg, transparent, #ef4444, transparent);
+    transition: width 0.3s;
+  }
+
+  .modern-btn.reject-btn:active::after {
+    width: 80%;
+  }
+
+  /* Loading Button - Blue Gradient */
+  .modern-btn.loading-btn {
+    --background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+    --background-activated: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+    color: white;
+  }
+
+  .modern-btn.loading-btn::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 80%;
+    height: 3px;
+    background: linear-gradient(90deg, transparent, #60a5fa, transparent);
+    border-radius: 2px;
+  }
+
+  /* Delivery Button - Purple Gradient */
+  .modern-btn.delivery-btn {
+    --background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+    --background-activated: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
+    color: white;
+  }
+
+  .modern-btn.delivery-btn::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 80%;
+    height: 3px;
+    background: linear-gradient(90deg, transparent, #a78bfa, transparent);
+    border-radius: 2px;
+  }
+
+  /* Complete Button - Success Gradient */
+  .modern-btn.complete-btn {
+    --background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    --background-activated: linear-gradient(135deg, #059669 0%, #047857 100%);
+    color: white;
+  }
+
+  .modern-btn.complete-btn::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 80%;
+    height: 3px;
+    background: linear-gradient(90deg, transparent, #34d399, transparent);
+    border-radius: 2px;
   }
 </style>

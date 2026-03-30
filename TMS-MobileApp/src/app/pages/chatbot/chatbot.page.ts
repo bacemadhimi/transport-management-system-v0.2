@@ -32,6 +32,13 @@ export class ChatbotPage implements OnInit {
   isLoading: boolean = false;
   driverId: number = 0;
   isOllamaConnected: boolean = false;
+  
+  // Voice features
+  voiceModeEnabled: boolean = false; // AI speaks responses
+  isRecording: boolean = false;
+  isListening: boolean = false;
+  private recognition: any;
+  private synthesis: SpeechSynthesis;
 
   suggestedQuestions = [
     '📦 Combien de livraisons me restent-elles ?',
@@ -46,7 +53,10 @@ export class ChatbotPage implements OnInit {
     private chatbotService: ChatbotService,
     private authService: AuthService,
     private toastController: ToastController
-  ) {}
+  ) {
+    this.synthesis = window.speechSynthesis;
+    this.initSpeechRecognition();
+  }
 
   ngOnInit() {
     const user = this.authService.currentUser();
@@ -150,6 +160,11 @@ export class ChatbotPage implements OnInit {
       // Add bot response
       this.addMessage('assistant', response.message);
 
+      // Speak the response if voice mode is enabled
+      setTimeout(() => {
+        this.speak(response.message);
+      }, 500);
+
       // Show context if available
       if (response.context) {
         console.log('📊 Context:', response.context);
@@ -157,14 +172,14 @@ export class ChatbotPage implements OnInit {
 
     } catch (error) {
       console.error('Chatbot error:', error);
-      
+
       // Remove typing indicator
       this.messages.pop();
-      
+
       // Add error message
-      this.addMessage('assistant', 
+      this.addMessage('assistant',
         '❌ Désolé, je rencontre un problème technique. Veuillez réessayer dans quelques instants.');
-      
+
       // Show toast
       const toast = await this.toastController.create({
         message: 'Erreur de connexion au chatbot',
@@ -188,5 +203,142 @@ export class ChatbotPage implements OnInit {
       content: '👋 **Conversation effacée.** Comment puis-je vous aider?',
       timestamp: new Date()
     }];
+    this.stopSpeaking();
+  }
+
+  // ============================================
+  // VOICE FEATURES - Speech Recognition & Synthesis
+  // ============================================
+
+  /**
+   * Initialize speech recognition (voice input)
+   */
+  private initSpeechRecognition() {
+    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+      this.recognition = new SpeechRecognition();
+      this.recognition.continuous = false;
+      this.recognition.interimResults = false;
+      this.recognition.lang = 'fr-FR';
+
+      this.recognition.onresult = (event: any) => {
+        const transcript = event.results[0][0].transcript;
+        console.log('🎤 Voice input:', transcript);
+        this.inputMessage = transcript;
+        this.isRecording = false;
+        this.isListening = false;
+        // Auto-send after voice input
+        setTimeout(() => this.sendMessage(), 500);
+      };
+
+      this.recognition.onerror = (event: any) => {
+        console.error('🎤 Speech recognition error:', event.error);
+        this.isRecording = false;
+        this.isListening = false;
+      };
+
+      this.recognition.onend = () => {
+        console.log('🎤 Speech recognition ended');
+        this.isRecording = false;
+        this.isListening = false;
+      };
+
+      console.log('✅ Speech recognition initialized');
+    } else {
+      console.warn('⚠️ Speech recognition not supported');
+    }
+  }
+
+  /**
+   * Toggle voice input (speech-to-text)
+   */
+  toggleVoiceInput() {
+    if (!this.recognition) {
+      this.presentToast('Reconnaissance vocale non supportée', 'warning');
+      return;
+    }
+
+    if (this.isRecording) {
+      this.recognition.stop();
+      this.isRecording = false;
+    } else {
+      try {
+        this.recognition.start();
+        this.isRecording = true;
+        this.isListening = true;
+        this.presentToast('🎤 Parlez maintenant...', 'primary');
+      } catch (error) {
+        console.error('Error starting recognition:', error);
+        this.presentToast('Erreur microphone', 'danger');
+      }
+    }
+  }
+
+  /**
+   * Toggle voice mode (text-to-speech for responses)
+   */
+  toggleVoiceMode() {
+    this.voiceModeEnabled = !this.voiceModeEnabled;
+    this.presentToast(
+      this.voiceModeEnabled ? '🔊 Mode vocal activé' : '🔇 Mode vocal désactivé',
+      'primary'
+    );
+  }
+
+  /**
+   * Speak text using text-to-speech
+   */
+  private speak(text: string) {
+    if (!this.voiceModeEnabled || !text) return;
+
+    // Stop any ongoing speech
+    this.stopSpeaking();
+
+    // Clean text (remove emojis and markdown)
+    const cleanText = text
+      .replace(/📦|📍|🗺️|🔔|🕐|💡|❌|👋/g, '')
+      .replace(/\*\*/g, '')
+      .replace(/\n/g, ' ')
+      .trim();
+
+    if ('speechSynthesis' in window) {
+      const utterance = new SpeechSynthesisUtterance(cleanText);
+      utterance.lang = 'fr-FR';
+      utterance.rate = 0.95;
+      utterance.pitch = 1.0;
+      utterance.volume = 1.0;
+
+      utterance.onstart = () => {
+        console.log('🔊 Speaking...');
+      };
+
+      utterance.onend = () => {
+        console.log('🔊 Speech ended');
+      };
+
+      utterance.onerror = (event) => {
+        console.error('Speech error:', event);
+      };
+
+      this.synthesis.speak(utterance);
+    }
+  }
+
+  /**
+   * Stop current speech
+   */
+  private stopSpeaking() {
+    if ('speechSynthesis' in window) {
+      this.synthesis.cancel();
+    }
+  }
+
+  async presentToast(message: string, color: string) {
+    const toast = await this.toastController.create({
+      message,
+      duration: 2000,
+      color
+    });
+    await toast.present();
   }
 }

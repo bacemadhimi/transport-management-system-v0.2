@@ -1618,6 +1618,7 @@ export class GPSTrackingPage implements OnInit, OnDestroy {
 
   /**
    * Speak text using Text-to-Speech - VOIX FRANÇAISE
+   * Translates Arabic text to French before speaking
    */
   private speak(text: string) {
     if (!this.voiceNavigationEnabled || !text) return;
@@ -1625,8 +1626,11 @@ export class GPSTrackingPage implements OnInit, OnDestroy {
     // Stop any ongoing speech
     this.stopSpeaking();
 
+    // Translate Arabic to French if needed
+    const translatedText = this.translateArabicToFrench(text);
+
     if ('speechSynthesis' in window) {
-      const utterance = new SpeechSynthesisUtterance(text);
+      const utterance = new SpeechSynthesisUtterance(translatedText);
       utterance.lang = 'fr-FR'; // French
       utterance.rate = 0.95; // Slightly slower for clarity
       utterance.pitch = 1.0;
@@ -1649,6 +1653,141 @@ export class GPSTrackingPage implements OnInit, OnDestroy {
     } else {
       console.warn('Text-to-Speech not supported');
     }
+  }
+
+  /**
+   * Translate Arabic text to French for voice navigation
+   * Transliterates Arabic script to French phonetics for proper pronunciation
+   */
+  private translateArabicToFrench(text: string): string {
+    if (!text) return text;
+
+    // Check if text contains Arabic script
+    if (!/[\u0600-\u06FF]/.test(text)) {
+      return text; // No Arabic, return as-is
+    }
+
+    console.log('🔤 Arabic text detected:', text);
+
+    // Arabic to French phonetic transliteration map
+    const transliterations: { [key: string]: string } = {
+      // Common street types
+      'شارع': 'rue',
+      'نهج': 'rue',
+      'طريق': 'route',
+      'جادة': 'avenue',
+      'بوليفار': 'boulevard',
+      'ساحة': 'place',
+      'زنقة': 'impasse',
+      
+      // Cities and regions in Tunisia
+      'تونس': 'Tunis',
+      'أريانة': 'Ariana',
+      'بن عروس': 'Ben Arous',
+      'المنوبة': 'Manouba',
+      'نابل': 'Nabeul',
+      'زغوان': 'Zaghouan',
+      'بنزرت': 'Bizerte',
+      'باجة': 'Béja',
+      'جندوبة': 'Jendouba',
+      'الكاف': 'Le Kef',
+      'سليانة': 'Siliana',
+      'قيروان': 'Kairouan',
+      'القيروان': 'Kairouan',
+      'القصرين': 'Kasserine',
+      'سيدي بوزيد': 'Sidi Bouzid',
+      'سوسة': 'Sousse',
+      'المنستير': 'Monastir',
+      'المهدية': 'Mahdia',
+      'صفاقس': 'Sfax',
+      'قفصة': 'Gafsa',
+      'توزر': 'Tozeur',
+      'قبلي': 'Kébili',
+      'تطاوين': 'Tataouine',
+      'مدنين': 'Médenine',
+      'جربة': 'Djerba',
+      
+      // Common place names
+      'المنزه': 'Menzah',
+      'المرسى': 'Marsa',
+      'باردو': 'Bardo',
+      'أوتيك': 'Ottak',
+      'المدينة': 'Médina',
+      'الوسط': 'Centre',
+      'الجنوب': 'Sud',
+      'الشمال': 'Nord',
+      
+      // Directions
+      'يسار': 'gauche',
+      'يمين': 'droite',
+      'أمام': 'tout droit',
+      'خلف': 'derrière',
+      
+      // Actions
+      'دور': 'tournez',
+      'خذ': 'prenez',
+      'استمر': 'continuez',
+      'امش': 'marchez',
+      'اتجه': 'dirigez-vous',
+    };
+
+    let translated = text;
+
+    // Apply transliterations (longer phrases first)
+    Object.keys(transliterations)
+      .sort((a, b) => b.length - a.length) // Sort by length (longest first)
+      .forEach(arabic => {
+        const regex = new RegExp(arabic, 'g');
+        translated = translated.replace(regex, transliterations[arabic]);
+      });
+
+    // Character-by-character transliteration for remaining Arabic
+    const charMap: { [key: string]: string } = {
+      'ا': 'a',
+      'أ': 'a',
+      'إ': 'i',
+      'آ': 'aa',
+      'ب': 'b',
+      'ت': 't',
+      'ث': 'th',
+      'ج': 'j',
+      'ح': 'h',
+      'خ': 'kh',
+      'د': 'd',
+      'ذ': 'dh',
+      'ر': 'r',
+      'ز': 'z',
+      'س': 's',
+      'ش': 'ch',
+      'ص': 's',
+      'ض': 'd',
+      'ط': 't',
+      'ظ': 'z',
+      'ع': 'a',
+      'غ': 'gh',
+      'ف': 'f',
+      'ق': 'k',
+      'ك': 'k',
+      'ل': 'l',
+      'م': 'm',
+      'ن': 'n',
+      'ه': 'h',
+      'و': 'ou',
+      'ي': 'i',
+      'ى': 'a',
+      'ة': 'a',
+      ' ': ' ',
+    };
+
+    // Transliterate any remaining Arabic characters
+    let result = '';
+    for (const char of translated) {
+      result += charMap[char] || char;
+    }
+
+    console.log('🔤 Transliterated to:', result);
+
+    return result;
   }
 
   /**
