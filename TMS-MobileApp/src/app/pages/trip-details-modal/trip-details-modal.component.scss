@@ -378,3 +378,99 @@
     font-size: 14px;
   }
 }
+// Dans trip-details-modal.component.scss
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border-radius: 50px;
+  font-weight: 700;
+  font-size: 16px;
+  letter-spacing: 1px;
+  background: rgba(0, 0, 0, 0.85);
+  border: 2px solid;
+  backdrop-filter: blur(10px);
+  
+  .status-icon {
+    font-size: 18px;
+  }
+  
+  &.pending {
+    color: #ff8c00;
+    border-color: #ff8c00;
+    background: linear-gradient(135deg, rgba(255, 140, 0, 0.2), rgba(255, 204, 0, 0.2));
+  }
+  
+  &.planned {
+    color: #ff8c00;
+    border-color: #ff8c00;
+    background: rgba(255, 140, 0, 0.1);
+  }
+  
+  &.accepted {
+    color: #ffcc00;
+    border-color: #ffcc00;
+    background: rgba(255, 204, 0, 0.1);
+  }
+  
+  &.loading {
+    color: #5856d6;
+    border-color: #5856d6;
+    background: rgba(88, 86, 214, 0.1);
+  }
+  
+  &.delivery {
+    color: #ff9500;
+    border-color: #ff9500;
+    background: rgba(255, 149, 0, 0.1);
+  }
+  
+  &.receipt {
+    color: #4caf50;
+    border-color: #4caf50;
+    background: rgba(76, 175, 80, 0.1);
+  }
+  
+  &.cancelled {
+    color: #f44336;
+    border-color: #f44336;
+    background: rgba(244, 67, 54, 0.1);
+  }
+}
+
+// Styles pour les valeurs de statut dans les cartes
+.card-value {
+  font-size: 16px;
+  font-weight: 600;
+  color: #ffffff;
+  
+  &.pending {
+    color: #ff8c00;
+  }
+  
+  &.planned {
+    color: #ff8c00;
+  }
+  
+  &.accepted {
+    color: #ffcc00;
+  }
+  
+  &.loading {
+    color: #5856d6;
+  }
+  
+  &.delivery {
+    color: #ff9500;
+  }
+  
+  &.receipt {
+    color: #4caf50;
+  }
+  
+  &.cancelled {
+    color: #f44336;
+  }
+}

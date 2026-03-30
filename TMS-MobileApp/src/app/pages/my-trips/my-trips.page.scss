@@ -1,5 +1,70 @@
 .my-trips-content {
-  --background: #f8fafc;
+  --background: linear-gradient(135deg, #fff5e6, #ffffff);
+  
+  .toolbar-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    
+    .title-icon {
+      font-size: 24px;
+      color: #000000;
+    }
+    
+    span {
+      font-size: 18px;
+      font-weight: 600;
+      color: #000000;
+    }
+  }
+
+  .loading-container, .error-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 80px 20px;
+    text-align: center;
+    
+    .loading-card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+      
+      p {
+        color: #64748b;
+        font-size: 14px;
+      }
+    }
+    
+    ion-icon {
+      font-size: 64px;
+      color: #ff8c00;
+      margin-bottom: 16px;
+    }
+    
+    h3 {
+      font-size: 18px;
+      font-weight: 600;
+      margin: 0 0 8px 0;
+      color: #1e293b;
+    }
+    
+    p {
+      font-size: 14px;
+      margin: 0 0 20px 0;
+      color: #64748b;
+    }
+    
+    .btn-orange {
+      --background: linear-gradient(135deg, #ff8c00, #ffcc00);
+      --background-hover: linear-gradient(135deg, #ff7c00, #ffbc00);
+      --color: #000000;
+      --border-radius: 12px;
+      font-weight: 600;
+    }
+  }
 
   .section {
     padding: 16px;
@@ -12,23 +77,32 @@
       font-weight: 700;
       color: #1e293b;
       margin: 0 0 16px 0;
+      border-left: 3px solid #ff8c00;
+      padding-left: 12px;
 
-      ion-icon {
-        color: #3b82f6;
+      .title-icon-orange {
+        color: #ff8c00;
         font-size: 22px;
       }
     }
   }
 
   .trip-card {
-    --border-radius: 12px;
+    --border-radius: 16px;
     box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
     margin-bottom: 16px;
     cursor: pointer;
     transition: all 0.3s ease;
+    border: 1px solid rgba(255, 140, 0, 0.1);
+
+    &:hover {
+      transform: translateY(-2px);
+      border-color: #ff8c00;
+      box-shadow: 0 8px 24px rgba(255, 140, 0, 0.15);
+    }
 
     &.active {
-      border-left: 4px solid #3b82f6;
+      border-left: 4px solid #ff8c00;
     }
 
     ion-card-header {
@@ -40,31 +114,52 @@
         align-items: flex-start;
         gap: 12px;
 
+        .trip-info {
+          flex: 1;
+        }
+
         ion-card-title {
           font-size: 18px;
           font-weight: 700;
           color: #1e293b;
-          margin-bottom: 4px;
+          margin-bottom: 8px;
         }
 
         ion-card-subtitle {
           display: flex;
           align-items: center;
-          gap: 4px;
+          gap: 6px;
           font-size: 14px;
           color: #64748b;
+          margin-bottom: 6px;
 
           ion-icon {
-            font-size: 16px;
-            color: #3b82f6;
+            font-size: 14px;
+            color: #ff8c00;
+          }
+        }
+        
+        .trip-details {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          font-size: 12px;
+          color: #94a3b8;
+          
+          ion-icon {
+            font-size: 12px;
+            color: #ff8c00;
           }
         }
 
-        ion-badge {
+        .status-badge {
           font-size: 12px;
-          padding: 6px 12px;
-          border-radius: 12px;
+          font-weight: 600;
+          padding: 6px 14px;
+          border-radius: 20px;
           text-transform: capitalize;
+          letter-spacing: 0.5px;
+          white-space: nowrap;
         }
       }
     }
@@ -72,8 +167,11 @@
     ion-card-content {
       .trip-stats {
         display: flex;
-        gap: 24px;
-        margin-bottom: 16px;
+        flex-wrap: wrap;
+        gap: 20px;
+        margin-bottom: 20px;
+        padding-bottom: 16px;
+        border-bottom: 1px solid rgba(255, 140, 0, 0.2);
 
         .stat {
           display: flex;
@@ -82,9 +180,9 @@
           font-size: 14px;
           color: #64748b;
 
-          ion-icon {
+          .stat-icon-orange {
             font-size: 18px;
-            color: #3b82f6;
+            color: #ff8c00;
           }
 
           span {
@@ -95,9 +193,18 @@
       }
 
       .trip-actions {
-        ion-button {
-          --border-radius: 8px;
-          font-weight: 600;
+        .btn-orange {
+          --background: linear-gradient(135deg, #ff8c00, #ffcc00);
+          --background-hover: linear-gradient(135deg, #ff7c00, #ffbc00);
+          --color: #000000;
+          --border-radius: 12px;
+          font-weight: 700;
+          height: 44px;
+          text-transform: none;
+          
+          ion-icon {
+            font-size: 18px;
+          }
         }
       }
     }
@@ -108,18 +215,36 @@
 
     ion-item {
       --background: white;
-      --border-radius: 8px;
-      margin-bottom: 8px;
+      --border-radius: 12px;
+      margin-bottom: 10px;
       box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+      border: 1px solid rgba(255, 140, 0, 0.1);
+      transition: all 0.3s ease;
+      
+      &:hover {
+        transform: translateX(4px);
+        border-color: #ff8c00;
+        box-shadow: 0 4px 12px rgba(255, 140, 0, 0.1);
+      }
 
-      ion-icon {
-        font-size: 24px;
+      .trip-icon-small {
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
         margin-right: 12px;
+        flex-shrink: 0;
+        
+        ion-icon {
+          font-size: 20px;
+        }
       }
 
       h3 {
         font-size: 15px;
-        font-weight: 600;
+        font-weight: 700;
         color: #1e293b;
         margin-bottom: 4px;
       }
@@ -128,14 +253,33 @@
         font-size: 13px;
         color: #64748b;
         margin: 0;
+        
+        &.date-text {
+          font-size: 11px;
+          color: #94a3b8;
+          margin-top: 4px;
+        }
       }
 
-      ion-badge {
+      .status-badge {
         font-size: 12px;
+        font-weight: 600;
         padding: 6px 12px;
-        border-radius: 12px;
+        border-radius: 20px;
         text-transform: capitalize;
+        letter-spacing: 0.5px;
       }
+    }
+  }
+
+  .view-all {
+    text-align: center;
+    margin-top: 12px;
+    
+    .view-all-btn {
+      --color: #ff8c00;
+      font-weight: 600;
+      text-transform: none;
     }
   }
 
@@ -146,12 +290,12 @@
     justify-content: center;
     padding: 80px 20px;
     text-align: center;
-    color: #94a3b8;
 
     ion-icon {
       font-size: 80px;
       margin-bottom: 24px;
       opacity: 0.5;
+      color: #ff8c00;
     }
 
     h3 {

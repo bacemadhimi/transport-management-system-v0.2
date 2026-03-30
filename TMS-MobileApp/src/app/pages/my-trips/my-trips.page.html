@@ -1,8 +1,19 @@
 <ion-header>
-  <ion-toolbar color="primary">
-    <ion-title>Mes Trajets</ion-title>
+  <ion-toolbar style="--background: linear-gradient(135deg, #ff8c00, #ffcc00); --color: #000000;">
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/home" style="--color: #000000;"></ion-back-button>
+    </ion-buttons>
+    <ion-title style="--color: #000000;">
+      <div class="toolbar-title">
+        <ion-icon name="car-outline" class="title-icon"></ion-icon>
+        <span>Mes Trajets</span>
+      </div>
+    </ion-title>
     <ion-buttons slot="end">
-      <ion-button routerLink="/trip-history">
+      <ion-button (click)="refreshData()" style="--color: #000000;">
+        <ion-icon slot="icon-only" name="refresh"></ion-icon>
+      </ion-button>
+      <ion-button routerLink="/trip-history" style="--color: #000000;">
         <ion-icon slot="icon-only" name="time"></ion-icon>
       </ion-button>
     </ion-buttons>
@@ -11,41 +22,70 @@
 
 <ion-content class="my-trips-content">
   
+  <!-- Loading State -->
+  <div class="loading-container" *ngIf="loading">
+    <div class="loading-card">
+      <ion-spinner name="crescent" color="primary"></ion-spinner>
+      <p>Chargement de vos trajets...</p>
+    </div>
+  </div>
+
+  <!-- Error State -->
+  <div class="error-state" *ngIf="error && !loading">
+    <ion-icon name="alert-circle-outline"></ion-icon>
+    <h3>Erreur</h3>
+    <p>{{ error }}</p>
+    <ion-button (click)="refreshData()" class="btn-orange">
+      <ion-icon slot="start" name="refresh"></ion-icon>
+      Réessayer
+    </ion-button>
+  </div>
+
   <!-- Trips Actifs -->
-  <div class="section" *ngIf="activeTrips.length > 0">
+  <div class="section" *ngIf="!loading && !error && activeTrips.length > 0">
     <h2 class="section-title">
-      <ion-icon name="radio-button-on"></ion-icon>
-      En Cours
+      <ion-icon name="radio-button-on" class="title-icon-orange"></ion-icon>
+      En Cours ({{ activeTrips.length }})
     </h2>
     
     <ion-card class="trip-card active" *ngFor="let trip of activeTrips" (click)="viewTrip(trip)">
       <ion-card-header>
         <div class="trip-header">
-          <div>
+          <div class="trip-info">
             <ion-card-title>{{ trip.tripReference }}</ion-card-title>
             <ion-card-subtitle>
               <ion-icon name="location"></ion-icon>
               {{ trip.destination }}
             </ion-card-subtitle>
+            <div class="trip-details" *ngIf="trip.startDate">
+              <ion-icon name="calendar"></ion-icon>
+              <span>{{ formatDate(trip.startDate) }}</span>
+            </div>
           </div>
-          <ion-badge [color]="getStatusColor(trip.status)">{{ trip.status }}</ion-badge>
+          <ion-badge [style.background]="getStatusGradient(trip.status)" [style.color]="getStatusTextColor(trip.status)" class="status-badge">
+            {{ getStatusText(trip.status) }}
+          </ion-badge>
         </div>
       </ion-card-header>
       
       <ion-card-content>
         <div class="trip-stats">
           <div class="stat">
-            <ion-icon name="speedometer"></ion-icon>
+            <ion-icon name="speedometer" class="stat-icon-orange"></ion-icon>
             <span>{{ trip.estimatedDistance }} km</span>
           </div>
           <div class="stat">
-            <ion-icon name="package"></ion-icon>
+            <ion-icon name="time" class="stat-icon-orange"></ion-icon>
+            <span>{{ trip.estimatedDuration }} h</span>
+          </div>
+          <div class="stat">
+            <ion-icon name="package" class="stat-icon-orange"></ion-icon>
             <span>{{ trip.deliveriesCount }} livraisons</span>
           </div>
         </div>
         
         <div class="trip-actions">
-          <ion-button expand="block" color="primary" (click)="viewGPS(trip); $event.stopPropagation()">
+          <ion-button expand="block" class="btn-orange" (click)="viewGPS(trip); $event.stopPropagation()">
             <ion-icon slot="start" name="map"></ion-icon>
             Voir sur la carte
           </ion-button>
@@ -54,29 +94,39 @@
     </ion-card>
   </div>
 
-  <!-- Historique -->
-  <div class="section" *ngIf="historyTrips.length > 0">
+  <!-- Historique Récent -->
+  <div class="section" *ngIf="!loading && !error && historyTrips.length > 0">
     <h2 class="section-title">
-      <ion-icon name="time"></ion-icon>
+      <ion-icon name="time" class="title-icon-orange"></ion-icon>
       Historique Récent
     </h2>
     
     <ion-list>
-      <ion-item *ngFor="let trip of historyTrips" (click)="viewTrip(trip)" button>
-        <ion-icon [name]="trip.status === 'Completed' ? 'checkmark-circle' : 'close-circle'" 
-                  [color]="getStatusColor(trip.status)" 
-                  slot="start"></ion-icon>
+      <ion-item *ngFor="let trip of historyTrips.slice(0, 5)" (click)="viewTrip(trip)" button>
+        <div class="trip-icon-small" [style.background]="getStatusGradient(trip.status)">
+          <ion-icon [name]="getStatusIcon(trip.status)" [style.color]="getStatusTextColor(trip.status)"></ion-icon>
+        </div>
         <ion-label>
           <h3>{{ trip.tripReference }}</h3>
           <p>{{ trip.destination }} • {{ trip.estimatedDistance }} km</p>
+          <p class="date-text" *ngIf="trip.startDate">{{ formatDate(trip.startDate) }}</p>
         </ion-label>
-        <ion-badge [color]="getStatusColor(trip.status)" slot="end">{{ trip.status }}</ion-badge>
+        <ion-badge [style.background]="getStatusGradient(trip.status)" [style.color]="getStatusTextColor(trip.status)" class="status-badge">
+          {{ getStatusText(trip.status) }}
+        </ion-badge>
       </ion-item>
     </ion-list>
+    
+    <div class="view-all" *ngIf="historyTrips.length > 5">
+      <ion-button fill="clear" class="view-all-btn" routerLink="/trip-history">
+        Voir tout l'historique
+        <ion-icon name="chevron-forward" slot="end"></ion-icon>
+      </ion-button>
+    </div>
   </div>
 
   <!-- Empty state -->
-  <div class="empty-state" *ngIf="trips.length === 0">
+  <div class="empty-state" *ngIf="!loading && !error && trips.length === 0">
     <ion-icon name="map-outline"></ion-icon>
     <h3>Aucun trajet</h3>
     <p>Vous n'avez pas de trajets assignés pour le moment</p>

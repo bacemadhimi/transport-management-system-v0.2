@@ -18,7 +18,7 @@
   <div class="trip-status-row">
     <div class="status-badge" [ngClass]="trip.tripStatus.toLowerCase()">
       <ion-icon name="flag-outline" class="status-icon"></ion-icon>
-      {{ trip.tripStatus }}
+      {{ getStatusText(trip.tripStatus) }}
     </div>
   </div>
 

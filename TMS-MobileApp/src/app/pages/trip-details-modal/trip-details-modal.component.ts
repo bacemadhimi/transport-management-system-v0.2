@@ -298,4 +298,43 @@ export class TripDetailsModalComponent implements OnInit, OnDestroy {
     };
     return labels[status] || status;
   }
+  /**
+ * Obtenir le texte d'affichage du statut en français
+ */
+getStatusText(status: string): string {
+  const statusTextMap: { [key: string]: string } = {
+    'Pending': '⏳ En attente',
+    'Planned': '📋 Planifié',
+    'Accepted': '✅ Accepté',
+    'LOADING': '📦 Chargement',
+    'Loading': '📦 Chargement',
+    'LoadingInProgress': '📦 Chargement',
+    'InDelivery': '🚚 Livraison',
+    'DeliveryInProgress': '🚚 Livraison',
+    'Receipt': '🎉 Terminé',
+    'Completed': '🎉 Terminé',
+    'Cancelled': '❌ Annulé'
+  };
+  return statusTextMap[status] || status;
+}
+
+/**
+ * Obtenir la classe CSS pour le statut (en minuscules)
+ */
+getStatusClass(status: string): string {
+  const classMap: { [key: string]: string } = {
+    'Pending': 'pending',
+    'Planned': 'planned',
+    'Accepted': 'accepted',
+    'LOADING': 'loading',
+    'Loading': 'loading',
+    'LoadingInProgress': 'loading',
+    'InDelivery': 'delivery',
+    'DeliveryInProgress': 'delivery',
+    'Receipt': 'receipt',
+    'Completed': 'receipt',
+    'Cancelled': 'cancelled'
+  };
+  return classMap[status] || 'default';
+}
 }
