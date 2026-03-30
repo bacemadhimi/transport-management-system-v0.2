@@ -20,7 +20,7 @@ export class DatabaseService {
   private sqlite = new SQLiteConnection(CapacitorSQLite);
   private db!: SQLiteDBConnection;
   private initialized = false;
-  private dbName = 'TMS_app.db';
+  private dbName = 'TMS_Driver_app.db';
   private dbVersion = 1;
   private isNative = Capacitor.getPlatform() === 'android' || Capacitor.getPlatform() === 'ios';
 

@@ -56,7 +56,7 @@ src/app/
 ```bash
 # Clone the repository
 git clone <repository-url>
-cd mobileSQLiteApp
+cd TMS
 
 # Install dependencies
 npm install

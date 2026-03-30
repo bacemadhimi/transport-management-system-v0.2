@@ -11,6 +11,7 @@ import { Preferences } from '@capacitor/preferences';
 import { App } from '@capacitor/app';
 import { firstValueFrom } from 'rxjs';
 import { DatabaseService } from 'src/app/services/sqlite.service';
+import { environment } from 'src/environments/environment';
 
 @Component({
   selector: 'app-login',
@@ -29,7 +30,7 @@ export class LoginPage implements AfterViewInit {
   @ViewChild('usernameInput') usernameInput!: IonInput;
   @ViewChild('passwordInput') passwordInput!: IonInput;
   
-  apiUrl = 'https://localhost:7287/api/Auth/login';
+  apiUrl = environment.apiUrl + '/api/Auth/login';
   
   isLoading = false;
   errorMessage = '';
@@ -267,6 +268,36 @@ export class LoginPage implements AfterViewInit {
     } catch (error: any) {
       this.isLoading = false;
       console.log('API login failed, attempting offline fallback...');
+    
+      let errorMessage = 'Login failed\n\n';
+
+if (error.status === 0) {
+    errorMessage += 'Network error: Cannot reach server\n\n';
+    errorMessage += `Error message: ${error.message || 'No message'}\n`;
+    errorMessage += `URL called: ${this.apiUrl}\n`;
+    errorMessage += `App origin: ${window.location.origin}\n`;
+    errorMessage += `Platform: ${this.platform}\n`;
+    
+} else if (error.status === 404) {
+    errorMessage += `API endpoint not found (404)\n\n`;
+    errorMessage += `URL called: ${this.apiUrl}\n`;
+    errorMessage += `App origin: ${window.location.origin}\n`;
+    errorMessage += `Message: ${error.message}`;
+    
+} else if (error.status === 405) {
+    errorMessage += `Method not allowed (405)\n\n`;
+    errorMessage += `URL called: ${this.apiUrl}\n`;
+    errorMessage += `App origin: ${window.location.origin}\n`;
+    errorMessage += `Message: ${error.message}`;
+    
+} else {
+    errorMessage += `Status: ${error.status}\n`;
+    errorMessage += `Message: ${error.message}\n`;
+    errorMessage += `URL called: ${this.apiUrl}\n`;
+    errorMessage += `App origin: ${window.location.origin}`;
+}
+
+await this.showAlert('Login Error', errorMessage);
       await this.handleOfflineLogin(email, password);
     }
   }
