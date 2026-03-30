@@ -117,6 +117,7 @@ public class TrucksController : ControllerBase
     {
         var truck = await context.Trucks
             .Include(t => t.TypeTruck)
+            .Include(t => t.Driver)
             .Include(t => t.TruckGeographicalEntities)
                 .ThenInclude(tg => tg.GeographicalEntity)
                     .ThenInclude(g => g.Level)
@@ -137,6 +138,7 @@ public class TrucksController : ControllerBase
             EmptyWeight = truck.EmptyWeight,
             TypeTruckId = truck.TypeTruckId,
             Images = DeserializeImages(truck.ImagesJson),
+            DriverId = truck.DriverId,
             TypeTruck = truck.TypeTruck != null ? new TypeTruckDto
             {
                 Id = truck.TypeTruck.Id,
@@ -199,6 +201,7 @@ public class TrucksController : ControllerBase
             ImagesJson = SerializeImages(model.Images),
             TypeTruckId = model.TypeTruckId,
             IsEnable = true,
+            DriverId = model.DriverId,
             TruckGeographicalEntities = new List<TruckGeographicalEntity>()
         };
 
@@ -306,6 +309,7 @@ public class TrucksController : ControllerBase
         truck.Color = model.Color;
         truck.ImagesJson = SerializeImages(model.Images);
         truck.TypeTruckId = model.TypeTruckId;
+        truck.DriverId = model.DriverId;
 
         // Update geographical entities
         if (model.GeographicalEntities != null)
@@ -390,7 +394,10 @@ public class TrucksController : ControllerBase
         {
             context.TruckGeographicalEntities.RemoveRange(truck.TruckGeographicalEntities);
         }
-
+        if (truck.DriverId.HasValue)
+        {
+            truck.DriverId = null;
+        }
         await truckRepository.DeleteAsync(id);
         await truckRepository.SaveChangesAsync();
 
@@ -402,6 +409,7 @@ public class TrucksController : ControllerBase
     {
         var trucks = await context.Trucks
             .Include(t => t.TypeTruck)
+            .Include(t => t.Driver)
             .Include(t => t.TruckGeographicalEntities)
                 .ThenInclude(tg => tg.GeographicalEntity)
                     .ThenInclude(g => g.Level)
@@ -420,6 +428,7 @@ public class TrucksController : ControllerBase
             EmptyWeight = t.EmptyWeight,
             TypeTruckId = t.TypeTruckId,
             Images = DeserializeImages(t.ImagesJson),
+            DriverId = t.DriverId,
             TypeTruck = t.TypeTruck != null ? new TypeTruckDto
             {
                 Id = t.TypeTruck.Id,

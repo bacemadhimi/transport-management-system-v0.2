@@ -29,6 +29,7 @@ truckGeographicalEntities?: Array<{
   typeTruck?: ITypeTruck;
   marqueTruckId: number;
   zoneId?: number;
+  driverId?: number | null;
 }
 
 

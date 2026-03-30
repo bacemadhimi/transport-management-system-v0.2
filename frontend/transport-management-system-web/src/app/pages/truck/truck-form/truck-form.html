@@ -303,6 +303,42 @@
       </div>
     </div>
 
+<!-- Champ Chauffeur - inspiré du TripForm -->
+<div class="form-row" *ngIf="linkDriverToTruck">
+  <div class="form-field-group">
+    <mat-label>Chauffeur associé</mat-label>
+    <mat-form-field appearance="outline" class="truck-field">
+      <mat-select formControlName="driverId" [disabled]="loadingDrivers">
+        <mat-option *ngIf="loadingDrivers" disabled>
+          <div class="flex items-center">
+            <mat-spinner diameter="20" class="mr-2"></mat-spinner>
+            <span>Chargement des chauffeurs...</span>
+          </div>
+        </mat-option>
+        
+        <mat-option *ngIf="!loadingDrivers && filteredDrivers.length === 0" disabled>
+          <div class="text-gray-500 italic">
+            Aucun chauffeur disponible
+          </div>
+        </mat-option>
+        
+        <mat-option *ngFor="let driver of filteredDrivers" [value]="driver.id">
+          <div class="driver-option">
+            <span class="driver-name">{{ driver.name }}</span>
+            <span class="driver-license" *ngIf="driver.drivingLicense">
+              ({{ driver.drivingLicense }})
+            </span>
+            <span class="driver-phone" *ngIf="driver.phoneNumber">
+              - {{ driver.phoneNumber }}
+            </span>
+          </div>
+        </mat-option>
+      </mat-select>
+      <mat-hint>Chauffeur assigné à ce camion</mat-hint>
+    </mat-form-field>
+  </div>
+</div>
+
     <!-- Photos -->
     <div class="truck-photo-input">
       <mat-label style="display: block; margin-bottom: 8px; text-align: center;">

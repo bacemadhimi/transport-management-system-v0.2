@@ -2,12 +2,14 @@
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Subscription } from 'rxjs';
-import * as L from 'leaflet';
+import { Chart, registerables } from 'chart.js';
 
 import { TripsMapService, ITripWithDetails, IEntityDeliveryStats, TRIP_STATUS_CONFIG, DELIVERY_STATUS_CONFIG, IDeliveryWithDetails } from '../../services/trips-map.service';
 import { TripStatusOptions, DeliveryStatusOptions, TripStatus, DeliveryStatus } from '../../types/trip';
 import { IGeographicalEntity } from '../../types/general-settings';
 import { ScrollingModule } from '@angular/cdk/scrolling';
+
+Chart.register(...registerables);
 
 @Component({
   selector: 'app-trips-map',
@@ -52,7 +54,6 @@ export class TripsMapComponent implements OnInit, AfterViewInit, OnDestroy {
   mapLoading: boolean = false;
   initialLoadDone: boolean = false;
   mapError: boolean = false;
-  showRoutes: boolean = true;
   showTripModal: boolean = false;
 
   selectedTripId: number | null = null;
@@ -79,16 +80,9 @@ export class TripsMapComponent implements OnInit, AfterViewInit, OnDestroy {
     ...value
   }));
 
-  private map: L.Map | null = null;
-  private tunisiaCenter: L.LatLngTuple = [34.5, 9.5];
-
-  private entityMarkers: L.Marker[] = [];
-  private deliveryMarkers: L.Marker[] = [];
-  private routeLines: L.Polyline[] = [];
-
-  private highlightedTripId: number | null = null;
-  private readonly OTHER_TRIPS_COLOR = '#cccccc';
-  private readonly OTHER_TRIPS_OPACITY = 0.3;
+  // Graphiques
+  private statusChart: Chart | null = null;
+  private completionChart: Chart | null = null;
 
   private subscriptions: Subscription = new Subscription();
   private resizeTimer: any;
@@ -97,7 +91,6 @@ export class TripsMapComponent implements OnInit, AfterViewInit, OnDestroy {
 
   constructor(private tripsMapService: TripsMapService) {
     this.updateLastUpdateTime();
-    this.configureLeafletIcons();
   }
 
   ngOnInit(): void {
@@ -108,14 +101,16 @@ export class TripsMapComponent implements OnInit, AfterViewInit, OnDestroy {
 
   ngAfterViewInit(): void {
     setTimeout(() => {
-      this.initMap();
+      this.initCharts();
     }, 500);
   }
 
   ngOnDestroy(): void {
-    if (this.map) {
-      this.map.remove();
-      this.map = null;
+    if (this.statusChart) {
+      this.statusChart.destroy();
+    }
+    if (this.completionChart) {
+      this.completionChart.destroy();
     }
     this.subscriptions.unsubscribe();
     if (typeof window !== 'undefined') {
@@ -126,23 +121,6 @@ export class TripsMapComponent implements OnInit, AfterViewInit, OnDestroy {
     }
     if (this.filterTimeout) {
       clearTimeout(this.filterTimeout);
-    }
-  }
-
-  private configureLeafletIcons(): void {
-    try {
-      delete (L.Icon.Default.prototype as any)._getIconUrl;
-      L.Icon.Default.mergeOptions({
-        iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png',
-        iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png',
-        shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
-        iconSize: [25, 41],
-        iconAnchor: [12, 41],
-        popupAnchor: [1, -34],
-        shadowSize: [41, 41]
-      });
-    } catch (error) {
-      console.warn('⚠️ Erreur configuration icônes:', error);
     }
   }
 
@@ -160,7 +138,7 @@ export class TripsMapComponent implements OnInit, AfterViewInit, OnDestroy {
       clearTimeout(this.resizeTimer);
     }
     this.resizeTimer = setTimeout(() => {
-      if (this.map) this.map.invalidateSize();
+      this.refreshCharts();
     }, 250);
   }
 
@@ -210,12 +188,8 @@ export class TripsMapComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private loadInitialData(): void {
-    if (this.initialLoadDone) {
-      console.log('✅ Données déjà chargées initialement');
-      return;
-    }
+    if (this.initialLoadDone) return;
 
-    console.log('🚀 PREMIER CHARGEMENT - Appel au backend...');
     this.mapLoading = true;
     this.isLoading = true;
 
@@ -226,7 +200,6 @@ export class TripsMapComponent implements OnInit, AfterViewInit, OnDestroy {
       this.endDateFilter || undefined
     ).subscribe({
       next: (trips) => {
-        console.log(`✅ ${trips.length} tournées chargées (premier chargement)`);
         this.trips = trips;
         this.filteredTrips = trips;
 
@@ -234,19 +207,14 @@ export class TripsMapComponent implements OnInit, AfterViewInit, OnDestroy {
           this.geographicalEntities = entities;
           this.entityDeliveryStats = this.tripsMapService.getEntityDeliveryStats(trips, entities);
           this.updateTripStats();
-          this.updateActiveTrips();
+          this.refreshCharts();
         });
 
         this.mapLoading = false;
         this.isLoading = false;
         this.initialLoadDone = true;
-
-        if (this.map) {
-          this.refreshMapOnce();
-        }
       },
       error: (error) => {
-        console.error('❌ Erreur chargement initial:', error);
         this.errorMessage = 'Erreur chargement des tournées';
         this.mapError = true;
         this.mapLoading = false;
@@ -258,12 +226,8 @@ export class TripsMapComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private reloadData(): void {
-    if (this.isLoading) {
-      console.log('⏳ Chargement déjà en cours, ignoré');
-      return;
-    }
+    if (this.isLoading) return;
 
-    console.log('🔄 RECHARGEMENT - Action utilisateur détectée');
     this.mapLoading = true;
     this.isLoading = true;
 
@@ -274,7 +238,6 @@ export class TripsMapComponent implements OnInit, AfterViewInit, OnDestroy {
       this.endDateFilter || undefined
     ).subscribe({
       next: (trips) => {
-        console.log(`✅ ${trips.length} tournées rechargées`);
         this.trips = trips;
         this.filteredTrips = trips;
 
@@ -282,21 +245,14 @@ export class TripsMapComponent implements OnInit, AfterViewInit, OnDestroy {
           this.geographicalEntities = entities;
           this.entityDeliveryStats = this.tripsMapService.getEntityDeliveryStats(trips, entities);
           this.updateTripStats();
-          this.updateActiveTrips();
+          this.refreshCharts();
         });
 
         this.mapLoading = false;
         this.isLoading = false;
-
-        if (this.map) {
-          this.refreshMapOnce();
-        }
-
         this.selectedEntityName = 'all';
-        this.clearHighlight();
       },
       error: (error) => {
-        console.error('❌ Erreur rechargement:', error);
         this.errorMessage = 'Erreur chargement des tournées';
         this.mapError = true;
         this.mapLoading = false;
@@ -308,14 +264,8 @@ export class TripsMapComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   applyFilters(): void {
-    if (this.filterTimeout) {
-      clearTimeout(this.filterTimeout);
-    }
-
-    this.filterTimeout = setTimeout(() => {
-      console.log('🔍 Filtre appliqué - Rechargement');
-      this.reloadData();
-    }, 300);
+    if (this.filterTimeout) clearTimeout(this.filterTimeout);
+    this.filterTimeout = setTimeout(() => this.reloadData(), 300);
   }
 
   setCurrentMonth(): void {
@@ -357,8 +307,6 @@ export class TripsMapComponent implements OnInit, AfterViewInit, OnDestroy {
     this.entityFilter = 'all';
     this.initializeWithCurrentMonth();
     this.reloadData();
-    this.centerMap();
-    this.clearHighlight();
   }
 
   refreshData(): void {
@@ -368,706 +316,133 @@ export class TripsMapComponent implements OnInit, AfterViewInit, OnDestroy {
     setTimeout(() => this.successMessage = '', 3000);
   }
 
-  private refreshMapOnce(): void {
-    if (!this.map) return;
-
+  refreshCharts(): void {
     setTimeout(() => {
-      this.addEntityMarkers();
-      this.addDeliveryMarkers();
-      if (this.showRoutes) {
-        this.addTripRoutes();
-      }
-      this.map?.invalidateSize();
+      this.initStatusBarChart();
+      this.initCompletionPieChart();
     }, 100);
   }
 
-  refreshMap(): void {
-    this.refreshMapOnce();
-    this.updateLastUpdateTime();
-    this.successMessage = 'Carte actualisée';
-    setTimeout(() => this.successMessage = '', 3000);
+  private initCharts(): void {
+    this.initStatusBarChart();
+    this.initCompletionPieChart();
   }
 
-  highlightTrip(tripId: number): void {
-    this.highlightedTripId = tripId;
-    this.selectedTripId = tripId;
-    this.refreshMapOnce();
-  }
+  private initStatusBarChart(): void {
+    const canvas = document.getElementById('statusBarChart') as HTMLCanvasElement;
+    if (!canvas) return;
 
-  clearHighlight(): void {
-    this.highlightedTripId = null;
-    this.selectedTripId = null;
-    this.refreshMapOnce();
-  }
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
 
-  private initMap(): void {
-    if (typeof window === 'undefined') return;
-    if (this.map) return;
+    if (this.statusChart) this.statusChart.destroy();
 
-    setTimeout(() => {
-      const mapElement = document.getElementById('tripsMap');
-      if (!mapElement) {
-        console.error('❌ Élément #tripsMap non trouvé');
-        this.mapError = true;
-        return;
+    const statusData = [
+      this.tripStats.planned,
+      this.tripStats.accepted,
+      this.tripStats.loading,
+      this.tripStats.inProgress,
+      this.tripStats.completed,
+      this.tripStats.cancelled
+    ];
+
+    this.statusChart = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: ['Planifié', 'Accepté', 'Chargement', 'Livraison', 'Terminé', 'Annulé'],
+        datasets: [{
+          label: 'Nombre de tournées',
+          data: statusData,
+          backgroundColor: [
+            'rgba(59, 130, 246, 0.8)',
+            'rgba(59, 130, 246, 0.7)',
+            'rgba(59, 130, 246, 0.6)',
+            'rgba(59, 130, 246, 0.5)',
+            'rgba(16, 185, 129, 0.7)',
+            'rgba(239, 68, 68, 0.7)'
+          ],
+          borderColor: ['#3b82f6', '#3b82f6', '#3b82f6', '#3b82f6', '#10b981', '#ef4444'],
+          borderWidth: 1
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { position: 'top' },
+          tooltip: { callbacks: { label: (ctx) => `${ctx.dataset.label}: ${ctx.raw}` } }
+        },
+        scales: {
+          y: { beginAtZero: true, ticks: { stepSize: 1 } }
+        }
       }
+    });
+  }
 
-      try {
-        this.map = L.map('tripsMap', {
-          center: this.tunisiaCenter,
-          zoom: 7,
-          zoomControl: true
-        });
+  private initCompletionPieChart(): void {
+    const canvas = document.getElementById('completionPieChart') as HTMLCanvasElement;
+    if (!canvas) return;
 
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-          attribution: '© OpenStreetMap Tunisie',
-          maxZoom: 19,
-          minZoom: 6
-        }).addTo(this.map);
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
 
-        setTimeout(() => {
-          if (this.map && this.initialLoadDone) {
-            this.map.invalidateSize();
-            this.addEntityMarkers();
-            this.addDeliveryMarkers();
-            this.addTripRoutes();
+    if (this.completionChart) this.completionChart.destroy();
+
+    const totalDeliveries = this.filteredTrips.reduce((sum, t) => sum + (t.deliveries?.length || 0), 0);
+    const completedDeliveries = this.filteredTrips.reduce((sum, t) =>
+      sum + (t.deliveries?.filter(d => d.status === DeliveryStatus.Delivered).length || 0), 0
+    );
+    const pendingDeliveries = totalDeliveries - completedDeliveries;
+
+    this.completionChart = new Chart(ctx, {
+      type: 'pie',
+      data: {
+        labels: ['Livrées', 'En attente'],
+        datasets: [{
+          data: [completedDeliveries, pendingDeliveries],
+          backgroundColor: ['#10b981', '#3b82f6'],
+          borderColor: '#fff',
+          borderWidth: 2
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { position: 'bottom' },
+          tooltip: {
+            callbacks: {
+              label: (ctx) => {
+                const value = ctx.raw as number;
+                const total = (ctx.dataset.data as number[]).reduce((a, b) => a + b, 0);
+                const percentage = total > 0 ? Math.round((value / total) * 100) : 0;
+                return `${ctx.label}: ${value} (${percentage}%)`;
+              }
+            }
           }
-        }, 300);
-
-      } catch (error) {
-        console.error('❌ Erreur création carte:', error);
-        this.mapError = true;
-      }
-    }, 300);
-  }
-
-  private addEntityMarkers(): void {
-    if (!this.map) return;
-
-    this.entityMarkers.forEach(marker => marker.remove());
-    this.entityMarkers = [];
-
-    this.entityDeliveryStats.forEach(stat => {
-      if (!stat.latitude || !stat.longitude) return;
-
-      const totalDeliveries = stat.total;
-      const entityColor = this.getEntityColor(stat);
-
-      const entityIcon = this.createEntityIcon(stat, entityColor, totalDeliveries);
-
-      const marker = L.marker([stat.latitude, stat.longitude], {
-        icon: entityIcon,
-        zIndexOffset: totalDeliveries > 0 ? 1000 : 500
-      }).addTo(this.map!);
-
-      marker.bindPopup(this.createEntityPopup(stat));
-
-      marker.on('popupopen', () => {
-        setTimeout(() => {
-          const btn = document.getElementById(`entity-filter-btn-${stat.entityId}`);
-          if (btn) {
-            btn.onclick = (e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              this.focusOnEntity(stat.entityName);
-              marker.closePopup();
-            };
-          }
-        }, 100);
-      });
-
-      this.entityMarkers.push(marker);
-    });
-  }
-
-  private createEntityIcon(stat: IEntityDeliveryStats, color: string, totalDeliveries: number): L.DivIcon {
-    let entityEmoji = '📍';
-    if (stat.delivered > stat.pending) {
-      entityEmoji = '✅';
-    } else if (stat.inProgress > 0) {
-      entityEmoji = '🚚';
-    }
-
-    return L.divIcon({
-      html: `
-        <div style="
-          background: ${color};
-          width: ${totalDeliveries > 0 ? '70px' : '40px'};
-          height: ${totalDeliveries > 0 ? '70px' : '40px'};
-          border-radius: 50%;
-          border: 4px solid white;
-          box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          color: white;
-          font-weight: bold;
-          cursor: pointer;
-          position: relative;
-          font-size: ${totalDeliveries > 0 ? '28px' : '20px'};
-        ">
-          <div>${entityEmoji}</div>
-          ${totalDeliveries > 0 ? `
-            <span style="font-size: 12px; margin-top: -5px; background: rgba(0,0,0,0.5); padding: 2px 6px; border-radius: 10px;">${totalDeliveries}</span>
-          ` : ''}
-        </div>
-      `,
-      className: 'entity-marker',
-      iconSize: totalDeliveries > 0 ? [70, 70] : [40, 40],
-      iconAnchor: totalDeliveries > 0 ? [35, 35] : [20, 20],
-      popupAnchor: [0, -35]
-    });
-  }
-
-  private createEntityPopup(stat: IEntityDeliveryStats): HTMLDivElement {
-    const popup = document.createElement('div');
-    popup.style.fontFamily = 'Segoe UI, sans-serif';
-    popup.style.padding = '15px';
-    popup.style.minWidth = '280px';
-
-    const completionRate = stat.total > 0 ? Math.round((stat.delivered / stat.total) * 100) : 0;
-    const entityColor = this.getEntityColor(stat);
-
-    popup.innerHTML = `
-      <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px;">
-        <div style="background: ${entityColor}; width: 50px; height: 50px; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: white; font-size: 24px;">
-          📍
-        </div>
-        <div>
-          <div style="color: #2c3e50; font-size: 18px; font-weight: 700;">${stat.entityName}</div>
-          <div style="color: #6c757d; font-size: 13px;">${stat.levelName} • ${stat.total} livraisons</div>
-        </div>
-      </div>
-
-      <div style="border-top: 1px solid #e9ecef; padding-top: 12px;">
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px;">
-          <div style="background: #f8f9fa; padding: 8px; border-radius: 6px;">
-            <span style="font-size: 16px; margin-right: 6px;">🕒</span>
-            <span style="font-weight: 600;">${stat.pending}</span>
-            <span style="color: #6c757d; margin-left: 4px;">En attente</span>
-          </div>
-          <div style="background: #f8f9fa; padding: 8px; border-radius: 6px;">
-            <span style="font-size: 16px; margin-right: 6px;">🚚</span>
-            <span style="font-weight: 600;">${stat.inProgress}</span>
-            <span style="color: #6c757d; margin-left: 4px;">En cours</span>
-          </div>
-          <div style="background: #f8f9fa; padding: 8px; border-radius: 6px;">
-            <span style="font-size: 16px; margin-right: 6px;">✅</span>
-            <span style="font-weight: 600;">${stat.delivered}</span>
-            <span style="color: #6c757d; margin-left: 4px;">Livrées</span>
-          </div>
-          <div style="background: #f8f9fa; padding: 8px; border-radius: 6px;">
-            <span style="font-size: 16px; margin-right: 6px;">❌</span>
-            <span style="font-weight: 600;">${stat.failed}</span>
-            <span style="color: #6c757d; margin-left: 4px;">Échouées</span>
-          </div>
-        </div>
-
-        <div style="margin-bottom: 12px;">
-          <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
-            <span style="color: #6c757d; font-size: 12px;">Progression</span>
-            <span style="font-weight: 600; color: ${entityColor};">${completionRate}%</span>
-          </div>
-          <div style="height: 6px; background: #e9ecef; border-radius: 3px; overflow: hidden;">
-            <div style="height: 100%; width: ${completionRate}%; background: ${entityColor}; border-radius: 3px;"></div>
-          </div>
-        </div>
-
-        <button id="entity-filter-btn-${stat.entityId}"
-                style="width: 100%; padding: 10px; background: linear-gradient(135deg, #667eea, #764ba2); color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer;">
-          <i class="fas fa-filter"></i> Voir les livraisons de ${stat.entityName}
-        </button>
-      </div>
-    `;
-
-    return popup;
-  }
-
-  private addDeliveryMarkers(): void {
-    if (!this.map) return;
-
-    this.deliveryMarkers.forEach(marker => marker.remove());
-    this.deliveryMarkers = [];
-
-    const deliveriesByLocation = new Map<string, IDeliveryWithDetails[]>();
-
-    this.filteredTrips.forEach(trip => {
-      trip.deliveries?.forEach(delivery => {
-        if (!delivery.entityCoordinates) return;
-
-        const key = `${delivery.entityCoordinates.lat.toFixed(4)},${delivery.entityCoordinates.lng.toFixed(4)}`;
-        if (!deliveriesByLocation.has(key)) {
-          deliveriesByLocation.set(key, []);
         }
-        deliveriesByLocation.get(key)!.push(delivery);
-      });
-    });
-
-    deliveriesByLocation.forEach((deliveries, key) => {
-      const hasHighlightedTrip = this.highlightedTripId !== null &&
-        deliveries.some(d => {
-          const trip = this.filteredTrips.find(t =>
-            t.deliveries?.some(del => del.id === d.id)
-          );
-          return trip?.id === this.highlightedTripId;
-        });
-
-      deliveries.forEach((delivery, index) => {
-        const trip = this.filteredTrips.find(t =>
-          t.deliveries?.some(d => d.id === delivery.id)
-        );
-
-        if (!trip) return;
-
-        const isHighlighted = trip.id === this.highlightedTripId;
-
-        let markerColor: string;
-        let opacity: number;
-        let size: number;
-
-        if (this.highlightedTripId) {
-          if (isHighlighted) {
-            markerColor = delivery.statusColor!;
-            opacity = 1;
-            size = 48;
-          } else if (hasHighlightedTrip) {
-            markerColor = this.OTHER_TRIPS_COLOR;
-            opacity = this.OTHER_TRIPS_OPACITY;
-            size = 32;
-          } else {
-            markerColor = this.OTHER_TRIPS_COLOR;
-            opacity = this.OTHER_TRIPS_OPACITY;
-            size = 28;
-          }
-        } else {
-          markerColor = delivery.statusColor!;
-          opacity = 1;
-          size = 36;
-        }
-
-        const baseLat = delivery.entityCoordinates!.lat;
-        const baseLng = delivery.entityCoordinates!.lng;
-
-        let finalLat = baseLat;
-        let finalLng = baseLng;
-
-        if (deliveries.length > 1) {
-          const angle = (index * 0.5) * Math.PI;
-          const radius = 0.008 + (Math.floor(index / 4) * 0.004);
-          finalLat = baseLat + Math.cos(angle) * radius;
-          finalLng = baseLng + Math.sin(angle) * radius;
-        }
-
-        const deliveryIcon = this.createDeliveryIcon(
-          delivery, markerColor, opacity, size, isHighlighted
-        );
-
-        const marker = L.marker([finalLat, finalLng], {
-          icon: deliveryIcon,
-          zIndexOffset: isHighlighted ? 3000 : 2000
-        }).addTo(this.map!);
-
-        if (deliveries.length > 1) {
-          marker.bindPopup(this.createClusterPopup(deliveries, trip, index));
-        } else {
-          marker.bindPopup(this.createDeliveryPopup(delivery, trip));
-        }
-
-        this.deliveryMarkers.push(marker);
-      });
-    });
-  }
-
-  private createDeliveryIcon(
-    delivery: IDeliveryWithDetails,
-    color: string,
-    opacity: number = 1,
-    size: number = 36,
-    isHighlighted: boolean = false
-  ): L.DivIcon {
-    const isInProgress = delivery.status === DeliveryStatus.EnRoute || delivery.status === DeliveryStatus.Arrived;
-
-    let emoji = '📍';
-    switch (delivery.status) {
-      case DeliveryStatus.Pending:
-        emoji = '🕒';
-        break;
-      case DeliveryStatus.EnRoute:
-        emoji = '🚚';
-        break;
-      case DeliveryStatus.Arrived:
-        emoji = '📍';
-        break;
-      case DeliveryStatus.Delivered:
-        emoji = '✅';
-        break;
-      case DeliveryStatus.Failed:
-        emoji = '❌';
-        break;
-      case DeliveryStatus.Cancelled:
-        emoji = '🚫';
-        break;
-    }
-
-    return L.divIcon({
-      html: `
-        <div style="
-          background: ${color};
-          width: ${size}px;
-          height: ${size}px;
-          border-radius: 50%;
-          border: ${isHighlighted ? '4px solid #ffd700' : '3px solid white'};
-          box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          color: white;
-          font-size: ${size > 36 ? '24px' : '18px'};
-          ${isInProgress && isHighlighted ? 'animation: pulse-highlight 1.5s infinite;' : isInProgress ? 'animation: pulse 2s infinite;' : ''}
-          opacity: ${opacity};
-        ">
-          ${emoji}
-        </div>
-      `,
-      className: 'delivery-marker',
-      iconSize: [size, size],
-      iconAnchor: [size/2, size/2],
-      popupAnchor: [0, -size/2]
-    });
-  }
-
-  private createDeliveryPopup(delivery: IDeliveryWithDetails, trip: ITripWithDetails): HTMLDivElement {
-    const popup = document.createElement('div');
-    popup.style.fontFamily = 'Segoe UI, sans-serif';
-    popup.style.padding = '15px';
-    popup.style.minWidth = '320px';
-
-    const isHighlighted = trip.id === this.highlightedTripId;
-    const entityName = delivery.entityName || 'Non assigné';
-    const customerName = delivery.customer?.name || 'Client inconnu';
-
-    let statusEmoji = '📍';
-    switch (delivery.status) {
-      case DeliveryStatus.Pending: statusEmoji = '🕒'; break;
-      case DeliveryStatus.EnRoute: statusEmoji = '🚚'; break;
-      case DeliveryStatus.Arrived: statusEmoji = '📍'; break;
-      case DeliveryStatus.Delivered: statusEmoji = '✅'; break;
-      case DeliveryStatus.Failed: statusEmoji = '❌'; break;
-      case DeliveryStatus.Cancelled: statusEmoji = '🚫'; break;
-    }
-
-    popup.innerHTML = `
-      <div style="margin-bottom: 15px;">
-        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 15px;">
-          <div style="background: ${delivery.statusColor}; width: 45px; height: 45px; border-radius: 10px; display: flex; align-items: center; justify-content: center; color: white; font-size: 24px;">
-            ${statusEmoji}
-          </div>
-          <div style="flex: 1;">
-            <div style="color: #2c3e50; font-size: 16px; font-weight: 700; margin-bottom: 4px;">${customerName}</div>
-            <div style="color: #6c757d; font-size: 12px;">Livraison #${delivery.sequence}</div>
-          </div>
-          ${isHighlighted ? `
-            <div style="background: #ffd700; color: #2c3e50; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 600;">
-              ⭐ Sélectionnée
-            </div>
-          ` : ''}
-        </div>
-
-        <div style="background: ${delivery.statusColor}20; padding: 8px 12px; border-radius: 8px; margin-bottom: 15px;">
-          <span style="color: ${delivery.statusColor}; font-weight: 600; font-size: 13px;">
-            ${statusEmoji} ${delivery.statusLabel || delivery.status}
-          </span>
-        </div>
-
-        <div style="background: linear-gradient(135deg, #667eea10, #764ba210); border-radius: 10px; padding: 12px; margin-bottom: 15px; border-left: 4px solid #667eea;">
-          <div style="display: flex; align-items: center; gap: 10px;">
-            <div style="background: linear-gradient(135deg, #667eea, #764ba2); width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white; font-size: 18px;">
-              📍
-            </div>
-            <div>
-              <div style="color: #6c757d; font-size: 11px; text-transform: uppercase;">ENTITÉ GÉOGRAPHIQUE</div>
-              <div style="color: #2c3e50; font-size: 16px; font-weight: 600;">${entityName}</div>
-            </div>
-          </div>
-        </div>
-
-        <div style="margin-bottom: 12px;">
-          <div style="color: #6c757d; font-size: 11px; margin-bottom: 4px;">ADRESSE</div>
-          <div style="background: #f8f9fa; border-radius: 8px; padding: 10px; display: flex; gap: 8px;">
-            <span style="font-size: 16px;">📍</span>
-            <span style="color: #2c3e50; font-size: 13px;">${delivery.deliveryAddress}</span>
-          </div>
-        </div>
-
-        <div style="background: #f8f9fa; border-radius: 8px; padding: 12px; margin-bottom: 12px;">
-          <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
-            <span style="font-size: 16px;">🚚</span>
-            <span style="color: #2c3e50; font-size: 13px; font-weight: ${isHighlighted ? '600' : 'normal'};">
-              ${trip.tripReference || 'Tournée #' + trip.id}
-            </span>
-          </div>
-          <div style="display: flex; align-items: center; gap: 8px;">
-            <span style="font-size: 16px;">👤</span>
-            <span style="color: #2c3e50; font-size: 13px;">${trip.driver?.name || 'Non assigné'}</span>
-          </div>
-        </div>
-
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-          ${delivery.plannedTime ? `
-            <div style="background: #e8f4fd; border-radius: 8px; padding: 8px;">
-              <div style="color: #4e73df; font-size: 10px;">PRÉVU</div>
-              <div style="display: flex; align-items: center; gap: 6px;">
-                <span style="font-size: 14px;">🕒</span>
-                <span style="color: #2c3e50; font-size: 13px; font-weight: 600;">
-                  ${new Date(delivery.plannedTime).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
-                </span>
-              </div>
-            </div>
-          ` : ''}
-
-          ${delivery.actualArrivalTime ? `
-            <div style="background: #e3f9e5; border-radius: 8px; padding: 8px;">
-              <div style="color: #1cc88a; font-size: 10px;">LIVRÉ</div>
-              <div style="display: flex; align-items: center; gap: 6px;">
-                <span style="font-size: 14px;">✅</span>
-                <span style="color: #2c3e50; font-size: 13px; font-weight: 600;">
-                  ${new Date(delivery.actualArrivalTime).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
-                </span>
-              </div>
-            </div>
-          ` : ''}
-        </div>
-
-        ${delivery.notes ? `
-          <div style="margin-top: 15px; background: #fff3cd; border-left: 4px solid #f6c23e; border-radius: 6px; padding: 10px;">
-            <div style="display: flex; gap: 8px;">
-              <span style="font-size: 16px;">📝</span>
-              <div>
-                <div style="color: #856404; font-size: 11px; margin-bottom: 4px;">NOTE</div>
-                <div style="color: #2c3e50; font-size: 12px;">"${delivery.notes}"</div>
-              </div>
-            </div>
-          </div>
-        ` : ''}
-      </div>
-    `;
-
-    return popup;
-  }
-
-  private createClusterPopup(deliveries: IDeliveryWithDetails[], mainTrip: ITripWithDetails, currentIndex: number): HTMLDivElement {
-    const popup = document.createElement('div');
-    popup.style.fontFamily = 'Segoe UI, sans-serif';
-    popup.style.padding = '15px';
-    popup.style.minWidth = '350px';
-    popup.style.maxHeight = '450px';
-    popup.style.overflowY = 'auto';
-
-    const uniqueDeliveries = new Map<string, IDeliveryWithDetails & { count: number }>();
-
-    deliveries.forEach(delivery => {
-      const uniqueKey = `${delivery.customerId}_${delivery.deliveryAddress}`;
-
-      if (uniqueDeliveries.has(uniqueKey)) {
-        const existing = uniqueDeliveries.get(uniqueKey)!;
-        existing.count++;
-      } else {
-        uniqueDeliveries.set(uniqueKey, {
-          ...delivery,
-          count: 1
-        });
       }
     });
-
-    const entityName = deliveries[0].entityName || 'Entité non assignée';
-    const totalUnique = uniqueDeliveries.size;
-    const totalOriginal = deliveries.length;
-
-    let html = `
-      <div style="margin-bottom: 15px; border-bottom: 2px solid #e9ecef; padding-bottom: 12px;">
-        <div style="display: flex; align-items: center; gap: 12px;">
-          <div style="background: linear-gradient(135deg, #667eea, #764ba2); width: 45px; height: 45px; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: white; font-size: 24px;">
-            📍
-          </div>
-          <div>
-            <div style="color: #2c3e50; font-size: 18px; font-weight: 700;">${entityName}</div>
-            <div style="color: #6c757d; font-size: 13px;">
-              ${totalUnique} livraison${totalUnique > 1 ? 's' : ''} unique${totalUnique > 1 ? 's' : ''}
-              ${totalOriginal > totalUnique ? `(${totalOriginal} au total)` : ''}
-            </div>
-          </div>
-        </div>
-      </div>
-    `;
-
-    const uniqueDeliveriesList = Array.from(uniqueDeliveries.values())
-      .sort((a, b) => a.sequence - b.sequence);
-
-    uniqueDeliveriesList.forEach((delivery) => {
-      const trip = this.filteredTrips.find(t =>
-        t.deliveries?.some(d => d.id === delivery.id)
-      );
-
-      const isHighlighted = trip?.id === this.highlightedTripId;
-      const backgroundColor = isHighlighted ? '#fff9e6' : 'white';
-
-      let statusEmoji = '📍';
-      switch (delivery.status) {
-        case DeliveryStatus.Pending: statusEmoji = '🕒'; break;
-        case DeliveryStatus.EnRoute: statusEmoji = '🚚'; break;
-        case DeliveryStatus.Arrived: statusEmoji = '📍'; break;
-        case DeliveryStatus.Delivered: statusEmoji = '✅'; break;
-        case DeliveryStatus.Failed: statusEmoji = '❌'; break;
-        case DeliveryStatus.Cancelled: statusEmoji = '🚫'; break;
-      }
-
-      html += `
-        <div style="margin-bottom: 12px; padding: 12px; background: ${backgroundColor}; border-radius: 8px; border-left: 4px solid ${delivery.statusColor};">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-            <div style="display: flex; align-items: center; gap: 8px;">
-              <span style="font-size: 20px;">${statusEmoji}</span>
-              <div>
-                <div style="font-weight: 700; color: #2c3e50;">${delivery.customer?.name || 'Client'}</div>
-                <div style="font-size: 11px; color: #6c757d;">
-                  ${delivery.entityName || 'Entité inconnue'}
-                </div>
-              </div>
-            </div>
-            ${delivery.count > 1 ? `
-              <span style="background: #667eea; color: white; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600;">
-                x${delivery.count}
-              </span>
-            ` : `
-              <span style="background: ${delivery.statusColor}20; color: ${delivery.statusColor}; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 600;">
-                #${delivery.sequence}
-              </span>
-            `}
-          </div>
-
-          <div style="color: #6c757d; font-size: 12px; margin-bottom: 4px;">
-            <span style="font-size: 14px; margin-right: 4px;">📦</span>
-            Commande #${delivery.orderId}
-          </div>
-
-          <div style="color: #6c757d; font-size: 12px; margin-bottom: 4px;">
-            <span style="font-size: 14px; margin-right: 4px;">🚚</span>
-            ${trip?.tripReference || 'Tournée'}
-            ${isHighlighted ? ' <span style="color: #ffd700;">⭐</span>' : ''}
-          </div>
-
-          <div style="color: #6c757d; font-size: 12px; margin-bottom: 8px;">
-            <span style="font-size: 14px; margin-right: 4px;">📌</span>
-            ${delivery.deliveryAddress}
-          </div>
-
-          ${delivery.plannedTime ? `
-            <div style="font-size: 11px; color: #999; border-top: 1px dashed #e9ecef; padding-top: 6px;">
-              <span style="font-size: 12px; margin-right: 4px;">🕒</span>
-              Prévu: ${new Date(delivery.plannedTime).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
-            </div>
-          ` : ''}
-        </div>
-      `;
-    });
-
-    popup.innerHTML = html;
-    return popup;
-  }
-
-  private addTripRoutes(): void {
-    if (!this.map || !this.showRoutes) return;
-
-    this.routeLines.forEach(line => line.remove());
-    this.routeLines = [];
-
-    this.filteredTrips.forEach(trip => {
-      if (!trip.deliveries || trip.deliveries.length < 2) return;
-
-      const isHighlighted = trip.id === this.highlightedTripId;
-
-      const validDeliveries = trip.deliveries
-        .filter(d => d.entityCoordinates)
-        .sort((a, b) => a.sequence - b.sequence);
-
-      if (validDeliveries.length < 2) return;
-
-      const points: L.LatLngTuple[] = validDeliveries.map(d => [
-        d.entityCoordinates!.lat,
-        d.entityCoordinates!.lng
-      ]);
-
-      const routeColor = isHighlighted ? trip.statusColor! : this.OTHER_TRIPS_COLOR;
-      const routeWeight = isHighlighted ? 5 : 2;
-      const routeOpacity = isHighlighted ? 0.9 : this.OTHER_TRIPS_OPACITY;
-
-      const routeLine = L.polyline(points, {
-        color: routeColor,
-        weight: routeWeight,
-        opacity: routeOpacity,
-        dashArray: isHighlighted ? undefined : '5, 10'
-      }).addTo(this.map!);
-
-      this.routeLines.push(routeLine);
-    });
-  }
-
-  centerMap(): void {
-    if (this.map) {
-      this.map.setView(this.tunisiaCenter, 7);
-      setTimeout(() => {
-        if (this.map) this.map.invalidateSize();
-      }, 100);
-    }
-    this.selectedEntityName = 'all';
-    this.clearHighlight();
-  }
-
-  toggleRoutes(): void {
-    this.showRoutes = !this.showRoutes;
-    this.refreshMapOnce();
   }
 
   focusOnEntity(entityName: string): void {
-    const stat = this.entityDeliveryStats.find(s => s.entityName === entityName);
-    if (!stat || !stat.latitude || !stat.longitude || !this.map) return;
-
     this.selectedEntityName = entityName;
-    this.map.setView([stat.latitude, stat.longitude], 9);
-
-    const entityMarker = this.entityMarkers.find(m => {
-      const latLng = m.getLatLng();
-      return latLng.lat === stat.latitude && latLng.lng === stat.longitude;
-    });
-
-    if (entityMarker) {
-      entityMarker.openPopup();
-    }
+    this.entityFilter = entityName;
+    this.applyFilters();
   }
 
   focusOnTrip(tripId: number, event?: Event): void {
-    if (event) {
-      event.stopPropagation();
-    }
-
+    if (event) event.stopPropagation();
     const trip = this.filteredTrips.find(t => t.id === tripId);
-    if (!trip || !trip.deliveries || !this.map) return;
-
-    this.highlightTrip(tripId);
-
-    const validDeliveries = trip.deliveries.filter(d => d.entityCoordinates);
-    if (validDeliveries.length === 0) return;
-
-    const bounds = L.latLngBounds(
-      validDeliveries.map(d => [d.entityCoordinates!.lat, d.entityCoordinates!.lng] as L.LatLngTuple)
-    );
-
-    this.map.fitBounds(bounds, { padding: [50, 50] });
+    if (trip) {
+      this.selectedTrip = trip;
+      this.selectedTripId = tripId;
+      this.showTripModal = true;
+    }
   }
 
   viewTripDetails(tripId: number, event: Event): void {
     event.stopPropagation();
-
     const trip = this.filteredTrips.find(t => t.id === tripId);
     if (trip) {
       this.selectedTrip = trip;
@@ -1082,28 +457,23 @@ export class TripsMapComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   getEntityColor(stat: IEntityDeliveryStats): string {
-    if (stat.total === 0) return '#6c757d';
-
-    const completionRate = (stat.delivered / stat.total) * 100;
-
-    if (completionRate > 70) return '#1cc88a';
-    if (completionRate > 30) return '#4e73df';
-    if (completionRate > 0) return '#f6c23e';
-    return '#e74a3b';
+    const total = stat.total || 0;
+    if (total === 0) return '#9ca3af';
+    const rate = (stat.delivered / total) * 100;
+    if (rate > 70) return '#10b981';
+    if (rate > 30) return '#3b82f6';
+    if (rate > 0) return '#f59e0b';
+    return '#ef4444';
   }
 
   getEntityCompletionPercentage(stat: IEntityDeliveryStats): number {
-    if (stat.total === 0) return 0;
-    return Math.round((stat.delivered / stat.total) * 100);
+    const total = stat.total || 0;
+    if (total === 0) return 0;
+    return Math.round((stat.delivered / total) * 100);
   }
 
-  clearError(): void {
-    this.errorMessage = '';
-  }
-
-  clearSuccess(): void {
-    this.successMessage = '';
-  }
+  clearError(): void { this.errorMessage = ''; }
+  clearSuccess(): void { this.successMessage = ''; }
 
   private updateTripStats(): void {
     this.tripStats = {
@@ -1131,26 +501,14 @@ export class TripsMapComponent implements OnInit, AfterViewInit, OnDestroy {
     const tripsWithDuration = this.filteredTrips.filter(t =>
       t.actualStartDate && t.actualEndDate && t.tripStatus === TripStatus.Receipt
     );
-
     if (tripsWithDuration.length === 0) return 0;
-
-    const totalDuration = tripsWithDuration.reduce((sum, t) => {
+    let total = 0;
+    for (const t of tripsWithDuration) {
       const start = new Date(t.actualStartDate!).getTime();
       const end = new Date(t.actualEndDate!).getTime();
-      return sum + (end - start) / (1000 * 60 * 60);
-    }, 0);
-
-    return Math.round(totalDuration / tripsWithDuration.length);
-  }
-
-  private updateActiveTrips(): void {
-    this.activeTrips = this.filteredTrips.filter(t =>
-      t.tripStatus === TripStatus.Planned ||
-      t.tripStatus === TripStatus.Accepted ||
-      t.tripStatus === TripStatus.LoadingInProgress ||
-      t.tripStatus === TripStatus.DeliveryInProgress ||
-      t.tripStatus === TripStatus.Receipt
-    );
+      total += (end - start) / (1000 * 60 * 60);
+    }
+    return Math.round(total / tripsWithDuration.length);
   }
 
   trackByTripId(index: number, trip: ITripWithDetails): number {

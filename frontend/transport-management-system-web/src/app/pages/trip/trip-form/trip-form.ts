@@ -125,7 +125,7 @@ export class TripForm implements OnInit {
   isDragging = false;
   previousOrder: number[] = [];
   dragDisabled = false;
-
+  truckDriverMap: Map<number, number> = new Map();
   trajects: ITraject[] = [];
   selectedTraject: ITraject | null = null;
   selectedTrajectControl = new FormControl<number | null>(null);
@@ -167,7 +167,7 @@ export class TripForm implements OnInit {
   @ViewChild('leftViewport') leftViewport!: CdkVirtualScrollViewport;
   @ViewChild('rightViewport') rightViewport!: CdkVirtualScrollViewport;
   driverTruckMap: Map<number, number> = new Map();
-
+  linkDriverToTruck = false;
 
   private translation = inject(Translation);
   t(key: string): string { return this.translation.t(key); }
@@ -383,10 +383,14 @@ selectedDateStats: any = {
     this.tripForm.get('driverId')?.valueChanges.subscribe((driverId: number | null) => {
       if (driverId) {
         this.checkSelectedDriverAvailability(driverId);
-        this.autoSelectTruckForDriver(driverId);
+        
       }
     });
-
+ this.tripForm.get('truckId')?.valueChanges.subscribe((truckId: number | null) => {
+    if (truckId && this.linkDriverToTruck) {
+      this.autoSelectDriverForTruck(truckId);
+    }
+  });
 
     this.arrivalEqualsDepartureChangeSub = this.arrivalEqualsDeparture.valueChanges.subscribe(
       (checked: boolean | null) => {
@@ -729,7 +733,8 @@ private loadAllTrucks(): void {
 
   this.http.getTrucks().subscribe({
     next: (trucks: ITruck[]) => {
-      console.log(trucks);
+      console.log('Raw trucks data:', trucks);
+      
       this.trucks = trucks
         .filter(truck => truck.isEnable)
         .map(truck => ({
@@ -743,7 +748,21 @@ private loadAllTrucks(): void {
 
       this.availableTrucks = [...this.trucks];
       this.unavailableTrucks = [];
-      this.filteredAvailableTrucks = [...this.availableTrucks]; 
+      this.filteredAvailableTrucks = [...this.availableTrucks];
+      
+      // CRITICAL: Build truck -> driver map from truck data
+      this.truckDriverMap.clear();
+      trucks.forEach(truck => {
+        if (truck.driverId) {
+          this.truckDriverMap.set(truck.id, truck.driverId);
+          console.log(`📌 Mapped truck ${truck.id} (${truck.immatriculation}) -> driver ${truck.driverId}`);
+        } else {
+          console.log(`⚠️ Truck ${truck.id} (${truck.immatriculation}) has no associated driver`);
+        }
+      });
+      
+      console.log('📊 Final Truck-Driver Map:', Array.from(this.truckDriverMap.entries()));
+      
       this.loadingAvailableTrucks = false;
     },
     error: (error) => {
@@ -797,8 +816,16 @@ private processTruckResponse(response: any, date: Date): void {
           capacity: typeTruckData.capacity,
           unit: typeTruckData.unit
         } : null,
-        truckGeographicalEntities: apiTruck.geographicalEntities || []
+        truckGeographicalEntities: apiTruck.geographicalEntities || [],
+        driverId: apiTruck.driverId || null // Add driverId from API response
       };
+    });
+    
+    // Build truck -> driver map from available trucks
+    this.availableTrucks.forEach(truck => {
+      if (truck.driverId) {
+        this.truckDriverMap.set(truck.id, truck.driverId);
+      }
     });
   }
 
@@ -820,8 +847,16 @@ private processTruckResponse(response: any, date: Date): void {
         tooltip: `Indisponible le ${this.formatDateForDisplay(date)} - ${truck.reason || 'Raison inconnue'}`,
         isAvailable: false,
         zoneId: truck.ZoneId || truck.zoneId || null,
-        truckGeographicalEntities: truck.geographicalEntities || [] 
+        truckGeographicalEntities: truck.geographicalEntities || [],
+        driverId: truck.driverId || null // Add driverId from API response
       };
+    });
+    
+    // Also add unavailable trucks to the map
+    this.unavailableTrucks.forEach(truck => {
+      if (truck.driverId) {
+        this.truckDriverMap.set(truck.id, truck.driverId);
+      }
     });
   }
 
@@ -840,6 +875,8 @@ private processTruckResponse(response: any, date: Date): void {
     isInAvailable: this.availableTrucks.some(t => t.id === currentTruckId),
     isInUnavailable: this.unavailableTrucks.some(t => t.id === currentTruckId)
   });
+  
+  console.log('📋 Truck-Driver Map after processing:', Array.from(this.truckDriverMap.entries()));
 }
 
 
@@ -4385,36 +4422,30 @@ private loadAllDrivers(): Promise<void> {
     this.loadingDrivers = true;
     this.http.getDrivers().subscribe({
       next: (drivers) => {
+        console.log('Raw drivers data:', drivers);
         
         this.drivers = drivers.map(driver => {
-          
           const enhancedDriver: IDriver = {
             ...driver,
-           
             driverGeographicalEntities: this.mapGeographicalEntities(driver.geographicalEntities),
-            
             geographicalEntities: driver.geographicalEntities || []
           };
-          
           return enhancedDriver;
         });
         
-        console.log('✅ Full drivers loaded with geo entities:', 
-          this.drivers.map(d => ({
-            id: d.id,
-            name: d.name,
-            geoCount: d.driverGeographicalEntities?.length || 0,
-            originalGeoCount: d.geographicalEntities?.length || 0
-          }))
-        );
-
+        // CRITICAL: Fill driverTruckMap BEFORE any selection happens
         this.driverTruckMap.clear();
-        drivers.forEach(driver => {
+        this.drivers.forEach(driver => {
           if (driver.idCamion) {
             this.driverTruckMap.set(driver.id, driver.idCamion);
+            console.log(`📌 Mapped driver ${driver.id} (${driver.name}) -> truck ${driver.idCamion}`);
+          } else {
+            console.log(`⚠️ Driver ${driver.id} (${driver.name}) has no associated truck`);
           }
         });
-
+        
+        console.log('📊 Final Driver-Truck Map:', Array.from(this.driverTruckMap.entries()));
+        
         this.loadingDrivers = false;
         resolve();
       },
@@ -7357,6 +7388,7 @@ private loadTripSettings(): void {
     next: (settings) => {
       this.tripSettings = settings;
       this.updateTruckFieldBasedOnSettings();
+      this.linkDriverToTruck = settings.linkDriverToTruck || false;
     },
     error: (error) => {
       console.error('Erreur chargement paramètres:', error);
@@ -7391,30 +7423,6 @@ private listenToSettingsChanges(): void {
     }
 
     truckControl.updateValueAndValidity();
-  }
-
-  private autoSelectTruckForDriver(driverId: number | null): void {
-    if (!driverId) return;
-
-    const truckId = this.driverTruckMap.get(driverId);
-
-    if (!truckId) {
-      console.log(`ℹ️ Aucun camion associé au chauffeur ${driverId}`);
-      return;
-    }
-
-    console.log(`🔄 Sélection auto du camion ${truckId} pour le chauffeur ${driverId}`);
-
-    this.tripForm.get('truckId')?.setValue(truckId, { emitEvent: false });
-
-    const truck = this.trucks.find(t => t.id === truckId);
-    if (truck) {
-      this.snackBar.open(
-        `🚛 Camion ${truck.immatriculation} sélectionné automatiquement`,
-        'Fermer',
-        { duration: 2000 }
-      );
-    }
   }
 
   getTruckImmatriculation(truckId: number | undefined): string {
@@ -8242,5 +8250,52 @@ getClientEntityName(clientId: number): string {
   const entityId = client.geographicalEntities[0].geographicalEntityId;
   const entity = this.geographicalEntities.find(e => e.id === entityId);
   return entity?.name || '';
+}
+private autoSelectDriverForTruck(truckId: number | null): void {
+  console.log('🔍 autoSelectDriverForTruck called with truckId:', truckId);
+  
+  if (!truckId) {
+    console.log('❌ No truckId provided');
+    return;
+  }
+
+  // Ne pas sélectionner automatiquement si le paramètre est désactivé
+  if (!this.linkDriverToTruck) {
+    console.log('🔗 Link driver to truck is disabled, skipping auto-select');
+    return;
+  }
+
+  console.log('📊 Current truckDriverMap:', Array.from(this.truckDriverMap.entries()));
+  
+  // Trouver le chauffeur associé à ce camion depuis truckDriverMap
+  const associatedDriverId = this.truckDriverMap.get(truckId);
+
+  if (!associatedDriverId) {
+    console.log(`ℹ️ Aucun chauffeur associé au camion ${truckId}`);
+    return;
+  }
+
+  // Vérifier si le chauffeur est disponible dans la liste des chauffeurs disponibles
+  const driver = this.availableDrivers.find(d => d.id === associatedDriverId);
+  if (!driver) {
+    console.log(`⚠️ Le chauffeur ${associatedDriverId} n'est pas disponible pour cette date`);
+    this.snackBar.open(
+      `⚠️ Le chauffeur associé à ce camion n'est pas disponible pour cette date`,
+      'Fermer',
+      { duration: 3000, panelClass: ['warning-snackbar'] }
+    );
+    return;
+  }
+
+  console.log(`🔄 Sélection auto du chauffeur ${associatedDriverId} (${driver.name}) pour le camion ${truckId}`);
+
+  // Set the driver value WITHOUT triggering the valueChanges subscription to avoid loops
+  this.tripForm.get('driverId')?.setValue(associatedDriverId, { emitEvent: false });
+
+  this.snackBar.open(
+    `👨‍✈️ Chauffeur ${driver.name} sélectionné automatiquement`,
+    'Fermer',
+    { duration: 2000 }
+  );
 }
 }
