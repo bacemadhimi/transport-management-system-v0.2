@@ -16,7 +16,7 @@
 
 <ion-content class="ion-padding trip-details-content">
   <div class="trip-status-row">
-    <div class="status-badge" [ngClass]="trip.tripStatus.toLowerCase()">
+    <div class="status-badge" [ngClass]="getStatusClass(trip.tripStatus)">
       <ion-icon name="flag-outline" class="status-icon"></ion-icon>
       {{ getStatusText(trip.tripStatus) }}
     </div>
@@ -41,7 +41,7 @@
       </div>
       <div class="card-content">
         <span class="card-label">Statut Actuel</span>
-        <span class="card-value" [ngClass]="trip.tripStatus.toLowerCase()">{{ trip.tripStatus }}</span>
+        <span class="card-value" [ngClass]="getStatusClass(trip.tripStatus)">{{ getStatusText(trip.tripStatus) }}</span>
       </div>
     </div>
 
@@ -112,46 +112,137 @@
     </div>
   </div>
 
-  <!-- Proof of Delivery Section -->
-  <div *ngIf="trip.tripStatus === 'Receipt'" class="proof-section">
+  <!-- Proof of Delivery Section - With QR Code Scanner -->
+  <div *ngIf="trip.tripStatus === 'DeliveryInProgress' || trip.tripStatus === 'InDelivery'" class="proof-section">
     <div class="section-title">
-      <ion-icon name="camera-outline"></ion-icon>
-      <h4>Preuve de Livraison</h4>
+      <ion-icon name="qr-code-outline"></ion-icon>
+      <h4>Scanner QR Code de Livraison</h4>
     </div>
-
-    <div *ngIf="trip.deliveries && trip.deliveries.length > 0; else noDeliveries">
-      <ion-grid>
-        <ion-row>
-          <ion-col size="12" size-md="6" *ngFor="let d of trip.deliveries">
-            <div class="proof-card">
-              <div class="proof-header">
-                <span class="proof-number">Livraison #{{ d.sequence }}</span>
-              </div>
-              <div *ngIf="d.proofOfDelivery; else noProof">
-                <img [src]="getDataUrl(d.proofOfDelivery)" class="proof-img" alt="Preuve de livraison" />
-                <div class="proof-footer">
-                  <ion-icon name="checkmark-circle-outline" class="proof-check"></ion-icon>
-                  <span>Preuve validée</span>
-                </div>
-              </div>
-              <ng-template #noProof>
-                <div class="no-proof">
-                  <ion-icon name="image-outline"></ion-icon>
-                  <p>Aucune preuve pour la livraison #{{ d.sequence }}</p>
-                </div>
-              </ng-template>
-            </div>
-          </ion-col>
-        </ion-row>
-      </ion-grid>
+    
+    <div class="scanner-section">
+      <p class="scanner-info">
+        Scannez le QR Code fourni par le client pour valider la livraison
+      </p>
+      
+      <ion-button 
+        expand="block" 
+        class="scan-qr-btn"
+        (click)="scanQRCodeForDelivery()"
+        [disabled]="isScanning">
+        <ion-icon slot="start" [name]="isScanning ? 'sync-outline' : 'qr-code-outline'"></ion-icon>
+        {{ isScanning ? 'Scan en cours...' : 'Scanner le QR Code' }}
+      </ion-button>
     </div>
-
-    <ng-template #noDeliveries>
-      <div class="no-deliveries">
-        <ion-icon name="alert-circle-outline"></ion-icon>
-        <p>Aucune livraison associée à ce trajet.</p>
+    
+    <!-- QR Code Details -->
+    <div *ngIf="scannedQRCode" class="qr-details">
+      <div class="qr-detail-card">
+        <div class="qr-header">
+          <ion-icon name="checkmark-circle" class="qr-success-icon"></ion-icon>
+          <h4>QR Code scanné</h4>
+        </div>
+        <div class="qr-content">
+          <div class="qr-info-row">
+            <ion-icon name="document-text-outline"></ion-icon>
+            <span><strong>Contenu:</strong> {{ scannedQRCode.content }}</span>
+          </div>
+          <div class="qr-info-row">
+            <ion-icon name="barcode-outline"></ion-icon>
+            <span><strong>Format:</strong> {{ barcodeScanner.getFormatName(scannedQRCode.format) }}</span>
+          </div>
+          <div class="qr-info-row">
+            <ion-icon name="time-outline"></ion-icon>
+            <span><strong>Scanné le:</strong> {{ scannedQRCode.timestamp | date:'dd/MM/yyyy HH:mm:ss' }}</span>
+          </div>
+        </div>
+        <ion-button 
+          expand="block" 
+          class="confirm-btn"
+          (click)="confirmDeliveryWithQR()">
+          <ion-icon slot="start" name="checkmark-done-outline"></ion-icon>
+          Confirmer la livraison
+        </ion-button>
       </div>
-    </ng-template>
+    </div>
+  </div>
+
+<!-- Proof of Delivery Display for Completed Trips -->
+<div *ngIf="isDeliveryCompleted()" class="proof-section">
+  <div class="section-title">
+    <ion-icon name="camera-outline"></ion-icon>
+    <h4>Preuve de Livraison</h4>
+  </div>
+
+  <div *ngIf="trip.deliveries && trip.deliveries.length > 0; else noDeliveries">
+    <ion-grid>
+      <ion-row>
+        <ion-col size="12" size-md="6" *ngFor="let d of trip.deliveries">
+          <div class="proof-card">
+            <div class="proof-header">
+              <span class="proof-number">Livraison #{{ d.sequence }}</span>
+              <span *ngIf="d.qrCodeData" class="qr-badge">
+                <ion-icon name="qr-code-outline"></ion-icon> QR
+              </span>
+            </div>
+            <div *ngIf="d.qrCodeData" class="qr-data-display">
+              <div class="qr-data-row">
+                <ion-icon name="document-text-outline"></ion-icon>
+                <span>{{ d.qrCodeData }}</span>
+              </div>
+            </div>
+            <div *ngIf="d.proofOfDelivery; else noProof">
+              <img [src]="getDataUrl(d.proofOfDelivery)" class="proof-img" alt="Preuve de livraison" />
+              <div class="proof-footer">
+                <ion-icon name="checkmark-circle-outline" class="proof-check"></ion-icon>
+                <span>Preuve validée</span>
+              </div>
+            </div>
+            <ng-template #noProof>
+              <div class="no-proof">
+                <ion-icon name="image-outline"></ion-icon>
+                <p>Aucune preuve pour la livraison #{{ d.sequence }}</p>
+              </div>
+            </ng-template>
+          </div>
+        </ion-col>
+      </ion-row>
+    </ion-grid>
+  </div>
+
+  <ng-template #noDeliveries>
+    <div class="no-deliveries">
+      <ion-icon name="alert-circle-outline"></ion-icon>
+      <p>Aucune livraison associée à ce trajet.</p>
+    </div>
+  </ng-template>
+</div>
+
+  <!-- Action Buttons for In-Progress Trips -->
+  <div class="action-buttons" *ngIf="shouldShowActionButtons(trip.tripStatus)">
+    <ion-button 
+      expand="block" 
+      class="update-status-btn"
+      *ngIf="trip.tripStatus === 'Pending' || trip.tripStatus === 'Planned'"
+      (click)="updateStatus('Accepted')">
+      <ion-icon name="checkmark-circle-outline" slot="start"></ion-icon>
+      Accepter le Trajet
+    </ion-button>
+    <ion-button 
+      expand="block" 
+      class="update-status-btn"
+      *ngIf="trip.tripStatus === 'Accepted'"
+      (click)="updateStatus('LoadingInProgress')">
+      <ion-icon name="cube-outline" slot="start"></ion-icon>
+      Démarrer Chargement
+    </ion-button>
+    <ion-button 
+      expand="block" 
+      class="update-status-btn"
+      *ngIf="trip.tripStatus === 'LoadingInProgress' || trip.tripStatus === 'Loading'"
+      (click)="updateStatus('DeliveryInProgress')">
+      <ion-icon name="location-outline" slot="start"></ion-icon>
+      Démarrer Livraison
+    </ion-button>
   </div>
 
   <!-- Action Buttons for In-Progress Trips -->

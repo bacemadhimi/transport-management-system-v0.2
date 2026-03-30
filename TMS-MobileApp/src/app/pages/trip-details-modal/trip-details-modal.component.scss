@@ -474,3 +474,130 @@
     color: #f44336;
   }
 }
+// QR Code Scanner Section
+.scanner-section {
+  background: rgba(0, 0, 0, 0.85);
+  border-radius: 16px;
+  padding: 20px;
+  margin-bottom: 20px;
+  border: 1px solid rgba(255, 140, 0, 0.3);
+  
+  .scanner-info {
+    color: #cccccc;
+    font-size: 14px;
+    text-align: center;
+    margin-bottom: 16px;
+  }
+  
+  .scan-qr-btn {
+    --background: linear-gradient(135deg, #ff8c00, #ffcc00);
+    --background-hover: linear-gradient(135deg, #ff7c00, #ffbc00);
+    --color: #000000;
+    --border-radius: 12px;
+    font-weight: 700;
+    height: 48px;
+  }
+}
+
+.qr-details {
+  margin-top: 16px;
+  
+  .qr-detail-card {
+    background: rgba(0, 0, 0, 0.85);
+    border-radius: 16px;
+    border: 1px solid #4caf50;
+    overflow: hidden;
+    
+    .qr-header {
+      background: rgba(76, 175, 80, 0.2);
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border-bottom: 1px solid rgba(76, 175, 80, 0.3);
+      
+      .qr-success-icon {
+        font-size: 24px;
+        color: #4caf50;
+      }
+      
+      h4 {
+        margin: 0;
+        color: #4caf50;
+        font-size: 16px;
+        font-weight: 600;
+      }
+    }
+    
+    .qr-content {
+      padding: 16px;
+      
+      .qr-info-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 12px;
+        color: #ffffff;
+        font-size: 14px;
+        
+        ion-icon {
+          color: #ff8c00;
+          font-size: 18px;
+          min-width: 24px;
+        }
+        
+        strong {
+          color: #ff8c00;
+        }
+        
+        span {
+          word-break: break-all;
+        }
+      }
+    }
+    
+    .confirm-btn {
+      --background: linear-gradient(135deg, #4caf50, #45a049);
+      --color: #ffffff;
+      --border-radius: 12px;
+      margin: 0 16px 16px 16px;
+      font-weight: 700;
+    }
+  }
+}
+
+.qr-badge {
+  background: linear-gradient(135deg, #ff8c00, #ffcc00);
+  color: #000000;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  
+  ion-icon {
+    font-size: 12px;
+  }
+}
+
+.qr-data-display {
+  padding: 12px 16px;
+  background: rgba(255, 140, 0, 0.1);
+  border-bottom: 1px solid rgba(255, 140, 0, 0.2);
+  
+  .qr-data-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: #ff8c00;
+    word-break: break-all;
+    
+    ion-icon {
+      font-size: 16px;
+      min-width: 20px;
+    }
+  }
+}

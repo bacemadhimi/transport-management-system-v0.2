@@ -55,7 +55,9 @@ export interface IDelivery {
   status: DeliveryStatus;
   notes?: string;
   proofOfDelivery?: string;
-
+  qrCodeData?: string;
+  qrCodeFormat?: string;
+  qrCodeTimestamp?: string | Date;
  
   customer?: ICustomer;
   order?: IOrder;
@@ -70,6 +72,7 @@ export enum TripStatus {
   Cancelled = 'Cancelled',
   Pending = 'Pending',
   Loading ='Loading',
+  Completed = 'Completed',
   InDelivery = 'InDelivery',
 }
 
