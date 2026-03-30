@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { IonicModule } from '@ionic/angular';
 import { AuthService } from '../../services/auth.service';
 import { HttpClient } from '@angular/common/http';
+import { environment } from 'src/environments/environment.prod';
 
 interface TripHistory {
   id: number;
@@ -42,7 +43,7 @@ export class TripHistoryPage implements OnInit {
     totalDistance: 0
   };
 
-  private readonly API_URL = 'http://localhost:5191/api/Trips';
+  private readonly API_URL = `${environment.apiUrl}/api/Trips`;
 
   constructor(
     private authService: AuthService,

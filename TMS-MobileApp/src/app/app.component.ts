@@ -1,5 +1,6 @@
-import { Component } from '@angular/core';
-import { IonicModule } from '@ionic/angular';
+import { Component, inject } from '@angular/core';
+import { IonicModule, Platform } from '@ionic/angular';
+import { DatabaseService } from './services/sqlite.service';
 
 @Component({
   selector: 'app-root',
@@ -9,5 +10,18 @@ import { IonicModule } from '@ionic/angular';
   imports: [IonicModule]
 })
 export class AppComponent {
-  constructor() {}
+   private platform = inject(Platform);
+  private databaseService = inject(DatabaseService);
+  constructor() { this.initializeApp();}
+
+  private async initializeApp() {
+    await this.platform.ready();
+
+    try {
+      await this.databaseService.initializeDatabase();
+      console.log('Database initialized at app startup');
+    } catch (error) {
+      console.error('Database init failed', error);
+    }
+  }
 }

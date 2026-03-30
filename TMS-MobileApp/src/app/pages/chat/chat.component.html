@@ -1,0 +1,145 @@
+<ion-header>
+  <ion-toolbar class="chat-toolbar">
+    <ion-buttons slot="start">
+      <ion-button (click)="goBack()" class="back-button">
+        <ion-icon name="arrow-back"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+    
+    <ion-title>
+      <div *ngIf="!selectedUser" class="toolbar-title">
+        <ion-icon name="chatbubbles-outline"></ion-icon>
+        <span>Chat des Chauffeurs</span>
+      </div>
+      <div *ngIf="selectedUser" class="toolbar-title with-user">
+        <div class="user-avatar-small">
+          <ion-icon name="person-circle-outline"></ion-icon>
+          <div class="online-dot" [class.online]="selectedUser.isOnline"></div>
+        </div>
+        <div class="user-info-title">
+          <span class="user-name">{{ selectedUser.userName }}</span>
+          <span class="user-status" [class.online]="selectedUser.isOnline">
+            {{ selectedUser.isOnline ? 'En ligne' : 'Hors ligne' }}
+          </span>
+        </div>
+      </div>
+    </ion-title>
+    
+    <ion-buttons slot="end">
+      <ion-button (click)="refreshUsers()" [disabled]="isLoading" class="refresh-btn">
+        <ion-icon name="refresh-outline" [class.spin]="isLoading"></ion-icon>
+      </ion-button>
+      <ion-button (click)="showUserList()" *ngIf="!selectedUser" class="users-btn">
+        <ion-icon name="people-outline"></ion-icon>
+        <ion-badge class="online-badge" *ngIf="onlineUsers.length > 0">{{ onlineUsers.length }}</ion-badge>
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+
+  <!-- Connection status bar -->
+  <ion-toolbar *ngIf="!connectionStatus" class="connection-status-bar">
+    <ion-title size="small">
+      <ion-icon name="cloud-offline-outline"></ion-icon>
+      Connexion au serveur de chat...
+    </ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="chat-content">
+  <!-- Loading indicator -->
+  <div class="loading-container" *ngIf="isLoading && !selectedUser">
+    <div class="loading-card">
+      <ion-spinner name="crescent"></ion-spinner>
+      <p>Chargement des chauffeurs en ligne...</p>
+    </div>
+  </div>
+
+  <!-- Online Users List (when no user selected) -->
+  <div *ngIf="!selectedUser && !isLoading" class="users-container">
+    <!-- Stats header -->
+    <div class="stats-header" *ngIf="onlineUsers.length > 0">
+      <div class="stats-card">
+        <ion-icon name="people-outline"></ion-icon>
+        <span>{{ onlineUsers.length }} chauffeur(s) en ligne</span>
+      </div>
+    </div>
+
+    <ion-list class="users-list" *ngIf="onlineUsers.length > 0">
+      <ion-list-header class="list-header">
+        <ion-label>Chauffeurs Connectés</ion-label>
+      </ion-list-header>
+      
+      <ion-item *ngFor="let user of onlineUsers" button (click)="selectUser(user)" detail="false" class="user-item">
+        <ion-avatar slot="start" class="user-avatar-item">
+          <ion-icon name="person-circle-outline" class="avatar-icon"></ion-icon>
+          <div class="status-indicator" [class.online]="user.isOnline"></div>
+        </ion-avatar>
+        <ion-label>
+          <h2>{{ user.userName }}</h2>
+          <p>{{ user.email || 'Aucun email' }}</p>
+          <p class="last-seen" *ngIf="user.lastSeen">
+            Dernière connexion: {{ user.lastSeen | date:'dd/MM/yyyy HH:mm' }}
+          </p>
+        </ion-label>
+        <ion-badge class="status-badge" [class.online]="user.isOnline" slot="end">
+          {{ user.isOnline ? 'En ligne' : 'Hors ligne' }}
+        </ion-badge>
+      </ion-item>
+    </ion-list>
+
+    <!-- Empty state -->
+    <div class="empty-state" *ngIf="onlineUsers.length === 0">
+      <div class="empty-icon">
+        <ion-icon name="people-outline"></ion-icon>
+      </div>
+      <h3>Aucun chauffeur en ligne</h3>
+      <p>Les autres chauffeurs apparaîtront ici lorsqu'ils seront connectés.</p>
+      <ion-button fill="outline" (click)="refreshUsers()" class="refresh-empty-btn">
+        <ion-icon name="refresh-outline" slot="start"></ion-icon>
+        Actualiser
+      </ion-button>
+    </div>
+  </div>
+
+  <!-- Chat Messages (when user selected) -->
+  <div *ngIf="selectedUser" class="chat-container">
+    <div class="messages" #messageContainer>
+      <div *ngFor="let message of messages" 
+           class="message" 
+           [class.sent]="isCurrentUser(message.senderId)"
+           [class.received]="!isCurrentUser(message.senderId)">
+        <div class="message-content">
+          <p>{{ message.message }}</p>
+          <div class="time">
+            <span>{{ message.timestamp | date:'HH:mm' }}</span>
+            <ion-icon *ngIf="isCurrentUser(message.senderId) && message.isRead" 
+                     name="checkmark-done-outline" class="read-icon"></ion-icon>
+          </div>
+        </div>
+      </div>
+      
+      <div *ngIf="messages.length === 0" class="no-messages">
+        <div class="no-messages-icon">
+          <ion-icon name="chatbubble-ellipses-outline"></ion-icon>
+        </div>
+        <p>Aucun message pour le moment. Commencez la conversation !</p>
+      </div>
+    </div>
+  </div>
+</ion-content>
+
+<ion-footer *ngIf="selectedUser" class="chat-footer">
+  <div class="message-input-container">
+    <ion-textarea
+      [(ngModel)]="newMessage"
+      placeholder="Écrivez un message..."
+      (keyup.enter)="sendMessage()"
+      rows="1"
+      auto-grow
+      class="message-input">
+    </ion-textarea>
+    <ion-button fill="clear" (click)="sendMessage()" [disabled]="!newMessage.trim()" class="send-btn">
+      <ion-icon name="send-outline" slot="icon-only"></ion-icon>
+    </ion-button>
+  </div>
+</ion-footer>

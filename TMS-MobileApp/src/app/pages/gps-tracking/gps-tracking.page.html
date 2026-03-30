@@ -1,11 +1,11 @@
 <ion-header>
-  <ion-toolbar color="primary">
+  <ion-toolbar style="--background: linear-gradient(135deg, #ff8c00, #ffcc00); --color: #000000;">
     <ion-buttons slot="start">
-      <ion-back-button defaultHref="/home"></ion-back-button>
+      <ion-back-button defaultHref="/home" style="--color: #000000;"></ion-back-button>
     </ion-buttons>
-    <ion-title>Suivi GPS - {{ tripReference }}</ion-title>
+    <ion-title style="--color: #000000;">Suivi GPS - {{ tripReference }}</ion-title>
     <ion-buttons slot="end">
-      <ion-button (click)="refreshPosition()">
+      <ion-button (click)="refreshPosition()" style="--color: #000000;">
         <ion-icon slot="icon-only" name="refresh"></ion-icon>
       </ion-button>
     </ion-buttons>
@@ -30,7 +30,7 @@
         <ion-card-content>
           <div class="info-header">
             <div class="info-item">
-              <ion-icon name="speedometer" color="primary"></ion-icon>
+              <ion-icon name="speedometer" class="icon-orange"></ion-icon>
               <div>
                 <div class="info-label">Vitesse</div>
                 <div class="info-value">{{ speed | number:'1.0-0' }} km/h</div>
@@ -38,7 +38,7 @@
             </div>
 
             <div class="info-item">
-              <ion-icon name="navigate" color="secondary"></ion-icon>
+              <ion-icon name="navigate" class="icon-orange"></ion-icon>
               <div>
                 <div class="info-label">Distance</div>
                 <div class="info-value">{{ getDistanceRemaining() }} km</div>
@@ -47,12 +47,12 @@
           </div>
 
           <div class="info-footer">
-            <ion-icon name="time" color="tertiary"></ion-icon>
+            <ion-icon name="time" class="icon-orange"></ion-icon>
             <span>Temps estimé: <strong>{{ getEstimatedTime() }}</strong></span>
           </div>
 
           <div class="accuracy-info" *ngIf="accuracy">
-            <ion-icon name="location"></ion-icon>
+            <ion-icon name="location" class="icon-orange"></ion-icon>
             <span>Précision: {{ accuracy | number:'1.0-0' }}m</span>
             <span *ngIf="lastUpdate">• {{ lastUpdate | date:'HH:mm:ss' }}</span>
           </div>
@@ -66,7 +66,7 @@
     <ion-card>
       <ion-card-header>
         <ion-card-title>
-          <ion-icon name="clipboard"></ion-icon>
+          <ion-icon name="clipboard" class="icon-orange"></ion-icon>
           État de la Mission
         </ion-card-title>
         <ion-card-subtitle>{{ tripReference }}</ion-card-subtitle>
@@ -86,68 +86,67 @@
           <ion-button
             *ngIf="missionStatus === 'pending'"
             expand="block"
-            color="success"
+            class="btn-orange"
             (click)="acceptMission()"
           >
             <ion-icon slot="start" name="checkmark-circle"></ion-icon>
-            ✅ Accepter la Mission
+            Accepter la Mission
           </ion-button>
 
-          <!-- Bouton REFSER -->
+          <!-- Bouton REFUSER -->
           <ion-button
             *ngIf="missionStatus === 'pending'"
             expand="block"
             fill="outline"
-            color="danger"
+            class="btn-outline-orange"
             (click)="rejectMission()"
           >
             <ion-icon slot="start" name="close-circle"></ion-icon>
-            ❌ Refuser la Mission
+            Refuser la Mission
           </ion-button>
 
           <!-- BOUTON COMMENCER CHARGEMENT -->
           <ion-button
             *ngIf="missionStatus === 'accepted'"
             expand="block"
-            color="primary"
+            class="btn-orange"
             (click)="startLoading()"
           >
             <ion-icon slot="start" name="cube"></ion-icon>
-            📦 Commencer le Chargement
+            Commencer le Chargement
           </ion-button>
 
           <!-- BOUTON COMMENCER LIVRAISON -->
           <ion-button
             *ngIf="missionStatus === 'loading'"
             expand="block"
-            color="secondary"
+            class="btn-orange"
             (click)="startDelivery()"
           >
             <ion-icon slot="start" name="boat"></ion-icon>
-            🚚 Commencer la Livraison
+            Commencer la Livraison
           </ion-button>
 
           <!-- BOUTON TERMINER -->
           <ion-button
             *ngIf="missionStatus === 'delivery'"
             expand="block"
-            color="success"
+            class="btn-green"
             (click)="completeMission()"
           >
             <ion-icon slot="start" name="checkmark-done-circle"></ion-icon>
-            ✅ Livraison Terminée
+            Livraison Terminée
           </ion-button>
 
           <!-- Message MISSION TERMINEE -->
           <ion-card
             *ngIf="missionStatus === 'completed'"
-            color="success"
             class="completed-card"
           >
             <ion-card-content style="text-align: center;">
-              <ion-icon name="checkmark-done-circle" style="font-size: 48px; margin-bottom: 8px;"></ion-icon>
-              <h3 style="margin: 0;">🎉 Mission Terminée !</h3>
-              <p style="margin: 8px 0 0 0; opacity: 0.8;">Merci pour votre travail</p>
+              <ion-icon name="checkmark-done-circle" class="icon-success"></ion-icon>
+              <h3>🎉 Mission Terminée !</h3>
+              <p>Merci pour votre travail</p>
             </ion-card-content>
           </ion-card>
         </div>
@@ -160,19 +159,19 @@
     <ion-card>
       <ion-card-header>
         <ion-card-title>
-          <ion-icon name="location"></ion-icon>
+          <ion-icon name="location" class="icon-orange"></ion-icon>
           Destination Finale
         </ion-card-title>
       </ion-card-header>
       <ion-card-content>
         <div class="destination-details">
           <div class="destination-row">
-            <ion-icon name="map"></ion-icon>
+            <ion-icon name="map" class="icon-orange"></ion-icon>
             <span>{{ destination.address }}</span>
           </div>
           <div class="destination-row">
-            <ion-icon name="navigate"></ion-icon>
-            <span>Coordinates: {{ destination.lat.toFixed(4) }}, {{ destination.lng.toFixed(4) }}</span>
+            <ion-icon name="navigate" class="icon-orange"></ion-icon>
+            <span>Coordonnées: {{ destination.lat.toFixed(4) }}, {{ destination.lng.toFixed(4) }}</span>
           </div>
         </div>
       </ion-card-content>
@@ -180,59 +179,3 @@
   </div>
 
 </ion-content>
-
-<style>
-  .mission-status-section {
-    margin: 16px;
-  }
-
-  .status-indicator {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 16px;
-    border-radius: 12px;
-    margin-bottom: 16px;
-    background: #f5f5f5;
-  }
-
-  .status-indicator.status-pending {
-    background: linear-gradient(135deg, #fff3cd, #ffe69c);
-  }
-
-  .status-indicator.status-accepted {
-    background: linear-gradient(135deg, #d1ecf1, #bee5eb);
-  }
-
-  .status-indicator.status-loading {
-    background: linear-gradient(135deg, #d4edda, #c3e6cb);
-  }
-
-  .status-indicator.status-delivery {
-    background: linear-gradient(135deg, #cce5ff, #b8daff);
-  }
-
-  .status-indicator.status-completed {
-    background: linear-gradient(135deg, #d4edda, #c3e6cb);
-  }
-
-  .status-icon {
-    font-size: 32px;
-  }
-
-  .status-text {
-    font-size: 18px;
-    font-weight: 600;
-    color: #333;
-  }
-
-  .status-actions {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
-
-  .destination-info {
-    margin: 0 16px 16px;
-  }
-</style>

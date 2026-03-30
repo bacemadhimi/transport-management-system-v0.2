@@ -2,8 +2,9 @@ import { Injectable } from '@angular/core';
 import { HubConnection, HubConnectionBuilder, HubConnectionState } from '@microsoft/signalr';
 import { BehaviorSubject, Observable, Subject } from 'rxjs';
 import { NotificationStorageService, TripNotification } from './notification-storage.service';
+import { environment } from 'src/environments/environment';
 
-const API_URL = 'http://localhost:5191';
+const API_URL = environment.apiUrl;
 
 export interface GPSPosition {
   driverId?: number;
