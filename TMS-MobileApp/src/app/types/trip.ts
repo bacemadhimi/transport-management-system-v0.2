@@ -67,7 +67,10 @@ export enum TripStatus {
   LoadingInProgress = 'LoadingInProgress',
   DeliveryInProgress = 'DeliveryInProgress',
   Receipt = 'Receipt',
-  Cancelled = 'Cancelled'
+  Cancelled = 'Cancelled',
+  Pending = 'Pending',
+  Loading ='Loading',
+  InDelivery = 'InDelivery',
 }
 
 export enum DeliveryStatus {

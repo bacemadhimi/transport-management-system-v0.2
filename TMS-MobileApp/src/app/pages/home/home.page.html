@@ -181,19 +181,22 @@
             </div>
           </div>
 
+<!-- Status Update Section - Version avec Pending et Planned -->
 <div class="status-update-section" *ngIf="trip.tripStatus !== 'Receipt' && trip.tripStatus !== 'Cancelled'">
-  <!-- Accepter - CHANGED -->
+  
+  <!-- Accepter - Pour les trajets Pending OU Planned -->
   <ion-button 
     expand="block" 
     class="btn-orange"
-    *ngIf="trip.tripStatus === 'Planned'" 
+    *ngIf="trip.tripStatus === 'Pending' || trip.tripStatus === 'Planned'" 
     [disabled]="trip.updating"
     (click)="$event.stopPropagation(); updateTripStatus(trip, 'Accepted')">
     <ion-spinner *ngIf="trip.updating" slot="start" name="crescent"></ion-spinner>
-    Accepter
+    <ion-icon slot="start" name="checkmark-circle-outline"></ion-icon>
+    ✅ Accepter la Mission
   </ion-button>
   
-  <!-- Chargement - CHANGED -->
+  <!-- Commencer le Chargement - Pour les trajets acceptés -->
   <ion-button 
     expand="block" 
     class="btn-orange"
@@ -201,40 +204,43 @@
     [disabled]="trip.updating"
     (click)="$event.stopPropagation(); updateTripStatus(trip, 'LoadingInProgress')">
     <ion-spinner *ngIf="trip.updating" slot="start" name="crescent"></ion-spinner>
-    Chargement
+    <ion-icon slot="start" name="cube-outline"></ion-icon>
+    📦 Commencer le Chargement
   </ion-button>
   
-  <!-- Livraison - CHANGED -->
+  <!-- Commencer la Livraison - Pour les trajets en chargement -->
   <ion-button 
     expand="block" 
     class="btn-orange"
-    *ngIf="trip.tripStatus === 'LoadingInProgress'" 
+    *ngIf="trip.tripStatus === 'LoadingInProgress'  || trip.tripStatus === 'Loading'" 
     [disabled]="trip.updating"
     (click)="$event.stopPropagation(); updateTripStatus(trip, 'DeliveryInProgress')">
     <ion-spinner *ngIf="trip.updating" slot="start" name="crescent"></ion-spinner>
-    Livraison
+    <ion-icon slot="start" name="boat-outline"></ion-icon>
+    🚚 Commencer la Livraison
   </ion-button>
   
-  <!-- Réception - keep green -->
+  <!-- Terminer la Livraison (Réception) -->
   <ion-button 
     expand="block" 
     color="success" 
-    *ngIf="trip.tripStatus === 'DeliveryInProgress'" 
+    *ngIf="trip.tripStatus === 'DeliveryInProgress' || trip.tripStatus === 'InDelivery'" 
     [disabled]="trip.updating"
     (click)="$event.stopPropagation(); updateTripStatus(trip, 'Receipt')">
     <ion-spinner *ngIf="trip.updating" slot="start" name="crescent"></ion-spinner>
-    Réception
+    <ion-icon slot="start" name="checkmark-done-circle-outline"></ion-icon>
+    🎉 Terminer la Livraison
   </ion-button>
 
-  <!-- Annuler - keep danger -->
+  <!-- Annuler -->
   <ion-button 
     expand="block" 
     color="danger" 
     fill="outline"
     *ngIf="canCancelTrip(trip.tripStatus)"
     (click)="$event.stopPropagation(); showCancelConfirmation(trip)">
-    <ion-icon name="close-circle-outline" slot="start"></ion-icon>
-    Annuler
+    <ion-icon slot="start" name="close-circle-outline"></ion-icon>
+    ❌ Annuler la Mission
   </ion-button>
 </div>
         </div>
