@@ -2,6 +2,7 @@
 using TransportManagementSystem.Entity;
 using TransportManagementSystem.Entity.PlantIt;
 using TransportManagementSystem.Entity.PlantIt.TMS.Models;
+using TransportManagementSystem.Models;
 
 namespace TransportManagementSystem.Data
 {
@@ -78,6 +79,7 @@ namespace TransportManagementSystem.Data
         public DbSet<PositionGPS> PositionsGPS { get; set; }
         public DbSet<ResultatOptimisation> ResultatOptimisations { get; set; }
         public DbSet<TripAssignment> TripAssignments { get; set; }
+        public DbSet<LocationGeographicalEntity> LocationGeographicalEntities { get; set; }
 
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)

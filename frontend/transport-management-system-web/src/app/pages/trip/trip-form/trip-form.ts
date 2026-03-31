@@ -4161,34 +4161,34 @@ private async checkCapacityBeforeAddingOrders(selectedWeight: number): Promise<b
     });
   }
 
-  private loadLocations(): Promise<void> {
-    return new Promise((resolve, reject) => {
-      this.loadingLocations = true;
-      this.http.getLocations().subscribe({
-        next: (response: any) => {
-          const locations = response.data || response.locations || response;
+private loadLocations(): Promise<void> {
+  return new Promise((resolve, reject) => {
+    this.loadingLocations = true;
+    this.http.getLocations().subscribe({
+      next: (response: any) => {
+        const locations = response.data || response.locations || response;
 
-          if (Array.isArray(locations)) {
-            this.locations = locations.map(location => ({
-              ...location,
-              zoneId: location.zoneId || location.zone?.id || null,
-              zoneName: location.zoneName || location.zone?.name || ''
-            }));
+        if (Array.isArray(locations)) {
+          this.locations = locations.map(location => ({
+            ...location,
+            // Keep geographicalEntities as they come from API
+            geographicalEntities: location.geographicalEntities || []
+          }));
 
-            this.activeLocations = this.locations.filter(loc => loc.isActive);
-          }
-
-          this.loadingLocations = false;
-          resolve();
-        },
-        error: (error) => {
-          console.error('Error loading locations:', error);
-          this.loadingLocations = false;
-          reject(error);
+          this.activeLocations = this.locations.filter(loc => loc.isActive);
         }
-      });
+
+        this.loadingLocations = false;
+        resolve();
+      },
+      error: (error) => {
+        console.error('Error loading locations:', error);
+        this.loadingLocations = false;
+        reject(error);
+      }
     });
-  }
+  });
+}
 
   getStartLocationId(): number | null {
     if (this.selectedTraject?.startLocationId) {
@@ -4773,11 +4773,15 @@ getSelectedEndLocationInfo(): string {
     return this.getZoneNameForLocation(locationId);
   }
 
-  hasZone(locationId: number): boolean {
-    if (!locationId) return false;
-    const location = this.locations.find(l => l.id === locationId);
-    return !!(location && location.zoneName);
-  }
+hasZone(locationId: number): boolean | undefined {
+  if (!locationId) return false;
+  const location = this.locations.find(l => l.id === locationId);
+  
+  if (!location) return false;
+  
+  // Check if location has any associated geographical entities
+  return location.geographicalEntities && location.geographicalEntities.length > 0;
+}
 
   getStartWeatherInfo(): string {
     if (!this.startLocationWeather) return 'Aucune donnée météo';
@@ -4859,18 +4863,24 @@ getSelectedEndLocationInfo(): string {
     return this.datePipe.transform(new Date(), 'HH:mm') || '';
   }
 
-  private getZoneNameForLocation(locationId: number): string | null {
-    if (!locationId) return null;
+private getZoneNameForLocation(locationId: number): string | null {
+  if (!locationId) return null;
 
-    const location = this.locations.find(l => l.id === locationId);
-    if (!location) return null;
+  const location = this.locations.find(l => l.id === locationId);
+  if (!location) return null;
 
-    if (location.zoneName) {
-      return location.zoneName;
+  // Get the first associated geographical entity name
+  if (location.geographicalEntities && location.geographicalEntities.length > 0) {
+    const entityId = location.geographicalEntities[0].geographicalEntityId;
+    const entity = this.geographicalEntities.find(e => e.id === entityId);
+    if (entity) {
+      return entity.name;
     }
-
-    return location.name;
   }
+
+  // Fallback to location name
+  return location.name;
+}
 
   private refreshDriversByDate(): void {
     if (this.locations.length === 0) {
@@ -7665,6 +7675,24 @@ getWeatherWarningMessage(): string {
     }
   }
 
+  // Add warnings based on geographical entities
+  const startLocationId = this.tripForm.get('startLocationId')?.value;
+  const endLocationId = this.tripForm.get('endLocationId')?.value;
+  
+  if (startLocationId && this.hasZone(startLocationId)) {
+    const zoneName = this.getZoneNameForLocation(startLocationId);
+    if (zoneName) {
+      warnings.push(`zone ${zoneName} au départ`);
+    }
+  }
+  
+  if (endLocationId && this.hasZone(endLocationId)) {
+    const zoneName = this.getZoneNameForLocation(endLocationId);
+    if (zoneName) {
+      warnings.push(`zone ${zoneName} à l'arrivée`);
+    }
+  }
+
   if (warnings.length === 0) {
     return 'Conditions favorables pour le trajet';
   }
@@ -7693,7 +7721,8 @@ shouldShowWeatherWarning(): boolean {
     extremeTemperature: { min: -10, max: 35 },
   };
 
-  return weatherConditionsToCheck.some(weather => {
+  // Check weather conditions
+  const hasWeatherWarning = weatherConditionsToCheck.some(weather => {
     if (weather.precipitation && weather.precipitation > warningThresholds.heavyRain) {
       return true;
     }
@@ -7718,12 +7747,12 @@ shouldShowWeatherWarning(): boolean {
       'brouillard', 'fog'
     ];
 
-    const hasSevereCondition = severeKeywords.some(keyword =>
+    return severeKeywords.some(keyword =>
       weather.description.toLowerCase().includes(keyword.toLowerCase())
     );
-
-    return hasSevereCondition;
   });
+
+  return hasWeatherWarning;
 }
 
 

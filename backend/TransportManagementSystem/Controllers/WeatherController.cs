@@ -1,7 +1,9 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
 using TransportManagementSystem.Data;
+using TransportManagementSystem.Entity;
 
 namespace TransportManagementSystem.Controllers;
 
@@ -20,7 +22,8 @@ public class WeatherController : ControllerBase
         _dbContext = dbContext;
     }
 
-    // Existing endpoints
+    // ==================== EXISTING ENDPOINTS ====================
+
     [HttpGet]
     public async Task<IActionResult> Get([FromQuery] string q)
     {
@@ -48,50 +51,78 @@ public class WeatherController : ControllerBase
         return await CallOpenWeather($"https://api.openweathermap.org/data/2.5/forecast?q={q}&appid={_apiKey}&units=metric&lang=fr");
     }
 
-    // NEW: Get weather by location ID
+    // ==================== NEW ENDPOINTS WITH LOCATION ID ====================
+
+    /// <summary>
+    /// Get current weather by location ID
+    /// </summary>
     [HttpGet("location/{locationId}")]
     public async Task<IActionResult> GetWeatherByLocation(int locationId)
     {
-        var location = await _dbContext.Locations.FindAsync(locationId);
+        var location = await _dbContext.Locations
+            .Include(l => l.LocationGeographicalEntities)
+                .ThenInclude(lg => lg.GeographicalEntity)
+            .FirstOrDefaultAsync(l => l.Id == locationId);
 
         if (location == null)
             return NotFound(new { message = $"Location with ID {locationId} not found" });
 
-        // If location has coordinates, use them (more accurate)
-        if (location.Latitude != 0 && location.Longitude != 0)
+        var coordinates = await GetCoordinatesFromLocation(location);
+
+        if (coordinates != null)
         {
-            return await CallOpenWeather($"https://api.openweathermap.org/data/2.5/weather?lat={location.Latitude}&lon={location.Longitude}&appid={_apiKey}&units=metric&lang=fr");
+            // Convert double to string with invariant culture to avoid decimal/comma issues
+            var latStr = coordinates.Latitude.ToString(System.Globalization.CultureInfo.InvariantCulture);
+            var lonStr = coordinates.Longitude.ToString(System.Globalization.CultureInfo.InvariantCulture);
+            return await CallOpenWeather($"https://api.openweathermap.org/data/2.5/weather?lat={latStr}&lon={lonStr}&appid={_apiKey}&units=metric&lang=fr");
         }
 
         // Fallback to location name
-        return await CallOpenWeather($"https://api.openweathermap.org/data/2.5/weather?q={location.Name}&appid={_apiKey}&units=metric&lang=fr");
+        return await CallOpenWeather($"https://api.openweathermap.org/data/2.5/weather?q={Uri.EscapeDataString(location.Name)}&appid={_apiKey}&units=metric&lang=fr");
     }
 
-    // NEW: Get forecast by location ID
+    /// <summary>
+    /// Get weather forecast by location ID
+    /// </summary>
     [HttpGet("location/{locationId}/forecast")]
     public async Task<IActionResult> GetForecastByLocation(int locationId)
     {
-        var location = await _dbContext.Locations.FindAsync(locationId);
+        var location = await _dbContext.Locations
+            .Include(l => l.LocationGeographicalEntities)
+                .ThenInclude(lg => lg.GeographicalEntity)
+            .FirstOrDefaultAsync(l => l.Id == locationId);
 
         if (location == null)
             return NotFound(new { message = $"Location with ID {locationId} not found" });
 
-        // If location has coordinates, use them (more accurate)
-        if (location.Latitude != 0 && location.Longitude != 0)
+        var coordinates = await GetCoordinatesFromLocation(location);
+
+        if (coordinates != null)
         {
-            return await CallOpenWeather($"https://api.openweathermap.org/data/2.5/forecast?lat={location.Latitude}&lon={location.Longitude}&appid={_apiKey}&units=metric&lang=fr");
+            var latStr = coordinates.Latitude.ToString(System.Globalization.CultureInfo.InvariantCulture);
+            var lonStr = coordinates.Longitude.ToString(System.Globalization.CultureInfo.InvariantCulture);
+            return await CallOpenWeather($"https://api.openweathermap.org/data/2.5/forecast?lat={latStr}&lon={lonStr}&appid={_apiKey}&units=metric&lang=fr");
         }
 
         // Fallback to location name
-        return await CallOpenWeather($"https://api.openweathermap.org/data/2.5/forecast?q={location.Name}&appid={_apiKey}&units=metric&lang=fr");
+        return await CallOpenWeather($"https://api.openweathermap.org/data/2.5/forecast?q={Uri.EscapeDataString(location.Name)}&appid={_apiKey}&units=metric&lang=fr");
     }
 
-    // NEW: Get weather for multiple locations (start and end)
+    /// <summary>
+    /// Get weather for both start and end locations in one request
+    /// </summary>
     [HttpGet("trip")]
     public async Task<IActionResult> GetWeatherForTrip([FromQuery] int startLocationId, [FromQuery] int endLocationId)
     {
-        var startLocation = await _dbContext.Locations.FindAsync(startLocationId);
-        var endLocation = await _dbContext.Locations.FindAsync(endLocationId);
+        var startLocation = await _dbContext.Locations
+            .Include(l => l.LocationGeographicalEntities)
+                .ThenInclude(lg => lg.GeographicalEntity)
+            .FirstOrDefaultAsync(l => l.Id == startLocationId);
+
+        var endLocation = await _dbContext.Locations
+            .Include(l => l.LocationGeographicalEntities)
+                .ThenInclude(lg => lg.GeographicalEntity)
+            .FirstOrDefaultAsync(l => l.Id == endLocationId);
 
         if (startLocation == null)
             return NotFound(new { message = $"Start location with ID {startLocationId} not found" });
@@ -99,27 +130,57 @@ public class WeatherController : ControllerBase
         if (endLocation == null)
             return NotFound(new { message = $"End location with ID {endLocationId} not found" });
 
+        var startWeather = await GetWeatherDataForLocation(startLocation);
+        var endWeather = await GetWeatherDataForLocation(endLocation);
+
         var result = new
         {
-            Start = await GetWeatherDataForLocation(startLocation),
-            End = await GetWeatherDataForLocation(endLocation)
+            Start = startWeather,
+            End = endWeather
         };
 
         return Ok(result);
     }
 
-    // Helper method to get weather data for a location
-    private async Task<object> GetWeatherDataForLocation(Entity.Location location)
+    // ==================== HELPER METHODS ====================
+
+    /// <summary>
+    /// Get coordinates from location's associated geographical entities
+    /// </summary>
+    private async Task<GeoPoint?> GetCoordinatesFromLocation(Location location)
     {
+        if (location.LocationGeographicalEntities == null || !location.LocationGeographicalEntities.Any())
+            return null;
+
+        // Get the first active geographical entity with coordinates
+        var geoEntity = location.LocationGeographicalEntities
+            .Select(lg => lg.GeographicalEntity)
+            .FirstOrDefault(ge => ge != null && ge.IsActive && ge.Latitude != null && ge.Longitude != null);
+
+        if (geoEntity == null)
+            return null;
+
+        // Safe access to nullable value types
+        return new GeoPoint(geoEntity.Latitude.Value, geoEntity.Longitude.Value);
+    }
+
+    /// <summary>
+    /// Get weather data for a single location
+    /// </summary>
+    private async Task<object?> GetWeatherDataForLocation(Location location)
+    {
+        var coordinates = await GetCoordinatesFromLocation(location);
         string url;
 
-        if (location.Latitude != 0 && location.Longitude != 0)
+        if (coordinates != null)
         {
-            url = $"https://api.openweathermap.org/data/2.5/weather?lat={location.Latitude}&lon={location.Longitude}&appid={_apiKey}&units=metric&lang=fr";
+            var latStr = coordinates.Latitude.ToString(System.Globalization.CultureInfo.InvariantCulture);
+            var lonStr = coordinates.Longitude.ToString(System.Globalization.CultureInfo.InvariantCulture);
+            url = $"https://api.openweathermap.org/data/2.5/weather?lat={latStr}&lon={lonStr}&appid={_apiKey}&units=metric&lang=fr";
         }
         else
         {
-            url = $"https://api.openweathermap.org/data/2.5/weather?q={location.Name}&appid={_apiKey}&units=metric&lang=fr";
+            url = $"https://api.openweathermap.org/data/2.5/weather?q={Uri.EscapeDataString(location.Name)}&appid={_apiKey}&units=metric&lang=fr";
         }
 
         try
@@ -141,6 +202,9 @@ public class WeatherController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Call OpenWeather API and return response
+    /// </summary>
     private async Task<IActionResult> CallOpenWeather(string url)
     {
         try
@@ -161,4 +225,23 @@ public class WeatherController : ControllerBase
             return StatusCode(500, new { message = "Internal server error", details = ex.Message });
         }
     }
+}
+
+/// <summary>
+/// Simple class to hold geographical coordinates
+/// </summary>
+public class GeoPoint
+{
+    public double Latitude { get; set; }
+    public double Longitude { get; set; }
+
+    public GeoPoint() { }
+
+    public GeoPoint(double latitude, double longitude)
+    {
+        Latitude = latitude;
+        Longitude = longitude;
+    }
+
+    public bool HasCoordinates => Latitude != 0 && Longitude != 0;
 }
