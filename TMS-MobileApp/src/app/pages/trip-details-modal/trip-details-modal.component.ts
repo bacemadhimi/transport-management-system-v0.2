@@ -153,117 +153,6 @@ export class TripDetailsModalComponent implements OnInit, OnDestroy {
   }
 
   close() {
-    this.modalCtrl.dismiss();
-     console.log('Trip Details:', this.trip);
-  }
-
-  ngOnDestroy() {
-    if (this.networkListener) {
-      this.networkListener.remove();
-    }
-  }
-
-  private async checkNetworkStatus() {
-    try {
-      const status = await Network.getStatus();
-      this.isOnline = status.connected;
-      this.offlineMode = !this.isOnline;
-      console.log('Network status:', this.isOnline ? 'online' : 'offline');
-    } catch (error) {
-      console.error('Error checking network:', error);
-      this.isOnline = false;
-      this.offlineMode = true;
-    }
-  }
-
-  private setupNetworkListener() {
-    Network.addListener('networkStatusChange', (status) => {
-      this.isOnline = status.connected;
-      this.offlineMode = !this.isOnline;
-      console.log('Network changed:', this.isOnline ? 'online' : 'offline');
-    });
-  }
-
-  private loadTripFromCache() {
-    try {
-      const cachedTrips = localStorage.getItem('offlineTrips');
-      if (cachedTrips) {
-        const trips = JSON.parse(cachedTrips) as ITrip[];
-        const cachedTrip = trips.find(t => t.id === this.trip.id);
-        if (cachedTrip) {
-          this.trip = { ...this.trip, ...cachedTrip };
-          console.log('Loaded trip from cache:', this.trip.id);
-        }
-      }
-    } catch (error) {
-      console.error('Error loading trip from cache:', error);
-    }
-  }
-
-  private cacheTripImages() {
-    if (!this.trip) return;
-
-    if (this.trip.deliveries) {
-      this.trip.deliveries.forEach((delivery, index) => {
-        if (delivery.proofOfDelivery) {
-          const cacheKey = `delivery_${this.trip.id}_${index}`;
-          this.cachedImages.set(cacheKey, delivery.proofOfDelivery);
-          this.saveImageToLocalStorage(cacheKey, delivery.proofOfDelivery);
-        }
-      });
-    }
-
-    if ((this.trip as any).proofImage) {
-      const cacheKey = `trip_${this.trip.id}_proof`;
-      this.cachedImages.set(cacheKey, (this.trip as any).proofImage);
-      this.saveImageToLocalStorage(cacheKey, (this.trip as any).proofImage);
-    }
-  }
-
-  private saveImageToLocalStorage(key: string, base64: string) {
-    try {
-      const images = localStorage.getItem('cachedTripImages');
-      let imageCache: Record<string, string> = images ? JSON.parse(images) : {};
-      imageCache[key] = base64;
-      localStorage.setItem('cachedTripImages', JSON.stringify(imageCache));
-    } catch (error) {
-      console.error('Error saving image to cache:', error);
-    }
-  }
-
-  private loadImageFromLocalStorage(key: string): string | null {
-    try {
-      const images = localStorage.getItem('cachedTripImages');
-      if (images) {
-        const imageCache = JSON.parse(images);
-        return imageCache[key] || null;
-      }
-    } catch (error) {
-      console.error('Error loading image from cache:', error);
-    }
-    return null;
-  }
-
-  private saveTripToCache() {
-    try {
-      const cachedTrips = localStorage.getItem('offlineTrips');
-      let trips: ITrip[] = cachedTrips ? JSON.parse(cachedTrips) : [];
-      
-      const index = trips.findIndex(t => t.id === this.trip.id);
-      if (index !== -1) {
-        trips[index] = this.trip;
-      } else {
-        trips.push(this.trip);
-      }
-      
-      localStorage.setItem('offlineTrips', JSON.stringify(trips));
-      console.log('Trip saved to cache:', this.trip.id);
-    } catch (error) {
-      console.error('Error saving trip to cache:', error);
-    }
-  }
-
-  close() {
     this.saveTripToCache();
     this.modalCtrl.dismiss();
   }
@@ -315,6 +204,35 @@ export class TripDetailsModalComponent implements OnInit, OnDestroy {
       position: 'top'
     });
     await toast.present();
+  }
+
+  /**
+   * Vérifier si la livraison est en cours
+   */
+  isDeliveryInProgress(): boolean {
+    const status = this.trip.tripStatus;
+    return status === 'DeliveryInProgress' || 
+           status === 'InDelivery';
+  }
+
+  /**
+   * Vérifier si la livraison est terminée
+   */
+  isDeliveryCompleted(): boolean {
+    const status = this.trip.tripStatus;
+    return status === 'Receipt' || 
+           status === 'Completed';
+  }
+
+  /**
+   * Vérifier si les boutons d'action doivent être affichés
+   */
+  shouldShowActionButtons(): boolean {
+    const status = this.trip.tripStatus;
+    return status !== 'Receipt' && 
+           status !== 'Completed' && 
+           status !== 'Cancelled' 
+           
   }
 
   /**
@@ -520,77 +438,117 @@ export class TripDetailsModalComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Vérifier si les boutons d'action doivent être affichés
-   */
-  shouldShowActionButtons(status: string): boolean {
-    return status !== 'Receipt' && status !== 'Completed' && status !== 'Cancelled';
-  }
-
-  /**
    * Update trip status
    */
-  async updateStatus(newStatus: string) {
-    if (this.isUpdating) {
-      console.log('Update already in progress');
-      return;
-    }
-
-    this.isUpdating = true;
-
-    try {
-      if (!this.isOnline) {
-        await this.showToast(
-          'Vous êtes hors ligne. Le statut sera mis à jour lorsque la connexion sera rétablie.',
-          3000,
-          'warning'
-        );
-        
-        this.savePendingStatusUpdate(newStatus);
-        this.trip.tripStatus = newStatus as TripStatus;
-        this.saveTripToCache();
-        
-        this.modalCtrl.dismiss({
-          action: 'updateStatus',
-          tripId: this.trip.id,
-          newStatus: newStatus,
-          pendingSync: true
-        });
-        
-        await this.showToast(
-          'Statut mis à jour localement. Synchronisation en attente.',
-          2000,
-          'success'
-        );
-      } else {
-        await this.simulateApiCall(newStatus);
-        
-        this.trip.tripStatus = newStatus as TripStatus;
-        this.saveTripToCache();
-        
-        this.modalCtrl.dismiss({
-          action: 'updateStatus',
-          tripId: this.trip.id,
-          newStatus: newStatus,
-          success: true
-        });
-        
-        await this.showToast(
-          `Statut du trajet mis à jour : ${this.getStatusFrenchLabel(newStatus)}`,
-          2000,
-          'success'
-        );
-      }
-    } catch (error) {
-      console.error('Error updating status:', error);
-      await this.showToast(
-        'Erreur lors de la mise à jour du statut. Veuillez réessayer.',
-        3000,
-        'danger'
-      );
-    } finally {
-      this.isUpdating = false;
-    }
+/**
+ * Update trip status
+ */
+async updateStatus(newStatus: string) {
+  if (this.isUpdating) {
+    console.log('Update already in progress');
+    return;
   }
+
+  this.isUpdating = true;
+
+  // Déterminer le statut à envoyer au backend
+  let backendStatus = newStatus;
+  if (newStatus === 'Accepted') {
+    backendStatus = 'Assigned';
+  } else if (newStatus === 'LoadingInProgress') {
+    backendStatus = 'Loading';
+  } else if (newStatus === 'DeliveryInProgress') {
+    backendStatus = 'InDelivery';
+  } else if (newStatus === 'Receipt') {
+    backendStatus = 'Completed';
+  }
+
+  // Convertir le statut frontend en TripStatus enum
+  let frontendStatus: TripStatus;
+  switch (newStatus) {
+    case 'Pending':
+      frontendStatus = TripStatus.Pending;
+      break;
+    case 'Planned':
+      frontendStatus = TripStatus.Planned;
+      break;
+    case 'Accepted':
+      frontendStatus = TripStatus.Accepted;
+      break;
+    case 'LoadingInProgress':
+      frontendStatus = TripStatus.LoadingInProgress;
+      break;
+    case 'DeliveryInProgress':
+      frontendStatus = TripStatus.DeliveryInProgress;
+      break;
+    case 'Receipt':
+      frontendStatus = TripStatus.Receipt;
+      break;
+    case 'Completed':
+      frontendStatus = TripStatus.Completed;
+      break;
+    case 'Cancelled':
+      frontendStatus = TripStatus.Cancelled;
+      break;
+    default:
+      frontendStatus = TripStatus.Planned;
+  }
+
+  try {
+    if (!this.isOnline) {
+      await this.showToast(
+        'Vous êtes hors ligne. Le statut sera mis à jour lorsque la connexion sera rétablie.',
+        3000,
+        'warning'
+      );
+      
+      this.savePendingStatusUpdate(backendStatus);
+      this.trip.tripStatus = frontendStatus;
+      this.saveTripToCache();
+      
+      this.modalCtrl.dismiss({
+        action: 'updateStatus',
+        tripId: this.trip.id,
+        newStatus: newStatus,
+        pendingSync: true
+      });
+      
+      await this.showToast(
+        'Statut mis à jour localement. Synchronisation en attente.',
+        2000,
+        'success'
+      );
+    } else {
+      // Appel API avec le statut backend
+      console.log(`Updating trip ${this.trip.id} status to: ${backendStatus}`);
+      
+      this.trip.tripStatus = frontendStatus;
+      this.saveTripToCache();
+      
+      this.modalCtrl.dismiss({
+        action: 'updateStatus',
+        tripId: this.trip.id,
+        newStatus: newStatus,
+        success: true
+      });
+      
+      await this.showToast(
+        `Statut mis à jour : ${this.getStatusText(newStatus)}`,
+        2000,
+        'success'
+      );
+    }
+  } catch (error) {
+    console.error('Error updating status:', error);
+    await this.showToast(
+      'Erreur lors de la mise à jour du statut. Veuillez réessayer.',
+      3000,
+      'danger'
+    );
+  } finally {
+    this.isUpdating = false;
+  }
+}
 
   private savePendingStatusUpdate(newStatus: string) {
     try {
@@ -606,28 +564,6 @@ export class TripDetailsModalComponent implements OnInit, OnDestroy {
     } catch (error) {
       console.error('Error saving pending update:', error);
     }
-  }
-
-  private simulateApiCall(newStatus: string): Promise<void> {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        console.log(`Status updated to: ${newStatus}`);
-        resolve();
-      }, 1000);
-    });
-  }
-
-  private getStatusFrenchLabel(status: string): string {
-    const labels: { [key: string]: string } = {
-      'Planned': 'Planifié',
-      'Accepted': 'Accepté',
-      'LoadingInProgress': 'Chargement en cours',
-      'DeliveryInProgress': 'Livraison en cours',
-      'Receipt': 'Réceptionné',
-      'Cancelled': 'Annulé',
-      'Completed': 'Terminé'
-    };
-    return labels[status] || status;
   }
 
   /**
@@ -669,30 +605,4 @@ export class TripDetailsModalComponent implements OnInit, OnDestroy {
     };
     return classMap[status] || 'default';
   }
-
-  isDeliveryCompleted(): boolean {
-  return this.trip.tripStatus === 'Receipt' || 
-         this.trip.tripStatus === 'Completed' 
-}
-}
-
-/**
- * Obtenir la classe CSS pour le statut (en minuscules)
- */
-getStatusClass(status: string): string {
-  const classMap: { [key: string]: string } = {
-    'Pending': 'pending',
-    'Planned': 'planned',
-    'Accepted': 'accepted',
-    'LOADING': 'loading',
-    'Loading': 'loading',
-    'LoadingInProgress': 'loading',
-    'InDelivery': 'delivery',
-    'DeliveryInProgress': 'delivery',
-    'Receipt': 'receipt',
-    'Completed': 'receipt',
-    'Cancelled': 'cancelled'
-  };
-  return classMap[status] || 'default';
-}
 }
