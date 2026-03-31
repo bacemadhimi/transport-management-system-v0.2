@@ -36,11 +36,20 @@ export class GpsService {
 
   private async initStorage() {
     try {
+<<<<<<< HEAD
       this.storage = await Storage.create({
         name: 'gps_offline_db'
       });
     } catch (error) {
       console.error('Error initializing storage:', error);
+=======
+      // ✅ Correction - créer l'instance d'abord, puis appeler create()
+      const storage = new Storage();
+      this.storage = await storage.create();
+      console.log('✅ Storage initialized');
+    } catch (error) {
+      console.error('❌ Error initializing storage:', error);
+>>>>>>> dev
     }
   }
 
@@ -180,9 +189,15 @@ export class GpsService {
       positions.forEach(p => p.isSynchronized = true);
       await this.storage.set('offline_positions', positions);
 
+<<<<<<< HEAD
       console.log(`Synced ${unsyncedPositions.length} positions`);
     } catch (error) {
       console.error('Error syncing offline positions:', error);
+=======
+      console.log(`✅ Synced ${unsyncedPositions.length} positions`);
+    } catch (error) {
+      console.error('❌ Error syncing offline positions:', error);
+>>>>>>> dev
     }
   }
 
@@ -195,4 +210,8 @@ export class GpsService {
     if (!this.storage) return;
     await this.storage.remove('offline_positions');
   }
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> dev

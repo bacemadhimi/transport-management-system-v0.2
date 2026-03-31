@@ -69,7 +69,11 @@ public class GeocodingController : ControllerBase
             Longitude = dto.Longitude,
             IsValidated = true,
             IsActive = dto.IsActive ?? true,
+<<<<<<< HEAD
             ZoneId = dto.ZoneId.Value,
+=======
+            //ZoneId = dto.ZoneId.Value,
+>>>>>>> dev
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
         };

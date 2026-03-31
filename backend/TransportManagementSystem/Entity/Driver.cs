@@ -1,10 +1,13 @@
+<<<<<<< HEAD
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+=======
+﻿namespace TransportManagementSystem.Entity;
+>>>>>>> dev
 
-namespace TransportManagementSystem.Entity;
-
-public class Driver
+public class Driver : Employee
 {
+<<<<<<< HEAD
     [Key]
     public int Id { get; set; }
     [Required]
@@ -23,14 +26,15 @@ public class Driver
     public int? user_id { get; set; }
     public virtual User? User { get; set; }
 
+=======
+    public Driver()
+    {
+        EmployeeCategory = "DRIVER";
+    }
+    public string? Status { get; set; }
+    public int? IdCamion { get; set; }
+>>>>>>> dev
     public virtual ICollection<DriverAvailability>? Availabilities { get; set; }
-    public DateTime? UpdatedAt { get; set; }
-    public bool IsEnable { get; set; } = true;
-
-    public int? ZoneId { get; set; }
-    public Zone? Zone { get; set; }
-
-    public int? CityId { get; set; }
-    public City? City { get; set; }
     public string? ImageBase64 { get; set; }
+    public virtual ICollection<DriverGeographicalEntity> DriverGeographicalEntities { get; set; } = new List<DriverGeographicalEntity>();
 }

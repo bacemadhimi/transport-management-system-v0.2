@@ -1,11 +1,12 @@
-import { ITypeTruck } from "./type-truck";
+﻿import { ITypeTruck } from "./type-truck";
+import { IGeographicalEntity } from "./general-settings";
 
 export interface ITruck {
   id: number;
   immatriculation: string;
   brand: string;
-  currentLoad?: number; // Charge actuelle
-  loadType?: 'palettes' | 'cartons' | 'poid'; // Type de chargement
+  currentLoad?: number;
+  loadType?: 'palettes' | 'cartons' | 'poid';
   technicalVisitDate: string | null;
   dateOfFirstRegistration: string | null;
   emptyWeight: number;
@@ -16,20 +17,52 @@ export interface ITruck {
   disabled?: boolean;
   tooltip?: string;
   availabilityMessage?: string;
-  zoneId?: number;
+truckGeographicalEntities?: Array<{
+    id?: number;
+    truckId?: number;
+    geographicalEntityId: number;
+    geographicalEntity?: any;
+  }>;
+  geographicalEntityIds?: number[];
+  geographicalEntities?: IGeographicalEntity[];
   typeTruckId: number;
   typeTruck?: ITypeTruck;
-  marqueTruckId: number; 
+  marqueTruckId: number;
+  zoneId?: number;
+  driverId?: number | null;
 }
+
+
+export interface ITruckGeographicalEntity {
+  id?: number;
+  truckId: number;
+  geographicalEntityId: number;
+  geographicalEntity?: IGeographicalEntity;
+}
+
+
+export interface ITruckWithGeographicalEntities extends ITruck {
+  geographicalEntitiesDetails?: {
+    id: number;
+    name: string;
+    levelName: string;
+    levelNumber: number;
+    latitude?: number;
+    longitude?: number;
+  }[];
+}
+
+
 
 export interface IZone {
   id: number;
   name: string;
   latitude: number;
   longitude: number;
-  radius?: number; // Rayon en km
+  radius?: number;
   truckCount?: number;
 }
+
 
 export const STATUS_CONFIG: { [key: string]: { color: string; label: string; icon: string } } = {
   'available': { color: '#1cc88a', label: 'Disponible', icon: 'fa-check-circle' },
@@ -38,7 +71,8 @@ export const STATUS_CONFIG: { [key: string]: { color: string; label: string; ico
   'out_of_service': { color: '#e74a3b', label: 'Hors service', icon: 'fa-exclamation-circle' }
 };
 
-// ========== 24 ZONES DE TUNISIE ==========
+
+
 export const TUNISIA_ZONES: IZone[] = [
   { id: 1, name: 'Tunis', latitude: 36.8065, longitude: 10.1815 },
   { id: 2, name: 'Ariana', latitude: 36.8665, longitude: 10.1647 },
@@ -65,7 +99,9 @@ export const TUNISIA_ZONES: IZone[] = [
   { id: 23, name: 'Le Kef', latitude: 36.1741, longitude: 8.7049 },
   { id: 24, name: 'Siliana', latitude: 36.0849, longitude: 9.3707 }
 ];
-// Groupes de zones par région
+
+
+
 export const ZONES_BY_REGION = {
   'Nord-Est': ['Tunis', 'Ariana', 'Ben Arous', 'Manouba', 'Bizerte', 'Nabeul'],
   'Nord-Ouest': ['Béja', 'Jendouba', 'Kef', 'Siliana', 'Zaghouan'],
@@ -73,7 +109,10 @@ export const ZONES_BY_REGION = {
   'Centre-Ouest': ['Kairouan', 'Kasserine', 'Sidi Bouzid', 'Gafsa'],
   'Sud': ['Medenine', 'Tataouine', 'Kebili', 'Tozeur']
 };
+
+
+
 export interface ITruckWithZone extends ITruck {
-  zoneName?: string;  // Pour l'affichage après jointure
+  zoneName?: string;
   zoneCoordinates?: { lat: number; lng: number };
 }

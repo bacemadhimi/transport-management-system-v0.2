@@ -1,4 +1,4 @@
-// src/app/app.ts
+﻿
 import { Component, inject, signal, OnInit, OnDestroy } from '@angular/core';
 import { RouterLink, RouterOutlet } from '@angular/router';
 import { MatToolbarModule } from '@angular/material/toolbar';
@@ -18,6 +18,8 @@ import { MatMenuModule } from '@angular/material/menu';
 import { Subscription } from 'rxjs';
 import { Translation } from './services/Translation';
 import { environment } from '../environments/environment';
+import { IGeneralSettings } from './types/general-settings';
+import { LogoService } from './services/logo.service';
 
 @Component({
   selector: 'app-root',
@@ -59,7 +61,7 @@ export class App implements OnInit, OnDestroy {
   currentLanguage = 'fr';
   maintenanceOpen = false;
   userMenuOpen = false;
-
+  companyLogo: string | null = null;
   cancelledTrips: any[] = [];
   cancelledTripsCount = 0;
   notifications: TripNotification[] = [];
@@ -67,10 +69,10 @@ export class App implements OnInit, OnDestroy {
   showNotificationsPanel = false;
   refreshNotificationInterval: any;
 
-  // Property for tab selection
+
   selectedNotificationTab: 'all' | 'unread' = 'all';
-  
-  // Optional: Show online dot
+
+  private logoService = inject(LogoService);
   showOnlineDot = true;
 
   private notificationsSubscription!: Subscription;
@@ -82,9 +84,12 @@ export class App implements OnInit, OnDestroy {
   ) {
     this.themes = this.themeService.getThemes();
     this.currentTheme = this.themeService.getCurrentTheme();
+    this.logoService.logo$.subscribe(logo => {
+      this.companyLogo = logo;
+    });
   }
 
-  // Computed property for filtered notifications
+
   get filteredNotifications() {
     if (this.selectedNotificationTab === 'unread') {
       return this.notifications.filter(n => !n.isRead);
@@ -101,20 +106,39 @@ ngOnInit() {
   if (this.authService.isLoggedIn) {
     this.authService.loadLoggedInUser();
     this.initializeSignalR();
-    
-    // Load first page of notifications
+
+    this.loadCompanyLogo(); 
     this.loadNotificationsFromDatabase(0, this.pageSize);
   }
-  
+
   this.loadCancelledTrips();
-  
-  // Set up interval for backup polling
+
+
   this.refreshNotificationInterval = setInterval(() => {
     if (!this.signalRService['connectionStatusSubject'].value) {
       this.loadCancelledTrips();
-      this.refreshNotifications(); // Use refresh instead of direct load
+      this.refreshNotifications();
     }
   }, 30000);
+}
+loadCompanyLogo() {
+  this.httpService.getAllSettingsByType('COMPANY').subscribe({
+    next: (settings: IGeneralSettings[]) => {
+      const companyRecord = settings.find(s => 
+        s.parameterCode === 'COMPANY_LOGO'
+      );
+      
+      if (companyRecord?.logoBase64) {
+        this.companyLogo = companyRecord.logoBase64;
+      } else {
+        this.companyLogo = null;
+      }
+    },
+    error: (error) => {
+      console.error('Error loading company logo:', error);
+      this.companyLogo = null;
+    }
+  });
 }
 loadNotificationsFromDatabase(pageIndex: number = 0, pageSize: number = 20) {
   // Get token from localStorage
@@ -128,15 +152,22 @@ loadNotificationsFromDatabase(pageIndex: number = 0, pageSize: number = 20) {
   
   this.http.get(`${environment.apiUrl}/api/notifications?pageIndex=${pageIndex}&pageSize=${pageSize}`, { headers }).subscribe({
     next: (response: any) => {
+<<<<<<< HEAD
       if (response?.success && response?.data) {
         // Get ALL notifications from database and map them
         const allDbNotifications = (response.data.notifications || []).map((n: any) => ({
+=======
+      if (response.success) {
+
+        const allDbNotifications = (response.data.notifications as any[]).map((n: any) => ({
+>>>>>>> dev
           ...n,
-          // Convert isRead from number (0/1) to boolean
+
           isRead: n.isRead === true || n.isRead === 1 || n.isRead === 'true',
           timestamp: new Date(n.timestamp)
         })) as TripNotification[];
 
+<<<<<<< HEAD
         // Store all for reference
         this.allNotifications = allDbNotifications;
 
@@ -151,11 +182,27 @@ loadNotificationsFromDatabase(pageIndex: number = 0, pageSize: number = 20) {
           this.notifications = relevantNotifications;
         } else {
           // Subsequent pages - append (check duplicates)
+=======
+
+        this.allNotifications = allDbNotifications;
+
+
+        const cancelledNotifications = allDbNotifications.filter((n: TripNotification) =>
+          n.type === 'TRIP_CANCELLED'
+        );
+
+        if (pageIndex === 0) {
+
+          this.notifications = cancelledNotifications;
+        } else {
+
+>>>>>>> dev
           const existingIds = new Set(this.notifications.map((n: TripNotification) => n.id));
           const uniqueNew = relevantNotifications.filter((n: TripNotification) => !existingIds.has(n.id));
           this.notifications = [...this.notifications, ...uniqueNew];
         }
 
+<<<<<<< HEAD
         // Count ONLY unread relevant notifications
         this.unreadNotificationsCount = this.notifications.filter((n: TripNotification) => !n.isRead).length;
 
@@ -165,6 +212,16 @@ loadNotificationsFromDatabase(pageIndex: number = 0, pageSize: number = 20) {
         console.log('📚 DB Load - Relevant notifications:', this.notifications.length);
         console.log('📚 Unread count:', this.unreadNotificationsCount);
         console.log('📚 Relevant notifications:', relevantNotifications);
+=======
+
+        this.unreadNotificationsCount = this.notifications.filter((n: TripNotification) => !n.isRead).length;
+
+        this.totalNotifications = response.data.totalCount;
+        this.hasMoreNotifications = this.notifications.length < this.totalNotifications;
+
+        console.log('📚 DB Load - Cancelled only:', this.notifications.length);
+        console.log('📚 Unread count:', this.unreadNotificationsCount);
+>>>>>>> dev
       } else {
         console.warn('⚠️ Invalid notification response:', response);
         // Initialize with empty arrays on invalid response
@@ -187,24 +244,29 @@ loadMoreNotifications() {
   this.loadNotificationsFromDatabase(this.currentPage, this.pageSize);
 }
 
-// Reset and reload from beginning
+
 refreshNotifications() {
   this.currentPage = 0;
   this.loadNotificationsFromDatabase(0, this.pageSize);
 }
 initializeSignalR() {
-  // Subscribe to real-time notifications
+
   this.notificationsSubscription = this.signalRService.notifications$.subscribe(
     (realtimeNotifications: TripNotification[]) => {
       console.log('📬 Raw real-time notifications:', realtimeNotifications);
 
+<<<<<<< HEAD
       // Ensure isRead is boolean and timestamp is Date
+=======
+
+>>>>>>> dev
       const processedNotifications = realtimeNotifications.map(n => ({
         ...n,
         isRead: n.isRead === true,
         timestamp: new Date(n.timestamp)
       }));
 
+<<<<<<< HEAD
       // Store ALL real-time notifications for reference
       this.allNotifications = [...this.allNotifications, ...processedNotifications];
 
@@ -234,6 +296,33 @@ initializeSignalR() {
 
       console.log('📋 Current notifications:', this.notifications.length);
       console.log('📋 Unread count:', this.unreadNotificationsCount);
+=======
+
+      this.allNotifications = [...this.allNotifications, ...processedNotifications];
+
+
+      const newCancelled = processedNotifications.filter((n: TripNotification) =>
+        n.type === 'TRIP_CANCELLED'
+      );
+
+
+      if (newCancelled.length > 0) {
+
+        const existingIds = new Set(this.notifications.map((n: TripNotification) => n.id));
+        const uniqueNewCancelled = newCancelled.filter((n: TripNotification) => !existingIds.has(n.id));
+
+
+        this.notifications = [...uniqueNewCancelled, ...this.notifications];
+
+        console.log('✅ Added new cancelled notifications:', uniqueNewCancelled.length);
+      }
+
+
+      this.unreadNotificationsCount = this.notifications.filter((n: TripNotification) => !n.isRead).length;
+
+      console.log('📋 Current cancelled notifications:', this.notifications.length);
+      console.log('📋 Unread cancelled count:', this.unreadNotificationsCount);
+>>>>>>> dev
     }
   );
 }
@@ -271,22 +360,22 @@ initializeSignalR() {
       alert('Aucun voyage annulé');
       return;
     }
-    
-    // Show notifications panel instead of alert
+
+
     this.showNotificationsPanel = true;
   }
 
   viewTripDetails(tripId?: number) {
     if (tripId) {
-      // Navigate to trip details
-      // this.router.navigate(['/trips', tripId]);
+
+
       this.showNotificationsPanel = false;
     }
   }
 
 async markAllNotificationsAsRead() {
   await this.signalRService.markAllAsRead();
-  // Update local state
+
   this.notifications = this.notifications.map(n => ({ ...n, isRead: true }));
   this.unreadNotificationsCount = 0;
   console.log('✅ All cancelled notifications marked as read');
@@ -299,11 +388,11 @@ clearAllNotifications() {
   this.signalRService.clearNotifications();
 }
 
-  // Mark a single notification as read
+
 async markNotificationAsRead(notification: TripNotification) {
   if (!notification.isRead) {
     await this.signalRService.markAsRead(notification.id);
-    // Update local state
+
     notification.isRead = true;
     this.unreadNotificationsCount = this.notifications.filter((n: TripNotification) => !n.isRead).length;
   }
@@ -341,7 +430,7 @@ async markNotificationAsRead(notification: TripNotification) {
     }
   }
 
-  // Method to get time ago string (Facebook style)
+
   getTimeAgo(timestamp: Date): string {
     const now = new Date();
     const diffMs = now.getTime() - new Date(timestamp).getTime();
@@ -354,15 +443,15 @@ async markNotificationAsRead(notification: TripNotification) {
     if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
     if (diffDays === 1) return 'Yesterday';
     if (diffDays < 7) return `${diffDays} days ago`;
-    
+
     return new Date(timestamp).toLocaleDateString();
   }
 
-  // View all notifications
+
   viewAllNotifications() {
-    // Navigate to notifications page or expand panel
+
     console.log('View all notifications');
-    // You can implement navigation to a full notifications page
+
   }
 
   onFooterButtonMouseEnter(event: MouseEvent) {
@@ -379,22 +468,22 @@ async markNotificationAsRead(notification: TripNotification) {
     if (this.refreshNotificationInterval) {
       clearInterval(this.refreshNotificationInterval);
     }
-    
-    // Unsubscribe from SignalR observables
+
+
     this.notificationsSubscription?.unsubscribe();
     this.cancelledTripsSubscription?.unsubscribe();
     this.connectionStatusSubscription?.unsubscribe();
-    
-    // Disconnect SignalR
+
+
     this.signalRService.disconnect();
   }
 
   toggleMaintenance() { this.maintenanceOpen = !this.maintenanceOpen; }
   toggleUserMenu() { this.userMenuOpen = !this.userMenuOpen; }
-  
-  logout() { 
+
+  logout() {
     this.signalRService.disconnect();
-    this.authService.logout(); 
+    this.authService.logout();
   }
 
   changeLanguage(lang: string) {

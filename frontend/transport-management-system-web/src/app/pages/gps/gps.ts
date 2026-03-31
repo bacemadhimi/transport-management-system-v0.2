@@ -63,6 +63,7 @@ export class GpsPage implements OnInit, OnDestroy, AfterViewInit {
 
     this.signalR.connectionStatus$.subscribe(connected => {
       this.isRealTimeConnected = connected;
+<<<<<<< HEAD
       console.log('📡 SignalR connection state:', connected);
       
       // Refresh trips when connection is established
@@ -74,14 +75,32 @@ export class GpsPage implements OnInit, OnDestroy, AfterViewInit {
     });
 
     // Refresh data every 10 seconds
+=======
+      console.log('SignalR connection state:', connected);
+    });
+
+>>>>>>> dev
     this.refreshInterval = setInterval(() => {
       this.refreshData();
     }, 10000);
   }
 
   connectToSignalR() {
+<<<<<<< HEAD
     console.log('🔌 Connecting to SignalR for real-time GPS tracking...');
     
+=======
+    // Wait for connection to be established
+    setTimeout(() => {
+      // Request active trips
+      this.signalR.requestActiveTrips().then(() => {
+        console.log('✅ Requested active trips from SignalR');
+      }).catch(err => {
+        console.error('❌ Error requesting active trips:', err);
+      });
+    }, 1000);
+
+>>>>>>> dev
     // Listen for GPS positions
     this.signalR.onGPSPosition((position: any) => {
       console.log('📍 GPS Position received:', position);
@@ -96,7 +115,11 @@ export class GpsPage implements OnInit, OnDestroy, AfterViewInit {
 
     // Listen for active trips
     this.signalR.onActiveTrips((trips: any[]) => {
+<<<<<<< HEAD
       console.log('🚛 Active trips received via SignalR:', trips.length);
+=======
+      console.log('🚛 Active trips received:', trips.length);
+>>>>>>> dev
       // Update trips with real-time data
       trips.forEach(trip => {
         const existingTrip = this.trips.find(t => t.id === trip.id);
@@ -111,6 +134,7 @@ export class GpsPage implements OnInit, OnDestroy, AfterViewInit {
   }
 
   ngAfterViewInit() {
+<<<<<<< HEAD
     console.log('🗺️ ngAfterViewInit called - waiting for view to be ready...');
     
     // Wait for view to be fully rendered and map container to have dimensions
@@ -142,6 +166,13 @@ export class GpsPage implements OnInit, OnDestroy, AfterViewInit {
       setTimeout(() => this.initMap(), 500);
       return;
     }
+=======
+    setTimeout(() => this.initMap(), 500);
+  }
+
+  initMap() {
+    if (this.map) return;
+>>>>>>> dev
 
     // Configure Leaflet icons to fix default marker icon issues
     this.configureLeafletIcons();
@@ -163,12 +194,19 @@ export class GpsPage implements OnInit, OnDestroy, AfterViewInit {
     setTimeout(() => {
       if (this.map) {
         this.map.invalidateSize();
+<<<<<<< HEAD
         console.log('✅ Map size invalidated');
       }
     }, 300);
 
     // Load initial data
     console.log('✅ Map initialized successfully');
+=======
+      }
+    }, 300);
+
+    console.log('Map initialized');
+>>>>>>> dev
     this.refreshData();
   }
 
@@ -186,16 +224,23 @@ export class GpsPage implements OnInit, OnDestroy, AfterViewInit {
   }
 
   handleRealTimePosition(position: any) {
+<<<<<<< HEAD
     console.log('📍 Real-time position received:', position);
     
     // Add or update position - match by driverId OR truckId OR by trip ID (which mobile sends as driverId/truckId)
     const exists = this.positions.find(p =>
       p.driverId === position.driverId ||
+=======
+    // Add or update position - match by driverId OR truckId OR by trip ID (which mobile sends as driverId/truckId)
+    const exists = this.positions.find(p => 
+      p.driverId === position.driverId || 
+>>>>>>> dev
       p.truckId === position.truckId ||
       p.driverId === position.truckId
     );
     if (!exists) {
       this.positions.push(position);
+<<<<<<< HEAD
       console.log('✅ New real-time position added:', position);
     } else {
       const index = this.positions.findIndex(p =>
@@ -220,10 +265,30 @@ export class GpsPage implements OnInit, OnDestroy, AfterViewInit {
     this.loadTrips();
     this.loadLatestPositions();
     // updateTripMarkersOnMap will be called automatically when trips are loaded
+=======
+      console.log('New real-time position added:', position);
+    } else {
+      const index = this.positions.findIndex(p => 
+        p.driverId === position.driverId || 
+        p.truckId === position.truckId ||
+        p.driverId === position.truckId
+      );
+      if (index >= 0) this.positions[index] = position;
+      console.log('Real-time position updated:', position);
+    }
+    if (this.map) this.updateTripMarkersOnMap();
+  }
+
+  refreshData() {
+    this.loadTrips();
+    this.loadLatestPositions();
+    if (this.map) this.updateTripMarkersOnMap();
+>>>>>>> dev
   }
 
   updateTripMarkersOnMap() {
     if (!this.map) {
+<<<<<<< HEAD
       console.error('❌ Map not initialized! Waiting...');
       // Retry after 500ms if map is not ready
       setTimeout(() => {
@@ -233,6 +298,9 @@ export class GpsPage implements OnInit, OnDestroy, AfterViewInit {
           console.error('❌ Map still not initialized after retry');
         }
       }, 500);
+=======
+      console.error('❌ Map not initialized!');
+>>>>>>> dev
       return;
     }
 
@@ -248,6 +316,7 @@ export class GpsPage implements OnInit, OnDestroy, AfterViewInit {
     // Filter ONLY trips currently in delivery (real-time tracking on map)
     const activeTrips = this.trips.filter(t =>
       t.tripStatus === 'DeliveryInProgress' ||
+<<<<<<< HEAD
       t.tripStatus === 'LoadingInProgress' ||
       t.tripStatus === 'Accepted'
     );
@@ -258,6 +327,15 @@ export class GpsPage implements OnInit, OnDestroy, AfterViewInit {
     if (activeTrips.length === 0) {
       console.log('⚠️ No active trips to display on map');
       console.log('💡 Available trips:', this.trips.map(t => `${t.tripReference} - ${t.tripStatus}`));
+=======
+      t.tripStatus === 'LoadingInProgress'
+    );
+
+    console.log('🚛 Active trips on map:', activeTrips.length);
+
+    if (activeTrips.length === 0) {
+      console.log('⚠️ No active trips to display on map');
+>>>>>>> dev
       return;
     }
 
@@ -426,14 +504,20 @@ export class GpsPage implements OnInit, OnDestroy, AfterViewInit {
 
       // Add all delivery points
       deliveries.forEach((delivery: any, deliveryIndex: number) => {
+<<<<<<< HEAD
         let deliveryLat: number = 0;
         let deliveryLng: number = 0;
+=======
+        let deliveryLat: number | null = null;
+        let deliveryLng: number | null = null;
+>>>>>>> dev
         const isLast = deliveryIndex === deliveries.length - 1;
 
         console.log(`    Delivery ${deliveryIndex + 1}/${deliveries.length}:`, {
           customer: delivery.customerName,
           geolocation: delivery.geolocation,
           lat: delivery.latitude,
+<<<<<<< HEAD
           lng: delivery.longitude,
           isLast: isLast
         });
@@ -451,28 +535,56 @@ export class GpsPage implements OnInit, OnDestroy, AfterViewInit {
             } else {
               console.log(`      ⚠️ Invalid geolocation coordinates`);
             }
+=======
+          lng: delivery.longitude
+        });
+
+        // Priority 1: geolocation field
+        if (delivery.geolocation) {
+          const parts = delivery.geolocation.split(',');
+          if (parts.length >= 2) {
+            deliveryLat = parseFloat(parts[0].trim());
+            deliveryLng = parseFloat(parts[1].trim());
+            console.log(`      ✅ From geolocation: ${deliveryLat}, ${deliveryLng}`);
+>>>>>>> dev
           }
         }
 
         // Priority 2: latitude/longitude fields
+<<<<<<< HEAD
         if (deliveryLat === 0 && delivery.latitude && delivery.longitude) {
+=======
+        if ((deliveryLat === null || deliveryLng === null) && delivery.latitude && delivery.longitude) {
+>>>>>>> dev
           deliveryLat = delivery.latitude;
           deliveryLng = delivery.longitude;
           console.log(`      ✅ From lat/lng: ${deliveryLat}, ${deliveryLng}`);
         }
 
         // Priority 3: deliveryLatitude/deliveryLongitude
+<<<<<<< HEAD
         if (deliveryLat === 0 && delivery.deliveryLatitude && delivery.deliveryLongitude) {
+=======
+        if ((deliveryLat === null || deliveryLng === null) && delivery.deliveryLatitude && delivery.deliveryLongitude) {
+>>>>>>> dev
           deliveryLat = delivery.deliveryLatitude;
           deliveryLng = delivery.deliveryLongitude;
           console.log(`      ✅ From delivery lat/lng: ${deliveryLat}, ${deliveryLng}`);
         }
 
+<<<<<<< HEAD
         // Fallback: use truck position + offset (for display purposes)
         if (deliveryLat === 0) {
           deliveryLat = truckLat + (deliveryIndex + 1) * 0.05;
           deliveryLng = truckLng + (deliveryIndex + 1) * 0.05;
           console.log(`      ⚠️ Using fallback position: ${deliveryLat}, ${deliveryLng}`);
+=======
+        // Fallback: use truck position + offset
+        if (deliveryLat === null || deliveryLng === null) {
+          deliveryLat = 36.8 + deliveryIndex * 0.08;
+          deliveryLng = 10.0 + deliveryIndex * 0.12;
+          console.log(`      ⚠️ Using fallback: ${deliveryLat}, ${deliveryLng}`);
+>>>>>>> dev
         }
 
         // Create marker
@@ -483,11 +595,19 @@ export class GpsPage implements OnInit, OnDestroy, AfterViewInit {
         });
 
         const deliveryMarker = L.marker([deliveryLat, deliveryLng], { icon: deliveryIcon }).addTo(this.map!);
+<<<<<<< HEAD
 
         if (isLast) {
           deliveryMarker.bindPopup(`
             <div style="min-width:200px;">
               <b>🏁 DESTINATION FINALE - ${trip.tripReference}</b><br>
+=======
+        
+        if (isLast) {
+          deliveryMarker.bindPopup(`
+            <div style="min-width:200px;">
+              <b>🏁 DESTINATION FINALE</b><br>
+>>>>>>> dev
               <b>Client:</b> ${delivery.customerName || 'N/A'}<br>
               <b>Adresse:</b> ${delivery.deliveryAddress || 'Non définie'}<br>
               <small>Coords: ${deliveryLat.toFixed(4)}, ${deliveryLng.toFixed(4)}</small>
@@ -495,6 +615,7 @@ export class GpsPage implements OnInit, OnDestroy, AfterViewInit {
           `);
           console.log(`      🏁 DESTINATION MARKER ADDED at ${deliveryLat}, ${deliveryLng}`);
         } else {
+<<<<<<< HEAD
           deliveryMarker.bindPopup(`
             <div style="min-width:200px;">
               <b>📦 Point ${deliveryIndex + 1} - ${trip.tripReference}</b><br>
@@ -502,6 +623,8 @@ export class GpsPage implements OnInit, OnDestroy, AfterViewInit {
               <b>Adresse:</b> ${delivery.deliveryAddress || 'Non définie'}
             </div>
           `);
+=======
+>>>>>>> dev
           console.log(`      ✅ Delivery marker ${deliveryIndex + 1} added at ${deliveryLat}, ${deliveryLng}`);
         }
 

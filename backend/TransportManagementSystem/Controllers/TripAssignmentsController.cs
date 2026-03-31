@@ -48,7 +48,11 @@ public class TripAssignmentsController : ControllerBase
             if (trip == null)
                 return NotFound(new { message = "Trip non trouvé" });
 
+<<<<<<< HEAD
             var driver = await _context.Drivers.FindAsync(request.DriverId);
+=======
+            var driver = await _context.Set<Driver>().FindAsync(request.DriverId);
+>>>>>>> dev
             if (driver == null)
                 return NotFound(new { message = "Chauffeur non trouvé" });
 
@@ -108,6 +112,7 @@ public class TripAssignmentsController : ControllerBase
 
             _logger.LogInformation($"📨 Sending notification to User ID {userIdForNotification} and group driver-{request.DriverId}");
 
+<<<<<<< HEAD
             // ✅ SAUVEGARDER LA NOTIFICATION EN BASE DE DONNÉES (pour persistance)
             // IMPORTANT: Use DriverId as UserId so driver can retrieve notification when reconnecting
             var notificationEntity = new Notification
@@ -164,6 +169,17 @@ public class TripAssignmentsController : ControllerBase
             // await _gpsHub.Clients.Group($"driver-{request.DriverId}").SendAsync("NewTripAssigned", notification);
 
             // Broadcast to admins only (they need to know)
+=======
+            // Method 1: Send to User ID (SignalR uses JWT User ID)
+            await _gpsHub.Clients.User(userIdForNotification.ToString()).SendAsync("NewTripAssigned", notification);
+            _logger.LogInformation($"✅ Sent to User {userIdForNotification}");
+
+            // Method 2: Send to driver group
+            await _gpsHub.Clients.Group($"driver-{request.DriverId}").SendAsync("NewTripAssigned", notification);
+            _logger.LogInformation($"✅ Sent to group driver-{request.DriverId}");
+
+            // Broadcast à tous les admins
+>>>>>>> dev
             await _gpsHub.Clients.Group("Admins").SendAsync("TripAssigned", new
             {
                 tripId = trip.Id,
@@ -254,15 +270,25 @@ public class TripAssignmentsController : ControllerBase
             {
                 a.Id,
                 a.TripId,
+<<<<<<< HEAD
                 TripReference = a.Trip.TripReference,
+=======
+                TripReference = a.Trip != null ? a.Trip.TripReference : null,
+>>>>>>> dev
                 Status = a.Status.ToString(),
                 a.AssignedAt,
                 a.RespondedAt,
                 a.ExpiresAt,
                 RejectionReason = a.RejectionReason,
+<<<<<<< HEAD
                 TripStatus = a.Trip.TripStatus.ToString(),
                 TruckImmatriculation = a.Trip.Truck.Immatriculation,
                 DeliveriesCount = a.Trip.Deliveries.Count
+=======
+                TripStatus = a.Trip != null ? a.Trip.TripStatus.ToString() : null,
+                TruckImmatriculation = a.Trip != null && a.Trip.Truck != null ? a.Trip.Truck.Immatriculation : null,
+                DeliveriesCount = a.Trip != null ? a.Trip.Deliveries.Count : 0
+>>>>>>> dev
             })
             .ToListAsync();
 
@@ -287,7 +313,11 @@ public class TripAssignmentsController : ControllerBase
                 TripReference = a.Trip != null ? a.Trip.TripReference : null,
                 DriverId = a.DriverId,
                 DriverName = a.Driver != null ? a.Driver.Name : null,
+<<<<<<< HEAD
                 DriverPhone = a.Driver != null ? a.Driver.Phone : null,
+=======
+                DriverPhone = a.Driver != null ? a.Driver.PhoneNumber : null,
+>>>>>>> dev
                 a.AssignedAt,
                 a.ExpiresAt,
                 IsExpired = a.ExpiresAt < DateTime.UtcNow

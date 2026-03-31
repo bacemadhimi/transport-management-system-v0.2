@@ -4,7 +4,12 @@ export interface IAuthToken {
   token: string;
   role: string;
   permissions?: string[];
+<<<<<<< HEAD
   driverId?: number; // Added for driver association
+=======
+  name?:string;
+  profileImage?: string;
+>>>>>>> dev
 }
 
 export interface ILoginRequest {

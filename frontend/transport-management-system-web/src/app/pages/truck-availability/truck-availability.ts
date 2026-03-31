@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, OnDestroy, ChangeDetectorRef } from '@angular/core';
+﻿import { Component, OnInit, inject, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { Http } from '../../services/http';
 import { MatButtonModule } from '@angular/material/button';
 import { FormControl, FormsModule, ReactiveFormsModule } from '@angular/forms';
@@ -23,7 +23,7 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { ITruck } from '../../types/truck';
 import { Auth } from '../../services/auth';
 
-// Fix the interface to properly extend ITruck
+
 interface ITruckAvailability extends ITruck {
   availability: {
     [date: string]: {
@@ -33,7 +33,7 @@ interface ITruckAvailability extends ITruck {
     };
   };
   dayOffs: string[];
-  // Add these as optional if needed from API
+
   name?: string;
   permisNumber?: string;
   phone?: string;
@@ -87,7 +87,7 @@ const FR_DATE_FORMATS = {
   styleUrls: ['./truck-availability.scss']
 })
 export class TruckAvailabilityComponent implements OnInit, OnDestroy {
-  constructor(public auth: Auth) {}  
+  constructor(public auth: Auth) {}
 
   getActions(row: any, actions: string[]) {
     const permittedActions: string[] = [];
@@ -103,20 +103,20 @@ export class TruckAvailabilityComponent implements OnInit, OnDestroy {
 
     return permittedActions;
   }
-  
+
   private destroy$ = new Subject<void>();
-  
+
   httpService = inject(Http);
   private snackBar = inject(MatSnackBar);
   private cdr = inject(ChangeDetectorRef);
-  
+
   pagedTruckData: PagedData<ITruckAvailability> = {
     data: [],
     totalData: 0
   };
-  
+
   totalData!: number;
-  
+
   filter: any = {
     pageIndex: 0,
     pageSize: 10,
@@ -127,7 +127,7 @@ export class TruckAvailabilityComponent implements OnInit, OnDestroy {
   currentWeekStart: Date = new Date();
   weeks: { start: Date; end: Date; label: string }[] = [];
   selectedWeekIndex: number = 0;
-  
+
   daysToShow: number = 7;
   companyDayOffs: string[] = [];
 
@@ -137,7 +137,7 @@ export class TruckAvailabilityComponent implements OnInit, OnDestroy {
   ngOnInit() {
     this.initializeWeeks();
     this.loadCompanyDayOffsWithData();
-    
+
     this.searchControl.valueChanges
       .pipe(debounceTime(250), takeUntil(this.destroy$))
       .subscribe((value: string | null) => {
@@ -208,69 +208,69 @@ export class TruckAvailabilityComponent implements OnInit, OnDestroy {
 
   getCellClasses(truck: ITruckAvailability, dateCol: IDateColumn): string {
     const classes = [];
-    
+
     if (dateCol.isWeekend || dateCol.isDayOffForAll) {
       classes.push('not-clickable');
     } else {
       classes.push('clickable');
     }
-    
+
     const status = this.getAvailabilityStatus(truck, dateCol.date);
     classes.push(`${status}-cell`);
-    
+
     return classes.join(' ');
   }
 
   getAvailabilityStatus(truck: ITruckAvailability, date: Date): string {
     const dateKey = this.formatDateForStorage(date);
-    
-    const dateCol = this.dateColumns.find(col => 
+
+    const dateCol = this.dateColumns.find(col =>
       this.formatDateForStorage(col.date) === dateKey
     );
-    
+
     if (!dateCol) {
       return 'available';
     }
-    
+
     if (dateCol.isWeekend) {
       return 'weekend';
     }
-    
+
     if (dateCol.isDayOffForAll) {
       return 'holiday';
     }
-    
+
     const availability = truck.availability?.[dateKey];
-    
+
     if (availability) {
       if (availability.isDayOff) {
         if (availability.reason?.toLowerCase().includes('weekend')) {
           return 'weekend';
         }
-        if (availability.reason?.toLowerCase().includes('férié') || 
+        if (availability.reason?.toLowerCase().includes('férié') ||
             availability.reason?.toLowerCase().includes('holiday')) {
           return 'holiday';
         }
         return 'dayoff';
       }
-      
+
       if (!availability.isAvailable) {
         return 'unavailable';
       }
-      
+
       return 'available';
     }
-    
+
     return 'available';
   }
 
   getAvailabilityEmoji(truck: ITruckAvailability, dateCol: IDateColumn): string {
     const status = this.getAvailabilityStatus(truck, dateCol.date);
-    
+
     switch (status) {
-      case 'available': 
+      case 'available':
         return '✅';
-      case 'unavailable': 
+      case 'unavailable':
         return '❌';
       case 'weekend':
         return '🌴';
@@ -278,7 +278,7 @@ export class TruckAvailabilityComponent implements OnInit, OnDestroy {
         return '🎉';
       case 'dayoff':
         return '🏖️';
-      default: 
+      default:
         return '✅';
     }
   }
@@ -286,57 +286,57 @@ export class TruckAvailabilityComponent implements OnInit, OnDestroy {
   initializeWeeks() {
     const today = new Date();
     this.currentWeekStart = this.getStartOfWeek(today);
-    
-    this.generateWeeks(52); 
-    
+
+    this.generateWeeks(52);
+
     const currentWeekStart = this.getStartOfWeek(today);
-    this.selectedWeekIndex = this.weeks.findIndex(week => 
+    this.selectedWeekIndex = this.weeks.findIndex(week =>
       week.start.getTime() === currentWeekStart.getTime()
     );
-    
+
     if (this.selectedWeekIndex === -1) {
       this.selectedWeekIndex = Math.floor(this.weeks.length / 2);
     }
-    
+
     this.updateDateColumns();
   }
 
   generateWeeks(count: number) {
     this.weeks = [];
     const today = new Date();
-    
+
     for (let i = -count; i <= count; i++) {
       const weekStart = new Date(today);
       weekStart.setDate(today.getDate() + (i * 7));
       const weekStartDate = this.getStartOfWeek(weekStart);
       const weekEndDate = new Date(weekStartDate);
       weekEndDate.setDate(weekStartDate.getDate() + 6);
-      
+
       this.weeks.push({
         start: weekStartDate,
         end: weekEndDate,
         label: this.getWeekLabel(weekStartDate, weekEndDate)
       });
     }
-    
+
     this.selectedWeekIndex = count;
   }
 
   updateDateColumns() {
     const startDate = this.weeks[this.selectedWeekIndex]?.start || new Date();
     this.dateColumns = [];
-    
+
     for (let i = 0; i < this.daysToShow; i++) {
       const date = new Date(startDate);
       date.setDate(startDate.getDate() + i);
       date.setHours(0, 0, 0, 0);
-      
+
       const label = this.formatDateLabel(date);
       const dayOfWeek = this.getFrenchDayOfWeekShort(date);
       const fullDayName = this.getFrenchDayOfWeekFull(date);
       const isWeekend = date.getDay() === 0 || date.getDay() === 6;
       const isDayOffForAll = this.isCompanyDayOff(date);
-      
+
       this.dateColumns.push({
         date: new Date(date),
         label: label,
@@ -346,14 +346,14 @@ export class TruckAvailabilityComponent implements OnInit, OnDestroy {
         isDayOffForAll: isDayOffForAll
       });
     }
-    
+
     this.cdr.detectChanges();
   }
 
   getLatestData() {
     const startDate = this.weeks[this.selectedWeekIndex]?.start || new Date();
     const endDate = this.weeks[this.selectedWeekIndex]?.end || new Date();
-    
+
     const params = {
       PageIndex: this.filter.pageIndex,
       PageSize: this.filter.pageSize,
@@ -366,7 +366,7 @@ export class TruckAvailabilityComponent implements OnInit, OnDestroy {
       (response: any) => {
         let trucksData = [];
         let totalCount = 0;
-        
+
         if (response && Array.isArray(response)) {
           trucksData = response;
           totalCount = response.length;
@@ -377,7 +377,7 @@ export class TruckAvailabilityComponent implements OnInit, OnDestroy {
           trucksData = response.trucks;
           totalCount = response.totalTrucks || 0;
         }
-        
+
         if (trucksData.length > 0) {
           this.processAvailabilityData(trucksData);
           this.pagedTruckData.totalData = totalCount;
@@ -388,7 +388,7 @@ export class TruckAvailabilityComponent implements OnInit, OnDestroy {
             totalData: 0
           };
         }
-        
+
         this.cdr.detectChanges();
       },
       (error) => {
@@ -408,7 +408,7 @@ processAvailabilityData(data: any[]) {
   const processedData: ITruckAvailability[] = data.map((truckData: any) => {
     const availability: { [date: string]: { isAvailable: boolean; isDayOff: boolean; reason?: string } } = {};
 
-    // Fill API availability first
+
     if (truckData.availability && typeof truckData.availability === 'object') {
       Object.keys(truckData.availability).forEach(dateKey => {
         const availData = truckData.availability[dateKey] || {};
@@ -443,9 +443,9 @@ processAvailabilityData(data: any[]) {
     return {
       id: truckData.truckId || truckData.id || 0,
       immatriculation: truckData.immatriculation || 'N/A',
-      // Fix: Use marqueTruckId instead of brand
+
       marqueTruckId: truckData.marqueTruckId || 0,
-      // Add a computed property for display if needed
+
       brand: truckData.marqueName || truckData.brand || 'N/A',
       capacity: truckData.capacity || 0,
       capacityUnit: truckData['capacityUnit'] || 'kg',
@@ -457,8 +457,8 @@ processAvailabilityData(data: any[]) {
       status: truckData.status || 'Disponible',
       zoneId: truckData.zoneId || 0,
       typeTruckId: truckData.typeTruckId || 0,
-      
-      // Optional API-specific fields
+
+
       name: truckData.TruckName || truckData.name || 'N/A',
       permisNumber: truckData.permisNumber || '',
       phone: truckData.phone || '',
@@ -503,18 +503,18 @@ processAvailabilityData(data: any[]) {
 
   generateDefaultAvailability(): { [date: string]: { isAvailable: boolean; isDayOff: boolean; reason?: string } } {
     const availability: { [date: string]: { isAvailable: boolean; isDayOff: boolean; reason?: string } } = {};
-    
+
     this.dateColumns.forEach(dateCol => {
       const dateKey = this.formatDateForStorage(dateCol.date);
       const isDayOff = dateCol.isWeekend || dateCol.isDayOffForAll;
-      
+
       availability[dateKey] = {
         isAvailable: !isDayOff,
         isDayOff: isDayOff || false,
         reason: isDayOff ? (dateCol.isWeekend ? 'Weekend' : 'Jour férié') : ''
       };
     });
-    
+
     return availability;
   }
 
@@ -569,7 +569,7 @@ processAvailabilityData(data: any[]) {
     return `${year}-${month}-${day}`;
   }
 
-  // Week navigation
+
   previousWeek() {
     if (this.selectedWeekIndex > 0) {
       this.selectedWeekIndex--;
@@ -595,26 +595,26 @@ processAvailabilityData(data: any[]) {
   goToToday() {
     const today = new Date();
     const weekStart = this.getStartOfWeek(today);
-    
-    const weekIndex = this.weeks.findIndex(week => 
+
+    const weekIndex = this.weeks.findIndex(week =>
       week.start.getTime() === weekStart.getTime()
     );
-    
+
     if (weekIndex !== -1) {
       this.selectedWeekIndex = weekIndex;
     } else {
       const weekEndDate = new Date(weekStart);
       weekEndDate.setDate(weekStart.getDate() + 6);
-      
+
       this.weeks.push({
         start: weekStart,
         end: weekEndDate,
         label: this.getWeekLabel(weekStart, weekEndDate)
       });
-      
+
       this.selectedWeekIndex = this.weeks.length - 1;
     }
-    
+
     this.updateDateColumns();
     this.getLatestData();
   }
@@ -664,9 +664,9 @@ processAvailabilityData(data: any[]) {
       IsDayOff: false,
       Reason: newAvailability ? '' : 'Indisponibilité'
     };
-    
+
     console.log('Updating truck:', truckId, updateDto);
-    
+
     this.httpService.updateTruckAvailability(truckId, updateDto).subscribe({
       next: () => {
         const status = newAvailability ? 'Disponible' : 'Indisponible';
@@ -701,9 +701,9 @@ processAvailabilityData(data: any[]) {
       this.snackBar.open('Aucune donnée à exporter', 'OK', { duration: 3000 });
       return;
     }
-    
+
     const headers = ['Marque', 'Immatriculation', 'Statut', ...this.dateColumns.map(d => `${d.label} ${d.dayOfWeek}`)];
-    
+
     const csvContent = [
       headers.join(','),
       ...this.pagedTruckData.data.map(truck => [
@@ -736,24 +736,24 @@ processAvailabilityData(data: any[]) {
       this.snackBar.open('Aucune donnée à exporter', 'OK', { duration: 3000 });
       return;
     }
-    
+
     const data = this.pagedTruckData.data.map(truck => {
       const row: any = {
         'Marque': truck.brand,
         'Immatriculation': truck.immatriculation,
         'Statut': truck.status
       };
-      
+
       this.dateColumns.forEach((dateCol, index) => {
         const status = this.getAvailabilityStatus(truck, dateCol.date);
-        row[`${dateCol.label} ${dateCol.dayOfWeek}`] = 
-          status === 'available' ? '✅' : 
-          status === 'unavailable' ? '❌' : 
+        row[`${dateCol.label} ${dateCol.dayOfWeek}`] =
+          status === 'available' ? '✅' :
+          status === 'unavailable' ? '❌' :
           status === 'weekend' ? '🌴' :
           status === 'holiday' ? '🎉' :
           status === 'dayoff' ? '🏖️' : '';
       });
-      
+
       return row;
     });
 
@@ -780,9 +780,9 @@ processAvailabilityData(data: any[]) {
       this.snackBar.open('Aucune donnée à exporter', 'OK', { duration: 3000 });
       return;
     }
-    
+
     const doc = new jsPDF('landscape');
-    
+
     const headers = ['Marque', 'Immatriculation', 'Statut', ...this.dateColumns.map(d => `${d.label} ${d.dayOfWeek}`)];
     const body = this.pagedTruckData.data.map(truck => [
       truck.brand,
@@ -790,8 +790,8 @@ processAvailabilityData(data: any[]) {
       truck.status,
       ...this.dateColumns.map(dateCol => {
         const status = this.getAvailabilityStatus(truck, dateCol.date);
-        return status === 'available' ? '✅' : 
-               status === 'unavailable' ? '❌' : 
+        return status === 'available' ? '✅' :
+               status === 'unavailable' ? '❌' :
                status === 'weekend' ? '🌴' :
                status === 'holiday' ? '🎉' :
                status === 'dayoff' ? '🏖️' : '';

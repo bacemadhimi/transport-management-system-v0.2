@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 // Trip History Page - Modern Professional Styling
 .history-content {
   --background: #f5f7fa;
@@ -90,10 +91,41 @@
         --color-checked: var(--ion-color-primary);
         font-weight: 500;
         text-transform: capitalize;
+=======
+.history-content {
+  --background: #f8fafc;
+
+  .filter-bar {
+    background: white;
+    padding: 16px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+
+    ion-segment {
+      --background: #f1f5f9;
+      --color: #64748b;
+      border-radius: 8px;
+      margin: 0 auto;
+      max-width: 400px;
+
+      ion-segment-button {
+        --color: #64748b;
+        --color-checked: #3b82f6;
+
+        ion-label {
+          font-size: 13px;
+          font-weight: 600;
+        }
+      }
+
+      .segment-button-checked {
+        background: #3b82f6;
+        border-radius: 6px;
+>>>>>>> dev
       }
     }
   }
 
+<<<<<<< HEAD
   .loading-container {
     display: flex;
     flex-direction: column;
@@ -139,6 +171,42 @@
       font-size: 14px;
       margin: 0 0 20px 0;
       max-width: 280px;
+=======
+  ion-list {
+    background: transparent;
+    padding: 16px;
+
+    ion-item {
+      --background: white;
+      --border-radius: 12px;
+      margin-bottom: 12px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+
+      ion-icon {
+        font-size: 28px;
+        margin-right: 12px;
+      }
+
+      h3 {
+        font-size: 16px;
+        font-weight: 600;
+        color: #1e293b;
+        margin-bottom: 4px;
+      }
+
+      p {
+        font-size: 13px;
+        color: #64748b;
+        margin: 0;
+      }
+
+      ion-badge {
+        font-size: 12px;
+        padding: 6px 12px;
+        border-radius: 12px;
+        text-transform: capitalize;
+      }
+>>>>>>> dev
     }
   }
 
@@ -147,6 +215,7 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
+<<<<<<< HEAD
     padding: 60px 20px;
     text-align: center;
 
@@ -340,3 +409,29 @@
     transform: rotate(360deg);
   }
 }
+=======
+    padding: 80px 20px;
+    text-align: center;
+    color: #94a3b8;
+
+    ion-icon {
+      font-size: 80px;
+      margin-bottom: 24px;
+      opacity: 0.5;
+    }
+
+    h3 {
+      font-size: 18px;
+      font-weight: 600;
+      margin: 0 0 8px 0;
+      color: #64748b;
+    }
+
+    p {
+      font-size: 14px;
+      margin: 0;
+      color: #94a3b8;
+    }
+  }
+}
+>>>>>>> dev

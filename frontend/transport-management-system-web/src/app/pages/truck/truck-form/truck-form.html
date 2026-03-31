@@ -7,38 +7,143 @@
 
   <form [formGroup]="truckForm" (ngSubmit)="onSubmit()" class="truck-form-grid">
   
-    <div class="form-row">
-      <div class="form-field-group">
-        <mat-label>{{ t('ZONE_LABEL') || 'Zone' }}</mat-label>
-        <mat-form-field appearance="outline" class="truck-field">
-          <mat-select formControlName="zoneId" [disabled]="isSubmitting || loadingZones" required>
-           
-            <mat-option *ngIf="loadingZones" disabled>
-              <div class="flex items-center">
-                <mat-spinner diameter="20" class="mr-2"></mat-spinner>
-                <span>Chargement des zones...</span>
-              </div>
-            </mat-option>
-            
-          
-            <mat-option *ngIf="!loadingZones && zones.length === 0" disabled>
-              <div class="text-gray-500 italic">
-                Aucune zone active disponible
-              </div>
-            </mat-option>
-            
+    <div class="form-row" style="grid-column: span 2;">
+      <!-- Geographical Entities - Inline Hierarchical Dropdowns -->
+      <div class="form-field-group" style="width: 100%;">
+        <mat-label>{{ t('GEOGRAPHICAL_ENTITIES_LABEL') || 'Localisations' }}</mat-label>
         
-            <mat-option *ngFor="let zone of zones" [value]="zone.id">
-              {{ zone.name }}
-            </mat-option>
-          </mat-select>
-          <mat-error *ngIf="truckForm.get('zoneId')?.invalid && truckForm.get('zoneId')?.touched">
-            {{ getErrorMessage('zoneId') }}
-          </mat-error>
-        </mat-form-field>
-      </div>
+        <div class="hierarchical-selector" *ngIf="!loadingGeographicalEntities; else loadingTemplate">
+          <!-- No entities message -->
+          <div *ngIf="geographicalEntities.length === 0" class="no-entities-message">
+            <mat-icon>info</mat-icon>
+            <p>Aucune localisation active disponible</p>
+            <p class="small">Configurez d'abord des entités géographiques</p>
+          </div>
 
-      
+          <!-- Inline dropdowns container -->
+          <div class="inline-dropdowns">
+            <!-- Level 1 Dropdown -->
+            <div class="dropdown-item" *ngIf="level1Entities.length > 0">
+              <div class="dropdown-label">{{ getLevelName(1) }}</div>
+              <mat-form-field appearance="outline" class="compact-dropdown">
+                <mat-select 
+                  [formControl]="level1Control"
+                  [placeholder]="'Sélectionner'">
+                  <mat-option [value]="null">Aucun</mat-option>
+                  <mat-option *ngFor="let entity of level1Entities" [value]="entity.id">
+                    <span class="entity-name">{{ entity.name }}</span>
+                    <span *ngIf="entity.latitude && entity.longitude" class="coords-hint">
+                      ({{ entity.latitude | number:'1.2-2' }}, {{ entity.longitude | number:'1.2-2' }})
+                    </span>
+                  </mat-option>
+                </mat-select>
+              </mat-form-field>
+            </div>
+
+            <!-- Level 2 Dropdown -->
+            <div class="dropdown-item" *ngIf="level2Entities.length > 0">
+              <div class="dropdown-label">{{ getLevelName(2) }}</div>
+              <mat-form-field appearance="outline" class="compact-dropdown">
+                <mat-select 
+                  [formControl]="level2Control"
+                  [disabled]="!level1Control.value"
+                  [placeholder]="'Sélectionner'">
+                  <mat-option [value]="null">Aucun</mat-option>
+                  <mat-option *ngFor="let entity of level2Entities" [value]="entity.id">
+                    <span class="entity-name">{{ entity.name }}</span>
+                    <span *ngIf="entity.latitude && entity.longitude" class="coords-hint">
+                      ({{ entity.latitude | number:'1.2-2' }}, {{ entity.longitude | number:'1.2-2' }})
+                    </span>
+                  </mat-option>
+                </mat-select>
+              </mat-form-field>
+            </div>
+
+            <!-- Level 3 Dropdown -->
+            <div class="dropdown-item" *ngIf="level3Entities.length > 0">
+              <div class="dropdown-label">{{ getLevelName(3) }}</div>
+              <mat-form-field appearance="outline" class="compact-dropdown">
+                <mat-select 
+                  [formControl]="level3Control"
+                  [disabled]="!level2Control.value"
+                  [placeholder]="'Sélectionner'">
+                  <mat-option [value]="null">Aucun</mat-option>
+                  <mat-option *ngFor="let entity of level3Entities" [value]="entity.id">
+                    <span class="entity-name">{{ entity.name }}</span>
+                    <span *ngIf="entity.latitude && entity.longitude" class="coords-hint">
+                      ({{ entity.latitude | number:'1.2-2' }}, {{ entity.longitude | number:'1.2-2' }})
+                    </span>
+                  </mat-option>
+                </mat-select>
+              </mat-form-field>
+            </div>
+
+            <!-- Level 4 Dropdown -->
+            <div class="dropdown-item" *ngIf="level4Entities.length > 0">
+              <div class="dropdown-label">{{ getLevelName(4) }}</div>
+              <mat-form-field appearance="outline" class="compact-dropdown">
+                <mat-select 
+                  [formControl]="level4Control"
+                  [disabled]="!level3Control.value"
+                  [placeholder]="'Sélectionner'">
+                  <mat-option [value]="null">Aucun</mat-option>
+                  <mat-option *ngFor="let entity of level4Entities" [value]="entity.id">
+                    <span class="entity-name">{{ entity.name }}</span>
+                    <span *ngIf="entity.latitude && entity.longitude" class="coords-hint">
+                      ({{ entity.latitude | number:'1.2-2' }}, {{ entity.longitude | number:'1.2-2' }})
+                    </span>
+                  </mat-option>
+                </mat-select>
+              </mat-form-field>
+            </div>
+
+            <!-- Level 5 Dropdown -->
+            <div class="dropdown-item" *ngIf="level5Entities.length > 0">
+              <div class="dropdown-label">{{ getLevelName(5) }}</div>
+              <mat-form-field appearance="outline" class="compact-dropdown">
+                <mat-select 
+                  [formControl]="level5Control"
+                  [disabled]="!level4Control.value"
+                  [placeholder]="'Sélectionner'">
+                  <mat-option [value]="null">Aucun</mat-option>
+                  <mat-option *ngFor="let entity of level5Entities" [value]="entity.id">
+                    <span class="entity-name">{{ entity.name }}</span>
+                    <span *ngIf="entity.latitude && entity.longitude" class="coords-hint">
+                      ({{ entity.latitude | number:'1.2-2' }}, {{ entity.longitude | number:'1.2-2' }})
+                    </span>
+                  </mat-option>
+                </mat-select>
+              </mat-form-field>
+            </div>
+          </div>
+
+          <!-- Selected Entities Summary -->
+          <div class="selected-summary" *ngIf="selectedEntities.length > 0">
+            <h4>Localisations sélectionnées ({{ selectedEntities.length }})</h4>
+            <div class="selected-chips">
+              <span class="selected-chip" *ngFor="let id of selectedEntities">
+                {{ getEntityName(id) }}
+                <mat-icon (click)="removeEntity(id)">close</mat-icon>
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <ng-template #loadingTemplate>
+          <div class="loading-entities">
+            <mat-spinner diameter="30"></mat-spinner>
+            <span>Chargement des localisations...</span>
+          </div>
+        </ng-template>
+
+        <mat-error *ngIf="truckForm.get('geographicalEntityIds')?.invalid && truckForm.get('geographicalEntityIds')?.touched">
+          {{ getErrorMessage('geographicalEntityIds') }}
+        </mat-error>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <!-- Type de véhicule -->
       <div class="form-field-group">
         <mat-label>{{ t('TYPE_VEHICULE_LABEL') || 'Type de véhicule' }}</mat-label>
         <mat-form-field appearance="outline" class="truck-field">
@@ -51,16 +156,14 @@
               </div>
             </mat-option>
             
-        
             <mat-option *ngIf="!loadingTypeTrucks && typeTrucks.length === 0" disabled>
               <div class="text-gray-500 italic">
                 Aucun type de véhicule disponible
               </div>
             </mat-option>
             
-         
             <mat-option *ngFor="let type of typeTrucks" [value]="type.id">
-              {{ type.type }} ({{ type.capacity }} {{ type.unit }})
+              {{ type.type }} ({{ type.capacity }} {{ loadingUnit }})
             </mat-option>
           </mat-select>
           <mat-error *ngIf="truckForm.get('typeTruckId')?.invalid && truckForm.get('typeTruckId')?.touched">
@@ -68,10 +171,39 @@
           </mat-error>
         </mat-form-field>
       </div>
+
+      <!-- Marque -->
+      <div class="form-field-group">
+        <mat-label>{{ t('MARQUE_VEHICULE') || 'Marque' }}</mat-label>
+        <mat-form-field appearance="outline" class="truck-field">
+          <mat-select formControlName="marqueTruckId" [disabled]="isSubmitting || loadingMarques" required>
+          
+            <mat-option *ngIf="loadingMarques" disabled>
+              <div class="flex items-center">
+                <mat-spinner diameter="20" class="mr-2"></mat-spinner>
+                <span>Chargement des marques...</span>
+              </div>
+            </mat-option>
+            
+            <mat-option *ngIf="!loadingMarques && marques.length === 0" disabled>
+              <div class="text-gray-500 italic">
+                Aucune marque disponible
+              </div>
+            </mat-option>
+            
+            <mat-option *ngFor="let marque of marques" [value]="marque.id">
+              {{ marque.name }}
+            </mat-option>
+          </mat-select>
+          <mat-error *ngIf="truckForm.get('marqueTruckId')?.invalid && truckForm.get('marqueTruckId')?.touched">
+            {{ getErrorMessage('marqueTruckId') }}
+          </mat-error>
+        </mat-form-field>
+      </div>
     </div>
 
-    
     <div class="form-row">
+      <!-- Immatriculation -->
       <div class="form-field-group">
         <mat-label>{{ t('IMMATRICULATION') }}</mat-label>
         <mat-form-field appearance="outline" class="truck-field">
@@ -87,39 +219,20 @@
         </mat-form-field>
       </div>
 
-     
+      <!-- Couleur -->
       <div class="form-field-group">
-        <mat-label>{{ t('MARQUE_VEHICULE') || 'Marque' }}</mat-label>
-        <mat-form-field appearance="outline" class="truck-field">
-          <mat-select formControlName="marqueTruckId" [disabled]="isSubmitting || loadingMarques" required>
-          
-            <mat-option *ngIf="loadingMarques" disabled>
-              <div class="flex items-center">
-                <mat-spinner diameter="20" class="mr-2"></mat-spinner>
-                <span>Chargement des marques...</span>
-              </div>
-            </mat-option>
-            
-          
-            <mat-option *ngIf="!loadingMarques && marques.length === 0" disabled>
-              <div class="text-gray-500 italic">
-                Aucune marque disponible
-              </div>
-            </mat-option>
-            
-          
-            <mat-option *ngFor="let marque of marques" [value]="marque.id">
-              {{ marque.name }}
-            </mat-option>
-          </mat-select>
-          <mat-error *ngIf="truckForm.get('marqueTruckId')?.invalid && truckForm.get('marqueTruckId')?.touched">
-            {{ getErrorMessage('marqueTruckId') }}
+        <mat-label>Couleur</mat-label>
+        <mat-form-field appearance="outline" class="truck-field truck-field--color">
+          <input matInput type="color" formControlName="color" />
+          <mat-error *ngIf="truckForm.get('color')?.hasError('required')">
+            {{ getErrorMessage('color') }}
           </mat-error>
         </mat-form-field>
       </div>
     </div>
   
     <div class="form-row">
+      <!-- Date visite technique -->
       <div class="form-field-group">
         <mat-label>{{ t('TECHNICAL_VISIT_DATE_LABEL') }}</mat-label>
         <mat-form-field appearance="outline" class="truck-field">
@@ -137,9 +250,9 @@
         </mat-form-field>
       </div>
 
-      
+      <!-- Date première immatriculation -->
       <div class="form-field-group">
-        <mat-label>{{ t('DATE_FIRST_REGISTRATION_LABEL') || 'Date de première immatriculation' }}</mat-label>
+        <mat-label>{{ t('FIRST_REGISTRATION_DATE') }}</mat-label>
         <mat-form-field appearance="outline" class="truck-field">
           <input
             matInput
@@ -150,14 +263,14 @@
           <mat-datepicker-toggle matSuffix [for]="pickerFirstReg"></mat-datepicker-toggle>
           <mat-datepicker #pickerFirstReg></mat-datepicker>
           <mat-error *ngIf="truckForm.get('dateOfFirstRegistration')?.hasError('required')">
-            {{ t('DATE_FIRST_REGISTRATION_REQUIRED') || 'Date de première immatriculation requise' }}
+            {{ t('DATE_FIRST_REGISTRATION_REQUIRED') }}
           </mat-error>
         </mat-form-field>
       </div>
     </div>
 
-  
     <div class="form-row">
+      <!-- Poids à vide -->
       <div class="form-field-group">
         <mat-label>{{ t('EMPTY_WEIGHT_LABEL') || 'Poids à vide (kg)' }}</mat-label>
         <mat-form-field appearance="outline" class="truck-field">
@@ -169,7 +282,7 @@
             min="1"
           />
           <mat-error *ngIf="truckForm.get('emptyWeight')?.hasError('required')">
-            {{ t('EMPTY_WEIGHT_REQUIRED') || 'Le poids à vide est requis' }}
+            {{ t('EMPTY_WEIGHT_REQUIRED')}}
           </mat-error>
           <mat-error *ngIf="truckForm.get('emptyWeight')?.hasError('min')">
             Le poids doit être supérieur à 0
@@ -177,20 +290,8 @@
         </mat-form-field>
       </div>
 
-      <div class="form-field-group">
-        <mat-label>Couleur</mat-label>
-        <mat-form-field appearance="outline" class="truck-field truck-field--color">
-          <input matInput type="color" formControlName="color" />
-          <mat-error *ngIf="truckForm.get('color')?.hasError('required')">
-            {{ getErrorMessage('color') }}
-          </mat-error>
-        </mat-form-field>
-      </div>
-    </div>
-
-    
-    <div class="form-row" *ngIf="data.truckId">
-      <div class="form-field-group">
+      <!-- Statut (only for edit mode) -->
+      <div class="form-field-group" *ngIf="data.truckId">
         <mat-label>Statut</mat-label>
         <mat-form-field appearance="outline" class="truck-field">
           <mat-select formControlName="status">
@@ -200,11 +301,45 @@
           </mat-select>
         </mat-form-field>
       </div>
-     
-      <div class="form-field-group"></div>
     </div>
 
-   
+<!-- Champ Chauffeur - inspiré du TripForm -->
+<div class="form-row" *ngIf="linkDriverToTruck">
+  <div class="form-field-group">
+    <mat-label>Chauffeur associé</mat-label>
+    <mat-form-field appearance="outline" class="truck-field">
+      <mat-select formControlName="driverId" [disabled]="loadingDrivers">
+        <mat-option *ngIf="loadingDrivers" disabled>
+          <div class="flex items-center">
+            <mat-spinner diameter="20" class="mr-2"></mat-spinner>
+            <span>Chargement des chauffeurs...</span>
+          </div>
+        </mat-option>
+        
+        <mat-option *ngIf="!loadingDrivers && filteredDrivers.length === 0" disabled>
+          <div class="text-gray-500 italic">
+            Aucun chauffeur disponible
+          </div>
+        </mat-option>
+        
+        <mat-option *ngFor="let driver of filteredDrivers" [value]="driver.id">
+          <div class="driver-option">
+            <span class="driver-name">{{ driver.name }}</span>
+            <span class="driver-license" *ngIf="driver.drivingLicense">
+              ({{ driver.drivingLicense }})
+            </span>
+            <span class="driver-phone" *ngIf="driver.phoneNumber">
+              - {{ driver.phoneNumber }}
+            </span>
+          </div>
+        </mat-option>
+      </mat-select>
+      <mat-hint>Chauffeur assigné à ce camion</mat-hint>
+    </mat-form-field>
+  </div>
+</div>
+
+    <!-- Photos -->
     <div class="truck-photo-input">
       <mat-label style="display: block; margin-bottom: 8px; text-align: center;">
         {{ t('TRUCK_PHOTO_LABEL') }} ({{ images.length }}/{{ maxImages }})
@@ -219,7 +354,7 @@
           [matTooltip]="canAddMorePhotos ? 'Ajouter des photos' : 'Limite maximale atteinte'"
         >
           <mat-icon>add_photo_alternate</mat-icon>
-          Ajouter des photos
+             {{ t('PHOTO_TRUCKv')}}
         </button>
         
         <button 
@@ -231,7 +366,7 @@
           matTooltip="Supprimer toutes les photos"
         >
           <mat-icon>delete_sweep</mat-icon>
-          Tout supprimer
+            {{ t('DELETE_PHOTO') }}
         </button>
       </div>
 
@@ -248,7 +383,6 @@
         {{ fileError }}
       </div>
 
-     
       <div class="images-grid" *ngIf="hasPhotos; else noPhotoTemplate">
         <div class="image-item" *ngFor="let preview of imagePreviews; let i = index">
           <div class="image-wrapper">
@@ -284,7 +418,7 @@
         mat-flat-button
         color="primary"
         type="submit"
-        [disabled]="truckForm.invalid || isSubmitting || loadingZones || loadingTypeTrucks || loadingMarques"
+        [disabled]="truckForm.invalid || isSubmitting || loadingGeographicalEntities || loadingTypeTrucks || loadingMarques"
       >
         {{ t(data.truckId ? 'SAVE_BTN' : 'ADD_BTN') }}
       </button>

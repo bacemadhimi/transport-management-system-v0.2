@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 <ion-header [translucent]="true">
   <ion-toolbar color="primary">
     <ion-title>Mes Trajets</ion-title>
@@ -5,6 +6,12 @@
       <ion-button (click)="loadMyTrips()" *ngIf="!refreshing">
         <ion-icon slot="icon-only" name="refresh" [class.spinning]="refreshing"></ion-icon>
       </ion-button>
+=======
+<ion-header>
+  <ion-toolbar color="primary">
+    <ion-title>Mes Trajets</ion-title>
+    <ion-buttons slot="end">
+>>>>>>> dev
       <ion-button routerLink="/trip-history">
         <ion-icon slot="icon-only" name="time"></ion-icon>
       </ion-button>
@@ -12,6 +19,7 @@
   </ion-toolbar>
 </ion-header>
 
+<<<<<<< HEAD
 <ion-content class="my-trips-content" [class.has-header]="true">
 
   <!-- Loading State -->
@@ -191,4 +199,79 @@
     </ion-refresher-content>
   </ion-refresher>
 
+=======
+<ion-content class="my-trips-content">
+  
+  <!-- Trips Actifs -->
+  <div class="section" *ngIf="activeTrips.length > 0">
+    <h2 class="section-title">
+      <ion-icon name="radio-button-on"></ion-icon>
+      En Cours
+    </h2>
+    
+    <ion-card class="trip-card active" *ngFor="let trip of activeTrips" (click)="viewTrip(trip)">
+      <ion-card-header>
+        <div class="trip-header">
+          <div>
+            <ion-card-title>{{ trip.tripReference }}</ion-card-title>
+            <ion-card-subtitle>
+              <ion-icon name="location"></ion-icon>
+              {{ trip.destination }}
+            </ion-card-subtitle>
+          </div>
+          <ion-badge [color]="getStatusColor(trip.status)">{{ trip.status }}</ion-badge>
+        </div>
+      </ion-card-header>
+      
+      <ion-card-content>
+        <div class="trip-stats">
+          <div class="stat">
+            <ion-icon name="speedometer"></ion-icon>
+            <span>{{ trip.estimatedDistance }} km</span>
+          </div>
+          <div class="stat">
+            <ion-icon name="package"></ion-icon>
+            <span>{{ trip.deliveriesCount }} livraisons</span>
+          </div>
+        </div>
+        
+        <div class="trip-actions">
+          <ion-button expand="block" color="primary" (click)="viewGPS(trip); $event.stopPropagation()">
+            <ion-icon slot="start" name="map"></ion-icon>
+            Voir sur la carte
+          </ion-button>
+        </div>
+      </ion-card-content>
+    </ion-card>
+  </div>
+
+  <!-- Historique -->
+  <div class="section" *ngIf="historyTrips.length > 0">
+    <h2 class="section-title">
+      <ion-icon name="time"></ion-icon>
+      Historique Récent
+    </h2>
+    
+    <ion-list>
+      <ion-item *ngFor="let trip of historyTrips" (click)="viewTrip(trip)" button>
+        <ion-icon [name]="trip.status === 'Completed' ? 'checkmark-circle' : 'close-circle'" 
+                  [color]="getStatusColor(trip.status)" 
+                  slot="start"></ion-icon>
+        <ion-label>
+          <h3>{{ trip.tripReference }}</h3>
+          <p>{{ trip.destination }} • {{ trip.estimatedDistance }} km</p>
+        </ion-label>
+        <ion-badge [color]="getStatusColor(trip.status)" slot="end">{{ trip.status }}</ion-badge>
+      </ion-item>
+    </ion-list>
+  </div>
+
+  <!-- Empty state -->
+  <div class="empty-state" *ngIf="trips.length === 0">
+    <ion-icon name="map-outline"></ion-icon>
+    <h3>Aucun trajet</h3>
+    <p>Vous n'avez pas de trajets assignés pour le moment</p>
+  </div>
+
+>>>>>>> dev
 </ion-content>

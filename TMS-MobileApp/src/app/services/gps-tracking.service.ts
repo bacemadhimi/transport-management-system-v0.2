@@ -2,8 +2,14 @@ import { Injectable } from '@angular/core';
 import { HubConnection, HubConnectionBuilder, HubConnectionState } from '@microsoft/signalr';
 import { BehaviorSubject, Observable, Subject } from 'rxjs';
 import { NotificationStorageService, TripNotification } from './notification-storage.service';
+<<<<<<< HEAD
 
 const API_URL = 'http://localhost:5191';
+=======
+import { environment } from 'src/environments/environment';
+
+const API_URL = environment.apiUrl;
+>>>>>>> dev
 
 export interface GPSPosition {
   driverId?: number;
@@ -381,6 +387,7 @@ export class GPSTrackingService {
    * Accepter un trip
    */
   public async acceptTrip(tripId: number): Promise<void> {
+<<<<<<< HEAD
     console.log('📢📢📢 acceptTrip called with tripId:', tripId);
     console.log('📢 HubConnection state:', this.hubConnection?.state);
     
@@ -405,11 +412,21 @@ export class GPSTrackingService {
       
     } catch (error) {
       console.error('❌❌❌ Error accepting trip:', error);
+=======
+    if (!this.hubConnection) return;
+
+    try {
+      await this.hubConnection.invoke('AcceptTrip', tripId);
+      console.log(`✅ Trip ${tripId} accepted`);
+    } catch (error) {
+      console.error('Error accepting trip:', error);
+>>>>>>> dev
       throw error;
     }
   }
 
   /**
+<<<<<<< HEAD
    * Fallback: Save acceptance directly to database
    */
   private async saveAcceptanceToDatabase(tripId: number): Promise<void> {
@@ -468,11 +485,24 @@ export class GPSTrackingService {
       
     } catch (error) {
       console.error('❌❌❌ Error rejecting trip:', error);
+=======
+   * Refuser un trip
+   */
+  public async rejectTrip(tripId: number, reason: string, reasonCode: string): Promise<void> {
+    if (!this.hubConnection) return;
+
+    try {
+      await this.hubConnection.invoke('RejectTrip', tripId, reason, reasonCode);
+      console.log(`❌ Trip ${tripId} rejected: ${reason}`);
+    } catch (error) {
+      console.error('Error rejecting trip:', error);
+>>>>>>> dev
       throw error;
     }
   }
 
   /**
+<<<<<<< HEAD
    * Fallback: Save rejection directly to database
    */
   private async saveRejectionToDatabase(tripId: number, reason: string, reasonCode: string): Promise<void> {
@@ -497,6 +527,8 @@ export class GPSTrackingService {
   }
 
   /**
+=======
+>>>>>>> dev
    * Démarrer le chargement
    */
   public async startLoading(tripId: number): Promise<void> {

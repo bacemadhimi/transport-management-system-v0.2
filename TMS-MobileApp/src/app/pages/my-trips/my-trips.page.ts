@@ -4,6 +4,10 @@ import { IonicModule } from '@ionic/angular';
 import { Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { HttpClient } from '@angular/common/http';
+<<<<<<< HEAD
+=======
+import { environment } from 'src/environments/environment.prod';
+>>>>>>> dev
 
 interface MyTrip {
   id: number;
@@ -17,8 +21,11 @@ interface MyTrip {
   driverName?: string;
   truckImmatriculation?: string;
   startDate?: string;
+<<<<<<< HEAD
   endDate?: string;
   deliveries?: any[];
+=======
+>>>>>>> dev
 }
 
 @Component({
@@ -38,9 +45,14 @@ export class MyTripsPage implements OnInit {
   loading: boolean = true;
   driverId: number | null = null;
   error: string | null = null;
+<<<<<<< HEAD
   refreshing: boolean = false;
 
   private readonly API_URL = 'http://localhost:5191/api/Trips';
+=======
+
+  private readonly API_URL = `${environment.apiUrl}/api/Trips`;
+>>>>>>> dev
 
   constructor(
     private authService: AuthService,
@@ -57,6 +69,10 @@ export class MyTripsPage implements OnInit {
     this.error = null;
 
     try {
+<<<<<<< HEAD
+=======
+      // Get current user info
+>>>>>>> dev
       const user = this.authService.currentUser();
       if (!user) {
         this.error = 'Utilisateur non connecté';
@@ -66,16 +82,23 @@ export class MyTripsPage implements OnInit {
 
       this.driverId = (user as any).driverId || user.id;
       console.log('📦 Loading trips for driver:', this.driverId);
+<<<<<<< HEAD
       console.log('👤 User object:', JSON.stringify(user, null, 2));
 
       const token = localStorage.getItem('token');
       console.log('🔑 Token:', token ? 'PRESENT (' + token.length + ' chars)' : 'MISSING');
       
+=======
+
+      // Get token
+      const token = localStorage.getItem('token');
+>>>>>>> dev
       const headers = {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
       };
 
+<<<<<<< HEAD
       // Fetch ALL trips for this driver (both active and history)
       const apiUrl = `${this.API_URL}/driver/${this.driverId}`;
       console.log('📡 API URL:', apiUrl);
@@ -121,12 +144,54 @@ export class MyTripsPage implements OnInit {
             console.log('✅ Active trips:', this.activeTrips.length, this.activeTrips.map(t => `${t.tripReference} (${t.status})`));
             console.log('📚 History trips:', this.historyTrips.length, this.historyTrips.map(t => `${t.tripReference} (${t.status})`));
 
+=======
+      // Fetch real trips from API - Filter by driver
+      this.http.get<any[]>(`${this.API_URL}?status=all`, { headers })
+        .subscribe({
+          next: (trips) => {
+            console.log('📦 Trips received:', trips.length);
+            
+            // Filter trips for this driver only
+            const driverTrips = trips.filter(trip => 
+              trip.driverId === this.driverId || 
+              (trip.driver && trip.driver.id === this.driverId)
+            );
+
+            console.log('🚛 Driver trips:', driverTrips.length);
+
+            // Transform API data
+            this.trips = driverTrips.map(trip => ({
+              id: trip.id,
+              tripReference: trip.tripReference || `TRIP-${trip.id}`,
+              status: trip.status || trip.tripStatus || 'Planned',
+              destination: this.getDestination(trip),
+              estimatedDistance: trip.estimatedDistance || 0,
+              estimatedDuration: trip.estimatedDuration || 0,
+              deliveriesCount: trip.deliveriesCount || trip.deliveries?.length || 0,
+              isActive: this.isActiveStatus(trip.status || trip.tripStatus),
+              driverName: trip.driver?.name,
+              truckImmatriculation: trip.truck?.immatriculation,
+              startDate: trip.estimatedStartDate
+            }));
+
+            // Separate active and history
+            this.activeTrips = this.trips.filter(t => t.isActive);
+            this.historyTrips = this.trips.filter(t => !t.isActive);
+
+            console.log('✅ Active trips:', this.activeTrips.length);
+            console.log('📚 History trips:', this.historyTrips.length);
+            
+>>>>>>> dev
             this.loading = false;
           },
           error: (err) => {
             console.error('❌ Error loading trips:', err);
+<<<<<<< HEAD
             console.error('❌ Error details:', JSON.stringify(err, null, 2));
             this.error = 'Erreur de chargement des trajets: ' + (err.message || err.error?.message || 'Inconnue');
+=======
+            this.error = 'Erreur de chargement des trajets';
+>>>>>>> dev
             this.trips = [];
             this.activeTrips = [];
             this.historyTrips = [];
@@ -136,7 +201,11 @@ export class MyTripsPage implements OnInit {
 
     } catch (error) {
       console.error('Error loading trips:', error);
+<<<<<<< HEAD
       this.error = 'Erreur inattendue: ' + (error as any).message;
+=======
+      this.error = 'Erreur inattendue';
+>>>>>>> dev
       this.trips = [];
       this.activeTrips = [];
       this.historyTrips = [];
@@ -145,14 +214,21 @@ export class MyTripsPage implements OnInit {
   }
 
   private getDestination(trip: any): string {
+<<<<<<< HEAD
     if (trip.Deliveries && trip.Deliveries.length > 0) {
       const lastDelivery = trip.Deliveries[trip.Deliveries.length - 1];
       return lastDelivery.CustomerName || lastDelivery.DeliveryAddress || 'Destination inconnue';
+=======
+    if (trip.deliveries && trip.deliveries.length > 0) {
+      const lastDelivery = trip.deliveries[trip.deliveries.length - 1];
+      return lastDelivery.customerName || lastDelivery.deliveryAddress || 'Destination inconnue';
+>>>>>>> dev
     }
     return 'Destination inconnue';
   }
 
   private isActiveStatus(status: string): boolean {
+<<<<<<< HEAD
     const activeStatuses = [
       'Pending',
       'Planned',
@@ -164,11 +240,15 @@ export class MyTripsPage implements OnInit {
       'InDelivery',
       'Arrived'
     ];
+=======
+    const activeStatuses = ['Planned', 'Accepted', 'LoadingInProgress', 'DeliveryInProgress', 'InDelivery', 'Loading'];
+>>>>>>> dev
     return activeStatuses.includes(status);
   }
 
   getStatusColor(status: string): string {
     const colors: Record<string, string> = {
+<<<<<<< HEAD
       'Pending': 'medium',
       'Planned': 'medium',
       'Assigned': 'primary',
@@ -178,6 +258,14 @@ export class MyTripsPage implements OnInit {
       'DeliveryInProgress': 'primary',
       'InDelivery': 'primary',
       'Arrived': 'success',
+=======
+      'Planned': 'medium',
+      'Accepted': 'primary',
+      'LoadingInProgress': 'warning',
+      'Loading': 'warning',
+      'DeliveryInProgress': 'primary',
+      'InDelivery': 'primary',
+>>>>>>> dev
       'Completed': 'success',
       'Receipt': 'success',
       'Cancelled': 'danger',
@@ -188,6 +276,7 @@ export class MyTripsPage implements OnInit {
 
   getStatusText(status: string): string {
     const texts: Record<string, string> = {
+<<<<<<< HEAD
       'Pending': 'En attente',
       'Planned': 'Planifié',
       'Assigned': 'Assigné',
@@ -197,6 +286,14 @@ export class MyTripsPage implements OnInit {
       'DeliveryInProgress': 'Livraison',
       'InDelivery': 'Livraison',
       'Arrived': 'Arrivé',
+=======
+      'Planned': 'Planifié',
+      'Accepted': 'Accepté',
+      'LoadingInProgress': 'Chargement',
+      'Loading': 'Chargement',
+      'DeliveryInProgress': 'Livraison',
+      'InDelivery': 'Livraison',
+>>>>>>> dev
       'Completed': 'Terminé',
       'Receipt': 'Livré',
       'Cancelled': 'Annulé',
@@ -205,6 +302,7 @@ export class MyTripsPage implements OnInit {
     return texts[status] || status;
   }
 
+<<<<<<< HEAD
   getStatusIcon(status: string): string {
     const icons: Record<string, string> = {
       'Pending': 'time',
@@ -224,14 +322,20 @@ export class MyTripsPage implements OnInit {
     return icons[status] || 'document';
   }
 
+=======
+>>>>>>> dev
   viewTrip(trip: MyTrip) {
     this.router.navigate([`/trip/${trip.id}`]);
   }
 
+<<<<<<< HEAD
   viewGPS(trip: MyTrip, event?: Event) {
     if (event) {
       event.stopPropagation();
     }
+=======
+  viewGPS(trip: MyTrip) {
+>>>>>>> dev
     this.router.navigate([`/gps-tracking`], {
       queryParams: {
         tripId: trip.id,
@@ -240,11 +344,16 @@ export class MyTripsPage implements OnInit {
     });
   }
 
+<<<<<<< HEAD
   doRefresh(event: any) {
     this.refreshing = true;
     this.loadMyTrips().finally(() => {
       this.refreshing = false;
       event.target.complete();
     });
+=======
+  refreshData() {
+    this.loadMyTrips();
+>>>>>>> dev
   }
 }

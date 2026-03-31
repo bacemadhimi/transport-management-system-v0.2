@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 <ion-header [translucent]="true">
   <ion-toolbar color="primary">
     <ion-buttons slot="start">
@@ -64,11 +65,29 @@
         <ion-label>Tous</ion-label>
       </ion-segment-button>
       <ion-segment-button value="completed">
+=======
+<ion-header>
+  <ion-toolbar color="primary">
+    <ion-title>Historique des Trajets</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="history-content">
+  
+  <!-- Filtres -->
+  <div class="filter-bar">
+    <ion-segment [(ngModel)]="filterStatus" (ngModelChange)="applyFilter()">
+      <ion-segment-button value="all">
+        <ion-label>Tous</ion-label>
+      </ion-segment-button>
+      <ion-segment-button value="Completed">
+>>>>>>> dev
         <ion-label>Terminés</ion-label>
       </ion-segment-button>
       <ion-segment-button value="Cancelled">
         <ion-label>Annulés</ion-label>
       </ion-segment-button>
+<<<<<<< HEAD
       <ion-segment-button value="Refused">
         <ion-label>Refusés</ion-label>
       </ion-segment-button>
@@ -177,4 +196,36 @@
     </ion-refresher-content>
   </ion-refresher>
 
+=======
+    </ion-segment>
+  </div>
+
+  <!-- Liste des trajets -->
+  <ion-list *ngIf="filteredHistory.length > 0">
+    <ion-item-sliding *ngFor="let trip of filteredHistory">
+      <ion-item>
+        <ion-icon [name]="getStatusIcon(trip.status)" [color]="getStatusColor(trip.status)" slot="start"></ion-icon>
+        <ion-label>
+          <h3>{{ trip.tripReference }}</h3>
+          <p>{{ formatDate(trip.date) }} • {{ trip.distance }} km • {{ trip.deliveriesCount }} livraisons</p>
+        </ion-label>
+        <ion-badge [color]="getStatusColor(trip.status)" slot="end">{{ trip.status }}</ion-badge>
+      </ion-item>
+      
+      <ion-item-options side="end">
+        <ion-item-option color="primary" (click)="viewDetails(trip)">
+          <ion-icon slot="icon-only" name="eye"></ion-icon>
+        </ion-item-option>
+      </ion-item-options>
+    </ion-item-sliding>
+  </ion-list>
+
+  <!-- Empty state -->
+  <div class="empty-state" *ngIf="filteredHistory.length === 0">
+    <ion-icon name="document-outline"></ion-icon>
+    <h3>Aucun trajet trouvé</h3>
+    <p>Votre historique de trajets apparaîtra ici</p>
+  </div>
+
+>>>>>>> dev
 </ion-content>

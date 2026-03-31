@@ -1,4 +1,4 @@
-// types/trip.ts
+﻿
 
 import { IConvoyeur } from "./convoyeur";
 import { ICustomer } from "./customer";
@@ -21,16 +21,16 @@ export interface ITrip {
   driverId: number;
   tripStatus: TripStatus;
   trajectId?: number| null;
-  traject?: ITraject;    
-  // Relations (optionnelles selon le contexte)
+  traject?: ITraject;
+
   truck?: ITruck;
   driver?: IDriver;
   deliveries?: IDelivery[];
   startLocationId?: number;
-  endLocationId?: number; 
+  endLocationId?: number;
   convoyeurId?: number | null;
   convoyeur?: IConvoyeur;
-  
+
   createdBy: number;
   createdByName: string;
   createdAt: string;
@@ -55,6 +55,10 @@ export interface IDelivery {
   notes?: string;
   proofOfDelivery?: string;
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> dev
   // Relations (optionnelles)
   customer?: ICustomer;
   order?: IOrder;
@@ -68,12 +72,12 @@ export interface IDelivery {
 }
 
 export enum TripStatus {
-  Planned = 'Planned',               // Planifié
-  Accepted = 'Accepted',             // Accepté
-  LoadingInProgress = 'LoadingInProgress', // En cours de chargement
-  DeliveryInProgress = 'DeliveryInProgress', // En cours de livraison
-  Receipt = 'Receipt',               // Réception (Livrée)
-  Cancelled = 'Cancelled'            // Annulé
+  Planned = 'Planned',
+  Accepted = 'Accepted',
+  LoadingInProgress = 'LoadingInProgress',
+  DeliveryInProgress = 'DeliveryInProgress',
+  Receipt = 'Receipt',
+  Cancelled = 'Cancelled'
 }
 
 export const TripStatusOptions = [
@@ -111,9 +115,9 @@ export interface CreateTripDto {
   truckId: number;
   driverId: number;
   deliveries: CreateDeliveryDto[];
-  trajectId?: number | null; 
-  convoyeurId?: number | null;    
- 
+  trajectId?: number | null;
+  convoyeurId?: number | null;
+
 }
 
 export interface UpdateTripDto {
@@ -126,7 +130,7 @@ export interface UpdateTripDto {
   driverId: number;
   tripStatus: TripStatus;
   deliveries: CreateDeliveryDto[];
-  trajectId?: number | null; 
+  trajectId?: number | null;
   convoyeurId?: number | null;
 }
 
@@ -136,5 +140,5 @@ export interface CreateDeliveryDto {
   deliveryAddress: string;
   sequence: number;
   plannedTime?: string | null;
-  notes?: string | null; 
+  notes?: string | null;
 }

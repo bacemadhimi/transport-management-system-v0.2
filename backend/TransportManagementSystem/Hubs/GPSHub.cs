@@ -4,7 +4,10 @@ using TransportManagementSystem.Entity;
 using Microsoft.EntityFrameworkCore;
 using System.Collections.Concurrent;
 using TransportManagementSystem.Services;
+<<<<<<< HEAD
 using System.Text.Json;
+=======
+>>>>>>> dev
 
 namespace TransportManagementSystem.Hubs;
 
@@ -135,6 +138,7 @@ public class GPSHub : Hub
     }
 
     /// <summary>
+<<<<<<< HEAD
     /// Rejoindre le groupe Tous les Trips (pour web admin)
     /// </summary>
     public async Task JoinAllTripsGroup()
@@ -144,6 +148,8 @@ public class GPSHub : Hub
     }
 
     /// <summary>
+=======
+>>>>>>> dev
     /// Rejoindre le groupe Drivers
     /// </summary>
     public async Task JoinDriverGroup(int driverId)
@@ -248,6 +254,7 @@ public class GPSHub : Hub
     /// </summary>
     public async Task AcceptTrip(int tripId)
     {
+<<<<<<< HEAD
         try
         {
             var trip = await _context.Trips
@@ -303,6 +310,30 @@ public class GPSHub : Hub
         {
             _logger.LogError(ex, $"❌ ERROR in AcceptTrip");
             await Clients.Caller.SendAsync("Error", $"Erreur: {ex.Message}");
+=======
+        await UpdateTripStatus(tripId, TripStatus.Accepted.ToString(), "Trip accepté");
+        
+        // Mettre à jour l'assignment
+        var assignment = await _context.TripAssignments
+            .Where(a => a.TripId == tripId)
+            .OrderByDescending(a => a.AssignedAt)
+            .FirstOrDefaultAsync();
+        
+        if (assignment != null)
+        {
+            assignment.Status = AssignmentStatus.Accepted;
+            assignment.RespondedAt = DateTime.UtcNow;
+            await _context.SaveChangesAsync();
+            
+            // Notifier les admins
+            await Clients.Group("Admins").SendAsync("TripAccepted", new
+            {
+                TripId = tripId,
+                TripReference = assignment.Trip?.TripReference,
+                DriverId = assignment.DriverId,
+                Timestamp = DateTime.UtcNow
+            });
+>>>>>>> dev
         }
     }
 
@@ -311,6 +342,7 @@ public class GPSHub : Hub
     /// </summary>
     public async Task RejectTrip(int tripId, string reason, string reasonCode)
     {
+<<<<<<< HEAD
         try
         {
             var trip = await _context.Trips
@@ -343,11 +375,23 @@ public class GPSHub : Hub
                 await _context.SaveChangesAsync();
             }
 
+=======
+        await UpdateTripStatus(tripId, TripStatus.Refused.ToString(), reason);
+        
+        var assignment = await _context.TripAssignments
+            .Where(a => a.TripId == tripId)
+            .OrderByDescending(a => a.AssignedAt)
+            .FirstOrDefaultAsync();
+        
+        if (assignment != null)
+        {
+>>>>>>> dev
             assignment.Status = AssignmentStatus.Rejected;
             assignment.RejectionReason = reason;
             assignment.RejectionReasonCode = reasonCode;
             assignment.RespondedAt = DateTime.UtcNow;
             await _context.SaveChangesAsync();
+<<<<<<< HEAD
 
             trip.TripStatus = TripStatus.Refused;
             await _context.SaveChangesAsync();
@@ -408,6 +452,19 @@ public class GPSHub : Hub
         {
             _logger.LogError(ex, $"❌ ERROR in RejectTrip");
             await Clients.Caller.SendAsync("Error", $"Erreur: {ex.Message}");
+=======
+            
+            // Notifier les admins
+            await Clients.Group("Admins").SendAsync("TripRejected", new
+            {
+                TripId = tripId,
+                TripReference = assignment.Trip?.TripReference,
+                DriverId = assignment.DriverId,
+                Reason = reason,
+                ReasonCode = reasonCode,
+                Timestamp = DateTime.UtcNow
+            });
+>>>>>>> dev
         }
     }
 
@@ -474,11 +531,16 @@ public class GPSHub : Hub
     {
         _logger.LogInformation($"GPS Client connected: {Context.ConnectionId}");
 
+<<<<<<< HEAD
         // Auto-join BOTH Admins and AllTrips groups for all connections
         await Groups.AddToGroupAsync(Context.ConnectionId, "Admins");
         await Groups.AddToGroupAsync(Context.ConnectionId, "AllTrips");
         
         _logger.LogInformation($"✅ Client {Context.ConnectionId} auto-joined Admins and AllTrips groups");
+=======
+        // Auto-join Admins group for all connections
+        await Groups.AddToGroupAsync(Context.ConnectionId, "Admins");
+>>>>>>> dev
 
         // Try to get driver ID from JWT claims - check multiple possible claim types
         var userIdClaim = Context.User?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;

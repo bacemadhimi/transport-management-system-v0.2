@@ -1,0 +1,451 @@
+.test-toolbar {
+  --background: linear-gradient(135deg, #ff8c00, #ffcc00);
+  --color: white;
+  
+  ion-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    
+    ion-icon {
+      font-size: 24px;
+    }
+  }
+}
+
+.test-content {
+  --background: #f5f7fa;
+  padding: 16px;
+}
+
+// Device Info
+.device-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  background: white;
+  border-radius: 16px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  border-left: 4px solid #ff8c00;
+  
+  &.native {
+    border-left-color: #4caf50;
+  }
+  
+  ion-icon {
+    font-size: 24px;
+    color: #ff8c00;
+  }
+  
+  span {
+    font-size: 14px;
+    color: #666;
+    font-weight: 500;
+  }
+}
+
+// Last Scan Section
+.last-scan {
+  margin-bottom: 24px;
+  
+  h3 {
+    font-size: 14px;
+    color: #666;
+    margin: 0 0 12px 0;
+    font-weight: 600;
+  }
+}
+
+.scan-card {
+  background: white;
+  border-radius: 20px;
+  padding: 20px;
+  display: flex;
+  gap: 16px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  border-left: 4px solid #ff8c00;
+  transition: all 0.3s ease;
+  
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.12);
+  }
+  
+  &.scan-2d {
+    border-left-color: #9c27b0;
+  }
+  
+  .scan-icon {
+    width: 56px;
+    height: 56px;
+    background: rgba(255, 140, 0, 0.1);
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    
+    ion-icon {
+      font-size: 32px;
+      color: #ff8c00;
+    }
+  }
+  
+  &.scan-2d .scan-icon ion-icon {
+    color: #9c27b0;
+  }
+  
+  .scan-content {
+    flex: 1;
+    
+    .scan-value {
+      font-size: 16px;
+      font-weight: 600;
+      color: #333;
+      margin-bottom: 12px;
+      word-break: break-all;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      
+      .copy-icon {
+        font-size: 14px;
+        color: #ff8c00;
+        opacity: 0;
+        transition: opacity 0.2s;
+      }
+      
+      &:hover .copy-icon {
+        opacity: 1;
+      }
+    }
+    
+    .scan-meta {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 8px;
+      
+      .scan-format {
+        font-size: 11px;
+        color: #ff8c00;
+        background: rgba(255, 140, 0, 0.1);
+        padding: 4px 10px;
+        border-radius: 20px;
+        font-weight: 500;
+      }
+      
+      .scan-type {
+        font-size: 11px;
+        padding: 4px 10px;
+        border-radius: 20px;
+        font-weight: 500;
+        
+        &.type-2d {
+          background: rgba(156, 39, 176, 0.1);
+          color: #9c27b0;
+        }
+        
+        &.type-1d {
+          background: rgba(255, 140, 0, 0.1);
+          color: #ff8c00;
+        }
+      }
+    }
+    
+    .scan-time {
+      font-size: 11px;
+      color: #999;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      
+      ion-icon {
+        font-size: 12px;
+      }
+    }
+  }
+}
+
+// Action Section
+.action-section {
+  margin-bottom: 24px;
+  
+  .section-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+    
+    ion-icon {
+      font-size: 18px;
+      color: #ff8c00;
+    }
+    
+    span {
+      font-size: 14px;
+      font-weight: 600;
+      color: #666;
+    }
+  }
+}
+
+.action-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  
+  .scan-btn {
+    --background: linear-gradient(135deg, #ff8c00, #ffcc00);
+    --border-radius: 14px;
+    --color: white;
+    font-weight: 700;
+    height: 52px;
+    font-size: 16px;
+  }
+  
+  .multiple-btn, .test-btn, .fullscreen-btn {
+    --border-radius: 14px;
+    --border-color: #ff8c00;
+    --color: #ff8c00;
+    font-weight: 500;
+    height: 48px;
+  }
+  
+  .fullscreen-btn {
+    --color: #9c27b0;
+    --border-color: #9c27b0;
+  }
+}
+
+// History Section
+.history-section {
+  margin-top: 8px;
+  
+  .history-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    
+    .section-title {
+      margin-bottom: 0;
+    }
+    
+    .clear-btn {
+      --color: #f44336;
+      --padding-start: 8px;
+      --padding-end: 8px;
+      font-size: 12px;
+    }
+  }
+  
+  .history-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    
+    .history-item {
+      background: white;
+      border-radius: 14px;
+      padding: 12px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      transition: all 0.2s;
+      
+      &:hover {
+        transform: translateX(4px);
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      }
+      
+      .history-number {
+        width: 32px;
+        height: 32px;
+        background: #f0f0f0;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+        font-weight: 700;
+        color: #ff8c00;
+      }
+      
+      .history-content {
+        flex: 1;
+        
+        .history-value {
+          font-size: 14px;
+          font-weight: 500;
+          color: #333;
+          margin-bottom: 4px;
+          word-break: break-all;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          flex-wrap: wrap;
+          
+          .copy-icon-small {
+            font-size: 12px;
+            color: #ff8c00;
+            opacity: 0;
+          }
+          
+          &:hover .copy-icon-small {
+            opacity: 1;
+          }
+        }
+        
+        .history-meta {
+          display: flex;
+          gap: 8px;
+          
+          .history-format {
+            font-size: 10px;
+            color: #ff8c00;
+            background: rgba(255, 140, 0, 0.1);
+            padding: 2px 8px;
+            border-radius: 12px;
+          }
+          
+          .history-type {
+            font-size: 10px;
+            padding: 2px 8px;
+            border-radius: 12px;
+            
+            &.type-2d {
+              background: rgba(156, 39, 176, 0.1);
+              color: #9c27b0;
+            }
+            
+            &.type-1d {
+              background: rgba(255, 140, 0, 0.1);
+              color: #ff8c00;
+            }
+          }
+        }
+      }
+      
+      .history-time {
+        font-size: 10px;
+        color: #999;
+        white-space: nowrap;
+      }
+    }
+  }
+}
+
+// Empty State
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  
+  .empty-icon {
+    width: 100px;
+    height: 100px;
+    background: rgba(255, 140, 0, 0.1);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 20px;
+    
+    ion-icon {
+      font-size: 48px;
+      color: #ff8c00;
+    }
+  }
+  
+  h3 {
+    font-size: 18px;
+    color: #666;
+    margin: 0 0 8px 0;
+  }
+  
+  p {
+    font-size: 14px;
+    color: #999;
+    margin: 0;
+    
+    &.small {
+      font-size: 12px;
+      margin-top: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      
+      ion-icon {
+        font-size: 12px;
+      }
+    }
+  }
+}
+
+// Loading State
+.loading-state {
+  text-align: center;
+  padding: 60px 20px;
+  
+  ion-spinner {
+    width: 48px;
+    height: 48px;
+    color: #ff8c00;
+    margin-bottom: 16px;
+  }
+  
+  p {
+    font-size: 14px;
+    color: #666;
+    margin: 0;
+    
+    &.small {
+      font-size: 12px;
+      color: #999;
+      margin-top: 8px;
+    }
+  }
+}
+
+// Responsive
+@media (max-width: 480px) {
+  .test-content {
+    padding: 12px;
+  }
+  
+  .scan-card {
+    padding: 16px;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    
+    .scan-icon {
+      width: 48px;
+      height: 48px;
+      
+      ion-icon {
+        font-size: 24px;
+      }
+    }
+    
+    .scan-content .scan-value {
+      font-size: 14px;
+      justify-content: center;
+    }
+  }
+  
+  .history-item {
+    flex-wrap: wrap;
+    
+    .history-time {
+      width: 100%;
+      text-align: right;
+      margin-top: 4px;
+    }
+  }
+}

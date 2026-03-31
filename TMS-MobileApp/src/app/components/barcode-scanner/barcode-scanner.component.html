@@ -1,0 +1,39 @@
+<ion-content class="scanner-content">
+  <div class="scanner-container">
+    <div class="scanner-header">
+      <ion-icon name="qr-code-outline"></ion-icon>
+      <h3>Scanner un code</h3>
+      <ion-button fill="clear" (click)="closeModal()" class="close-btn">
+        <ion-icon name="close-outline"></ion-icon>
+      </ion-button>
+    </div>
+    
+    <div class="scanner-preview" *ngIf="isScanning">
+      <div class="scan-frame">
+        <div class="scan-line"></div>
+        <div class="corner top-left"></div>
+        <div class="corner top-right"></div>
+        <div class="corner bottom-left"></div>
+        <div class="corner bottom-right"></div>
+      </div>
+    </div>
+    
+    <div class="scanner-info">
+      <p>Placez le code dans le cadre</p>
+      <div class="formats">
+        <span *ngFor="let format of supportedFormats.slice(0,5)" class="format-badge">
+          {{ format }}
+        </span>
+        <span class="format-badge more">+{{ supportedFormats.length - 5 }}</span>
+      </div>
+    </div>
+    
+    <div class="error-message" *ngIf="errorMessage">
+      <ion-icon name="alert-circle-outline"></ion-icon>
+      <span>{{ errorMessage }}</span>
+      <ion-button fill="clear" (click)="startScanning()" class="retry-btn">
+        Réessayer
+      </ion-button>
+    </div>
+  </div>
+</ion-content>

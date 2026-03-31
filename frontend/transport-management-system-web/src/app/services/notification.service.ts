@@ -1,3 +1,7 @@
+<<<<<<< HEAD
+=======
+﻿
+>>>>>>> dev
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
@@ -64,4 +68,10 @@ export class NotificationService {
   deleteAllNotifications(): Observable<any> {
     return this.http.delete(`${this.apiUrl}`, { headers: this.getHeaders() });
   }
+<<<<<<< HEAD
+=======
+
+deleteAllNotifications(): Observable<any> {
+  return this.http.delete(`${this.apiUrl}/delete-all`);
+>>>>>>> dev
 }

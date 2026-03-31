@@ -198,7 +198,11 @@ export class NotificationStorageService {
   private updateUnreadCount(notifications: TripNotification[]): void {
     const unreadCount = notifications.filter(n => !n.isRead).length;
     this.unreadCountSubject.next(unreadCount);
+<<<<<<< HEAD
 
+=======
+    
+>>>>>>> dev
     // Update browser badge (if supported)
     if ('setAppBadge' in navigator) {
       if (unreadCount > 0) {
@@ -207,7 +211,11 @@ export class NotificationStorageService {
         navigator.clearAppBadge();
       }
     }
+<<<<<<< HEAD
 
+=======
+    
+>>>>>>> dev
     // Update document title
     if (unreadCount > 0) {
       document.title = `(${unreadCount}) TMS Mobile`;
@@ -215,6 +223,7 @@ export class NotificationStorageService {
       document.title = 'TMS Mobile';
     }
   }
+<<<<<<< HEAD
 
   /**
    * Sync notifications from server (for offline drivers)
@@ -288,4 +297,6 @@ export class NotificationStorageService {
       console.error('❌ Error syncing notifications:', error);
     }
   }
+=======
+>>>>>>> dev
 }

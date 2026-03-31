@@ -8,7 +8,10 @@ import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatBadgeModule } from '@angular/material/badge';
+<<<<<<< HEAD
 import { MatChipsModule } from '@angular/material/chips';
+=======
+>>>>>>> dev
 import { Router } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { SignalRService } from '../../services/signalr.service';
@@ -20,7 +23,10 @@ interface ActiveTrip {
   tripReference: string;
   status: string;
   driverName?: string;
+<<<<<<< HEAD
   driverPhone?: string;
+=======
+>>>>>>> dev
   truckImmatriculation?: string;
   currentLatitude?: number;
   currentLongitude?: number;
@@ -28,9 +34,12 @@ interface ActiveTrip {
   deliveriesCount?: number;
   estimatedDistance?: number;
   estimatedDuration?: number;
+<<<<<<< HEAD
   destination?: string;
   destinationLat?: number;
   destinationLng?: number;
+=======
+>>>>>>> dev
 }
 
 @Component({
@@ -46,9 +55,13 @@ interface ActiveTrip {
     MatSelectModule,
     MatCardModule,
     MatIconModule,
+<<<<<<< HEAD
     MatButtonModule,
     MatBadgeModule,
     MatChipsModule
+=======
+    MatButtonModule
+>>>>>>> dev
   ]
 })
 export class LiveGPSTrackingPage implements OnInit, OnDestroy {
@@ -60,12 +73,18 @@ export class LiveGPSTrackingPage implements OnInit, OnDestroy {
 
   map!: L.Map;
   truckMarkers: Map<number, L.Marker> = new Map();
+<<<<<<< HEAD
   routePolylines: Map<number, L.Polyline> = new Map();
+=======
+>>>>>>> dev
   positionUpdates: Map<number, any> = new Map();
 
   private subscriptions: Subscription[] = [];
   public connectionStatus: boolean = false;
+<<<<<<< HEAD
   private refreshInterval?: any;
+=======
+>>>>>>> dev
 
   constructor(
     private router: Router,
@@ -74,6 +93,7 @@ export class LiveGPSTrackingPage implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit() {
+<<<<<<< HEAD
     this.initMap();
     this.connectToGPSHub();
     this.loadActiveTrips();
@@ -82,13 +102,20 @@ export class LiveGPSTrackingPage implements OnInit, OnDestroy {
     this.refreshInterval = setInterval(() => {
       this.loadActiveTrips();
     }, 5000);
+=======
+    this.connectToGPSHub();
+    this.loadActiveTrips();
+>>>>>>> dev
   }
 
   ngOnDestroy() {
     this.subscriptions.forEach(s => s.unsubscribe());
+<<<<<<< HEAD
     if (this.refreshInterval) {
       clearInterval(this.refreshInterval);
     }
+=======
+>>>>>>> dev
     if (this.map) {
       this.map.remove();
     }
@@ -107,16 +134,20 @@ export class LiveGPSTrackingPage implements OnInit, OnDestroy {
     return this.activeTrips.filter(t => t.status === 'Arrived').length;
   }
 
+<<<<<<< HEAD
   getTotalTrips(): number {
     return this.activeTrips.length;
   }
 
+=======
+>>>>>>> dev
   // Check if position is live (less than 1 minute old)
   isPositionLive(lastUpdate?: Date): boolean {
     if (!lastUpdate) return false;
     return (Date.now() - lastUpdate.getTime()) < 60000;
   }
 
+<<<<<<< HEAD
   // Get time ago string
   getTimeAgo(date?: Date): string {
     if (!date) return 'Inconnu';
@@ -127,6 +158,8 @@ export class LiveGPSTrackingPage implements OnInit, OnDestroy {
     return `${Math.floor(seconds / 86400)} j`;
   }
 
+=======
+>>>>>>> dev
   // Get badge color class
   getStatusBadgeClass(status: string): string {
     const statusMap: Record<string, string> = {
@@ -134,8 +167,12 @@ export class LiveGPSTrackingPage implements OnInit, OnDestroy {
       'InDelivery': 'primary',
       'Arrived': 'success',
       'Completed': 'success',
+<<<<<<< HEAD
       'Assigned': 'accent',
       'Refused': 'danger'
+=======
+      'Assigned': 'accent'
+>>>>>>> dev
     };
     return statusMap[status] || 'medium';
   }
@@ -149,6 +186,10 @@ export class LiveGPSTrackingPage implements OnInit, OnDestroy {
           this.connectionStatus = connected;
           console.log('🔌 GPS Hub connection status:', connected);
           if (connected) {
+<<<<<<< HEAD
+=======
+            // Wait a bit for connection to stabilize
+>>>>>>> dev
             setTimeout(() => {
               this.joinAllTripsTracking();
             }, 500);
@@ -156,6 +197,7 @@ export class LiveGPSTrackingPage implements OnInit, OnDestroy {
         })
       );
 
+<<<<<<< HEAD
       // Listen for GPS positions - REAL TIME UPDATES
       this.signalR.onGPSPosition((position: any) => {
         console.log('📍 GPS Position received in real-time:', position);
@@ -163,6 +205,15 @@ export class LiveGPSTrackingPage implements OnInit, OnDestroy {
       });
 
       // Listen for trip status changes
+=======
+      // Écouter les positions GPS
+      this.signalR.onGPSPosition((position: any) => {
+        console.log('📍 GPS Position received:', position);
+        this.updateTruckPosition(position);
+      });
+
+      // Écouter les changements de statut
+>>>>>>> dev
       this.signalR.onTripStatusChanged((update: any) => {
         console.log('📊 Trip status changed:', update);
         this.updateTripStatus(update);
@@ -173,6 +224,7 @@ export class LiveGPSTrackingPage implements OnInit, OnDestroy {
     }
   }
 
+<<<<<<< HEAD
   // Update truck position from SignalR real-time data
   private updateTruckPositionFromSignalR(position: any) {
     const tripId = position.tripId;
@@ -204,6 +256,8 @@ export class LiveGPSTrackingPage implements OnInit, OnDestroy {
     }
   }
 
+=======
+>>>>>>> dev
   private async joinAllTripsTracking() {
     try {
       console.log('🚛 Requesting active trips from GPS Hub...');
@@ -223,6 +277,7 @@ export class LiveGPSTrackingPage implements OnInit, OnDestroy {
 
   private async loadActiveTrips() {
     try {
+<<<<<<< HEAD
       console.log('📋 Loading active trips from API...');
       
       // Get all trips and filter active ones
@@ -306,11 +361,16 @@ export class LiveGPSTrackingPage implements OnInit, OnDestroy {
         this.applyFilters();
         this.updateMapMarkers();
       }
+=======
+      console.log('📋 Loading active trips...');
+      await this.signalR.invokeGetActiveTrips();
+>>>>>>> dev
     } catch (error) {
       console.error('❌ Error loading active trips:', error);
     }
   }
 
+<<<<<<< HEAD
   // Fetch latest GPS positions for all active trips - NOW USING SIGNALR ONLY
   private async fetchGPSPositionsForActiveTrips() {
     console.log('📡 GPS positions will be received via SignalR real-time updates');
@@ -330,10 +390,13 @@ export class LiveGPSTrackingPage implements OnInit, OnDestroy {
     console.log('🗺️ Map initialized');
   }
 
+=======
+>>>>>>> dev
   private updateTruckPosition(position: any) {
     const tripId = position.tripId;
     if (!tripId) return;
 
+<<<<<<< HEAD
     console.log('📍 GPS Position received via SignalR:', position);
     this.positionUpdates.set(tripId, position);
 
@@ -364,11 +427,35 @@ export class LiveGPSTrackingPage implements OnInit, OnDestroy {
       }
 
       // Pan map to new position
+=======
+    this.positionUpdates.set(tripId, position);
+
+    // Mettre à jour le marker
+    const marker = this.truckMarkers.get(tripId);
+    if (marker && this.map) {
+      const newPosition: [number, number] = [position.latitude, position.longitude];
+      marker.setLatLng(newPosition);
+      
+      // Mettre à jour le popup
+      const trip = this.activeTrips.find(t => t.id === tripId);
+      if (trip) {
+        marker.setPopupContent(`
+          <b>${trip.tripReference}</b><br>
+          🚛 ${trip.truckImmatriculation || 'N/A'}<br>
+          👤 ${trip.driverName || 'N/A'}<br>
+          📍 ${position.latitude.toFixed(6)}, ${position.longitude.toFixed(6)}<br>
+          ⏱️ ${new Date(position.timestamp).toLocaleTimeString()}
+        `);
+      }
+
+      // Animation de la carte
+>>>>>>> dev
       this.map.panTo(newPosition, { animate: true, duration: 0.5 });
     }
   }
 
   private updateTripStatus(update: any) {
+<<<<<<< HEAD
     const tripIndex = this.activeTrips.findIndex(t => t.id === update.TripId);
     if (tripIndex !== -1) {
       this.activeTrips[tripIndex].status = update.NewStatus;
@@ -493,6 +580,104 @@ export class LiveGPSTrackingPage implements OnInit, OnDestroy {
   }
 
   applyFilters() {
+=======
+    const tripIndex = this.activeTrips.findIndex(t => t.id === update.tripId);
+    if (tripIndex !== -1) {
+      this.activeTrips[tripIndex].status = update.status;
+      this.applyFilters();
+    }
+  }
+
+  private initializeMap() {
+    this.map = L.map('map').setView([36.8, 10.1], 8);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap contributors',
+      maxZoom: 19
+    }).addTo(this.map);
+  }
+
+  private updateMapMarkers() {
+    if (!this.map) {
+      this.initializeMap();
+    }
+
+    // Supprimer les anciens markers
+    this.truckMarkers.forEach(marker => this.map.removeLayer(marker));
+    this.truckMarkers.clear();
+
+    // Ajouter les nouveaux markers
+    this.activeTrips.forEach(trip => {
+      if (trip.currentLatitude && trip.currentLongitude) {
+        const truckIcon = L.divIcon({
+          html: `
+            <div style="
+              background: ${this.getStatusColor(trip.status)};
+              border: 3px solid white;
+              border-radius: 50%;
+              width: 44px;
+              height: 44px;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+              animation: pulse 2s infinite;
+            ">
+              <span style="font-size: 22px;">🚛</span>
+            </div>
+          `,
+          className: 'truck-marker',
+          iconSize: [44, 44],
+          iconAnchor: [22, 22]
+        });
+
+        const marker = L.marker(
+          [trip.currentLatitude, trip.currentLongitude],
+          { icon: truckIcon }
+        ).addTo(this.map);
+
+        marker.bindPopup(`
+          <b>${trip.tripReference}</b><br>
+          🚛 ${trip.truckImmatriculation || 'N/A'}<br>
+          👤 ${trip.driverName || 'N/A'}<br>
+          📊 Statut: ${trip.status}<br>
+          📍 ${trip.currentLatitude.toFixed(6)}, ${trip.currentLongitude.toFixed(6)}<br>
+          📦 ${trip.deliveriesCount || 0} livraisons<br>
+          📏 ${trip.estimatedDistance || 0} km
+        `);
+
+        marker.on('click', () => this.selectTrip(trip));
+
+        this.truckMarkers.set(trip.id, marker);
+      }
+    });
+  }
+
+  private getStatusColor(status: string): string {
+    const colors: Record<string, string> = {
+      'Loading': '#f59e0b',
+      'InDelivery': '#3b82f6',
+      'Arrived': '#10b981',
+      'Completed': '#059669'
+    };
+    return colors[status] || '#64748b';
+  }
+
+  public selectTrip(trip: ActiveTrip) {
+    this.selectedTrip = trip;
+    
+    // Centrer la carte sur le trip
+    if (trip.currentLatitude && trip.currentLongitude) {
+      this.map.setView([trip.currentLatitude, trip.currentLongitude], 14);
+      const marker = this.truckMarkers.get(trip.id);
+      if (marker) {
+        marker.openPopup();
+      }
+    }
+  }
+
+  public applyFilters() {
+>>>>>>> dev
     this.filteredTrips = this.activeTrips.filter(trip => {
       const matchesSearch = !this.searchQuery || 
         trip.tripReference.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
@@ -505,6 +690,7 @@ export class LiveGPSTrackingPage implements OnInit, OnDestroy {
     });
   }
 
+<<<<<<< HEAD
   selectTrip(trip: ActiveTrip) {
     this.selectedTrip = trip;
     
@@ -541,5 +727,27 @@ export class LiveGPSTrackingPage implements OnInit, OnDestroy {
     toast.textContent = message;
     document.body.appendChild(toast);
     setTimeout(() => toast.remove(), 3000);
+=======
+  public getStatusBadgeColor(status: string): string {
+    const colors: Record<string, string> = {
+      'Loading': 'warning',
+      'InDelivery': 'primary',
+      'Arrived': 'success',
+      'Completed': 'success'
+    };
+    return colors[status] || 'medium';
+  }
+
+  public formatLastUpdate(date?: Date): string {
+    if (!date) return 'Jamais';
+    const now = new Date();
+    const diff = now.getTime() - new Date(date).getTime();
+    const minutes = Math.floor(diff / 60000);
+    
+    if (minutes < 1) return 'À l\'instant';
+    if (minutes < 60) return `Il y a ${minutes} min`;
+    const hours = Math.floor(minutes / 60);
+    return `Il y a ${hours}h ${minutes % 60}min`;
+>>>>>>> dev
   }
 }

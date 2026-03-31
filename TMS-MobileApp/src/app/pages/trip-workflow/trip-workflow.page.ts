@@ -77,7 +77,11 @@ export class TripWorkflowPage implements OnInit, OnDestroy {
   ngOnInit() {
     this.tripId = Number(this.route.snapshot.paramMap.get('tripId'));
     const user = this.authService.currentUser();
+<<<<<<< HEAD
     this.driverId = user?.driverId;
+=======
+    this.driverId = user?.id;
+>>>>>>> dev
 
     if (this.tripId) {
       this.loadTripDetails();

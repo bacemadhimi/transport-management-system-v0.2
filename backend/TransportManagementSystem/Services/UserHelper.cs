@@ -3,7 +3,7 @@ using System.Security.Claims;
 using TransportManagementSystem.Data;
 using TransportManagementSystem.Entity;
 
-namespace TransportManagementSystem.Service
+namespace TransportManagementSystem.Services
 {
     public class UserHelper
     {

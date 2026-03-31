@@ -1,9 +1,9 @@
-import { Injectable } from '@angular/core';
+﻿import { Injectable } from '@angular/core';
 import { NativeDateAdapter } from '@angular/material/core';
 
 @Injectable()
 export class FrDateAdapter extends NativeDateAdapter {
-  // Affichage dans l'input
+
   override format(date: Date, displayFormat: Object): string {
     const day = this._to2digit(date.getDate());
     const month = this._to2digit(date.getMonth() + 1);
@@ -15,7 +15,7 @@ export class FrDateAdapter extends NativeDateAdapter {
     return ('00' + n).slice(-2);
   }
 
-  // Parser pour que l'utilisateur puisse taper "dd/MM/yyyy"
+
   override parse(value: any): Date | null {
     if (typeof value === 'string') {
       const parts = value.split('/');

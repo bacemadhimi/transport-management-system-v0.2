@@ -1,4 +1,4 @@
-export interface IOvertimeSetting {
+﻿export interface IOvertimeSetting {
   id: number;
   driverId: number;
   driverName: string;

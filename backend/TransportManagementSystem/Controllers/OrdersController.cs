@@ -27,7 +27,6 @@ public class OrdersController : ControllerBase
     {
         var query = _context.Orders
           .Include(o => o.Customer)
-          .ThenInclude(c => c.Zone)
           .AsQueryable();
 
 
@@ -66,16 +65,6 @@ public class OrdersController : ControllerBase
             );
         }
 
-        if (!string.IsNullOrWhiteSpace(searchOptions.CustomerCity))
-        {
-            var city = searchOptions.CustomerCity.ToLower();
-            query = query.Where(o =>
-                o.Customer != null &&
-                o.Customer.City != null &&
-                o.Customer.City.ToLower().Contains(city)
-            );
-        }
-
         if (searchOptions.DeliveryDateStart.HasValue)
         {
             query = query.Where(o => o.DeliveryDate.HasValue &&
@@ -93,10 +82,6 @@ public class OrdersController : ControllerBase
         if (!string.IsNullOrWhiteSpace(searchOptions.SourceSystem))
         {
             query = query.Where(o => o.SourceSystem.ToString() == searchOptions.SourceSystem);
-        }
-        if (searchOptions.ZoneId.HasValue)
-        {
-            query = query.Where(o => o.Customer != null && o.Customer.ZoneId == searchOptions.ZoneId.Value);
         }
 
         if (searchOptions.IsLate.HasValue)
@@ -130,8 +115,6 @@ public class OrdersController : ControllerBase
             {  
                 "reference" => ascending ? query.OrderBy(o => o.Reference) : query.OrderByDescending(o => o.Reference),
                 "customername" => ascending ? query.OrderBy(o => o.Customer.Name) : query.OrderByDescending(o => o.Customer.Name),
-                "customercity" => ascending ? query.OrderBy(o => o.Customer.City) : query.OrderByDescending(o => o.Customer.City),
-                "zone" => ascending ? query.OrderBy(o => o.Customer.Zone) : query.OrderByDescending(o => o.Customer.Zone),
                 "weight" => ascending ? query.OrderBy(o => o.Weight) : query.OrderByDescending(o => o.Weight),
                 "deliverydate" => ascending ? query.OrderBy(o => o.DeliveryDate) : query.OrderByDescending(o => o.DeliveryDate),
                 _ => query.OrderByDescending(o => o.CreatedDate)
@@ -157,17 +140,21 @@ public class OrdersController : ControllerBase
             Id = o.Id,
             CustomerId = o.CustomerId,
             CustomerName = o.Customer?.Name,
+<<<<<<< HEAD
             CustomerMatricule = o.Customer?.Matricule,
             ZoneId = o.Customer?.ZoneId,
             ZoneName = o.Customer?.Zone?.Name,
             CustomerCity = o.Customer?.City,
+=======
+            CustomerMatricule = o.Customer?.Matricule, 
+>>>>>>> dev
             DeliveryAddress = o.DeliveryAddress,
             Reference = o.Reference,
             Type = o.Type,
             Weight = o.Weight,
             WeightUnit = o.WeightUnit ?? "",
             Status = o.Status,
-            SourceSystem = o.SourceSystem == DataSource.QAD ? "QAD" : "TMS",
+            SourceSystem = o.SourceSystem,
             CreatedDate = o.CreatedDate,
             DeliveryDate = o.DeliveryDate
         }).ToList();
@@ -184,12 +171,29 @@ public class OrdersController : ControllerBase
     [HttpGet]
     public async Task<IActionResult> GetOrders()
     {
-        var orders = await _orderRepository.Query()
-            .Include(o => o.Customer)
-             .ThenInclude(c => c.Zone)   
+        var query = _orderRepository.Query()
+            .AsNoTracking() // ✅ move early
+            .Select(o => new OrderDto
+            {
+                Id = o.Id,
+                CustomerId = o.CustomerId,
+                CustomerName = o.Customer != null ? o.Customer.Name : null,
+                CustomerMatricule = o.Customer != null ? o.Customer.Matricule : null,
+                Reference = o.Reference,
+                Type = o.Type,
+                Weight = o.Weight,
+                WeightUnit = o.WeightUnit,
+                Status = o.Status,
+                SourceSystem = o.SourceSystem, 
+                CreatedDate = o.CreatedDate,
+                DeliveryDate = o.DeliveryDate
+            });
+
+        var data = await query
             .OrderByDescending(o => o.CreatedDate)
             .ToListAsync();
 
+<<<<<<< HEAD
         var orderDtos = orders.Select(o => new OrderDto
         {
             Id = o.Id,
@@ -210,15 +214,16 @@ public class OrdersController : ControllerBase
         }).ToList();
 
         return Ok(new ApiResponse(true, "Commandes récupérées avec succès", orderDtos));
+=======
+        return Ok(new ApiResponse(true, "Commandes récupérées avec succès", data));
+>>>>>>> dev
     }
-
 
     [HttpGet("pending")]
     public async Task<IActionResult> GetPendingOrders()
     {
         var orders = await _orderRepository.Query()
-            .Include(o => o.Customer)
-              .ThenInclude(c => c.Zone)   
+            .Include(o => o.Customer) 
             .Where(o => o.Status == OrderStatus.Pending && !o.Deliveries.Any())
             .OrderByDescending(o => o.Priority)
             .ThenBy(o => o.CreatedDate)
@@ -230,10 +235,13 @@ public class OrdersController : ControllerBase
             CustomerId = o.CustomerId,
             CustomerName = o.Customer?.Name,
             CustomerMatricule = o.Customer?.Matricule,
+<<<<<<< HEAD
             CustomerCity = o.Customer?.City,
 
             ZoneId = o.Customer?.ZoneId,
             ZoneName = o.Customer?.Zone?.Name,
+=======
+>>>>>>> dev
             Reference = o.Reference,
             Type = o.Type,
             Weight = o.Weight,
@@ -255,7 +263,6 @@ public class OrdersController : ControllerBase
     {
         var orders = await _orderRepository.Query()
              .Include(o => o.Customer)
-        .ThenInclude(c => c.Zone)   
             .Where(o => o.CustomerId == customerId && o.Status == OrderStatus.Pending)
             .OrderByDescending(o => o.CreatedDate)
             .ToListAsync();
@@ -267,9 +274,7 @@ public class OrdersController : ControllerBase
             Reference = o.Reference,
             Type = o.Type,
             Weight = o.Weight,
-            WeightUnit = o.WeightUnit,
-            ZoneId = o.Customer?.ZoneId,
-            ZoneName = o.Customer?.Zone?.Name,  
+            WeightUnit = o.WeightUnit, 
             Status = o.Status,
             CreatedDate = o.CreatedDate,
             DeliveryAddress = o.DeliveryAddress
@@ -444,7 +449,6 @@ public class OrdersController : ControllerBase
     {
         var query = _orderRepository.Query()
     .Include(o => o.Customer)
-        .ThenInclude(c => c.Zone)   
     .AsQueryable();
 
 
@@ -481,8 +485,7 @@ public class OrdersController : ControllerBase
         if (searchOptions.ZoneId.HasValue)
         {
             query = query.Where(o =>
-                o.Customer != null &&
-                o.Customer.ZoneId == searchOptions.ZoneId.Value
+                o.Customer != null 
             );
         }
 

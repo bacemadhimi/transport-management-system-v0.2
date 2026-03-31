@@ -1,14 +1,15 @@
-﻿
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using TransportManagementSystem.Data;
 using TransportManagementSystem.Entity;
 using TransportManagementSystem.Models;
 
-namespace TransportManagementSystem.Controllers
-{
+namespace TransportManagementSystem.Controllers;
+
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class MechanicController : ControllerBase
     {
         private readonly ApplicationDbContext dbContext;
@@ -21,21 +22,20 @@ namespace TransportManagementSystem.Controllers
         [HttpGet("Pagination and Search")]
         public async Task<IActionResult> GetMechanicList([FromQuery] SearchOptions searchOption)
         {
-            var query = dbContext.Mechanics.AsQueryable();
+            // Use OfType<Mechanic>() to get only mechanics from Employees table
+            var query = dbContext.Employees.OfType<Mechanic>().AsQueryable();
 
-           
             if (!string.IsNullOrEmpty(searchOption.Search))
             {
                 query = query.Where(x =>
                     (x.Name != null && x.Name.Contains(searchOption.Search)) ||
                     (x.Email != null && x.Email.Contains(searchOption.Search)) ||
-                    (x.Phone != null && x.Phone.Contains(searchOption.Search))
+                    (x.PhoneNumber != null && x.PhoneNumber.Contains(searchOption.Search))
                 );
             }
 
             var totalData = await query.CountAsync();
 
-            
             if (searchOption.PageIndex.HasValue && searchOption.PageSize.HasValue)
             {
                 query = query
@@ -52,30 +52,64 @@ namespace TransportManagementSystem.Controllers
             return Ok(pagedData);
         }
 
-        
         [HttpGet("{id}")]
         public async Task<ActionResult<Mechanic>> GetMechanicById(int id)
         {
-            var mechanics = await dbContext.Mechanics.FindAsync(id);
+            var mechanic = await dbContext.Employees
+                .OfType<Mechanic>()
+                .FirstOrDefaultAsync(m => m.Id == id);
 
-            if (mechanics == null)
+            if (mechanic == null)
                 return NotFound(new
                 {
                     message = $"Mechanic with ID {id} was not found in the database.",
                     Status = 404
-
                 });
-            return mechanics;
+
+            return Ok(mechanic);
         }
 
-       
         [HttpPost]
-        public async Task<ActionResult<Mechanic>> CreateMechanic(Mechanic mechanic)
+        public async Task<ActionResult<Mechanic>> CreateMechanic([FromBody] CreateMechanicRequest request)
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
-            dbContext.Mechanics.Add(mechanic);
+            // Check if email already exists
+            var emailExists = await dbContext.Employees
+                .OfType<Mechanic>()
+                .AnyAsync(m => m.Email == request.Email);
+
+            if (emailExists)
+            {
+                return BadRequest(new
+                {
+                    message = $"L'email '{request.Email}' est déjà utilisé par un autre mécanicien.",
+                    Status = 400
+                });
+            }
+
+            // Create a new Mechanic instance (which inherits from Employee)
+            var mechanic = new Mechanic
+            {
+                // Employee base properties
+                IdNumber = request.IdNumber ?? GenerateIdNumber(),
+                Name = request.Name,
+                PhoneNumber = request.PhoneNumber,
+                PhoneCountry = request.PhoneCountry ?? "+216",
+                Email = request.Email,
+                DrivingLicense = request.DrivingLicense,
+                TypeTruckId = request.TypeTruckId,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow,
+                IsEnable = true,
+                EmployeeCategory = "MECHANIC", // Discriminator
+                IsInternal = request.IsInternal,
+
+      
+            };
+
+            dbContext.Employees.Add(mechanic);
             await dbContext.SaveChangesAsync();
 
             if (mechanic.Id == 0)
@@ -85,10 +119,12 @@ namespace TransportManagementSystem.Controllers
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateMechanic(int id, Mechanic mechanic)
+        public async Task<IActionResult> UpdateMechanic(int id, [FromBody] UpdateMechanicRequest request)
         {
-            var existingMechanic = await dbContext.Mechanics.FindAsync(id);
-            
+            var existingMechanic = await dbContext.Employees
+                .OfType<Mechanic>()
+                .FirstOrDefaultAsync(m => m.Id == id);
+
             if (existingMechanic == null)
             {
                 return NotFound(new
@@ -98,11 +134,34 @@ namespace TransportManagementSystem.Controllers
                 });
             }
 
-           
-            existingMechanic.Name = mechanic.Name;
-            existingMechanic.Email = mechanic.Email;
-            existingMechanic.Phone = mechanic.Phone;
-            existingMechanic.CreatedDate = mechanic.CreatedDate;
+            // Check email uniqueness if changed
+            if (existingMechanic.Email != request.Email)
+            {
+                var emailExists = await dbContext.Employees
+                    .OfType<Mechanic>()
+                    .AnyAsync(m => m.Email == request.Email && m.Id != id);
+
+                if (emailExists)
+                {
+                    return BadRequest(new
+                    {
+                        message = $"L'email '{request.Email}' est déjà utilisé par un autre mécanicien.",
+                        Status = 400
+                    });
+                }
+            }
+
+            // Update Employee base properties
+            existingMechanic.Name = request.Name;
+            existingMechanic.PhoneNumber = request.PhoneNumber;
+            existingMechanic.PhoneCountry = request.PhoneCountry ?? existingMechanic.PhoneCountry;
+            existingMechanic.Email = request.Email;
+            existingMechanic.DrivingLicense = request.DrivingLicense;
+            existingMechanic.TypeTruckId = request.TypeTruckId;
+            existingMechanic.UpdatedAt = DateTime.UtcNow;
+            existingMechanic.IsEnable = request.IsEnable;
+            existingMechanic.IsInternal = request.IsInternal;
+
 
             await dbContext.SaveChangesAsync();
 
@@ -114,12 +173,12 @@ namespace TransportManagementSystem.Controllers
             });
         }
 
-        
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteMechanic(int id)
         {
-            
-            var existingMechanic = await dbContext.Mechanics.FindAsync(id);
+            var existingMechanic = await dbContext.Employees
+                .OfType<Mechanic>()
+                .FirstOrDefaultAsync(m => m.Id == id);
 
             if (existingMechanic == null)
             {
@@ -130,22 +189,61 @@ namespace TransportManagementSystem.Controllers
                 });
             }
 
-           
-            dbContext.Mechanics.Remove(existingMechanic);
+            // Soft delete - just disable
+            existingMechanic.IsEnable = false;
+            existingMechanic.UpdatedAt = DateTime.UtcNow;
             await dbContext.SaveChangesAsync();
 
             return Ok(new
             {
-                message = $"Mechanic with ID {id} has been deleted successfully.",
+                message = $"Mechanic with ID {id} has been disabled successfully.",
                 Status = 200
             });
         }
 
-
         [HttpGet("all")]
         public async Task<ActionResult<IEnumerable<Mechanic>>> GetMechanics()
         {
-            return await dbContext.Mechanics.ToListAsync();
+            var mechanics = await dbContext.Employees
+                .OfType<Mechanic>()
+                .ToListAsync();
+
+            return Ok(mechanics);
+        }
+
+        private string GenerateIdNumber()
+        {
+            return $"MECH{DateTime.Now.Ticks.ToString().Substring(0, 8)}";
         }
     }
+
+
+// Request DTOs
+public class CreateMechanicRequest
+{
+    public string? IdNumber { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public string PhoneNumber { get; set; } = string.Empty;
+    public string? PhoneCountry { get; set; }
+    public string Email { get; set; } = string.Empty;
+    public string? DrivingLicense { get; set; }
+    public int? TypeTruckId { get; set; }
+    public string? Specialization { get; set; }
+    public int? YearsOfExperience { get; set; }
+    public bool IsInternal { get; set; } = true;
+    public bool IsEnable { get; set; } = true;
+}
+
+public class UpdateMechanicRequest
+{
+    public string Name { get; set; } = string.Empty;
+    public string PhoneNumber { get; set; } = string.Empty;
+    public string? PhoneCountry { get; set; }
+    public string Email { get; set; } = string.Empty;
+    public string? DrivingLicense { get; set; }
+    public int? TypeTruckId { get; set; }
+    public string? Specialization { get; set; }
+    public int? YearsOfExperience { get; set; }
+    public bool IsInternal { get; set; } = true;
+    public bool IsEnable { get; set; } = true;
 }

@@ -1,247 +1,435 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using TransportManagementSystem.Data;
 using TransportManagementSystem.Entity;
 using TransportManagementSystem.Models;
-using TransportManagementSystem.Service;
 
 namespace TransportManagementSystem.Controllers;
 
-[Route("api/[controller]")]
 [ApiController]
-public class DriverController : ControllerBase
+[Route("api/[controller]")]
+[Authorize]
+public class DriversController : ControllerBase
 {
-    private readonly ApplicationDbContext dbContext;
-    private readonly PasswordHelper passwordHelper;
-    public DriverController(ApplicationDbContext context)
+    private readonly ApplicationDbContext context;
+
+    public DriversController(ApplicationDbContext context)
     {
-        dbContext = context;
-        this.passwordHelper = new PasswordHelper();
+        this.context = context;
     }
 
-    [HttpGet("Pagination and Search")]
-    public async Task<IActionResult> GetEnabledDriverList([FromQuery] SearchOptions searchOption)
+    [HttpGet]
+    public async Task<IActionResult> GetDrivers([FromQuery] SearchOptions searchOption)
     {
-        var pagedData = new PagedData<Driver>();
+        var query = context.Employees
+            .OfType<Driver>()
+            .Include(d => d.TypeTruck)
+            .Include(d => d.DriverGeographicalEntities)
+                .ThenInclude(dg => dg.GeographicalEntity)
+                    .ThenInclude(g => g.Level)
+            .Where(d => d.EmployeeCategory == "DRIVER")
+            .AsQueryable();
 
-        if (string.IsNullOrEmpty(searchOption.Search))
+        if (!string.IsNullOrWhiteSpace(searchOption.Search))
         {
-            pagedData.Data = await dbContext.Drivers
-                .Where(x => x.IsEnable == true)
-                .ToListAsync();
-        }
-        else
-        {
-            pagedData.Data = await dbContext.Drivers
-                .Where(x => x.IsEnable == true &&
-                   (
-                       (x.Name != null && x.Name.Contains(searchOption.Search)) ||
-                       (x.PermisNumber != null && x.PermisNumber.Contains(searchOption.Search)) ||
-                       x.Phone.Contains(searchOption.Search) ||
-                       (x.Status != null && x.Status.Contains(searchOption.Search)) ||
-                       x.IdCamion.ToString().Contains(searchOption.Search)
-                   )
-                )
-                .ToListAsync();
+            var search = searchOption.Search.Trim();
+            query = query.Where(x =>
+                (!string.IsNullOrEmpty(x.Name) && x.Name.Contains(search)) ||
+                (!string.IsNullOrEmpty(x.IdNumber) && x.IdNumber.Contains(search)) ||
+                (!string.IsNullOrEmpty(x.PhoneNumber) && x.PhoneNumber.Contains(search)) ||
+                (!string.IsNullOrEmpty(x.Email) && x.Email.Contains(search))
+            );
         }
 
-        pagedData.TotalData = pagedData.Data.Count;
+        var totalCount = await query.CountAsync();
 
         if (searchOption.PageIndex.HasValue && searchOption.PageSize.HasValue)
         {
-            pagedData.Data = pagedData.Data
+            query = query
                 .Skip(searchOption.PageIndex.Value * searchOption.PageSize.Value)
-                .Take(searchOption.PageSize.Value)
-                .ToList();
+                .Take(searchOption.PageSize.Value);
         }
+
+        var drivers = await query.ToListAsync();
+
+        var driverDtos = drivers.Select(d => new DriverDto
+        {
+            Id = d.Id,
+            IdNumber = d.IdNumber,
+            Name = d.Name,
+            Email = d.Email,
+            PhoneNumber = d.PhoneNumber,
+            PhoneCountry = d.PhoneCountry,
+            DrivingLicense = d.DrivingLicense,
+            TypeTruckId = d.TypeTruckId,
+            TypeTruck = d.TypeTruck != null ? new TypeTruckDto
+            {
+                Id = d.TypeTruck.Id,
+                Type = d.TypeTruck.Type,
+                Capacity = d.TypeTruck.Capacity,
+                
+            } : null,
+            DrivingLicenseAttachment = d.DrivingLicenseAttachment,
+            AttachmentFileName = d.AttachmentFileName,
+            AttachmentFileType = d.AttachmentFileType,
+            CreatedAt = d.CreatedAt,
+            UpdatedAt = d.UpdatedAt,
+            IsEnable = d.IsEnable,
+            EmployeeCategory = d.EmployeeCategory,
+            IsInternal = d.IsInternal,
+            Status = d.Status,
+            IdCamion = d.IdCamion,
+            ImageBase64 = d.ImageBase64,
+            GeographicalEntities = d.DriverGeographicalEntities?
+                .Where(dg => dg.GeographicalEntity != null && dg.GeographicalEntity.IsActive)
+                .Select(dg => new DriverGeographicalEntityDto
+                {
+                    GeographicalEntityId = dg.GeographicalEntityId,
+                    GeographicalEntityName = dg.GeographicalEntity.Name,
+                    LevelName = dg.GeographicalEntity.Level?.Name,
+                    LevelNumber = dg.GeographicalEntity.Level?.LevelNumber ?? 0,
+                    Latitude = dg.GeographicalEntity.Latitude,
+                    Longitude = dg.GeographicalEntity.Longitude
+                }).ToList() ?? new List<DriverGeographicalEntityDto>()
+        }).ToList();
+
+        var pagedData = new PagedData<DriverDto>
+        {
+            Data = driverDtos,
+            TotalData = totalCount
+        };
 
         return Ok(pagedData);
     }
 
-
-    //Get
-    [HttpGet("ListOfDrivers")]
-    public async Task<ActionResult<IEnumerable<Driver>>> GetDriver()
-    {
-        var drivers = await dbContext.Drivers
-            .Include(d => d.Zone)   
-            .ToListAsync();
-
-        return Ok(drivers);
-    }
-
-    //Get By Id
     [HttpGet("{id}")]
-    public async Task<ActionResult<Driver>> GetDriverById(int id)
+    public async Task<IActionResult> GetDriverById(int id)
     {
-        var drivers = await dbContext.Drivers.FindAsync(id);
+        var driver = await context.Employees
+            .OfType<Driver>()
+            .Include(d => d.TypeTruck)
+            .Include(d => d.DriverGeographicalEntities)
+                .ThenInclude(dg => dg.GeographicalEntity)
+                    .ThenInclude(g => g.Level)
+            .FirstOrDefaultAsync(d => d.Id == id && d.EmployeeCategory == "DRIVER");
 
-        if (drivers == null)
-            return NotFound(new
+        if (driver == null)
+            return NotFound(new ApiResponse(false, $"Chauffeur {id} non trouvé"));
+
+        var driverDto = new DriverDto
+        {
+            Id = driver.Id,
+            IdNumber = driver.IdNumber,
+            Name = driver.Name,
+            Email = driver.Email,
+            PhoneNumber = driver.PhoneNumber,
+            PhoneCountry = driver.PhoneCountry,
+            DrivingLicense = driver.DrivingLicense,
+            TypeTruckId = driver.TypeTruckId,
+            TypeTruck = driver.TypeTruck != null ? new TypeTruckDto
             {
-                message = $"Driver with ID {id} was not found in the database.",
-                Status = 404
+                Id = driver.TypeTruck.Id,
+                Type = driver.TypeTruck.Type,
+                Capacity = driver.TypeTruck.Capacity,
+                
+            } : null,
+            DrivingLicenseAttachment = driver.DrivingLicenseAttachment,
+            AttachmentFileName = driver.AttachmentFileName,
+            AttachmentFileType = driver.AttachmentFileType,
+            CreatedAt = driver.CreatedAt,
+            UpdatedAt = driver.UpdatedAt,
+            IsEnable = driver.IsEnable,
+            EmployeeCategory = driver.EmployeeCategory,
+            IsInternal = driver.IsInternal,
+            Status = driver.Status,
+            IdCamion = driver.IdCamion,
+            ImageBase64 = driver.ImageBase64,
+            GeographicalEntities = driver.DriverGeographicalEntities?
+                .Where(dg => dg.GeographicalEntity != null && dg.GeographicalEntity.IsActive)
+                .Select(dg => new DriverGeographicalEntityDto
+                {
+                    GeographicalEntityId = dg.GeographicalEntityId,
+                    GeographicalEntityName = dg.GeographicalEntity.Name,
+                    LevelName = dg.GeographicalEntity.Level?.Name,
+                    LevelNumber = dg.GeographicalEntity.Level?.LevelNumber ?? 0,
+                    Latitude = dg.GeographicalEntity.Latitude,
+                    Longitude = dg.GeographicalEntity.Longitude
+                }).ToList() ?? new List<DriverGeographicalEntityDto>()
+        };
 
-            });
-        return drivers;
+        return Ok(new ApiResponse(true, "Chauffeur récupéré avec succès", driverDto));
     }
 
-    //Create
     [HttpPost]
-    public async Task<ActionResult<Driver>> CreateDriver(Driver driver)
+    public async Task<IActionResult> AddDriver([FromBody] DriverDto model)
     {
         if (!ModelState.IsValid)
-            return BadRequest(ModelState);
+            return BadRequest(new ApiResponse(false, "Données invalides", ModelState));
 
-        var emailExists = await dbContext.Drivers
-            .AnyAsync(d => d.Email == driver.Email);
+        var existingDriver = await context.Employees
+            .OfType<Driver>()
+            .FirstOrDefaultAsync(x => x.IdNumber == model.IdNumber || x.Email == model.Email);
 
-        if (emailExists)
+        if (existingDriver != null)
+            return BadRequest(new ApiResponse(false, "Un chauffeur avec ce numéro d'identité ou cet email existe déjà"));
+
+        // Validate Geographical Entities if provided
+        if (model.GeographicalEntities != null && model.GeographicalEntities.Any())
         {
-            return BadRequest(new
-            {
-                message = $"L'email '{driver.Email}' est déjà utilisé par un autre chauffeur.",
-                Status = 400
-            });
+            var entityIds = model.GeographicalEntities.Select(g => g.GeographicalEntityId).ToList();
+            var validEntities = await context.GeographicalEntities
+                .Where(g => entityIds.Contains(g.Id) && g.IsActive)
+                .Select(g => g.Id)
+                .ToListAsync();
+
+            var invalidIds = entityIds.Except(validEntities).ToList();
+            if (invalidIds.Any())
+                return BadRequest(new ApiResponse(false,
+                    $"Les entités géographiques avec IDs {string.Join(", ", invalidIds)} sont invalides ou inactives"));
         }
 
-        dbContext.Drivers.Add(driver);
-        await dbContext.SaveChangesAsync();
+        var driver = new Driver
+        {
+            IdNumber = model.IdNumber,
+            Name = model.Name,
+            Email = model.Email,
+            PhoneNumber = model.PhoneNumber,
+            PhoneCountry = model.PhoneCountry ?? "tn",
+            DrivingLicense = model.DrivingLicense,
+            TypeTruckId = model.TypeTruckId,
+            IsEnable = true,
+            EmployeeCategory = "DRIVER",
+            IsInternal = model.IsInternal,
+            Status = model.Status ?? "Disponible",
+            IdCamion = model.IdCamion,
+            ImageBase64 = model.ImageBase64,
+            DriverGeographicalEntities = new List<DriverGeographicalEntity>()
+        };
 
-        if (driver.Id == 0)
-            return BadRequest("Driver ID was not generated. Something went wrong.");
+        // Add geographical entities
+        if (model.GeographicalEntities != null && model.GeographicalEntities.Any())
+        {
+            foreach (var geoDto in model.GeographicalEntities)
+            {
+                driver.DriverGeographicalEntities.Add(new DriverGeographicalEntity
+                {
+                    GeographicalEntityId = geoDto.GeographicalEntityId
+                });
+            }
+        }
 
-        await CreateUserForDriver(driver);
+        await context.Employees.AddAsync(driver);
+        await context.SaveChangesAsync();
 
-        return CreatedAtAction(nameof(GetDriverById), new { id = driver.Id }, driver);
+        // Load the created driver with relationships
+        var createdDriver = await context.Employees
+            .OfType<Driver>()
+            .Include(d => d.TypeTruck)
+            .Include(d => d.DriverGeographicalEntities)
+                .ThenInclude(dg => dg.GeographicalEntity)
+                    .ThenInclude(g => g.Level)
+            .FirstOrDefaultAsync(d => d.Id == driver.Id);
+
+        var driverDto = new DriverDto
+        {
+            Id = createdDriver.Id,
+            IdNumber = createdDriver.IdNumber,
+            Name = createdDriver.Name,
+            Email = createdDriver.Email,
+            PhoneNumber = createdDriver.PhoneNumber,
+            PhoneCountry = createdDriver.PhoneCountry,
+            DrivingLicense = createdDriver.DrivingLicense,
+            TypeTruckId = createdDriver.TypeTruckId,
+            TypeTruck = createdDriver.TypeTruck != null ? new TypeTruckDto
+            {
+                Id = createdDriver.TypeTruck.Id,
+                Type = createdDriver.TypeTruck.Type,
+                Capacity = createdDriver.TypeTruck.Capacity,
+               
+            } : null,
+            IsEnable = createdDriver.IsEnable,
+            EmployeeCategory = createdDriver.EmployeeCategory,
+            IsInternal = createdDriver.IsInternal,
+            Status = createdDriver.Status,
+            IdCamion = createdDriver.IdCamion,
+            ImageBase64 = createdDriver.ImageBase64,
+            GeographicalEntities = createdDriver.DriverGeographicalEntities?
+                .Where(dg => dg.GeographicalEntity != null && dg.GeographicalEntity.IsActive)
+                .Select(dg => new DriverGeographicalEntityDto
+                {
+                    GeographicalEntityId = dg.GeographicalEntityId,
+                    GeographicalEntityName = dg.GeographicalEntity.Name,
+                    LevelName = dg.GeographicalEntity.Level?.Name,
+                    LevelNumber = dg.GeographicalEntity.Level?.LevelNumber ?? 0,
+                    Latitude = dg.GeographicalEntity.Latitude,
+                    Longitude = dg.GeographicalEntity.Longitude
+                }).ToList() ?? new List<DriverGeographicalEntityDto>()
+        };
+
+        return CreatedAtAction(nameof(GetDriverById), new { id = driver.Id },
+            new ApiResponse(true, "Chauffeur créé avec succès", driverDto));
     }
-
 
     [HttpPut("{id}")]
-    public async Task<IActionResult> UpdateDriver(int id, Driver driver)
+    public async Task<IActionResult> UpdateDriver(int id, [FromBody] DriverDto model)
     {
-        var existingDriver = await dbContext.Drivers.FindAsync(id);
-        // ID does NOT exist → show message
-        if (existingDriver == null)
+        if (!ModelState.IsValid)
+            return BadRequest(new ApiResponse(false, "Données invalides", ModelState));
+
+        var driver = await context.Employees
+            .OfType<Driver>()
+            .Include(d => d.DriverGeographicalEntities) // Make sure to include this
+            .FirstOrDefaultAsync(d => d.Id == id && d.EmployeeCategory == "DRIVER");
+
+        if (driver == null)
+            return NotFound(new ApiResponse(false, $"Chauffeur {id} non trouvé"));
+
+        var existingDriver = await context.Employees
+            .OfType<Driver>()
+            .FirstOrDefaultAsync(x => (x.IdNumber == model.IdNumber || x.Email == model.Email) && x.Id != id);
+
+        if (existingDriver != null)
+            return BadRequest(new ApiResponse(false, "Un chauffeur avec ce numéro d'identité ou cet email existe déjà"));
+
+        // Validate Geographical Entities if provided
+        if (model.GeographicalEntities != null && model.GeographicalEntities.Any())
         {
-            return NotFound(new
-            {
-                message = $"Driver with ID {id} was not found.",
-                Status = 404
-            });
+            var entityIds = model.GeographicalEntities.Select(g => g.GeographicalEntityId).ToList();
+            var validEntities = await context.GeographicalEntities
+                .Where(g => entityIds.Contains(g.Id) && g.IsActive)
+                .Select(g => g.Id)
+                .ToListAsync();
+
+            var invalidIds = entityIds.Except(validEntities).ToList();
+            if (invalidIds.Any())
+                return BadRequest(new ApiResponse(false,
+                    $"Les entités géographiques avec IDs {string.Join(", ", invalidIds)} sont invalides ou inactives"));
         }
 
-        // ID exists → update the driver
-        existingDriver.Name = driver.Name;
-        existingDriver.Email = driver.Email;
-        existingDriver.PermisNumber = driver.PermisNumber;
-        existingDriver.Phone = driver.Phone;
-        existingDriver.Status = driver.Status;
-        existingDriver.IdCamion = driver.IdCamion;
-        existingDriver.phoneCountry = driver.phoneCountry;
-        existingDriver.IsEnable = driver.IsEnable;
-        existingDriver.ZoneId = driver.ZoneId;
-        existingDriver.ImageBase64 = driver.ImageBase64;
-        existingDriver.CityId = driver.CityId;
-        await dbContext.SaveChangesAsync();
+        // Update driver properties
+        driver.IdNumber = model.IdNumber;
+        driver.Name = model.Name;
+        driver.Email = model.Email;
+        driver.PhoneNumber = model.PhoneNumber;
+        driver.PhoneCountry = model.PhoneCountry ?? "tn";
+        driver.DrivingLicense = model.DrivingLicense;
+        driver.TypeTruckId = model.TypeTruckId;
+        driver.IsInternal = model.IsInternal;
+        driver.Status = model.Status;
+        driver.IdCamion = model.IdCamion;
+        driver.ImageBase64 = model.ImageBase64;
+        driver.UpdatedAt = DateTime.UtcNow;
 
-        return Ok(new
+        // Update geographical entities
+        if (model.GeographicalEntities != null)
         {
-            message = $"Driver with ID {id} has been updated successfully.",
-            Status = 200,
-            Data = existingDriver
-        });
+            // Remove old associations
+            context.DriverGeographicalEntities.RemoveRange(driver.DriverGeographicalEntities);
+
+            // Add new associations
+            driver.DriverGeographicalEntities = model.GeographicalEntities.Select(geoDto => new DriverGeographicalEntity
+            {
+                DriverId = driver.Id,
+                GeographicalEntityId = geoDto.GeographicalEntityId
+            }).ToList();
+        }
+
+        context.Employees.Update(driver);
+        await context.SaveChangesAsync();
+
+        // Load updated driver with relationships
+        var updatedDriver = await context.Employees
+            .OfType<Driver>()
+            .Include(d => d.TypeTruck)
+            .Include(d => d.DriverGeographicalEntities)
+                .ThenInclude(dg => dg.GeographicalEntity)
+                    .ThenInclude(g => g.Level)
+            .FirstOrDefaultAsync(d => d.Id == id);
+
+        var driverDto = new DriverDto
+        {
+            Id = updatedDriver.Id,
+            IdNumber = updatedDriver.IdNumber,
+            Name = updatedDriver.Name,
+            Email = updatedDriver.Email,
+            PhoneNumber = updatedDriver.PhoneNumber,
+            PhoneCountry = updatedDriver.PhoneCountry,
+            DrivingLicense = updatedDriver.DrivingLicense,
+            TypeTruckId = updatedDriver.TypeTruckId,
+            TypeTruck = updatedDriver.TypeTruck != null ? new TypeTruckDto
+            {
+                Id = updatedDriver.TypeTruck.Id,
+                Type = updatedDriver.TypeTruck.Type,
+                Capacity = updatedDriver.TypeTruck.Capacity,
+              
+            } : null,
+            IsEnable = updatedDriver.IsEnable,
+            EmployeeCategory = updatedDriver.EmployeeCategory,
+            IsInternal = updatedDriver.IsInternal,
+            Status = updatedDriver.Status,
+            IdCamion = updatedDriver.IdCamion,
+            ImageBase64 = updatedDriver.ImageBase64,
+            GeographicalEntities = updatedDriver.DriverGeographicalEntities?
+                .Where(dg => dg.GeographicalEntity != null && dg.GeographicalEntity.IsActive)
+                .Select(dg => new DriverGeographicalEntityDto
+                {
+                    GeographicalEntityId = dg.GeographicalEntityId,
+                    GeographicalEntityName = dg.GeographicalEntity.Name,
+                    LevelName = dg.GeographicalEntity.Level?.Name,
+                    LevelNumber = dg.GeographicalEntity.Level?.LevelNumber ?? 0,
+                    Latitude = dg.GeographicalEntity.Latitude,
+                    Longitude = dg.GeographicalEntity.Longitude
+                }).ToList() ?? new List<DriverGeographicalEntityDto>()
+        };
+
+        return Ok(new ApiResponse(true, "Chauffeur mis à jour avec succès", driverDto));
     }
 
-    //Delete
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteDriver(int id)
     {
-        // Find the driver by ID
-        var existingDriver = await dbContext.Drivers.FindAsync(id);
-
-        if (existingDriver == null)
-        {
-            return NotFound(new
-            {
-                message = $"Driver with ID {id} was not found.",
-                Status = 404
-            });
-        }
-
-        // Remove the driver
-        dbContext.Drivers.Remove(existingDriver);
-        await dbContext.SaveChangesAsync();
-
-        return Ok(new
-        {
-            message = $"Driver with ID {id} has been deleted successfully.",
-            Status = 200
-        });
-    }
-
-    [HttpPut("DriverStatus")]
-    public async Task<IActionResult> ActivateDriver([FromQuery] int driverId)
-    {
-        var driver = await dbContext.Drivers.FirstOrDefaultAsync(x => x.Id == driverId);
+        var driver = await context.Employees
+            .OfType<Driver>()
+            .Include(d => d.DriverGeographicalEntities)
+            .FirstOrDefaultAsync(d => d.Id == id);
 
         if (driver == null)
-            return NotFound();
+            return NotFound(new ApiResponse(false, $"Chauffeur {id} non trouvé"));
 
-        driver.IsEnable = true;
-        driver.UpdatedAt = DateTime.UtcNow;
+        // Check if driver is used in any trips
+        var hasTrips = await context.Trips.AnyAsync(t => t.DriverId == id);
+        if (hasTrips)
+        {
+            return BadRequest(new ApiResponse(false,
+                "Impossible de supprimer ce chauffeur car il est associé à des voyages"));
+        }
 
-        await dbContext.SaveChangesAsync();
+        // Remove geographical entity associations first
+        if (driver.DriverGeographicalEntities != null && driver.DriverGeographicalEntities.Any())
+        {
+            context.DriverGeographicalEntities.RemoveRange(driver.DriverGeographicalEntities);
+        }
 
-        return Ok(driver);
+        context.Employees.Remove(driver);
+        await context.SaveChangesAsync();
+
+        return Ok(new ApiResponse(true, "Le chauffeur a été supprimé avec succès"));
     }
 
-    // Search disabled drivers
-    [HttpGet("PaginationDisableDriver")]
-    public async Task<IActionResult> GetDisableDriver([FromQuery] SearchOptions searchOption)
+    [HttpGet("list")]
+    public async Task<ActionResult<IEnumerable<DriverDto>>> GetDriversList()
     {
-        var pagedData = new PagedData<Driver>();
+        var drivers = await context.Employees
+            .OfType<Driver>()
+            .Include(d => d.TypeTruck)
+            .Include(d => d.DriverGeographicalEntities)
+                .ThenInclude(dg => dg.GeographicalEntity)
+                    .ThenInclude(g => g.Level)
+            .Where(d => d.IsEnable && d.EmployeeCategory == "DRIVER")
+            .ToListAsync();
 
-        if (string.IsNullOrEmpty(searchOption.Search))
-        {
-            pagedData.Data = await dbContext.Drivers
-                .Where(x => x.IsEnable == false)
-                .ToListAsync();
-        }
-        else
-        {
-            pagedData.Data = await dbContext.Drivers
-                .Where(x => x.IsEnable == false &&
-                   (
-                       (x.Name != null && x.Name.Contains(searchOption.Search)) || (x.Email != null && x.Email.Contains(searchOption.Search)) ||
-                       (x.PermisNumber != null && x.PermisNumber.Contains(searchOption.Search)) ||
-                       x.Phone.Contains(searchOption.Search) ||
-                       (x.Status != null && x.Status.Contains(searchOption.Search)) ||
-                       x.IdCamion.ToString().Contains(searchOption.Search)
-                   )
-                )
-                .ToListAsync();
-        }
-
-        pagedData.TotalData = pagedData.Data.Count;
-
-        if (searchOption.PageIndex.HasValue && searchOption.PageSize.HasValue)
-        {
-            pagedData.Data = pagedData.Data
-                .Skip(searchOption.PageIndex.Value * searchOption.PageSize.Value)
-                .Take(searchOption.PageSize.Value)
-                .ToList();
-        }
-
-        return Ok(pagedData);
-    }
-
-    //Désactiver Driver
-    [HttpPut("DisableDriverFromList/{id}")]
-    public async Task<IActionResult> DisableDriver(int id)
-    {
-        var driver = await dbContext.Drivers.FirstOrDefaultAsync(x => x.Id == id);
-
+<<<<<<< HEAD
         if (driver == null)
             return NotFound();
 
@@ -311,16 +499,126 @@ public class DriverController : ControllerBase
         var drivers = await dbContext.Drivers
             .Where(d => d.IsEnable && d.ZoneId == zoneId)
             .Select(d => new Driver
+=======
+        var driverDtos = drivers.Select(d => new DriverDto
+        {
+            Id = d.Id,
+            IdNumber = d.IdNumber,
+            Name = d.Name,
+            Email = d.Email,
+            PhoneNumber = d.PhoneNumber,
+            PhoneCountry = d.PhoneCountry,
+            DrivingLicense = d.DrivingLicense,
+            TypeTruckId = d.TypeTruckId,
+            TypeTruck = d.TypeTruck != null ? new TypeTruckDto
+>>>>>>> dev
             {
-                Id = d.Id,
-                Name = d.Name,
-                PermisNumber = d.PermisNumber,
-                Phone = d.Phone,
-                ZoneId = d.ZoneId
+                Id = d.TypeTruck.Id,
+                Type = d.TypeTruck.Type,
+                Capacity = d.TypeTruck.Capacity,
+               
+            } : null,
+            IsEnable = d.IsEnable,
+            EmployeeCategory = d.EmployeeCategory,
+            IsInternal = d.IsInternal,
+            Status = d.Status,
+            IdCamion = d.IdCamion,
+
+            ImageBase64 = d.ImageBase64,
+            GeographicalEntities = d.DriverGeographicalEntities?
+                .Where(dg => dg.GeographicalEntity != null && dg.GeographicalEntity.IsActive)
+                .Select(dg => new DriverGeographicalEntityDto
+                {
+                    GeographicalEntityId = dg.GeographicalEntityId,
+                    GeographicalEntityName = dg.GeographicalEntity.Name,
+                    LevelName = dg.GeographicalEntity.Level?.Name,
+                    LevelNumber = dg.GeographicalEntity.Level?.LevelNumber ?? 0,
+                    Latitude = dg.GeographicalEntity.Latitude,
+                    Longitude = dg.GeographicalEntity.Longitude
+                }).ToList() ?? new List<DriverGeographicalEntityDto>()
+        }).ToList();
+
+        return Ok(driverDtos);
+    }
+
+    [HttpGet("by-geographical-entity/{entityId}")]
+    public async Task<IActionResult> GetDriversByGeographicalEntity(int entityId)
+    {
+        var drivers = await context.Employees
+            .OfType<Driver>()
+            .Include(d => d.TypeTruck)
+            .Include(d => d.DriverGeographicalEntities)
+                .ThenInclude(dg => dg.GeographicalEntity)
+                    .ThenInclude(g => g.Level)
+            .Where(d => d.IsEnable &&
+                        d.EmployeeCategory == "DRIVER" &&
+                        d.DriverGeographicalEntities.Any(dg => dg.GeographicalEntityId == entityId))
+            .ToListAsync();
+
+        var driverDtos = drivers.Select(d => new DriverDto
+        {
+            Id = d.Id,
+            IdNumber = d.IdNumber,
+            Name = d.Name,
+            Email = d.Email,
+            PhoneNumber = d.PhoneNumber,
+            PhoneCountry = d.PhoneCountry,
+            DrivingLicense = d.DrivingLicense,
+            TypeTruckId = d.TypeTruckId,
+            TypeTruck = d.TypeTruck != null ? new TypeTruckDto
+            {
+                Id = d.TypeTruck.Id,
+                Type = d.TypeTruck.Type,
+                Capacity = d.TypeTruck.Capacity,
+               
+            } : null,
+            IsEnable = d.IsEnable,
+            EmployeeCategory = d.EmployeeCategory,
+            IsInternal = d.IsInternal,
+            Status = d.Status,
+            IdCamion = d.IdCamion,
+            ImageBase64 = d.ImageBase64
+        }).ToList();
+
+        return Ok(driverDtos);
+    }
+
+    [HttpGet("with-coordinates")]
+    public async Task<IActionResult> GetDriversWithCoordinates()
+    {
+        var drivers = await context.Employees
+            .OfType<Driver>()
+            .Include(d => d.TypeTruck)
+            .Include(d => d.DriverGeographicalEntities)
+                .ThenInclude(dg => dg.GeographicalEntity)
+                    .ThenInclude(g => g.Level)
+            .Where(d => d.IsEnable &&
+                        d.EmployeeCategory == "DRIVER" &&
+                        d.DriverGeographicalEntities.Any(dg =>
+                            dg.GeographicalEntity.Latitude != null &&
+                            dg.GeographicalEntity.Longitude != null))
+            .Select(d => new
+            {
+                d.Id,
+                d.Name,
+                d.IdNumber,
+                d.PhoneNumber,
+                d.Email,
+                TypeName = d.TypeTruck != null ? d.TypeTruck.Type : null,
+                d.Status,
+                GeographicalEntities = d.DriverGeographicalEntities
+                    .Where(dg => dg.GeographicalEntity.Latitude != null && dg.GeographicalEntity.Longitude != null)
+                    .Select(dg => new
+                    {
+                        dg.GeographicalEntityId,
+                        Name = dg.GeographicalEntity.Name,
+                        Level = dg.GeographicalEntity.Level != null ? dg.GeographicalEntity.Level.Name : null,
+                        dg.GeographicalEntity.Latitude,
+                        dg.GeographicalEntity.Longitude
+                    }).ToList()
             })
             .ToListAsync();
 
         return Ok(drivers);
     }
-
 }

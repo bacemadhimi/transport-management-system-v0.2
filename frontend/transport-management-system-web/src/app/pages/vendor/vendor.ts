@@ -1,4 +1,4 @@
-import { Component, inject, OnInit } from '@angular/core';
+﻿import { Component, inject, OnInit } from '@angular/core';
 import { Http } from '../../services/http';
 import { Table } from '../../components/table/table';
 import { IVendor } from '../../types/vendor';
@@ -33,11 +33,11 @@ import { CommonModule } from '@angular/common';
   styleUrls: ['./vendor.scss']
 })
 export class Vendor implements OnInit {
-      constructor(public auth: Auth) {}  
-    
+      constructor(public auth: Auth) {}
+
       getActions(row: any, actions: string[]) {
         const permittedActions: string[] = [];
-    
+
         for (const a of actions) {
           if (a === 'Modifier' && this.auth.hasPermission('VENDOR_EDIT')) {
             permittedActions.push(a);
@@ -46,37 +46,37 @@ export class Vendor implements OnInit {
             permittedActions.push(a);
           }
         }
-    
+
         return permittedActions;
       }
-      
+
   httpService = inject(Http);
   pagedvendorData!: PagedData<IVendor>;
   totalData!: number;
-  
+
   filter: any = {
     pageIndex: 0,
     pageSize: 10
   };
-  
+
   searchControl = new FormControl('');
   readonly dialog = inject(MatDialog);
 
   showCols = [
-   
+
     { key: 'name', label: 'Nom' },
     { key: 'email', label: 'Email' },
     { key: 'phone', label: 'Téléphone' },
-    { 
-      key: 'createdDate', 
+    {
+      key: 'createdDate',
       label: 'Date de Création',
       format: (row: IVendor) => {
         if (!row.createdDate) return 'N/A';
         const date = new Date(row.createdDate);
-        return date.toLocaleDateString('fr-FR', { 
-          day: '2-digit', 
-          month: '2-digit', 
-          year: 'numeric' 
+        return date.toLocaleDateString('fr-FR', {
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric'
         });
       }
     },
