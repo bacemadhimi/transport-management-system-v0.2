@@ -468,7 +468,7 @@ namespace TransportManagementSystem.Data
                             PhoneNumber = $"2{rnd.Next(1000000, 9999999)}",
                             Email = $"{name.ToLower()}{index}@tms.demo",
                             CategoryId = driverCategory.Id,
-
+                            Status= "Disponible",
 
                             EmployeeCategory = "DRIVER",
                             DrivingLicense = $"TN-{rnd.Next(10000, 99999)}",
