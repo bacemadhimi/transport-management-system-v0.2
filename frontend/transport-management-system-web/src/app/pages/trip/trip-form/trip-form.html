@@ -982,50 +982,72 @@
         </div>
       </div>
 
-      <!-- Search & Filter Bar - Like Market Filters -->
-      <div class="search-and-filter-row" *ngIf="currentQuickAddStep === 1">
-        <div class="search-field-container">
-          <mat-form-field appearance="outline" class="search-field">
-            <mat-icon matPrefix>search</mat-icon>
-            <input
-              matInput
-              [formControl]="clientSearchControl"
-              placeholder="Rechercher client par nom ou matricule..."
-            >
-            <button
-              *ngIf="clientSearchControl.value"
-              matSuffix
-              mat-icon-button
-              (click)="clearClientSearch()"
-              type="button"
-            >
-              <mat-icon>close</mat-icon>
-            </button>
-          </mat-form-field>
-        </div>
+<!-- Search & Filter Bar - Like Market Filters -->
+<div class="search-and-filter-row" *ngIf="currentQuickAddStep === 1">
+  <div class="search-field-container">
+    <mat-form-field appearance="outline" class="search-field">
+      <mat-icon matPrefix>search</mat-icon>
+      <input
+        matInput
+        [formControl]="clientSearchControl"
+        placeholder="Rechercher client par nom ou matricule..."
+      >
+      <button
+        *ngIf="clientSearchControl.value"
+        matSuffix
+        mat-icon-button
+        (click)="clearClientSearch()"
+        type="button"
+      >
+        <mat-icon>close</mat-icon>
+      </button>
+    </mat-form-field>
+  </div>
 
-        <div class="entity-filter-container" *ngIf="geographicalEntities.length > 0">
-          <mat-form-field appearance="outline" class="entity-filter-field">
-            <mat-select [formControl]="entityFilterControl" placeholder="Filtrer par entité">
-              <mat-option [value]="null">Toutes les entités</mat-option>
-              <mat-option *ngFor="let entity of geographicalEntities" [value]="entity.id">
-                {{ entity.name }}
-              </mat-option>
-            </mat-select>
-          </mat-form-field>
-          
-          <button 
-            *ngIf="entityFilterControl.value"
-            mat-icon-button 
-            type="button" 
-            (click)="clearEntityFilter()"
-            class="clear-entity-filter-btn"
-            matTooltip="Effacer le filtre"
-          >
-            <mat-icon>clear</mat-icon>
-          </button>
-        </div>
+  <!-- Filtres hiérarchiques pour clients -->
+  <div class="customer-filter-container" *ngIf="geographicalLevels.length > 0">
+    <div class="filter-label">
+      <mat-icon>layers</mat-icon>
+      <span>Filtrer les clients par niveau:</span>
+      <button *ngIf="hasCustomerActiveFilters()" 
+              type="button" 
+              class="clear-filter-btn-small" 
+              (click)="clearCustomerFilters()">
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
+    
+    <div *ngIf="hasCustomerActiveFilters()" class="active-filter-summary">
+      <mat-icon class="filter-icon">filter_alt</mat-icon>
+      <span class="filter-path">{{ getCustomerActiveFiltersSummary() }}</span>
+    </div>
+    
+    <div class="hierarchy-filters">
+      <div *ngFor="let level of geographicalLevels; let i = index" class="hierarchy-step">
+        <div class="step-label">{{ level.name }}</div>
+        <select class="step-select customer-hierarchy-select-{{i}}"
+                [value]="customerSelectedLevelIds[i]"
+                (change)="onCustomerLevelChange(i, $event)"
+                [disabled]="i > 0 && customerSelectedLevelIds[i-1] === null">
+          <option [value]="null">-- Tous --</option>
+          <option *ngFor="let entity of getCustomerEntitiesForLevel(level.id, i === 0 ? null : customerSelectedLevelIds[i-1])" 
+                  [value]="entity.id">
+            {{ entity.name }}
+            <span *ngIf="getCustomerCountForEntity(entity.id) > 0" class="entity-count">
+              ({{ getCustomerCountForEntity(entity.id) }})
+            </span>
+          </option>
+        </select>
+        <mat-icon *ngIf="i < geographicalLevels.length - 1" class="step-arrow">arrow_forward</mat-icon>
       </div>
+    </div>
+    
+    <div class="filter-hint" *ngIf="!hasCustomerActiveFilters()">
+      <mat-icon>info</mat-icon>
+      <span>Sélectionnez un niveau pour filtrer les clients par entité géographique</span>
+    </div>
+  </div>
+</div>
 
       <!-- Client Cards Grid - Like Market Offers -->
       <div *ngIf="currentQuickAddStep === 1" class="client-virtual-scroll-container">

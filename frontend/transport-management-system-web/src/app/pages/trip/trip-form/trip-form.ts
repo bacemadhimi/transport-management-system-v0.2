@@ -116,6 +116,8 @@ export class TripForm implements OnInit {
   availableTrucks: ITruck[] = [];
   unavailableTrucks: any[] = [];
   loadingAvailableTrucks = false;
+  customerSelectedLevelIds: (number | null)[] = [];
+  activeCustomerFilterLevel: number = 0;
   private lastLoadedDriverDate: Date | null = null;
   customers: ICustomer[] = [];
   allOrders: IOrder[] = [];
@@ -8552,6 +8554,114 @@ getDriverCountForEntity(entityId: number): number {
   return this.availableDrivers.filter(driver => {
     const driverEntities = driver.driverGeographicalEntities || [];
     return driverEntities.some(de => de.geographicalEntityId === entityId);
+  }).length;
+}
+// ==================== MÉTHODES POUR LES FILTRES HIÉRARCHIQUES DES CLIENTS ====================
+
+getCustomerEntitiesForLevel(levelId: number, parentId: number | null): IGeographicalEntity[] {
+  let entities: IGeographicalEntity[] = [];
+  
+  if (parentId === null) {
+    entities = this.geographicalEntities.filter(e => 
+      e.levelId === levelId && 
+      (!e.parentId || e.parentId === 0)
+    );
+  } else {
+    entities = this.geographicalEntities.filter(e => 
+      e.levelId === levelId && 
+      e.parentId === parentId
+    );
+  }
+  
+  return entities.sort((a, b) => a.name.localeCompare(b.name));
+}
+
+onCustomerLevelChange(levelIndex: number, event: any): void {
+  const selectedId = event.target.value === 'null' ? null : Number(event.target.value);
+  this.customerSelectedLevelIds[levelIndex] = selectedId;
+  
+  for (let i = levelIndex + 1; i < this.customerSelectedLevelIds.length; i++) {
+    this.customerSelectedLevelIds[i] = null;
+  }
+  
+  this.filterCustomersByHierarchy();
+  this.activeCustomerFilterLevel = levelIndex;
+  
+  if (selectedId !== null && levelIndex + 1 < this.geographicalLevels.length) {
+    setTimeout(() => {
+      const nextSelect = document.querySelector(`.customer-hierarchy-select-${levelIndex + 1}`) as HTMLElement;
+      if (nextSelect) {
+        nextSelect.click();
+      }
+    }, 100);
+  }
+}
+
+clearCustomerFilters(): void {
+  this.customerSelectedLevelIds = this.customerSelectedLevelIds.map(() => null);
+  this.activeCustomerFilterLevel = 0;
+  this.filterCustomersByHierarchy();
+}
+
+hasCustomerActiveFilters(): boolean {
+  return this.customerSelectedLevelIds.some(id => id !== null && id !== undefined);
+}
+
+getCustomerActiveFiltersSummary(): string {
+  const filters: string[] = [];
+  this.customerSelectedLevelIds.forEach((entityId, index) => {
+    if (entityId !== null) {
+      const level = this.geographicalLevels[index];
+      const entity = this.geographicalEntities.find(e => e.id === entityId);
+      if (level && entity) {
+        filters.push(`${level.name}: ${entity.name}`);
+      }
+    }
+  });
+  return filters.length > 0 ? filters.join(' > ') : 'Aucun filtre';
+}
+
+private filterCustomersByHierarchy(): void {
+  if (!this.hasCustomerActiveFilters()) {
+    this.filteredClients = [...this.allClientsWithPendingOrders];
+    return;
+  }
+  
+  let lastSelectedEntityId: number | null = null;
+  for (let i = this.customerSelectedLevelIds.length - 1; i >= 0; i--) {
+    if (this.customerSelectedLevelIds[i] !== null) {
+      lastSelectedEntityId = this.customerSelectedLevelIds[i];
+      break;
+    }
+  }
+  
+  if (!lastSelectedEntityId) {
+    this.filteredClients = [...this.allClientsWithPendingOrders];
+    return;
+  }
+  
+  const selectedEntity = this.geographicalEntities.find(e => e.id === lastSelectedEntityId);
+  if (!selectedEntity) {
+    this.filteredClients = [...this.allClientsWithPendingOrders];
+    return;
+  }
+  
+  this.filteredClients = this.allClientsWithPendingOrders.filter(client => {
+    const clientEntities = client.geographicalEntities || [];
+    if (clientEntities.length === 0) return false;
+    
+    return clientEntities.some(ce => {
+      const entity = this.geographicalEntities.find(e => e.id === ce.geographicalEntityId);
+      if (!entity) return false;
+      return this.isEntityDescendantOf(entity, selectedEntity);
+    });
+  });
+}
+
+getCustomerCountForEntity(entityId: number): number {
+  return this.allClientsWithPendingOrders.filter(client => {
+    const clientEntities = client.geographicalEntities || [];
+    return clientEntities.some(ce => ce.geographicalEntityId === entityId);
   }).length;
 }
 }
