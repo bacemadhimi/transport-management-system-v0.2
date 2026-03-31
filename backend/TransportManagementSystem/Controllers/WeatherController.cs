@@ -54,7 +54,7 @@ public class WeatherController : ControllerBase
     // ==================== NEW ENDPOINTS WITH LOCATION ID ====================
 
     /// <summary>
-    /// Get current weather by location ID
+    /// Get current weather by location ID - uses the lowest level geographical entity
     /// </summary>
     [HttpGet("location/{locationId}")]
     public async Task<IActionResult> GetWeatherByLocation(int locationId)
@@ -67,11 +67,11 @@ public class WeatherController : ControllerBase
         if (location == null)
             return NotFound(new { message = $"Location with ID {locationId} not found" });
 
-        var coordinates = await GetCoordinatesFromLocation(location);
+        // Get coordinates from the lowest level geographical entity
+        var coordinates = await GetLowestLevelCoordinatesFromLocation(location);
 
         if (coordinates != null)
         {
-            // Convert double to string with invariant culture to avoid decimal/comma issues
             var latStr = coordinates.Latitude.ToString(System.Globalization.CultureInfo.InvariantCulture);
             var lonStr = coordinates.Longitude.ToString(System.Globalization.CultureInfo.InvariantCulture);
             return await CallOpenWeather($"https://api.openweathermap.org/data/2.5/weather?lat={latStr}&lon={lonStr}&appid={_apiKey}&units=metric&lang=fr");
@@ -82,7 +82,7 @@ public class WeatherController : ControllerBase
     }
 
     /// <summary>
-    /// Get weather forecast by location ID
+    /// Get weather forecast by location ID - uses the lowest level geographical entity
     /// </summary>
     [HttpGet("location/{locationId}/forecast")]
     public async Task<IActionResult> GetForecastByLocation(int locationId)
@@ -95,7 +95,8 @@ public class WeatherController : ControllerBase
         if (location == null)
             return NotFound(new { message = $"Location with ID {locationId} not found" });
 
-        var coordinates = await GetCoordinatesFromLocation(location);
+        // Get coordinates from the lowest level geographical entity
+        var coordinates = await GetLowestLevelCoordinatesFromLocation(location);
 
         if (coordinates != null)
         {
@@ -109,7 +110,7 @@ public class WeatherController : ControllerBase
     }
 
     /// <summary>
-    /// Get weather for both start and end locations in one request
+    /// Get weather for both start and end locations in one request - uses lowest level entities
     /// </summary>
     [HttpGet("trip")]
     public async Task<IActionResult> GetWeatherForTrip([FromQuery] int startLocationId, [FromQuery] int endLocationId)
@@ -145,31 +146,45 @@ public class WeatherController : ControllerBase
     // ==================== HELPER METHODS ====================
 
     /// <summary>
-    /// Get coordinates from location's associated geographical entities
+    /// Get coordinates from the lowest level (highest level number) geographical entity
     /// </summary>
-    private async Task<GeoPoint?> GetCoordinatesFromLocation(Location location)
+    private async Task<GeoPoint?> GetLowestLevelCoordinatesFromLocation(Location location)
     {
         if (location.LocationGeographicalEntities == null || !location.LocationGeographicalEntities.Any())
             return null;
 
-        // Get the first active geographical entity with coordinates
-        var geoEntity = location.LocationGeographicalEntities
+        // Get all geographical entities with coordinates
+        var entitiesWithCoordinates = location.LocationGeographicalEntities
             .Select(lg => lg.GeographicalEntity)
-            .FirstOrDefault(ge => ge != null && ge.IsActive && ge.Latitude != null && ge.Longitude != null);
+            .Where(ge => ge != null && ge.IsActive && ge.Latitude != null && ge.Longitude != null)
+            .ToList();
 
-        if (geoEntity == null)
+        if (!entitiesWithCoordinates.Any())
             return null;
 
-        // Safe access to nullable value types
-        return new GeoPoint(geoEntity.Latitude.Value, geoEntity.Longitude.Value);
+        // Find the entity with the highest level number (lowest level / most granular)
+        var lowestLevelEntity = entitiesWithCoordinates
+            .OrderByDescending(ge =>
+            {
+                // Get the level number for this entity
+                var level = _dbContext.GeographicalLevels
+                    .FirstOrDefault(l => l.Id == ge.LevelId);
+                return level?.LevelNumber ?? 0;
+            })
+            .FirstOrDefault();
+
+        if (lowestLevelEntity == null)
+            return null;
+
+        return new GeoPoint(lowestLevelEntity.Latitude.Value, lowestLevelEntity.Longitude.Value);
     }
 
     /// <summary>
-    /// Get weather data for a single location
+    /// Get weather data for a single location using lowest level entity
     /// </summary>
     private async Task<object?> GetWeatherDataForLocation(Location location)
     {
-        var coordinates = await GetCoordinatesFromLocation(location);
+        var coordinates = await GetLowestLevelCoordinatesFromLocation(location);
         string url;
 
         if (coordinates != null)
