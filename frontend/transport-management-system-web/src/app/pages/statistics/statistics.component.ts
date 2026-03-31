@@ -30,24 +30,20 @@ export class StatisticsComponent implements OnInit, AfterViewInit, OnDestroy {
   startDate: string = '';
   endDate: string = '';
 
-
   trucks: ITruck[] = [];
   trucksWithGeo: (ITruck & { geographicalEntity?: IGeographicalEntity; entityName?: string; entityCoordinates?: { lat: number; lng: number } })[] = [];
 
   drivers: IDriver[] = [];
   driversWithGeo: (IDriver & { geographicalEntity?: IGeographicalEntity; entityName?: string; entityCoordinates?: { lat: number; lng: number } })[] = [];
 
-
   geographicalLevels: IGeographicalLevel[] = [];
   geographicalEntities: IGeographicalEntity[] = [];
   mappableEntities: IGeographicalEntity[] = [];
-
 
   filteredTrucks: ITruck[] = [];
   filteredDrivers: IDriver[] = [];
   inactiveTrucks: ITruck[] = [];
   unavailableDrivers: IDriver[] = [];
-
 
   trucksByEntity: { [entityId: number]: ITruck[] } = {};
   driversByEntity: { [entityId: number]: IDriver[] } = {};
@@ -78,7 +74,6 @@ export class StatisticsComponent implements OnInit, AfterViewInit, OnDestroy {
     offDutyDrivers: number;
   }[] = [];
 
-
   loadingTrucks = false;
   loadingDrivers = false;
   loadingGeographical = false;
@@ -93,10 +88,8 @@ export class StatisticsComponent implements OnInit, AfterViewInit, OnDestroy {
     drivers: false
   };
 
-
   activeEntityView: 'trucks' | 'drivers' = 'trucks';
   activeEntityName: string = 'all';
-
 
   activeTruckRegionFilter: string = 'all';
   activeDriverRegionFilter: string = 'all';
@@ -105,7 +98,6 @@ export class StatisticsComponent implements OnInit, AfterViewInit, OnDestroy {
   errorMessage: string = '';
   successMessage: string = '';
   lastUpdateTime: string = '';
-
 
   truckStats = {
     total: 0,
@@ -127,6 +119,12 @@ export class StatisticsComponent implements OnInit, AfterViewInit, OnDestroy {
     activeEntities: 0
   };
 
+  // Propriétés pour l'affichage hiérarchique
+  selectedLevelIds: (number | null)[] = [];
+  expandedBranches: Set<number> = new Set();
+  expandedChildren: Set<number> = new Set();
+  entitiesByParentMap: Map<number, IGeographicalEntity[]> = new Map();
+  rootEntitiesList: IGeographicalEntity[] = [];
 
   private truckMap: L.Map | null = null;
   private driverMap: L.Map | null = null;
@@ -137,13 +135,10 @@ export class StatisticsComponent implements OnInit, AfterViewInit, OnDestroy {
   private driverEntityMarkers: L.Marker[] = [];
   private driverMarkers: L.Marker[] = [];
 
-
   private subscriptions: Subscription = new Subscription();
   private resizeTimer: any;
 
-
   Object = Object;
-
 
   private driverStatusColors = {
     'available': '#1cc88a',
@@ -155,6 +150,8 @@ export class StatisticsComponent implements OnInit, AfterViewInit, OnDestroy {
     'default': '#6c757d'
   };
 
+  marqueMap: Map<number, string> = new Map();
+
   constructor(
     private statisticsService: StatisticsService,
     private httpService: Http
@@ -162,7 +159,6 @@ export class StatisticsComponent implements OnInit, AfterViewInit, OnDestroy {
     this.initializeDates();
     this.configureLeafletIcons();
   }
-
 
   ngOnInit(): void {
     this.updateLastUpdateTime();
@@ -197,6 +193,7 @@ export class StatisticsComponent implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
+  // ========== MÉTHODES D'INITIALISATION ==========
 
   private initializeDates(): void {
     const today = new Date();
@@ -241,6 +238,26 @@ export class StatisticsComponent implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
+  private loadMarques(): void {
+    this.httpService.getMarqueTrucks().subscribe({
+      next: (marques) => {
+        this.marqueMap.clear();
+        marques.forEach(marque => {
+          this.marqueMap.set(marque.id, marque.name);
+        });
+      },
+      error: (error) => {
+        console.error('Error loading marques:', error);
+      }
+    });
+  }
+
+  getMarqueName(marqueId?: number): string {
+    if (!marqueId) return 'N/A';
+    return this.marqueMap.get(marqueId) || 'N/A';
+  }
+
+  // ========== CHARGEMENT DES DONNÉES ==========
 
   private loadGeographicalData(): void {
     this.loadingGeographical = true;
@@ -248,6 +265,7 @@ export class StatisticsComponent implements OnInit, AfterViewInit, OnDestroy {
     const levelsSub = this.httpService.getGeographicalLevels().subscribe({
       next: (levels) => {
         this.geographicalLevels = levels.filter(l => l.isActive);
+        this.selectedLevelIds = new Array(this.geographicalLevels.length).fill(null);
 
         const entitiesSub = this.httpService.getGeographicalEntities().subscribe({
           next: (entities) => {
@@ -255,6 +273,7 @@ export class StatisticsComponent implements OnInit, AfterViewInit, OnDestroy {
             this.mappableEntities = this.geographicalEntities.filter(e => {
               return e.latitude != null && e.longitude != null;
             });
+            this.initializeHierarchy();
 
             this.loadingGeographical = false;
 
@@ -280,44 +299,51 @@ export class StatisticsComponent implements OnInit, AfterViewInit, OnDestroy {
     this.subscriptions.add(levelsSub);
   }
 
-
-  loadTrucks(): void {
-    this.loadingTrucks = true;
-    const subscription = this.statisticsService.getTrucks().subscribe({
-      next: (trucks) => {
-        this.trucks = trucks;
-        this.enrichTrucksWithGeographicalData();
-
-        if (this.geographicalEntities.length > 0) {
-          this.processTrucksByEntity();
+loadTrucks(): void {
+  this.loadingTrucks = true;
+  const subscription = this.statisticsService.getTrucks().subscribe({
+    next: (trucks) => {
+      // S'assurer que chaque camion a une couleur
+      this.trucks = trucks.map(truck => {
+        if (!truck.color || truck.color === '#000000') {
+          // Assigner une couleur par défaut basée sur le statut
+          truck.color = this.getStatusColor(truck.status);
         }
+        return truck;
+      });
+      
+      this.enrichTrucksWithGeographicalData();
 
-        this.updateTruckStats();
-        this.filteredTrucks = trucks.filter(t =>
-          t.status.toLowerCase() === 'disponible' ||
-          t.status.toLowerCase() === 'en mission' ||
-          t.status.toLowerCase() === 'available'
-        );
-        this.inactiveTrucks = trucks.filter(t =>
-          t.status.toLowerCase() === 'maintenance' ||
-          t.status.toLowerCase() === 'hors service' ||
-          t.status.toLowerCase() === 'inactive'
-        );
-        this.loadingTrucks = false;
-
-        if (this.truckMap) {
-          this.addTruckEntityMarkers();
-          this.addTruckMarkers();
-        }
-      },
-      error: (error) => {
-        console.error('Erreur chargement camions:', error);
-        this.errorMessage = 'Erreur chargement camions';
-        this.loadingTrucks = false;
+      if (this.geographicalEntities.length > 0) {
+        this.processTrucksByEntity();
       }
-    });
-    this.subscriptions.add(subscription);
-  }
+
+      this.updateTruckStats();
+      this.filteredTrucks = trucks.filter(t =>
+        t.status.toLowerCase() === 'disponible' ||
+        t.status.toLowerCase() === 'en mission' ||
+        t.status.toLowerCase() === 'available'
+      );
+      this.inactiveTrucks = trucks.filter(t =>
+        t.status.toLowerCase() === 'maintenance' ||
+        t.status.toLowerCase() === 'hors service' ||
+        t.status.toLowerCase() === 'inactive'
+      );
+      this.loadingTrucks = false;
+
+      if (this.truckMap) {
+        this.addTruckEntityMarkers();
+        this.addTruckMarkers();
+      }
+    },
+    error: (error) => {
+      console.error('Erreur chargement camions:', error);
+      this.errorMessage = 'Erreur chargement camions';
+      this.loadingTrucks = false;
+    }
+  });
+  this.subscriptions.add(subscription);
+}
 
   loadDrivers(): void {
     this.loadingDrivers = true;
@@ -356,7 +382,6 @@ export class StatisticsComponent implements OnInit, AfterViewInit, OnDestroy {
     this.subscriptions.add(subscription);
   }
 
-
   private enrichTrucksWithGeographicalData(): void {
     this.trucksWithGeo = this.trucks.map(truck => {
       const truckEntities = (truck as any).geographicalEntities || [];
@@ -394,6 +419,7 @@ export class StatisticsComponent implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
+  // ========== TRAITEMENT DES DONNÉES PAR ENTITÉ ==========
 
   private processTrucksByEntity(): void {
     this.trucksByEntity = {};
@@ -510,7 +536,6 @@ export class StatisticsComponent implements OnInit, AfterViewInit, OnDestroy {
     this.driverStats.activeEntities = this.driverEntityStatistics.filter(e => e.totalDrivers > 0).length;
   }
 
-
   private updateTruckStats(): void {
     this.truckStats = {
       total: this.trucksWithGeo.length,
@@ -558,6 +583,252 @@ export class StatisticsComponent implements OnInit, AfterViewInit, OnDestroy {
     };
   }
 
+  // ========== MÉTHODES HIÉRARCHIQUES ==========
+
+  initializeHierarchy(): void {
+    this.entitiesByParentMap.clear();
+    
+    this.geographicalEntities.forEach(entity => {
+      const parentId = entity.parentId || 0;
+      if (!this.entitiesByParentMap.has(parentId)) {
+        this.entitiesByParentMap.set(parentId, []);
+      }
+      this.entitiesByParentMap.get(parentId)!.push(entity);
+    });
+    
+    this.entitiesByParentMap.forEach(entities => {
+      entities.sort((a, b) => a.name.localeCompare(b.name));
+    });
+    
+    this.rootEntitiesList = this.entitiesByParentMap.get(0) || [];
+  }
+
+  getEntitiesForLevel(levelId: number, parentId: number | null): IGeographicalEntity[] {
+    let entities: IGeographicalEntity[] = [];
+    
+    if (parentId === null) {
+      entities = this.rootEntitiesList.filter(e => e.levelId === levelId);
+    } else {
+      const parent = this.geographicalEntities.find(e => e.id === parentId);
+      if (parent) {
+        entities = (this.entitiesByParentMap.get(parentId) || []).filter(e => e.levelId === levelId);
+      }
+    }
+    
+    return entities;
+  }
+
+  onLevelChange(levelIndex: number, event: any): void {
+    const selectedId = event.target.value === 'null' ? null : Number(event.target.value);
+    this.selectedLevelIds[levelIndex] = selectedId;
+    
+    // NE PAS réinitialiser automatiquement les niveaux suivants
+    // L'utilisateur peut filtrer uniquement par niveau 2 sans niveau 1
+  }
+
+  getRootEntitiesForView(): IGeographicalEntity[] {
+    let roots = [...this.rootEntitiesList];
+    
+    // Si un filtre est actif sur le niveau 1, l'appliquer
+    if (this.selectedLevelIds[0] !== null && this.selectedLevelIds[0] !== undefined) {
+      roots = roots.filter(e => e.id === this.selectedLevelIds[0]);
+    }
+    
+    return roots;
+  }
+
+  getChildrenEntitiesForView(parentId: number): IGeographicalEntity[] {
+    let children = this.entitiesByParentMap.get(parentId) || [];
+    
+    const parent = this.geographicalEntities.find(e => e.id === parentId);
+    if (parent) {
+      const parentLevelIndex = this.geographicalLevels.findIndex(l => l.id === parent.levelId);
+      
+      // Vérifier s'il y a un filtre sur le niveau suivant
+      const nextLevelId = this.selectedLevelIds[parentLevelIndex + 1];
+      
+      if (nextLevelId !== null && nextLevelId !== undefined) {
+        // Filtrer par l'entité spécifique du niveau suivant
+        children = children.filter(e => e.id === nextLevelId);
+      }
+    }
+    
+    return children;
+  }
+
+  hasChildrenEntities(entityId: number): boolean {
+    const children = this.entitiesByParentMap.get(entityId) || [];
+    return children.length > 0;
+  }
+
+  toggleBranchExpanded(entityId: number): void {
+    if (this.expandedBranches.has(entityId)) {
+      this.expandedBranches.delete(entityId);
+    } else {
+      this.expandedBranches.add(entityId);
+    }
+  }
+
+  isBranchExpanded(entityId: number): boolean {
+    return this.expandedBranches.has(entityId);
+  }
+
+  toggleChildExpanded(entityId: number): void {
+    if (this.expandedChildren.has(entityId)) {
+      this.expandedChildren.delete(entityId);
+    } else {
+      this.expandedChildren.add(entityId);
+    }
+  }
+
+  isChildExpanded(entityId: number): boolean {
+    return this.expandedChildren.has(entityId);
+  }
+
+  getEntityTotalCount(entityId: number, viewType: 'trucks' | 'drivers'): number {
+    if (viewType === 'trucks') {
+      return this.getTruckEntityStats(entityId).totalTrucks;
+    } else {
+      return this.getDriverEntityStats(entityId).totalDrivers;
+    }
+  }
+
+  getEntityActiveCount(entityId: number, viewType: 'trucks' | 'drivers'): number {
+    if (viewType === 'trucks') {
+      const stats = this.getTruckEntityStats(entityId);
+      return stats.availableTrucks + stats.onMissionTrucks;
+    } else {
+      const stats = this.getDriverEntityStats(entityId);
+      return stats.availableDrivers + stats.onMissionDrivers;
+    }
+  }
+
+  getEntityCountForLevelAndParent(parentId: number, viewType: 'trucks' | 'drivers'): number {
+    const children = this.entitiesByParentMap.get(parentId) || [];
+    let total = 0;
+    
+    children.forEach(child => {
+      total += this.getEntityTotalCount(child.id!, viewType);
+    });
+    
+    return total;
+  }
+
+  getEntityColorForView(entity: IGeographicalEntity): string {
+    if (this.activeEntityView === 'trucks') {
+      return this.getTruckEntityColor(entity.id!);
+    } else {
+      return this.getDriverEntityColor(entity.id!);
+    }
+  }
+
+  getLevelName(levelId: number): string {
+    const level = this.geographicalLevels.find(l => l.id === levelId);
+    return level ? level.name : 'Niveau inconnu';
+  }
+
+  getTruckEntityStats(entityId: number) {
+    return this.truckEntityStatistics.find(e => e.entityId === entityId) || {
+      totalTrucks: 0, availableTrucks: 0, onMissionTrucks: 0, maintenanceTrucks: 0, outOfServiceTrucks: 0
+    };
+  }
+
+  getDriverEntityStats(entityId: number) {
+    return this.driverEntityStatistics.find(e => e.entityId === entityId) || {
+      totalDrivers: 0, availableDrivers: 0, onMissionDrivers: 0, overtimeDrivers: 0, exceededDrivers: 0, conflictDrivers: 0, offDutyDrivers: 0
+    };
+  }
+
+  getTruckEntityColor(entityId: number): string {
+    const stats = this.getTruckEntityStats(entityId);
+    if (stats.totalTrucks === 0) return '#6c757d';
+    const activeRatio = stats.onMissionTrucks / stats.totalTrucks;
+    if (activeRatio > 0.5) return '#1cc88a';
+    if (activeRatio > 0.2) return '#4e73df';
+    if (activeRatio > 0) return '#f6c23e';
+    return '#e74a3b';
+  }
+
+  getDriverEntityColor(entityId: number): string {
+    const stats = this.getDriverEntityStats(entityId);
+    if (stats.totalDrivers === 0) return '#6c757d';
+    const availableRatio = stats.availableDrivers / stats.totalDrivers;
+    if (availableRatio > 0.5) return '#1cc88a';
+    if (availableRatio > 0.2) return '#4e73df';
+    if (availableRatio > 0) return '#f6c23e';
+    return '#e74a3b';
+  }
+
+  getTruckEntityUtilizationPercentage(entityId: number): number {
+    const stats = this.getTruckEntityStats(entityId);
+    if (stats.totalTrucks === 0) return 0;
+    return Math.round((stats.onMissionTrucks / stats.totalTrucks) * 100);
+  }
+
+  getDriverEntityUtilizationPercentage(entityId: number): number {
+    const stats = this.getDriverEntityStats(entityId);
+    if (stats.totalDrivers === 0) return 0;
+    return Math.round((stats.onMissionDrivers / stats.totalDrivers) * 100);
+  }
+
+  getEntityName(entityId: number): string {
+    const entity = this.geographicalEntities.find(e => e.id === entityId);
+    return entity ? entity.name : 'Inconnu';
+  }
+
+  getEntityLevelName(entityId: number): string {
+    const entity = this.geographicalEntities.find(e => e.id === entityId);
+    if (!entity) return '';
+    const level = this.geographicalLevels.find(l => l.id === entity.levelId);
+    return level ? level.name : '';
+  }
+
+  // ========== MÉTHODES DE FILTRAGE ==========
+
+  hasActiveFilters(): boolean {
+    return this.selectedLevelIds.some(id => id !== null && id !== undefined);
+  }
+
+  getActiveFiltersCount(): number {
+    return this.selectedLevelIds.filter(id => id !== null && id !== undefined).length;
+  }
+
+  getActiveFiltersList(): { levelIndex: number; levelName: string; entityName: string }[] {
+    const activeFilters: { levelIndex: number; levelName: string; entityName: string }[] = [];
+    
+    this.selectedLevelIds.forEach((entityId, index) => {
+      if (entityId !== null && entityId !== undefined) {
+        const level = this.geographicalLevels[index];
+        const entity = this.geographicalEntities.find(e => e.id === entityId);
+        if (level && entity) {
+          activeFilters.push({
+            levelIndex: index,
+            levelName: level.name,
+            entityName: entity.name
+          });
+        }
+      }
+    });
+    
+    return activeFilters;
+  }
+
+  removeFilter(levelIndex: number): void {
+    this.selectedLevelIds[levelIndex] = null;
+    
+    // Réinitialiser également les niveaux inférieurs pour éviter l'incohérence
+    for (let i = levelIndex + 1; i < this.selectedLevelIds.length; i++) {
+      this.selectedLevelIds[i] = null;
+    }
+  }
+
+  clearAllFilters(): void {
+    this.selectedLevelIds = this.selectedLevelIds.map(() => null);
+    this.expandedBranches.clear();
+    this.expandedChildren.clear();
+  }
+
+  // ========== INITIALISATION DES CARTES ==========
 
   private initTrucksMap(): void {
     if (typeof window === 'undefined') return;
@@ -649,6 +920,7 @@ export class StatisticsComponent implements OnInit, AfterViewInit, OnDestroy {
     }, 300);
   }
 
+  // ========== MARQUEURS DES ENTITÉS (CAMIONS) ==========
 
   private addTruckEntityMarkers(): void {
     if (!this.truckMap) return;
@@ -798,6 +1070,7 @@ export class StatisticsComponent implements OnInit, AfterViewInit, OnDestroy {
     return popup;
   }
 
+  // ========== MARQUEURS DES ENTITÉS (CHAUFFEURS) ==========
 
   private addDriverEntityMarkers(): void {
     if (!this.driverMap) return;
@@ -951,189 +1224,6 @@ export class StatisticsComponent implements OnInit, AfterViewInit, OnDestroy {
 
     return popup;
   }
-
-
-  private addTruckMarkers(): void {
-    if (!this.truckMap) return;
-
-    this.truckMarkers.forEach(marker => marker.remove());
-    this.truckMarkers = [];
-
-    const activeTrucks = this.trucks.filter(t =>
-      t.status.toLowerCase() !== 'inactive' &&
-      t.status.toLowerCase() !== 'hors service'
-    );
-
-    activeTrucks.forEach(truck => {
-      const truckWithGeo = this.trucksWithGeo.find(t => t.id === truck.id);
-      if (!truckWithGeo?.entityCoordinates) return;
-
-      const coords = truckWithGeo.entityCoordinates;
-
-      const latOffset = (Math.random() - 0.5) * 0.02;
-      const lngOffset = (Math.random() - 0.5) * 0.02;
-
-      const status = STATUS_CONFIG[truck.status] || STATUS_CONFIG['available'];
-      const truckColor = truck.color || this.getStatusColor(truck.status);
-
-      const firstImage = (truck.images && truck.images.length > 0) ? truck.images[0] : null;
-      const formattedImage = this.formatBase64Image(firstImage);
-
-      const truckIcon = this.createTruckIcon(truck, truckColor, formattedImage);
-
-      const marker = L.marker([
-        coords.lat + latOffset,
-        coords.lng + lngOffset
-      ], {
-        icon: truckIcon,
-        zIndexOffset: 2000
-      }).addTo(this.truckMap!);
-
-      const truckWithZone = {
-        ...truck,
-        zoneName: truckWithGeo.entityName
-      };
-
-      marker.bindPopup(this.createTruckPopup(truckWithZone, truckColor, formattedImage));
-
-      this.truckMarkers.push(marker);
-    });
-  }
-
-  private createTruckIcon(truck: ITruck, color: string, imageBase64: string | null): L.DivIcon {
-    const hasImage = !!imageBase64;
-    const isOnMission = truck.status.toLowerCase() === 'en mission' || truck.status.toLowerCase() === 'on_mission';
-
-    let iconHtml = '';
-
-    if (hasImage) {
-      iconHtml = `
-        <div style="
-          width: 48px;
-          height: 48px;
-          border-radius: 8px;
-          border: 3px solid white;
-          box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-          overflow: hidden;
-          background: white;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          animation: ${isOnMission ? 'bounce 2s infinite' : 'none'};
-        ">
-          <img src="${imageBase64}"
-               style="width: 100%; height: 100%; object-fit: contain;"
-               alt="Camion ${truck.immatriculation}"
-               title="${this.getMarqueName(truck.marqueTruckId)} - ${truck.immatriculation}"
-               onerror="this.style.display='none'; this.parentElement.style.background='${color}'; this.parentElement.innerHTML='<i class=\\'fas fa-truck\\' style=\\'color: white; font-size: 24px;\\'></i>';">
-        </div>
-      `;
-    } else {
-      iconHtml = `
-        <div style="
-          background: ${color};
-          width: 48px;
-          height: 48px;
-          border-radius: 8px;
-          border: 3px solid white;
-          box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          color: white;
-          font-size: 24px;
-          animation: ${isOnMission ? 'bounce 2s infinite' : 'none'};
-        ">
-          <i class="fas fa-truck"></i>
-        </div>
-      `;
-    }
-
-    return L.divIcon({
-      html: iconHtml,
-      className: `truck-marker-${truck.status}`,
-      iconSize: [48, 48],
-      iconAnchor: [24, 24],
-      popupAnchor: [0, -24]
-    });
-  }
-
-  private createTruckPopup(truck: any, color: string, imageBase64: string | null): HTMLDivElement {
-    const status = STATUS_CONFIG[truck.status] || STATUS_CONFIG['available'];
-    const zoneName = truck.zoneName || 'Non assigné';
-
-    const popup = document.createElement('div');
-    popup.style.fontFamily = 'Segoe UI, sans-serif';
-    popup.style.padding = '16px';
-    popup.style.minWidth = '320px';
-
-    const imageHtml = imageBase64
-      ? `<img src="${imageBase64}" style="width: 100%; height: 100%; object-fit: contain; border-radius: 8px;" alt="Camion">`
-      : `<div style="width: 100%; height: 100%; background: ${color}; display: flex; align-items: center; justify-content: center; color: white; font-size: 24px; border-radius: 8px;">
-           <i class="fas fa-truck"></i>
-         </div>`;
-
-    popup.innerHTML = `
-      <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 16px;">
-        <div style="
-          width: 80px;
-          height: 80px;
-          border-radius: 8px;
-          border: 3px solid white;
-          box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-          overflow: hidden;
-          background: white;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          flex-shrink: 0;
-        ">
-          ${imageHtml}
-        </div>
-        <div style="flex: 1;">
-          <div style="color: #2c3e50; font-size: 18px; font-weight: 700; margin-bottom: 4px;">
-            ${truck.immatriculation}
-          </div>
-          <div style="color: #6c757d; font-size: 14px; margin-bottom: 8px;">
-            ${this.getMarqueName(truck.marqueTruckId)} • ${truck.typeTruck?.capacity}t
-          </div>
-          <div style="display: inline-block; padding: 4px 12px; background: ${color}20; border-radius: 20px; color: ${color}; font-weight: 600; font-size: 12px;">
-            ${status.label}
-          </div>
-        </div>
-      </div>
-
-      <div style="border-top: 1px solid #e9ecef; padding-top: 12px;">
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
-          <div>
-            <span style="color: #6c757d; font-size: 11px; text-transform: uppercase; display: block; font-weight: 600;">ENTITÉ</span>
-            <div style="color: #2c3e50; font-weight: 600; font-size: 15px; background: #f0f7ff; padding: 4px 8px; border-radius: 6px; display: inline-block;">
-              <i class="fas fa-map-pin" style="color: #667eea; margin-right: 4px;"></i>
-              ${zoneName}
-            </div>
-          </div>
-          <div>
-            <span style="color: #6c757d; font-size: 11px; text-transform: uppercase; display: block;">CT</span>
-            <div style="color: #2c3e50; font-weight: 500; font-size: 14px;">${truck.technicalVisitDate || 'Non renseigné'}</div>
-          </div>
-          <div>
-            <span style="color: #6c757d; font-size: 11px; text-transform: uppercase; display: block;">ID</span>
-            <div style="color: #2c3e50; font-weight: 500; font-size: 14px;">#${truck.id}</div>
-          </div>
-          <div>
-            <span style="color: #6c757d; font-size: 11px; text-transform: uppercase; display: block;">COULEUR</span>
-            <div style="display: flex; align-items: center; gap: 6px;">
-              <span style="display: inline-block; width: 16px; height: 16px; background: ${color}; border-radius: 4px;"></span>
-              <span style="color: #2c3e50; font-size: 14px;">${color}</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    `;
-
-    return popup;
-  }
-
 
   private addDriverMarkers(): void {
     if (!this.driverMap) return;
@@ -1369,6 +1459,7 @@ export class StatisticsComponent implements OnInit, AfterViewInit, OnDestroy {
     return popup;
   }
 
+  // ========== MÉTHODES UTILITAIRES ==========
 
   private formatBase64Image(base64: string | null | undefined): string | null {
     if (!base64) return null;
@@ -1377,7 +1468,6 @@ export class StatisticsComponent implements OnInit, AfterViewInit, OnDestroy {
     }
     return `data:image/jpeg;base64,${base64}`;
   }
-
 
   centerMap(mapType: 'truck' | 'driver'): void {
     if (mapType === 'truck' && this.truckMap) {
@@ -1500,95 +1590,8 @@ export class StatisticsComponent implements OnInit, AfterViewInit, OnDestroy {
     setTimeout(() => this.successMessage = '', 3000);
   }
 
-
   switchEntityView(view: 'trucks' | 'drivers'): void {
     this.activeEntityView = view;
-  }
-
-
-  getTruckEntityStats(entityId: number) {
-    return this.truckEntityStatistics.find(e => e.entityId === entityId) || {
-      totalTrucks: 0, availableTrucks: 0, onMissionTrucks: 0, maintenanceTrucks: 0, outOfServiceTrucks: 0
-    };
-  }
-
-  getDriverEntityStats(entityId: number) {
-    return this.driverEntityStatistics.find(e => e.entityId === entityId) || {
-      totalDrivers: 0, availableDrivers: 0, onMissionDrivers: 0, overtimeDrivers: 0, exceededDrivers: 0, conflictDrivers: 0, offDutyDrivers: 0
-    };
-  }
-
-  getTruckEntityColor(entityId: number): string {
-    const stats = this.getTruckEntityStats(entityId);
-    if (stats.totalTrucks === 0) return '#6c757d';
-    const activeRatio = stats.onMissionTrucks / stats.totalTrucks;
-    if (activeRatio > 0.5) return '#1cc88a';
-    if (activeRatio > 0.2) return '#4e73df';
-    if (activeRatio > 0) return '#f6c23e';
-    return '#e74a3b';
-  }
-
-  getDriverEntityColor(entityId: number): string {
-    const stats = this.getDriverEntityStats(entityId);
-    if (stats.totalDrivers === 0) return '#6c757d';
-    const availableRatio = stats.availableDrivers / stats.totalDrivers;
-    if (availableRatio > 0.5) return '#1cc88a';
-    if (availableRatio > 0.2) return '#4e73df';
-    if (availableRatio > 0) return '#f6c23e';
-    return '#e74a3b';
-  }
-
-  getTruckEntityUtilizationPercentage(entityId: number): number {
-    const stats = this.getTruckEntityStats(entityId);
-    if (stats.totalTrucks === 0) return 0;
-    return Math.round((stats.onMissionTrucks / stats.totalTrucks) * 100);
-  }
-
-  getDriverEntityUtilizationPercentage(entityId: number): number {
-    const stats = this.getDriverEntityStats(entityId);
-    if (stats.totalDrivers === 0) return 0;
-    return Math.round((stats.onMissionDrivers / stats.totalDrivers) * 100);
-  }
-
-  getEntityName(entityId: number): string {
-    const entity = this.geographicalEntities.find(e => e.id === entityId);
-    return entity ? entity.name : 'Inconnu';
-  }
-
-  getEntityLevelName(entityId: number): string {
-    const entity = this.geographicalEntities.find(e => e.id === entityId);
-    if (!entity) return '';
-    const level = this.geographicalLevels.find(l => l.id === entity.levelId);
-    return level ? level.name : '';
-  }
-
-
-  getTruckDisplay(truck: ITruck): string {
-    const status = STATUS_CONFIG[truck.status]?.label || truck.status;
-    const truckWithGeo = this.trucksWithGeo.find(t => t.id === truck.id);
-    const entityName = truckWithGeo?.entityName || 'Non assigné';
-    const marqueName = this.getMarqueName(truck.marqueTruckId);
-    return `${truck.immatriculation} - ${marqueName} (${truck.typeTruck?.capacity}t) - ${status} - ${entityName}`;
-  }
-
-  getDriverDisplay(driver: IDriver): string {
-    const status = this.getDriverStatusLabel(driver);
-    const driverWithGeo = this.driversWithGeo.find(d => d.id === driver.id);
-    const entityName = driverWithGeo?.entityName || 'Non assigné';
-    return `${driver.name} - ${driver.drivingLicense} - ${status} - ${entityName}`;
-  }
-
-  getSelectedTruckName(): string {
-    if (!this.filter.truckId) return 'Tous les Camions';
-    const truck = this.trucks.find(t => t.id === this.filter.truckId);
-    const marqueName = truck ? this.getMarqueName(truck.marqueTruckId) : '';
-    return truck ? `${truck.immatriculation} (${marqueName})` : 'Camion Sélectionné';
-  }
-
-  getSelectedDriverName(): string {
-    if (!this.filter.driverId) return 'Tous les Chauffeurs';
-    const driver = this.drivers.find(d => d.id === this.filter.driverId);
-    return driver ? driver.name : 'Chauffeur Sélectionné';
   }
 
   getStatusColor(status: string): string {
@@ -1627,7 +1630,6 @@ export class StatisticsComponent implements OnInit, AfterViewInit, OnDestroy {
     return `${year}-${month}-${day}`;
   }
 
-
   clearError(): void {
     this.errorMessage = '';
   }
@@ -1640,24 +1642,417 @@ export class StatisticsComponent implements OnInit, AfterViewInit, OnDestroy {
     this.showHelp = !this.showHelp;
   }
 
-  marqueMap: Map<number, string> = new Map();
+  // Ajoutez cette méthode améliorée pour créer l'icône du camion avec le nom et la couleur
 
-  private loadMarques(): void {
-    this.httpService.getMarqueTrucks().subscribe({
-      next: (marques) => {
-        this.marqueMap.clear();
-        marques.forEach(marque => {
-          this.marqueMap.set(marque.id, marque.name);
-        });
-      },
-      error: (error) => {
-        console.error('Error loading marques:', error);
+private createTruckIcon(truck: ITruck, color: string, imageBase64: string | null): L.DivIcon {
+  const hasImage = !!imageBase64;
+  const isOnMission = truck.status.toLowerCase() === 'en mission' || truck.status.toLowerCase() === 'on_mission';
+  const truckName = truck.immatriculation || `Camion ${truck.id}`;
+  const shortName = truckName.length > 8 ? truckName.substring(0, 6) + '...' : truckName;
+  
+  // Récupérer la marque du camion
+  const marqueName = this.getMarqueName(truck.marqueTruckId);
+  const capacity = truck.typeTruck?.capacity || '?';
+  
+  // Déterminer la couleur de fond en fonction du statut
+  let bgColor = color;
+  let borderColor = '#ffffff';
+  let animationClass = '';
+  
+  if (isOnMission) {
+    animationClass = 'truck-mission-animation';
+    borderColor = '#ffd700';
+  }
+  
+  // Icône avec nom du camion et couleur
+  let iconHtml = '';
+  
+  if (hasImage) {
+    iconHtml = `
+      <div class="truck-marker-wrapper ${animationClass}" style="
+        position: relative;
+        cursor: pointer;
+      ">
+        <div class="truck-image-container" style="
+          width: 56px;
+          height: 56px;
+          border-radius: 12px;
+          border: 3px solid ${borderColor};
+          box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+          overflow: hidden;
+          background: white;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          position: relative;
+        ">
+          <img src="${imageBase64}"
+               style="width: 100%; height: 100%; object-fit: contain;"
+               alt="${truckName}"
+               title="${marqueName} - ${truckName}"
+               onerror="this.style.display='none'; this.parentElement.style.background='${color}'; this.parentElement.innerHTML='<i class=\\'fas fa-truck\\' style=\\'color: white; font-size: 24px;\\'></i>';">
+        </div>
+        <div class="truck-label" style="
+          position: absolute;
+          bottom: -22px;
+          left: 50%;
+          transform: translateX(-50%);
+          background: ${color};
+          color: white;
+          padding: 2px 8px;
+          border-radius: 12px;
+          font-size: 10px;
+          font-weight: bold;
+          white-space: nowrap;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+          text-shadow: 0 1px 1px rgba(0,0,0,0.3);
+          border: 1px solid rgba(255,255,255,0.3);
+          font-family: 'Segoe UI', sans-serif;
+          z-index: 10;
+        ">
+          ${shortName}
+        </div>
+        <div class="truck-status-badge" style="
+          position: absolute;
+          top: -8px;
+          right: -8px;
+          background: ${this.getStatusBadgeColor(truck.status)};
+          color: white;
+          border-radius: 50%;
+          width: 20px;
+          height: 20px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 10px;
+          border: 2px solid white;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        ">
+          <i class="fas ${this.getStatusIcon(truck.status)}" style="font-size: 10px;"></i>
+        </div>
+      </div>
+    `;
+  } else {
+    iconHtml = `
+      <div class="truck-marker-wrapper ${animationClass}" style="
+        position: relative;
+        cursor: pointer;
+      ">
+        <div class="truck-icon-container" style="
+          background: ${color};
+          width: 56px;
+          height: 56px;
+          border-radius: 12px;
+          border: 3px solid ${borderColor};
+          box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          color: white;
+          position: relative;
+        ">
+          <i class="fas fa-truck" style="font-size: 24px; margin-bottom: 2px;"></i>
+          <span style="font-size: 9px; font-weight: bold; text-shadow: 0 1px 1px rgba(0,0,0,0.3);">${capacity}t</span>
+        </div>
+        <div class="truck-label" style="
+          position: absolute;
+          bottom: -22px;
+          left: 50%;
+          transform: translateX(-50%);
+          background: ${color};
+          color: white;
+          padding: 2px 8px;
+          border-radius: 12px;
+          font-size: 10px;
+          font-weight: bold;
+          white-space: nowrap;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+          text-shadow: 0 1px 1px rgba(0,0,0,0.3);
+          border: 1px solid rgba(255,255,255,0.3);
+          font-family: 'Segoe UI', sans-serif;
+          z-index: 10;
+        ">
+          ${shortName}
+        </div>
+        <div class="truck-status-badge" style="
+          position: absolute;
+          top: -8px;
+          right: -8px;
+          background: ${this.getStatusBadgeColor(truck.status)};
+          color: white;
+          border-radius: 50%;
+          width: 20px;
+          height: 20px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 10px;
+          border: 2px solid white;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        ">
+          <i class="fas ${this.getStatusIcon(truck.status)}" style="font-size: 10px;"></i>
+        </div>
+      </div>
+    `;
+  }
+  
+  return L.divIcon({
+    html: iconHtml,
+    className: `custom-truck-marker truck-status-${truck.status.toLowerCase().replace(/ /g, '-')}`,
+    iconSize: [56, 78],
+    iconAnchor: [28, 56],
+    popupAnchor: [0, -56]
+  });
+}
+
+// Ajoutez ces méthodes utilitaires
+
+private getStatusBadgeColor(status: string): string {
+  const statusLower = status.toLowerCase();
+  switch(statusLower) {
+    case 'disponible':
+    case 'available':
+      return '#1cc88a';
+    case 'en mission':
+    case 'on_mission':
+      return '#4e73df';
+    case 'maintenance':
+      return '#f6c23e';
+    case 'hors service':
+    case 'inactive':
+      return '#e74a3b';
+    default:
+      return '#6c757d';
+  }
+}
+
+private getStatusIcon(status: string): string {
+  const statusLower = status.toLowerCase();
+  switch(statusLower) {
+    case 'disponible':
+    case 'available':
+      return 'fa-check-circle';
+    case 'en mission':
+    case 'on_mission':
+      return 'fa-truck';
+    case 'maintenance':
+      return 'fa-tools';
+    case 'hors service':
+    case 'inactive':
+      return 'fa-exclamation-circle';
+    default:
+      return 'fa-question-circle';
+  }
+}
+
+
+private addTruckMarkers(): void {
+  if (!this.truckMap) return;
+
+  this.truckMarkers.forEach(marker => marker.remove());
+  this.truckMarkers = [];
+
+  const activeTrucks = this.trucks.filter(t =>
+    t.status.toLowerCase() !== 'inactive' &&
+    t.status.toLowerCase() !== 'hors service'
+  );
+
+  activeTrucks.forEach(truck => {
+    const truckWithGeo = this.trucksWithGeo.find(t => t.id === truck.id);
+    if (!truckWithGeo?.entityCoordinates) return;
+
+    const coords = truckWithGeo.entityCoordinates;
+
+    // Ajouter une petite variation pour éviter les superpositions
+    const latOffset = (Math.random() - 0.5) * 0.01;
+    const lngOffset = (Math.random() - 0.5) * 0.01;
+
+    const truckColor = truck.color || this.getStatusColor(truck.status);
+    
+    // Utiliser la couleur spécifique du camion si disponible
+    let finalColor = truckColor;
+    if (truck.color && truck.color !== '#000000') {
+      finalColor = truck.color;
+    }
+
+    const firstImage = (truck.images && truck.images.length > 0) ? truck.images[0] : null;
+    const formattedImage = this.formatBase64Image(firstImage);
+
+    const truckIcon = this.createTruckIcon(truck, finalColor, formattedImage);
+
+    const marker = L.marker([
+      coords.lat + latOffset,
+      coords.lng + lngOffset
+    ], {
+      icon: truckIcon,
+      zIndexOffset: 2000
+    }).addTo(this.truckMap!);
+
+    // Ajouter un tooltip au survol
+    const marqueName = this.getMarqueName(truck.marqueTruckId);
+    marker.bindTooltip(`
+      <div style="font-family: 'Segoe UI', sans-serif; padding: 4px 8px;">
+        <strong>${truck.immatriculation}</strong><br>
+        ${marqueName} - ${truck.typeTruck?.capacity || '?'}t<br>
+        Statut: ${STATUS_CONFIG[truck.status]?.label || truck.status}
+      </div>
+    `, {
+      permanent: false,
+      direction: 'top',
+      offset: [0, -70],
+      className: 'truck-tooltip'
+    });
+
+    const truckWithZone = {
+      ...truck,
+      zoneName: truckWithGeo.entityName,
+      marqueName: marqueName
+    };
+
+    marker.bindPopup(this.createTruckPopup(truckWithZone, finalColor, formattedImage));
+
+    // Animation au survol - Utiliser des fonctions fléchées pour conserver le contexte
+    marker.on('mouseover', (event: L.LeafletMouseEvent) => {
+      const target = event.target;
+      const element = target.getElement();
+      if (element) {
+        element.style.transform = 'scale(1.1)';
+        element.style.transition = 'transform 0.2s ease';
       }
     });
-  }
+    
+    marker.on('mouseout', (event: L.LeafletMouseEvent) => {
+      const target = event.target;
+      const element = target.getElement();
+      if (element) {
+        element.style.transform = 'scale(1)';
+      }
+    });
 
-  getMarqueName(marqueId?: number): string {
-    if (!marqueId) return 'N/A';
-    return this.marqueMap.get(marqueId) || 'N/A';
+    this.truckMarkers.push(marker);
+  });
+}
+
+
+private createTruckPopup(truck: any, color: string, imageBase64: string | null): HTMLDivElement {
+  const status = STATUS_CONFIG[truck.status] || STATUS_CONFIG['available'];
+  const zoneName = truck.zoneName || 'Non assigné';
+  const marqueName = truck.marqueName || this.getMarqueName(truck.marqueTruckId);
+
+  const popup = document.createElement('div');
+  popup.style.fontFamily = 'Segoe UI, sans-serif';
+  popup.style.padding = '0';
+  popup.style.minWidth = '300px';
+  popup.style.maxWidth = '350px';
+
+  const imageHtml = imageBase64
+    ? `<img src="${imageBase64}" style="width: 100%; height: 100%; object-fit: contain; border-radius: 8px;" alt="Camion">`
+    : `<div style="width: 100%; height: 100%; background: ${color}; display: flex; align-items: center; justify-content: center; color: white; font-size: 32px; border-radius: 8px;">
+         <i class="fas fa-truck"></i>
+       </div>`;
+
+  // Déterminer la couleur du statut
+  const statusColor = this.getStatusBadgeColor(truck.status);
+  
+  // Informations supplémentaires
+  const lastMaintenance = truck.lastMaintenanceDate || 'Non renseignée';
+  const nextMaintenance = truck.nextMaintenanceDate || 'Non renseignée';
+  const mileage = truck.mileage ? `${truck.mileage.toLocaleString()} km` : 'Non renseigné';
+
+  popup.innerHTML = `
+    <div style="background: linear-gradient(135deg, ${color}, ${this.adjustColor(color, -30)}); padding: 12px 16px; color: white;">
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <div>
+          <h3 style="margin: 0; font-size: 18px; font-weight: 700;">${truck.immatriculation}</h3>
+          <div style="font-size: 12px; opacity: 0.9; margin-top: 4px;">
+            <i class="fas fa-industry"></i> ${marqueName} • ${truck.typeTruck?.capacity || '?'} tonnes
+          </div>
+        </div>
+        <div style="background: ${statusColor}; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 600;">
+          <i class="fas ${this.getStatusIcon(truck.status)}" style="margin-right: 4px;"></i>
+          ${status.label}
+        </div>
+      </div>
+    </div>
+    
+    <div style="padding: 16px;">
+      <div style="display: flex; gap: 16px; margin-bottom: 16px;">
+        <div style="width: 80px; height: 80px; border-radius: 8px; overflow: hidden; background: #f8f9fa; flex-shrink: 0; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+          ${imageHtml}
+        </div>
+        <div style="flex: 1;">
+          <div style="margin-bottom: 8px;">
+            <span style="color: #6c757d; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;">ENTITÉ GÉOGRAPHIQUE</span>
+            <div style="color: #2c3e50; font-weight: 600; font-size: 14px; margin-top: 2px;">
+              <i class="fas fa-map-pin" style="color: ${color}; margin-right: 6px;"></i>
+              ${zoneName}
+            </div>
+          </div>
+          <div>
+            <span style="color: #6c757d; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;">COULEUR</span>
+            <div style="display: flex; align-items: center; gap: 8px; margin-top: 4px;">
+              <span style="display: inline-block; width: 20px; height: 20px; background: ${color}; border-radius: 4px; border: 1px solid #dee2e6;"></span>
+              <span style="color: #2c3e50; font-size: 13px; font-family: monospace;">${color.toUpperCase()}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div style="border-top: 1px solid #e9ecef; padding-top: 12px;">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+          <div>
+            <span style="color: #6c757d; font-size: 10px; text-transform: uppercase;">ID</span>
+            <div style="color: #2c3e50; font-weight: 500; font-size: 13px;">#${truck.id}</div>
+          </div>
+          <div>
+            <span style="color: #6c757d; font-size: 10px; text-transform: uppercase;">KILOMÉTRAGE</span>
+            <div style="color: #2c3e50; font-weight: 500; font-size: 13px;">${mileage}</div>
+          </div>
+          <div>
+            <span style="color: #6c757d; font-size: 10px; text-transform: uppercase;">DERNIÈRE MAINTENANCE</span>
+            <div style="color: #2c3e50; font-weight: 500; font-size: 12px;">${lastMaintenance}</div>
+          </div>
+          <div>
+            <span style="color: #6c757d; font-size: 10px; text-transform: uppercase;">PROCHAINE MAINTENANCE</span>
+            <div style="color: ${this.isMaintenanceDue(nextMaintenance) ? '#e74a3b' : '#2c3e50'}; font-weight: 500; font-size: 12px;">
+              ${nextMaintenance}
+              ${this.isMaintenanceDue(nextMaintenance) ? '<i class="fas fa-exclamation-triangle" style="margin-left: 4px;"></i>' : ''}
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div style="margin-top: 12px; padding: 8px; background: #f8f9fa; border-radius: 6px; font-size: 11px; color: #6c757d; text-align: center;">
+        <i class="fas fa-info-circle"></i> Cliquez sur le marqueur pour plus de détails
+      </div>
+    </div>
+  `;
+
+  return popup;
+}
+
+// Ajoutez cette méthode utilitaire
+private adjustColor(color: string, amount: number): string {
+  // Convertir la couleur hex en RGB et ajuster la luminosité
+  // Pour simplifier, on retourne une version plus foncée/plus claire
+  if (color.startsWith('#')) {
+    const r = parseInt(color.slice(1, 3), 16);
+    const g = parseInt(color.slice(3, 5), 16);
+    const b = parseInt(color.slice(5, 7), 16);
+    const newR = Math.max(0, Math.min(255, r + amount));
+    const newG = Math.max(0, Math.min(255, g + amount));
+    const newB = Math.max(0, Math.min(255, b + amount));
+    return `#${newR.toString(16).padStart(2, '0')}${newG.toString(16).padStart(2, '0')}${newB.toString(16).padStart(2, '0')}`;
   }
+  return color;
+}
+
+private isMaintenanceDue(dateStr: string): boolean {
+  if (!dateStr || dateStr === 'Non renseignée') return false;
+  const dueDate = new Date(dateStr);
+  const today = new Date();
+  const diffDays = Math.ceil((dueDate.getTime() - today.getTime()) / (1000 * 3600 * 24));
+  return diffDays <= 7 && diffDays >= 0;
+}
 }

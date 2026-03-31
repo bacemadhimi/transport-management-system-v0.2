@@ -330,7 +330,7 @@
     </div>
   </div>
 
-  <!-- ========== SECTION ENTITÉS ========== -->
+  <!-- ========== SECTION ENTITÉS HIÉRARCHIQUE ========== -->
   <div class="card zones-card">
     <div class="card-header">
       <div class="header-left">
@@ -350,111 +350,146 @@
     </div>
     <div class="card-body">
 
-      <!-- Vue Camions - Entités -->
-      <div *ngIf="activeEntityView === 'trucks'">
-        <div class="zones-grid">
-          <ng-container *ngFor="let entity of mappableEntities">
-            <div class="zone-card" 
-                 *ngIf="entity.latitude && entity.longitude"
-                 [class.active]="activeEntityName === entity.name"
-                 (click)="entity.id && focusOnEntity(entity.id, 'trucks')">
-              
-              <!-- En-tête de l'entité -->
-              <div class="zone-header">
-                <div class="zone-icon" 
-                     [style.background]="entity.id ? getTruckEntityColor(entity.id) : '#6c757d'">
-                  <i class="fas fa-truck"></i>
-                </div>
-                <div class="zone-info">
-                  <h5>{{ entity.name }}</h5>
-                  <span class="zone-level">{{ entity.id ? getEntityLevelName(entity.id) : '' }}</span>
-                  <span class="zone-count">
-                    {{ entity.id ? getTruckEntityStats(entity.id).totalTrucks : 0 }} camions
+      <!-- Filtres hiérarchiques par niveau -->
+      <div class="hierarchical-filters" *ngIf="geographicalLevels.length > 0">
+        <div class="filter-header">
+          <span class="filter-title">
+            <i class="fas fa-filter"></i> Filtrer par niveau :
+          </span>
+          <button class="clear-filters-btn" (click)="clearAllFilters()" *ngIf="hasActiveFilters()">
+            <i class="fas fa-times"></i> Effacer tous les filtres
+          </button>
+        </div>
+        
+        <div class="filter-steps">
+          <div *ngFor="let level of geographicalLevels; let i = index" class="filter-step" 
+               [class.active]="selectedLevelIds[i] !== undefined && selectedLevelIds[i] !== null"
+               [class.disabled]="i > 0 && selectedLevelIds[i-1] === null">
+            <div class="step-number">{{i + 1}}</div>
+            <div class="step-content">
+              <div class="step-label">{{level.name}}</div>
+              <select class="step-select" 
+                      [value]="selectedLevelIds[i]" 
+                      (change)="onLevelChange(i, $event)"
+                      [disabled]="i > 0 && selectedLevelIds[i-1] === null">
+                <option [value]="null">-- Tous --</option>
+                <option *ngFor="let entity of getEntitiesForLevel(level.id, i === 0 ? null : selectedLevelIds[i-1])" [value]="entity.id">
+                  {{entity.name}}
+                  <span *ngIf="getEntityTotalCount(entity.id!, activeEntityView) > 0" class="entity-badge-count">
+                    ({{getEntityTotalCount(entity.id!, activeEntityView)}})
                   </span>
-                </div>
-                <div class="zone-percentage" *ngIf="entity.id">
-                  <div class="percentage-circle" 
-                       [style.background]="'linear-gradient(135deg, ' + getTruckEntityColor(entity.id) + ', #764ba2)'">
-                    {{ entity.id ? getTruckEntityUtilizationPercentage(entity.id) : 0 }}%
-                  </div>
-                </div>
-              </div>
-              
-              <!-- Statistiques Camions -->
-              <div class="zone-stats" *ngIf="entity.id">
-                <div class="stat-badge available">
-                  <i class="fas fa-check-circle"></i>
-                  {{ getTruckEntityStats(entity.id).availableTrucks }}
-                </div>
-                <div class="stat-badge mission">
-                  <i class="fas fa-truck"></i>
-                  {{ getTruckEntityStats(entity.id).onMissionTrucks }}
-                </div>
-                <div class="stat-badge maintenance">
-                  <i class="fas fa-tools"></i>
-                  {{ getTruckEntityStats(entity.id).maintenanceTrucks }}
-                </div>
-                <div class="stat-badge out">
-                  <i class="fas fa-exclamation-circle"></i>
-                  {{ getTruckEntityStats(entity.id).outOfServiceTrucks }}
-                </div>
-              </div>
+                </option>
+              </select>
             </div>
-          </ng-container>
+            <div class="step-arrow" *ngIf="i < geographicalLevels.length - 1">
+              <i class="fas fa-arrow-right"></i>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Indicateur de filtre actif -->
+        <div class="active-filters" *ngIf="getActiveFiltersCount() > 0">
+          <span class="active-filters-label">Filtres actifs :</span>
+          <div class="filter-tags">
+            <span *ngFor="let filter of getActiveFiltersList()" class="filter-tag">
+              <span class="filter-tag-level">{{filter.levelName}}</span>
+              <span class="filter-tag-value">{{filter.entityName}}</span>
+              <button class="remove-filter" (click)="removeFilter(filter.levelIndex)">
+                <i class="fas fa-times"></i>
+              </button>
+            </span>
+          </div>
         </div>
       </div>
 
-      <!-- Vue Chauffeurs - Entités -->
-      <div *ngIf="activeEntityView === 'drivers'">
-        <div class="zones-grid">
-          <ng-container *ngFor="let entity of mappableEntities">
-            <div class="zone-card" 
-                 *ngIf="entity.latitude && entity.longitude"
-                 [class.active]="activeEntityName === entity.name"
-                 (click)="entity.id && focusOnEntity(entity.id, 'drivers')">
-              
-              <!-- En-tête de l'entité -->
-              <div class="zone-header">
-                <div class="zone-icon" 
-                     [style.background]="entity.id ? getDriverEntityColor(entity.id) : '#6c757d'">
-                  <i class="fas fa-user-tie"></i>
+      <!-- Indicateur de filtre pour l'affichage hiérarchique -->
+      <div class="entities-hierarchy-header" *ngIf="hasActiveFilters()">
+        <div class="filter-info">
+          <i class="fas fa-info-circle"></i>
+          <span>Affichage filtré : seules les entités correspondant aux critères sélectionnés sont affichées</span>
+        </div>
+      </div>
+
+      <!-- Vue hiérarchique des entités -->
+      <div class="entities-hierarchy-view">
+        <!-- Niveau 1 - Racines -->
+        <div *ngFor="let rootEntity of getRootEntitiesForView()" class="hierarchy-branch">
+          <div class="branch-header" (click)="toggleBranchExpanded(rootEntity.id!)">
+            <div class="branch-icon" [style.background]="getEntityColorForView(rootEntity)">
+              <i class="fas" [class.fa-truck]="activeEntityView === 'trucks'" [class.fa-user-tie]="activeEntityView === 'drivers'"></i>
+            </div>
+            <div class="branch-info">
+              <div class="branch-name">{{rootEntity.name}}</div>
+              <div class="branch-level">{{getLevelName(rootEntity.levelId)}}</div>
+              <div class="branch-stats">
+                <span class="stat">
+                  <i class="fas fa-chart-line"></i>
+                  {{getEntityTotalCount(rootEntity.id!, activeEntityView)}} {{activeEntityView === 'trucks' ? 'camions' : 'chauffeurs'}}
+                </span>
+                <span class="stat active" *ngIf="getEntityActiveCount(rootEntity.id!, activeEntityView) > 0">
+                  <i class="fas fa-check-circle"></i>
+                  {{getEntityActiveCount(rootEntity.id!, activeEntityView)}} actifs
+                </span>
+              </div>
+            </div>
+            <div class="branch-expand">
+              <i class="fas" [class.fa-chevron-down]="isBranchExpanded(rootEntity.id!)" [class.fa-chevron-right]="!isBranchExpanded(rootEntity.id!)"></i>
+            </div>
+          </div>
+
+          <!-- Enfants (Niveau 2) -->
+          <div class="branch-children" *ngIf="isBranchExpanded(rootEntity.id!)">
+            <div *ngFor="let childEntity of getChildrenEntitiesForView(rootEntity.id!)" class="child-node">
+              <div class="child-header" (click)="toggleChildExpanded(childEntity.id!)">
+                <div class="child-icon" [style.background]="getEntityColorForView(childEntity)">
+                  <i class="fas" [class.fa-truck]="activeEntityView === 'trucks'" [class.fa-user-tie]="activeEntityView === 'drivers'"></i>
                 </div>
-                <div class="zone-info">
-                  <h5>{{ entity.name }}</h5>
-                  <span class="zone-level">{{ entity.id ? getEntityLevelName(entity.id) : '' }}</span>
-                  <span class="zone-count">
-                    {{ entity.id ? getDriverEntityStats(entity.id).totalDrivers : 0 }} chauffeurs
-                  </span>
+                <div class="child-info">
+                  <div class="child-name">{{childEntity.name}}</div>
+                  <div class="child-level">{{getLevelName(childEntity.levelId)}}</div>
+                  <div class="child-stats">
+                    <span class="stat">
+                      <i class="fas fa-chart-line"></i>
+                      {{getEntityTotalCount(childEntity.id!, activeEntityView)}} {{activeEntityView === 'trucks' ? 'camions' : 'chauffeurs'}}
+                    </span>
+                    <span class="stat active" *ngIf="getEntityActiveCount(childEntity.id!, activeEntityView) > 0">
+                      <i class="fas fa-check-circle"></i>
+                      {{getEntityActiveCount(childEntity.id!, activeEntityView)}} actifs
+                    </span>
+                  </div>
                 </div>
-                <div class="zone-percentage" *ngIf="entity.id">
-                  <div class="percentage-circle" 
-                       [style.background]="'linear-gradient(135deg, ' + getDriverEntityColor(entity.id) + ', #764ba2)'">
-                    {{ entity.id ? getDriverEntityUtilizationPercentage(entity.id) : 0 }}%
+                <div class="child-expand" *ngIf="hasChildrenEntities(childEntity.id!)">
+                  <i class="fas" [class.fa-chevron-down]="isChildExpanded(childEntity.id!)" [class.fa-chevron-right]="!isChildExpanded(childEntity.id!)"></i>
+                </div>
+              </div>
+
+              <!-- Petits-enfants (Niveau 3) -->
+              <div class="child-grandchildren" *ngIf="isChildExpanded(childEntity.id!)">
+                <div *ngFor="let grandChildEntity of getChildrenEntitiesForView(childEntity.id!)" class="grandchild-node"
+                     (click)="focusOnEntity(grandChildEntity.id!, activeEntityView)">
+                  <div class="grandchild-icon" [style.background]="getEntityColorForView(grandChildEntity)">
+                    <i class="fas" [class.fa-truck]="activeEntityView === 'trucks'" [class.fa-user-tie]="activeEntityView === 'drivers'"></i>
+                  </div>
+                  <div class="grandchild-info">
+                    <div class="grandchild-name">{{grandChildEntity.name}}</div>
+                    <div class="grandchild-level">{{getLevelName(grandChildEntity.levelId)}}</div>
+                    <div class="grandchild-stats">
+                      <span class="stat">
+                        <i class="fas fa-chart-line"></i>
+                        {{getEntityTotalCount(grandChildEntity.id!, activeEntityView)}} {{activeEntityView === 'trucks' ? 'camions' : 'chauffeurs'}}
+                      </span>
+                    </div>
                   </div>
                 </div>
               </div>
-              
-              <!-- Statistiques Chauffeurs -->
-              <div class="zone-stats" *ngIf="entity.id">
-                <div class="stat-badge available">
-                  <i class="fas fa-check-circle"></i>
-                  {{ getDriverEntityStats(entity.id).availableDrivers }}
-                </div>
-                <div class="stat-badge mission">
-                  <i class="fas fa-truck"></i>
-                  {{ getDriverEntityStats(entity.id).onMissionDrivers }}
-                </div>
-                <div class="stat-badge overtime">
-                  <i class="fas fa-clock"></i>
-                  {{ getDriverEntityStats(entity.id).overtimeDrivers }}
-                </div>
-                <div class="stat-badge conflict">
-                  <i class="fas fa-exclamation-triangle"></i>
-                  {{ getDriverEntityStats(entity.id).conflictDrivers }}
-                </div>
-              </div>
             </div>
-          </ng-container>
+          </div>
+        </div>
+
+        <!-- Message si aucune entité -->
+        <div *ngIf="getRootEntitiesForView().length === 0" class="no-entities-message">
+          <i class="fas fa-map-marked-alt"></i>
+          <p>Aucune entité géographique trouvée pour ce filtre</p>
         </div>
       </div>
     </div>
@@ -474,6 +509,7 @@
         <li><strong>Niveaux :</strong> Cliquez sur les boutons pour zoomer sur un niveau spécifique</li>
         <li><strong>Entités :</strong> Cliquez sur une carte pour la centrer sur la carte active</li>
         <li><strong>Marqueurs :</strong> Cliquez sur un marqueur pour voir les détails</li>
+        <li><strong>Filtres hiérarchiques :</strong> Sélectionnez un niveau puis un parent pour filtrer les entités</li>
       </ul>
     </div>
   </div>

@@ -255,7 +255,6 @@
         }
       }
       
-      // ========== FILTRES RAPIDES PAR RÉGION ==========
       .map-region-filters {
         position: absolute;
         top: 16px;
@@ -299,7 +298,6 @@
         }
       }
       
-      // ========== OVERLAY DE CHARGEMENT ==========
       .map-loading-overlay {
         position: absolute;
         top: 0;
@@ -338,7 +336,6 @@
         }
       }
       
-      // ========== OVERLAY D'ERREUR ==========
       .map-error-overlay {
         position: absolute;
         top: 0;
@@ -379,7 +376,6 @@
         }
       }
       
-      // ========== LÉGENDE ==========
       .map-legend {
         position: absolute;
         bottom: 16px;
@@ -456,7 +452,6 @@
         }
       }
       
-      // ========== STATISTIQUES RAPIDES ==========
       .map-stats {
         position: absolute;
         top: 16px;
@@ -525,54 +520,514 @@
   }
 }
 
-// ========== MARQUEURS DE ZONES ==========
-.zone-marker {
-  transition: all 0.3s ease;
-  
-  &:hover {
-    z-index: 1000 !important;
+// ========== FILTRES HIÉRARCHIQUES ==========
+.hierarchical-filters {
+  margin-bottom: 24px;
+  padding: 20px;
+  background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+  border-radius: 16px;
+  border: 1px solid #e9ecef;
+
+  .filter-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #e9ecef;
     
-    div {
-      transform: scale(1.1);
-      box-shadow: 0 6px 16px rgba(0,0,0,0.3) !important;
+    .filter-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: #2c3e50;
+      
+      i {
+        color: #667eea;
+        margin-right: 8px;
+      }
+    }
+    
+    .clear-filters-btn {
+      padding: 6px 12px;
+      background: #f8f9fa;
+      border: 1px solid #e9ecef;
+      border-radius: 8px;
+      font-size: 12px;
+      color: #e74a3b;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+      
+      &:hover {
+        background: #e74a3b;
+        color: white;
+        border-color: #e74a3b;
+      }
+      
+      i {
+        font-size: 12px;
+      }
+    }
+  }
+
+  .filter-steps {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 16px;
+
+    .filter-step {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex: 1;
+      min-width: 200px;
+      
+      &.disabled {
+        opacity: 0.5;
+        
+        .step-select {
+          cursor: not-allowed;
+          background: #f8f9fa;
+        }
+      }
+
+      .step-number {
+        width: 32px;
+        height: 32px;
+        background: #e9ecef;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        color: #6c757d;
+        transition: all 0.3s ease;
+      }
+
+      .step-content {
+        flex: 1;
+
+        .step-label {
+          font-size: 12px;
+          font-weight: 600;
+          color: #6c757d;
+          margin-bottom: 4px;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+        }
+
+        .step-select {
+          width: 100%;
+          padding: 10px 12px;
+          border: 2px solid #e9ecef;
+          border-radius: 10px;
+          font-size: 14px;
+          font-weight: 500;
+          color: #2c3e50;
+          background: white;
+          cursor: pointer;
+          transition: all 0.2s ease;
+
+          &:hover:not(:disabled) {
+            border-color: #667eea;
+          }
+
+          &:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+          }
+          
+          &:disabled {
+            cursor: not-allowed;
+            background: #f8f9fa;
+          }
+
+          .entity-badge-count {
+            color: #667eea;
+            font-weight: 600;
+          }
+        }
+      }
+
+      .step-arrow {
+        color: #cbd5e1;
+        font-size: 14px;
+      }
+
+      &.active {
+        .step-number {
+          background: linear-gradient(135deg, #667eea, #764ba2);
+          color: white;
+        }
+        
+        .step-select {
+          border-color: #667eea;
+          background: #f8faff;
+        }
+      }
+    }
+  }
+  
+  .active-filters {
+    margin-top: 16px;
+    padding-top: 12px;
+    border-top: 1px solid #e9ecef;
+    
+    .active-filters-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: #6c757d;
+      margin-right: 12px;
+    }
+    
+    .filter-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 8px;
+      
+      .filter-tag {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 12px;
+        background: linear-gradient(135deg, #667eea15, #764ba215);
+        border-radius: 20px;
+        font-size: 12px;
+        border: 1px solid rgba(102, 126, 234, 0.3);
+        
+        .filter-tag-level {
+          font-weight: 600;
+          color: #667eea;
+        }
+        
+        .filter-tag-value {
+          color: #2c3e50;
+        }
+        
+        .remove-filter {
+          background: none;
+          border: none;
+          color: #e74a3b;
+          cursor: pointer;
+          padding: 0;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 18px;
+          height: 18px;
+          border-radius: 50%;
+          transition: all 0.2s ease;
+          
+          i {
+            font-size: 10px;
+          }
+          
+          &:hover {
+            background: #e74a3b;
+            color: white;
+          }
+        }
+      }
     }
   }
 }
 
-// ========== MARQUEURS DE CAMIONS ==========
-.truck-marker-available div,
-.truck-marker-disponible div,
-.truck-marker-on_mission div,
-.truck-marker-en_mission div {
-  transition: all 0.3s ease;
-  
-  &:hover {
-    transform: scale(1.1);
-    box-shadow: 0 8px 20px rgba(0,0,0,0.4) !important;
+// ========== VUE HIÉRARCHIQUE DES ENTITÉS ==========
+.entities-hierarchy-view {
+  max-height: 600px;
+  overflow-y: auto;
+  padding: 8px;
+
+  .hierarchy-branch {
+    margin-bottom: 16px;
+    border: 1px solid #e9ecef;
+    border-radius: 12px;
+    overflow: hidden;
+    transition: all 0.3s ease;
+
+    &:hover {
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+      border-color: #667eea;
+    }
+
+    .branch-header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 16px;
+      background: white;
+      cursor: pointer;
+      transition: background 0.2s ease;
+
+      &:hover {
+        background: #f8f9fa;
+      }
+
+      .branch-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 20px;
+        flex-shrink: 0;
+      }
+
+      .branch-info {
+        flex: 1;
+
+        .branch-name {
+          font-size: 16px;
+          font-weight: 700;
+          color: #2c3e50;
+          margin-bottom: 4px;
+        }
+
+        .branch-level {
+          font-size: 12px;
+          color: #6c757d;
+          margin-bottom: 8px;
+        }
+
+        .branch-stats {
+          display: flex;
+          gap: 16px;
+
+          .stat {
+            font-size: 13px;
+            font-weight: 500;
+            color: #6c757d;
+
+            i {
+              margin-right: 4px;
+              font-size: 12px;
+            }
+
+            &.active {
+              color: #1cc88a;
+            }
+          }
+        }
+      }
+
+      .branch-expand {
+        color: #adb5bd;
+        font-size: 18px;
+        transition: transform 0.2s ease;
+      }
+    }
+
+    .branch-children {
+      background: #f8f9fa;
+      border-top: 1px solid #e9ecef;
+      padding: 12px;
+
+      .child-node {
+        margin-bottom: 12px;
+        background: white;
+        border-radius: 10px;
+        border: 1px solid #e9ecef;
+        overflow: hidden;
+
+        .child-header {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          padding: 12px 16px;
+          cursor: pointer;
+          transition: background 0.2s ease;
+
+          &:hover {
+            background: #f8f9fa;
+          }
+
+          .child-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 16px;
+            flex-shrink: 0;
+          }
+
+          .child-info {
+            flex: 1;
+
+            .child-name {
+              font-size: 14px;
+              font-weight: 600;
+              color: #2c3e50;
+              margin-bottom: 2px;
+            }
+
+            .child-level {
+              font-size: 11px;
+              color: #6c757d;
+              margin-bottom: 4px;
+            }
+
+            .child-stats {
+              display: flex;
+              gap: 12px;
+
+              .stat {
+                font-size: 12px;
+                font-weight: 500;
+                color: #6c757d;
+
+                i {
+                  margin-right: 4px;
+                  font-size: 10px;
+                }
+
+                &.active {
+                  color: #1cc88a;
+                }
+              }
+            }
+          }
+
+          .child-expand {
+            color: #adb5bd;
+            font-size: 14px;
+          }
+        }
+
+        .child-grandchildren {
+          background: #f1f3f5;
+          padding: 8px 8px 8px 52px;
+
+          .grandchild-node {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 8px 12px;
+            background: white;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+
+            &:hover {
+              background: #f8f9fa;
+              transform: translateX(4px);
+              box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            }
+
+            .grandchild-icon {
+              width: 32px;
+              height: 32px;
+              border-radius: 8px;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              color: white;
+              font-size: 14px;
+              flex-shrink: 0;
+            }
+
+            .grandchild-info {
+              flex: 1;
+
+              .grandchild-name {
+                font-size: 13px;
+                font-weight: 600;
+                color: #2c3e50;
+                margin-bottom: 2px;
+              }
+
+              .grandchild-level {
+                font-size: 10px;
+                color: #6c757d;
+              }
+
+              .grandchild-stats {
+                .stat {
+                  font-size: 11px;
+                  font-weight: 500;
+                  color: #6c757d;
+
+                  i {
+                    margin-right: 4px;
+                    font-size: 10px;
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  .no-entities-message {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 48px;
+    text-align: center;
+    color: #6c757d;
+
+    i {
+      font-size: 48px;
+      margin-bottom: 16px;
+      color: #cbd5e1;
+    }
+
+    p {
+      font-size: 14px;
+    }
   }
 }
 
-.truck-marker-on_mission div,
-.truck-marker-en_mission div {
-  animation: bounce 2s infinite ease-in-out;
-}
-
-// ========== MARQUEURS DE CHAUFFEURS ==========
-.driver-marker-available div,
-.driver-marker-disponible div,
-.driver-marker-on_trip div,
-.driver-marker-en_mission div {
-  transition: all 0.3s ease;
+// Indicateur de filtre
+.entities-hierarchy-header {
+  margin-bottom: 16px;
+  padding: 12px;
+  background: #e8f0fe;
+  border-radius: 8px;
   
-  &:hover {
-    transform: scale(1.1);
-    box-shadow: 0 8px 20px rgba(0,0,0,0.4) !important;
+  .filter-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: #667eea;
+    
+    i {
+      font-size: 16px;
+    }
   }
 }
 
-.driver-marker-on_trip div,
-.driver-marker-en_mission div {
-  animation: bounce 2s infinite ease-in-out;
+// Scrollbar
+.entities-hierarchy-view::-webkit-scrollbar {
+  width: 6px;
+}
+
+.entities-hierarchy-view::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.entities-hierarchy-view::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+.entities-hierarchy-view::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
 }
 
 // ========== SECTION ZONES ==========
@@ -613,138 +1068,6 @@
           background: white;
           color: #667eea;
           box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-        }
-      }
-    }
-  }
-}
-
-.zones-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: 16px;
-  max-height: 600px;
-  overflow-y: auto;
-  padding: 4px;
-  
-  .zone-card {
-    background: white;
-    border: 1px solid #e9ecef;
-    border-radius: 12px;
-    padding: 16px;
-    transition: all 0.3s ease;
-    cursor: pointer;
-    
-    &:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
-      border-color: #667eea;
-    }
-    
-    &.active {
-      border: 2px solid #667eea;
-      background: linear-gradient(135deg, #f8faff, white);
-    }
-    
-    .zone-header {
-      display: flex;
-      align-items: center;
-      gap: 15px;
-      margin-bottom: 15px;
-      
-      .zone-icon {
-        width: 50px;
-        height: 50px;
-        border-radius: 12px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: white;
-        font-weight: 700;
-        font-size: 18px;
-        box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-      }
-      
-      .zone-info {
-        flex: 1;
-        
-        h5 {
-          margin: 0 0 4px 0;
-          font-size: 16px;
-          font-weight: 700;
-          color: #2c3e50;
-        }
-        
-        .zone-count {
-          font-size: 13px;
-          color: #6c757d;
-          font-weight: 500;
-        }
-      }
-      
-      .zone-percentage {
-        .percentage-circle {
-          width: 50px;
-          height: 50px;
-          border-radius: 50%;
-          color: white;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-weight: 700;
-          font-size: 16px;
-          box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-        }
-      }
-    }
-    
-    .zone-stats {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-      
-      .stat-badge {
-        padding: 6px 12px;
-        border-radius: 20px;
-        font-size: 12px;
-        font-weight: 600;
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        transition: all 0.2s ease;
-        
-        &:hover {
-          transform: translateY(-2px);
-        }
-        
-        &.available {
-          background: rgba(28, 200, 138, 0.1);
-          color: #1cc88a;
-        }
-        
-        &.mission {
-          background: rgba(78, 115, 223, 0.1);
-          color: #4e73df;
-        }
-        
-        &.maintenance {
-          background: rgba(246, 194, 62, 0.1);
-          color: #f6c23e;
-        }
-        
-        &.out {
-          background: rgba(231, 74, 59, 0.1);
-          color: #e74a3b;
-        }
-        
-        &.overtime {
-          background: rgba(246, 194, 62, 0.1);
-          color: #f6c23e;
-        }
-        
-        &.conflict {
-          background: rgba(231, 74, 59, 0.1);
-          color: #e74a3b;
         }
       }
     }
@@ -932,10 +1255,6 @@
   .page-header .page-title {
     font-size: 28px;
   }
-  
-  .zones-grid {
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  }
 }
 
 @media (max-width: 768px) {
@@ -1016,9 +1335,20 @@
     }
   }
   
-  .zones-grid {
-    grid-template-columns: 1fr;
-    max-height: 450px;
+  .hierarchical-filters .filter-steps {
+    flex-direction: column;
+    
+    .filter-step {
+      width: 100%;
+      
+      .step-arrow {
+        transform: rotate(90deg);
+      }
+    }
+  }
+  
+  .entities-hierarchy-view .hierarchy-branch .branch-children .child-node .child-grandchildren {
+    padding-left: 16px;
   }
   
   .help-section {
@@ -1065,20 +1395,6 @@
       min-height: 400px !important;
     }
   }
-  
-  .zone-card {
-    .zone-header {
-      flex-wrap: wrap;
-      
-      .zone-percentage {
-        margin-left: auto;
-      }
-    }
-    
-    .zone-stats {
-      justify-content: center;
-    }
-  }
 }
 
 // ========== IMPRESSION ==========
@@ -1089,7 +1405,7 @@
   .help-section,
   .page-footer,
   .zone-tabs,
-  .zone-card .zone-stats .stat-badge {
+  .hierarchical-filters {
     display: none !important;
   }
   
@@ -1116,82 +1432,88 @@
     box-shadow: none !important;
     background: white !important;
   }
+}
+// Styles pour les marqueurs de camions personnalisés
+.custom-truck-marker {
+  transition: all 0.2s ease;
   
-  .zone-card {
-    border: 1px solid #dee2e6 !important;
-    box-shadow: none !important;
+  &:hover {
+    z-index: 10000 !important;
   }
 }
 
-// ========== ACCESSIBILITÉ ==========
-.sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border-width: 0;
+.truck-marker-wrapper {
+  transition: transform 0.2s ease;
+  
+  &:hover {
+    transform: scale(1.05);
+  }
 }
 
-// ========== SCROLLBAR PERSONNALISÉE ==========
-.zones-grid::-webkit-scrollbar {
-  width: 8px;
+.truck-mission-animation {
+  animation: truckPulse 1.5s ease-in-out infinite;
 }
 
-.zones-grid::-webkit-scrollbar-track {
-  background: #f1f1f1;
-  border-radius: 10px;
+@keyframes truckPulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  100% {
+    transform: scale(1);
+  }
 }
 
-.zones-grid::-webkit-scrollbar-thumb {
-  background: #c1c1c1;
-  border-radius: 10px;
+// Styles pour les différents statuts
+.truck-status-disponible .truck-icon-container,
+.truck-status-available .truck-icon-container {
+  box-shadow: 0 0 15px rgba(28, 200, 138, 0.5);
 }
 
-.zones-grid::-webkit-scrollbar-thumb:hover {
-  background: #a1a1a1;
+.truck-status-en-mission .truck-icon-container,
+.truck-status-on_mission .truck-icon-container {
+  box-shadow: 0 0 15px rgba(78, 115, 223, 0.5);
 }
 
-// ========== UTILITAIRES ==========
-.text-gradient {
-  background: linear-gradient(135deg, #667eea, #764ba2);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+.truck-status-maintenance .truck-icon-container {
+  box-shadow: 0 0 15px rgba(246, 194, 62, 0.5);
 }
 
-.bg-gradient-primary {
-  background: linear-gradient(135deg, #667eea, #764ba2);
+.truck-status-hors-service .truck-icon-container,
+.truck-status-inactive .truck-icon-container {
+  box-shadow: 0 0 15px rgba(231, 74, 59, 0.5);
+  filter: grayscale(0.3);
 }
 
-.bg-gradient-success {
-  background: linear-gradient(135deg, #1cc88a, #169b6b);
+// Style pour les tooltips
+.truck-tooltip {
+  background: rgba(0, 0, 0, 0.85) !important;
+  border-radius: 8px !important;
+  color: white !important;
+  font-size: 12px !important;
+  padding: 6px 12px !important;
+  border: none !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2) !important;
+  
+  &::before {
+    border-top-color: rgba(0, 0, 0, 0.85) !important;
+  }
 }
 
-.bg-gradient-info {
-  background: linear-gradient(135deg, #36b9cc, #258391);
+// Animation d'apparition des marqueurs
+@keyframes markerAppear {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
-.bg-gradient-warning {
-  background: linear-gradient(135deg, #f6c23e, #dda20a);
-}
-
-.bg-gradient-danger {
-  background: linear-gradient(135deg, #e74a3b, #c0392b);
-}
-
-// ========== ÉTATS DE SURBRILLANCE ==========
-.zone-marker.highlighted div {
-  animation: pulse 1.5s infinite;
-  z-index: 2000 !important;
-  border-width: 4px !important;
-}
-
-.truck-marker-highlighted div,
-.driver-marker-highlighted div {
-  transform: scale(1.2);
-  z-index: 3000 !important;
-  box-shadow: 0 0 20px rgba(102, 126, 234, 0.8) !important;
+.custom-truck-marker {
+  animation: markerAppear 0.3s ease-out;
 }
