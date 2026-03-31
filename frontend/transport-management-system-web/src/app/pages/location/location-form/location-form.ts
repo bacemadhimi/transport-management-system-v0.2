@@ -156,134 +156,215 @@ export class LocationForm implements OnInit, OnDestroy {
     this.locationForm.get('geographicalEntityIds')?.markAsDirty();
   }
 
-  private organizeEntitiesByLevel() {
-    this.entityMap.clear();
+private organizeEntitiesByLevel() {
+  this.entityMap.clear();
+  
+  console.log('Organizing entities by level...');
+  console.log('Total entities:', this.geographicalEntities.length);
 
-    this.geographicalEntities.forEach(e => {
-      if (e.id !== undefined && e.id !== null) {
-        this.entityMap.set(e.id, e);
+  // Créer un map des entités par ID
+  this.geographicalEntities.forEach(e => {
+    if (e.id !== undefined && e.id !== null) {
+      this.entityMap.set(e.id, e);
+    }
+  });
+
+  // Regrouper par niveau
+  const levelGroups: { [key: number]: IGeographicalEntity[] } = {
+    1: [],
+    2: [],
+    3: [],
+    4: [],
+    5: []
+  };
+
+  this.geographicalEntities.forEach(entity => {
+    if (entity.id === undefined || entity.id === null) return;
+
+    const level = this.geographicalLevels.find(l => l.id === entity.levelId);
+    if (level) {
+      console.log(`Entity ${entity.name} -> Level ${level.levelNumber} (${level.name})`);
+      if (!levelGroups[level.levelNumber]) {
+        levelGroups[level.levelNumber] = [];
       }
-    });
+      levelGroups[level.levelNumber].push(entity);
+    }
+  });
 
-    const levelGroups: { [key: number]: IGeographicalEntity[] } = {};
+  this.level1Entities = levelGroups[1] || [];
+  this.level2Entities = levelGroups[2] || [];
+  this.level3Entities = levelGroups[3] || [];
+  this.level4Entities = levelGroups[4] || [];
+  this.level5Entities = levelGroups[5] || [];
 
-    this.geographicalEntities.forEach(entity => {
-      if (entity.id === undefined || entity.id === null) return;
+  console.log('Level 1 entities:', this.level1Entities.length);
+  console.log('Level 2 entities:', this.level2Entities.length);
+  console.log('Level 3 entities:', this.level3Entities.length);
+  console.log('Level 4 entities:', this.level4Entities.length);
+  console.log('Level 5 entities:', this.level5Entities.length);
+}
 
+private loadGeographicalEntities(): void {
+  this.loadingGeographicalEntities = true;
+
+  const levelsSub = this.http.getGeographicalLevels().subscribe({
+    next: (levels) => {
+      this.geographicalLevels = levels.filter(l => l.isActive);
+
+      const entitiesSub = this.http.getGeographicalEntities().subscribe({
+        next: (entities) => {
+          this.geographicalEntities = entities.filter(e => e.isActive);
+          this.organizeEntitiesByLevel();
+          this.setupLevelControls();
+          this.loadingGeographicalEntities = false;
+          
+          // Rafraîchir la hiérarchie et restaurer les sélections
+          this.refreshHierarchy();
+          
+          this.cdr.detectChanges();
+        },
+        error: (error) => {
+          console.error('Error loading geographical entities:', error);
+          this.loadingGeographicalEntities = false;
+        }
+      });
+      this.subscriptions.push(entitiesSub);
+    },
+    error: (error) => {
+      console.error('Error loading geographical levels:', error);
+      this.loadingGeographicalEntities = false;
+    }
+  });
+
+  this.subscriptions.push(levelsSub);
+}
+private setGeographicalSelections(entityIds: number[]) {
+  console.log('Setting geographical selections for IDs:', entityIds);
+  
+  this.selectedEntities = [...entityIds];
+
+  // Réinitialiser tous les contrôles
+  this.level1Control.reset();
+  this.level2Control.reset();
+  this.level3Control.reset();
+  this.level4Control.reset();
+  this.level5Control.reset();
+
+  // Pour chaque ID d'entité, trouver son niveau et le définir
+  entityIds.forEach((id: number) => {
+    const entity = this.geographicalEntities.find(e => e.id === id);
+    if (entity) {
       const level = this.geographicalLevels.find(l => l.id === entity.levelId);
       if (level) {
-        if (!levelGroups[level.levelNumber]) {
-          levelGroups[level.levelNumber] = [];
+        console.log(`Setting entity ${entity.name} (ID: ${id}) to level ${level.levelNumber}`);
+        switch(level.levelNumber) {
+          case 1:
+            this.level1Control.setValue(id);
+            break;
+          case 2:
+            this.level2Control.setValue(id);
+            break;
+          case 3:
+            this.level3Control.setValue(id);
+            break;
+          case 4:
+            this.level4Control.setValue(id);
+            break;
+          case 5:
+            this.level5Control.setValue(id);
+            break;
         }
-        levelGroups[level.levelNumber].push(entity);
+      } else {
+        console.warn(`No level found for entity ${entity.name} with levelId ${entity.levelId}`);
       }
-    });
+    } else {
+      console.warn(`Entity with ID ${id} not found in geographicalEntities`);
+    }
+  });
 
-    this.level1Entities = levelGroups[1] || [];
-    this.level2Entities = levelGroups[2] || [];
-    this.level3Entities = levelGroups[3] || [];
-    this.level4Entities = levelGroups[4] || [];
-    this.level5Entities = levelGroups[5] || [];
-  }
+  // Mettre à jour le formulaire
+  this.locationForm.patchValue({
+    geographicalEntityIds: this.selectedEntities
+  });
+  
+  console.log('Final selected entities after restoration:', this.selectedEntities);
+  console.log('Level 1 control value:', this.level1Control.value);
+  console.log('Level 2 control value:', this.level2Control.value);
+  console.log('Level 3 control value:', this.level3Control.value);
+  console.log('Level 4 control value:', this.level4Control.value);
+  console.log('Level 5 control value:', this.level5Control.value);
+}
 
-  private loadGeographicalEntities(): void {
-    this.loadingGeographicalEntities = true;
+private loadLocation(locationId: number): void {
+  this.loading = true;
 
-    const levelsSub = this.http.getGeographicalLevels().subscribe({
-      next: (levels) => {
-        this.geographicalLevels = levels.filter(l => l.isActive);
+  this.http.getLocation(locationId).subscribe({
+    next: (response) => {
+      const location = response.data;
+      console.log('Loaded location:', location);
 
-        const entitiesSub = this.http.getGeographicalEntities().subscribe({
-          next: (entities) => {
-            this.geographicalEntities = entities.filter(e => e.isActive);
-            this.organizeEntitiesByLevel();
-            this.setupLevelControls();
-            this.loadingGeographicalEntities = false;
-          },
-          error: (error) => {
-            console.error('Error loading geographical entities:', error);
-            this.loadingGeographicalEntities = false;
-          }
-        });
-        this.subscriptions.push(entitiesSub);
-      },
-      error: (error) => {
-        console.error('Error loading geographical levels:', error);
-        this.loadingGeographicalEntities = false;
-      }
-    });
+      this.locationForm.patchValue({
+        name: location.name,
+        isActive: location.isActive
+      });
 
-    this.subscriptions.push(levelsSub);
-  }
-
-  private setGeographicalSelections(entityIds: number[]) {
-    this.selectedEntities = [...entityIds];
-
-    this.level1Control.reset();
-    this.level2Control.reset();
-    this.level3Control.reset();
-    this.level4Control.reset();
-    this.level5Control.reset();
-
-    entityIds.forEach((id: number) => {
-      const entity = this.geographicalEntities.find(e => e.id === id);
-      if (entity) {
-        const level = this.geographicalLevels.find(l => l.id === entity.levelId);
-        if (level) {
-          switch(level.levelNumber) {
-            case 1:
-              this.level1Control.setValue(id);
-              break;
-            case 2:
-              this.level2Control.setValue(id);
-              break;
-            case 3:
-              this.level3Control.setValue(id);
-              break;
-            case 4:
-              this.level4Control.setValue(id);
-              break;
-            case 5:
-              this.level5Control.setValue(id);
-              break;
-          }
-        }
-      }
-    });
-
-    this.locationForm.patchValue({
-      geographicalEntityIds: this.selectedEntities
-    });
-  }
-
-  private loadLocation(locationId: number): void {
-    this.loading = true;
-
-    this.http.getLocation(locationId).subscribe({
-      next: (response) => {
-        const location = response.data;
-
-        this.locationForm.patchValue({
-          name: location.name,
-          isActive: location.isActive
-        });
-
-        // Charger les entités géographiques associées
-        if (location.geographicalEntities && location.geographicalEntities.length > 0) {
-          const entityIds = location.geographicalEntities.map((ge: any) => ge.geographicalEntityId);
+      // Charger les entités géographiques associées
+      if (location.geographicalEntities && location.geographicalEntities.length > 0) {
+        const entityIds = location.geographicalEntities.map((ge: any) => ge.geographicalEntityId);
+        console.log('Entity IDs to restore:', entityIds);
+        
+        // Attendre que les entités géographiques soient chargées
+        if (this.geographicalEntities.length > 0) {
           this.setGeographicalSelections(entityIds);
+        } else {
+          // Si les entités ne sont pas encore chargées, attendre
+          const checkInterval = setInterval(() => {
+            if (this.geographicalEntities.length > 0) {
+              clearInterval(checkInterval);
+              this.setGeographicalSelections(entityIds);
+            }
+          }, 100);
+          
+          // Timeout après 5 secondes
+          setTimeout(() => {
+            clearInterval(checkInterval);
+            if (this.geographicalEntities.length === 0) {
+              console.error('Geographical entities still not loaded after timeout');
+              Swal.fire({
+                icon: 'warning',
+                title: 'Attention',
+                text: 'Impossible de charger les entités géographiques',
+                confirmButtonText: 'OK'
+              });
+            }
+          }, 5000);
         }
-
-        this.loading = false;
-        this.cdr.detectChanges();
-      },
-      error: (error) => {
-        console.error('Error loading location:', error);
-        this.loading = false;
       }
-    });
-  }
 
+      this.loading = false;
+      this.cdr.detectChanges();
+    },
+    error: (error) => {
+      console.error('Error loading location:', error);
+      this.loading = false;
+      Swal.fire({
+        icon: 'error',
+        title: 'Erreur',
+        text: 'Impossible de charger les données de la location',
+        confirmButtonText: 'OK'
+      });
+    }
+  });
+}
+// Appeler cette méthode après le chargement des entités
+private refreshHierarchy(): void {
+  this.organizeEntitiesByLevel();
+  
+  // Si on est en mode édition et qu'il y a des entités sélectionnées
+  if (this.data.locationId && this.selectedEntities.length > 0) {
+    this.setGeographicalSelections(this.selectedEntities);
+  }
+}
   removeEntity(entityId: number): void {
     const entity = this.geographicalEntities.find(e => e.id === entityId);
     if (entity) {
