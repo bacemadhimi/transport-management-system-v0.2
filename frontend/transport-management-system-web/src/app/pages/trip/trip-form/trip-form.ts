@@ -39,7 +39,7 @@ import { TruncatePipe } from '../../../../truncate.pipe';
 import { CdkVirtualScrollViewport, ScrollingModule } from '@angular/cdk/scrolling';
 import { Translation } from '../../../services/Translation';
 import { SettingsService } from '../../../services/settings.service';
-import { ITripSettings } from '../../../types/general-settings';
+import { IGeographicalLevel, ITripSettings } from '../../../types/general-settings';
 import { IGeographicalEntity } from '../../../types/general-settings';
 import { GpsAddressService } from '../../../services/gps-address.service';
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
@@ -159,6 +159,15 @@ export class TripForm implements OnInit {
   isEditMode = false;
   today = new Date();
   private availabilityCheckTimeout: any;
+  geographicalLevels: IGeographicalLevel[] = [];
+
+  // Filtres hiérarchiques pour camions
+  truckSelectedLevelIds: (number | null)[] = [];
+  activeTruckFilterLevel: number = 0;
+
+  // Filtres hiérarchiques pour chauffeurs
+  driverSelectedLevelIds: (number | null)[] = [];
+  activeDriverFilterLevel: number = 0;
   private readonly DRAFT_KEY = 'trip_draft_v1';
   tripSettings: ITripSettings | null = null;
   private settingsSubscription: Subscription = new Subscription();
@@ -572,26 +581,6 @@ private loadConfiguration(): void {
     } else {
       this.isEditMode = false;
       this.loadTrajects();
-    }
-  });
-}
-private loadGeographicalEntities(): void {
-  this.http.getGeographicalEntities().subscribe({
-    next: (response) => {
-      let entitiesData: IGeographicalEntity[];
-
-      if (response && typeof response === 'object' && 'data' in response) {
-        entitiesData = (response as any).data;
-      } else if (Array.isArray(response)) {
-        entitiesData = response;
-      } else {
-        entitiesData = [];
-      }
-
-      this.geographicalEntities = entitiesData;
-    },
-    error: (error) => {
-      console.error('Error loading geographical entities:', error);
     }
   });
 }
@@ -4902,6 +4891,8 @@ loadAvailableDrivers(date: Date | null): void {
     this.availableDrivers = [...this.drivers];
     this.unavailableDrivers = [];
     this.filteredAvailableDrivers = [...this.availableDrivers];
+    this.filterDriversByHierarchy(); 
+    this.loadingAvailableDrivers = false;
     return;
   }
 
@@ -7919,6 +7910,7 @@ filterTrucksByEntity(): void {
   
   if (!entityId) {
     this.filteredAvailableTrucks = [...this.availableTrucks];
+    this.filterTrucksByHierarchy();
     return;
   }
   
@@ -8297,5 +8289,269 @@ private autoSelectDriverForTruck(truckId: number | null): void {
     'Fermer',
     { duration: 2000 }
   );
+}
+private loadGeographicalEntities(): void {
+  // Charger les niveaux géographiques
+  this.http.getGeographicalLevels().subscribe({
+    next: (levels) => {
+      this.geographicalLevels = levels.filter(l => l.isActive);
+      this.truckSelectedLevelIds = new Array(this.geographicalLevels.length).fill(null);
+      this.driverSelectedLevelIds = new Array(this.geographicalLevels.length).fill(null);
+      
+      console.log('✅ Geographical levels loaded:', this.geographicalLevels.length);
+    },
+    error: (error) => {
+      console.error('Error loading geographical levels:', error);
+    }
+  });
+
+  // Charger les entités géographiques
+  this.http.getGeographicalEntities().subscribe({
+    next: (response) => {
+      let entitiesData: IGeographicalEntity[];
+
+      if (response && typeof response === 'object' && 'data' in response) {
+        entitiesData = (response as any).data;
+      } else if (Array.isArray(response)) {
+        entitiesData = response;
+      } else {
+        entitiesData = [];
+      }
+
+      this.geographicalEntities = entitiesData.filter(e => e.isActive);
+      console.log('✅ Geographical entities loaded:', this.geographicalEntities.length);
+    },
+    error: (error) => {
+      console.error('Error loading geographical entities:', error);
+    }
+  });
+}
+private isEntityDescendantOf(entity: IGeographicalEntity, ancestor: IGeographicalEntity): boolean {
+  if (entity.id === ancestor.id) return true;
+  
+  if (!entity.parentId) return false;
+  
+  const parent = this.geographicalEntities.find(e => e.id === entity.parentId);
+  if (!parent) return false;
+  
+  if (parent.id === ancestor.id) return true;
+  
+  return this.isEntityDescendantOf(parent, ancestor);
+}
+// ==================== MÉTHODES POUR LES FILTRES HIÉRARCHIQUES DES CAMIONS ====================
+
+getTruckEntitiesForLevel(levelId: number, parentId: number | null): IGeographicalEntity[] {
+  let entities: IGeographicalEntity[] = [];
+  
+  if (parentId === null) {
+    entities = this.geographicalEntities.filter(e => 
+      e.levelId === levelId && 
+      (!e.parentId || e.parentId === 0)
+    );
+  } else {
+    entities = this.geographicalEntities.filter(e => 
+      e.levelId === levelId && 
+      e.parentId === parentId
+    );
+  }
+  
+  return entities.sort((a, b) => a.name.localeCompare(b.name));
+}
+
+onTruckLevelChange(levelIndex: number, event: any): void {
+  const selectedId = event.target.value === 'null' ? null : Number(event.target.value);
+  this.truckSelectedLevelIds[levelIndex] = selectedId;
+  
+  for (let i = levelIndex + 1; i < this.truckSelectedLevelIds.length; i++) {
+    this.truckSelectedLevelIds[i] = null;
+  }
+  
+  this.filterTrucksByHierarchy();
+  this.activeTruckFilterLevel = levelIndex;
+  
+  if (selectedId !== null && levelIndex + 1 < this.geographicalLevels.length) {
+    setTimeout(() => {
+      const nextSelect = document.querySelector(`.truck-hierarchy-select-${levelIndex + 1}`) as HTMLElement;
+      if (nextSelect) {
+        nextSelect.click();
+      }
+    }, 100);
+  }
+}
+
+clearTruckFilters(): void {
+  this.truckSelectedLevelIds = this.truckSelectedLevelIds.map(() => null);
+  this.activeTruckFilterLevel = 0;
+  this.filterTrucksByHierarchy();
+}
+
+hasTruckActiveFilters(): boolean {
+  return this.truckSelectedLevelIds.some(id => id !== null && id !== undefined);
+}
+
+getTruckActiveFiltersSummary(): string {
+  const filters: string[] = [];
+  this.truckSelectedLevelIds.forEach((entityId, index) => {
+    if (entityId !== null) {
+      const level = this.geographicalLevels[index];
+      const entity = this.geographicalEntities.find(e => e.id === entityId);
+      if (level && entity) {
+        filters.push(`${level.name}: ${entity.name}`);
+      }
+    }
+  });
+  return filters.length > 0 ? filters.join(' > ') : 'Aucun filtre';
+}
+
+private filterTrucksByHierarchy(): void {
+  if (!this.hasTruckActiveFilters()) {
+    this.filteredAvailableTrucks = [...this.availableTrucks];
+    return;
+  }
+  
+  let lastSelectedEntityId: number | null = null;
+  for (let i = this.truckSelectedLevelIds.length - 1; i >= 0; i--) {
+    if (this.truckSelectedLevelIds[i] !== null) {
+      lastSelectedEntityId = this.truckSelectedLevelIds[i];
+      break;
+    }
+  }
+  
+  if (!lastSelectedEntityId) {
+    this.filteredAvailableTrucks = [...this.availableTrucks];
+    return;
+  }
+  
+  const selectedEntity = this.geographicalEntities.find(e => e.id === lastSelectedEntityId);
+  if (!selectedEntity) {
+    this.filteredAvailableTrucks = [...this.availableTrucks];
+    return;
+  }
+  
+  this.filteredAvailableTrucks = this.availableTrucks.filter(truck => {
+    const truckEntities = truck.truckGeographicalEntities || [];
+    if (truckEntities.length === 0) return false;
+    
+    return truckEntities.some(te => {
+      const entity = this.geographicalEntities.find(e => e.id === te.geographicalEntityId);
+      if (!entity) return false;
+      return this.isEntityDescendantOf(entity, selectedEntity);
+    });
+  });
+}
+
+getTruckCountForEntity(entityId: number): number {
+  return this.availableTrucks.filter(truck => {
+    const truckEntities = truck.truckGeographicalEntities || [];
+    return truckEntities.some(te => te.geographicalEntityId === entityId);
+  }).length;
+}
+// ==================== MÉTHODES POUR LES FILTRES HIÉRARCHIQUES DES CHAUFFEURS ====================
+
+getDriverEntitiesForLevel(levelId: number, parentId: number | null): IGeographicalEntity[] {
+  let entities: IGeographicalEntity[] = [];
+  
+  if (parentId === null) {
+    entities = this.geographicalEntities.filter(e => 
+      e.levelId === levelId && 
+      (!e.parentId || e.parentId === 0)
+    );
+  } else {
+    entities = this.geographicalEntities.filter(e => 
+      e.levelId === levelId && 
+      e.parentId === parentId
+    );
+  }
+  
+  return entities.sort((a, b) => a.name.localeCompare(b.name));
+}
+
+onDriverLevelChange(levelIndex: number, event: any): void {
+  const selectedId = event.target.value === 'null' ? null : Number(event.target.value);
+  this.driverSelectedLevelIds[levelIndex] = selectedId;
+  
+  for (let i = levelIndex + 1; i < this.driverSelectedLevelIds.length; i++) {
+    this.driverSelectedLevelIds[i] = null;
+  }
+  
+  this.filterDriversByHierarchy();
+  this.activeDriverFilterLevel = levelIndex;
+  
+  if (selectedId !== null && levelIndex + 1 < this.geographicalLevels.length) {
+    setTimeout(() => {
+      const nextSelect = document.querySelector(`.driver-hierarchy-select-${levelIndex + 1}`) as HTMLElement;
+      if (nextSelect) {
+        nextSelect.click();
+      }
+    }, 100);
+  }
+}
+
+clearDriverFilters(): void {
+  this.driverSelectedLevelIds = this.driverSelectedLevelIds.map(() => null);
+  this.activeDriverFilterLevel = 0;
+  this.filterDriversByHierarchy();
+}
+
+hasDriverActiveFilters(): boolean {
+  return this.driverSelectedLevelIds.some(id => id !== null && id !== undefined);
+}
+
+getDriverActiveFiltersSummary(): string {
+  const filters: string[] = [];
+  this.driverSelectedLevelIds.forEach((entityId, index) => {
+    if (entityId !== null) {
+      const level = this.geographicalLevels[index];
+      const entity = this.geographicalEntities.find(e => e.id === entityId);
+      if (level && entity) {
+        filters.push(`${level.name}: ${entity.name}`);
+      }
+    }
+  });
+  return filters.length > 0 ? filters.join(' > ') : 'Aucun filtre';
+}
+
+private filterDriversByHierarchy(): void {
+  if (!this.hasDriverActiveFilters()) {
+    this.filteredAvailableDrivers = [...this.availableDrivers];
+    return;
+  }
+  
+  let lastSelectedEntityId: number | null = null;
+  for (let i = this.driverSelectedLevelIds.length - 1; i >= 0; i--) {
+    if (this.driverSelectedLevelIds[i] !== null) {
+      lastSelectedEntityId = this.driverSelectedLevelIds[i];
+      break;
+    }
+  }
+  
+  if (!lastSelectedEntityId) {
+    this.filteredAvailableDrivers = [...this.availableDrivers];
+    return;
+  }
+  
+  const selectedEntity = this.geographicalEntities.find(e => e.id === lastSelectedEntityId);
+  if (!selectedEntity) {
+    this.filteredAvailableDrivers = [...this.availableDrivers];
+    return;
+  }
+  
+  this.filteredAvailableDrivers = this.availableDrivers.filter(driver => {
+    const driverEntities = driver.driverGeographicalEntities || [];
+    if (driverEntities.length === 0) return false;
+    
+    return driverEntities.some(de => {
+      const entity = this.geographicalEntities.find(e => e.id === de.geographicalEntityId);
+      if (!entity) return false;
+      return this.isEntityDescendantOf(entity, selectedEntity);
+    });
+  });
+}
+
+getDriverCountForEntity(entityId: number): number {
+  return this.availableDrivers.filter(driver => {
+    const driverEntities = driver.driverGeographicalEntities || [];
+    return driverEntities.some(de => de.geographicalEntityId === entityId);
+  }).length;
 }
 }
