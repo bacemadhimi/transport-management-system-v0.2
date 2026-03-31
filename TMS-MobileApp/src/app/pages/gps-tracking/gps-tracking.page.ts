@@ -19,6 +19,7 @@ import * as L from 'leaflet';
 export class GPSTrackingPage implements OnInit, OnDestroy {
   map!: L.Map;
   truckMarker!: L.Marker;
+  truckIcon!: L.DivIcon;
   destinationMarker!: L.Marker;
   routePolyline!: L.Polyline;
 
@@ -844,7 +845,7 @@ export class GPSTrackingPage implements OnInit, OnDestroy {
   private updateTruckPosition(lat: number, lng: number) {
     if (this.truckMarker && this.map) {
       const newPosition: [number, number] = [lat, lng];
-      
+
       // Calculate rotation angle based on movement direction
       if (this.previousPosition) {
         const angle = this.calculateRotationAngle(
@@ -853,20 +854,20 @@ export class GPSTrackingPage implements OnInit, OnDestroy {
           lat,
           lng
         );
-        
+
         // Apply rotation to truck marker with smooth transition
         const truckElement = document.querySelector('.truck-marker-container') as HTMLElement;
         if (truckElement) {
           truckElement.style.transform = `rotate(${angle - 90}deg)`;
         }
       }
-      
+
       // Update wheel animation speed based on current speed
       this.updateWheelAnimationSpeed();
-      
+
       // Update speed badge
       this.updateSpeedBadge();
-      
+
       // Set marker position
       this.truckMarker.setLatLng(newPosition);
 
@@ -881,6 +882,9 @@ export class GPSTrackingPage implements OnInit, OnDestroy {
       });
     }
   }
+
+  // Store previous position for calculating direction
+  private previousPosition: { lat: number, lng: number } | null = null;
 
   /**
    * Calculate rotation angle between two GPS coordinates
