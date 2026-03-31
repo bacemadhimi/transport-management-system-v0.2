@@ -18,13 +18,72 @@ namespace TransportManagementSystem.Data
             this.passwordHelper = new PasswordHelper();
         }
 
+        /// <summary>
+        /// Seed le client par défaut pour les commandes provenant de Plant IT
+        /// </summary>
+        private void SeedDefaultCustomer()
+        {
+            try
+            {
+                // Vérifier si le client par défaut existe déjà
+                var existingDefaultCustomer = dbContext.Customers
+                    .FirstOrDefault(c => c.Matricule == "DEFAULT_PLANT_IT" || c.Name == "Plant IT - À assigner");
 
-        public void InsertData()
+                if (existingDefaultCustomer == null)
+                {
+                    // Créer le client par défaut
+                    var defaultCustomer = new Customer
+                    {
+                        SourceSystem = DataSource.PlantIt,
+                        ExternalId = "DEFAULT",
+                        Name = "Plant IT - À assigner",
+                        Phone = null,
+                        PhoneCountry = null,
+                        Email = null,
+                        Matricule = "DEFAULT_PLANT_IT",
+                        Contact = "Admin TMS",
+                        CreatedAt = DateTime.UtcNow,
+                        UpdatedAt = null
+                    };
+
+                    dbContext.Customers.Add(defaultCustomer);
+                    dbContext.SaveChanges();
+
+                    Console.WriteLine("✔ Customer par défaut 'Plant IT - À assigner' créé avec succès !");
+                    Console.WriteLine($"   ID: {defaultCustomer.Id}, Matricule: {defaultCustomer.Matricule}");
+                }
+                else
+                {
+                    Console.WriteLine("ℹ️ Customer par défaut 'Plant IT - À assigner' existe déjà.");
+                    Console.WriteLine($"   ID: {existingDefaultCustomer.Id}, Matricule: {existingDefaultCustomer.Matricule}");
+
+                    // Optionnel: Mettre à jour si nécessaire
+                    if (existingDefaultCustomer.Name != "Plant IT - À assigner")
+                    {
+                        existingDefaultCustomer.Name = "Plant IT - À assigner";
+                        existingDefaultCustomer.UpdatedAt = DateTime.UtcNow;
+                        dbContext.SaveChanges();
+                        Console.WriteLine("   ✅ Customer par défaut mis à jour");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Erreur lors de la création du client par défaut : {ex.Message}");
+                throw;
+            }
+        }
+
+   
+    
+
+public void InsertData()
         {
             try
             {
                 // Appliquer les migrations
                 dbContext.Database.Migrate();
+                SeedDefaultCustomer();
                 // Check if ORDER or TRIP settings already exist
                 if (!dbContext.GeneralSettings.Any(p => p.ParameterType == "ORDER" || p.ParameterType == "TRIP"))
                 {

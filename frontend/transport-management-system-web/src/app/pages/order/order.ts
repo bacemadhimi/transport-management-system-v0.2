@@ -80,6 +80,8 @@ export const FR_DATE_FORMATS = {
 export class OrdersComponent implements OnInit, OnDestroy {
     @ViewChild(MatSort) sort!: MatSort;
     dataSource = new MatTableDataSource<IOrder>([]);
+        private refreshInterval: any; 
+    private isRefreshing = false; 
   ngAfterViewInit() {
 
   this.dataSource.sort = this.sort;
@@ -293,6 +295,7 @@ get currentPagePendingCount(): number {
     this.loadSettingsOnce();
     this.subscribeToSettings();
     this.initializeData();
+           this.startAutoRefresh();
 
     this.searchControl.valueChanges
       .pipe(debounceTime(300), takeUntil(this.destroy$))
@@ -365,6 +368,25 @@ this.deliveryDateEndControl.valueChanges
     this.getLatestData();
   });
   }
+      private startAutoRefresh(): void {
+
+        this.refreshInterval = setInterval(() => {
+            this.refreshData();
+        }, 2000); 
+        
+    }
+
+       private refreshData(): void {
+        if (this.isRefreshing) return; 
+        
+        this.isRefreshing = true;
+        
+        this.getLatestData();
+
+        setTimeout(() => {
+            this.isRefreshing = false;
+        }, 1000);
+    } 
 private loadSettingsOnce(): void {
     this.settingsService.getOrderSettings().subscribe({
       next: (settings) => {
@@ -397,6 +419,10 @@ private loadSettingsOnce(): void {
     });
   }
   ngOnDestroy() {
+      if (this.refreshInterval) {
+       clearInterval(this.refreshInterval);
+
+        }
     this.destroy$.next();
     this.destroy$.complete();
      if (this.settingsSubscription) {
@@ -880,6 +906,7 @@ get filteredOrders(): IOrder[] {
     switch (source.toUpperCase()) {
       case 'TMS': return 'source-TMS';
       case 'QAD': return 'source-QAD';
+     case 'PLANTIT': return 'source-plantit';
       default: return 'source-other';
     }
   }
@@ -900,7 +927,8 @@ statusOptions = [
 sourceOptions = [
   { value: '', label: 'Toutes' },
   { value: 'TMS', label: 'TMS' },
-  { value: 'QAD', label: 'QAD' }
+  { value: 'QAD', label: 'QAD' },
+ { value: 'PlantIt', label: 'Plant IT' } 
 ];
 resetFilters() {
 

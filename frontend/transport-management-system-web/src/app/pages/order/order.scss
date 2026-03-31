@@ -280,8 +280,9 @@
   min-width: 60px;
   text-align: center;
 }
-.source-tms, .source-TMS { background-color: #1976d2; color: #fff; }
+.source-tms, .source-TMS { background-color: #d219c0; color: #fff; }
 .source-qad, .source-QAD { background-color: #388e3c; color: #fff; }
+.source-plantit, .source-plantit { background-color: #212bb5; color: #fff; }
 .source-other { background-color: gray; color: #fff; }
 .select-all-header {
   display: flex;
@@ -312,8 +313,9 @@
   background-color: gray; /* couleur neutre par défaut */
 }
 
-.source-tms { background-color: #1976d2; }
+.source-tms { background-color: #d21972; }
 .source-qad { background-color: #388e3c; }
+.source-plantit { background-color: #206aa3; }
 .source-other { background-color: gray; }
 
 /* --- LIGNES --- */

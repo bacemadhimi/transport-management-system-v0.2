@@ -55,6 +55,7 @@ namespace TransportManagementSystem.Data
         public DbSet<CustomerGeographicalEntity> CustomerGeographicalEntities { get; set; }
 
         public DbSet<CPDataX> CPDataX { get; set; }
+        public DbSet<CPUnits> tblCPUnits { get; set; }
         public DbSet<PMMWarehouse> PMMWarehouse { get; set; }
         public DbSet<PMMStorageLocation> tblPMMStorageLocation { get; set; }
         public DbSet<ItpProcessCell> tblItpProcessCell { get; set; }
