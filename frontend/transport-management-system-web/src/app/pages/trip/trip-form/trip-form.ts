@@ -2628,7 +2628,7 @@ export class TripForm implements OnInit {
   }
 
   private prepareDeliveries(baseDate: any): any[] {
-    return this.deliveryControls.map((group, index) => {
+    const deliveries = this.deliveryControls.map((group, index) => {
       const delivery = group.value;
 
       const plannedTime = delivery.plannedTime ?
@@ -2645,6 +2645,30 @@ export class TripForm implements OnInit {
         notes: delivery.notes || null
       };
     });
+
+    // IMPORTANT: Inject global destination address into the last delivery
+    // This ensures the mobile app receives the destination selected at trip creation
+    if (deliveries.length > 0 && this.selectedDestinationCoords) {
+      const lastDelivery = deliveries[deliveries.length - 1];
+      
+      // Update delivery address with global destination if it's more precise
+      if (this.selectedDestinationCoords.address && 
+          (!lastDelivery.deliveryAddress || lastDelivery.deliveryAddress.trim() === '')) {
+        lastDelivery.deliveryAddress = this.selectedDestinationCoords.address;
+      }
+      
+      // Update geolocation with global destination coordinates if not set
+      if (!lastDelivery.geolocation || lastDelivery.geolocation.trim() === '') {
+        lastDelivery.geolocation = `${this.selectedDestinationCoords.lat},${this.selectedDestinationCoords.lng}`;
+      }
+      
+      console.log('✅ Global destination injected into last delivery:', {
+        address: lastDelivery.deliveryAddress,
+        geolocation: lastDelivery.geolocation
+      });
+    }
+
+    return deliveries;
   }
 
   private formatDateWithTime(date: any, defaultTime: string): string {
