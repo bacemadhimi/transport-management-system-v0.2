@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+﻿import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatButtonModule } from '@angular/material/button';
@@ -28,7 +28,7 @@ export class SyncComponent {
   progress = 0;
   status: SyncStatus | null = null;
   history: any[] = [];
-  isSyncing = false;  
+  isSyncing = false;
 
   displayedColumns: string[] = ['date', 'status', 'total', 'processed'];
 
@@ -36,9 +36,9 @@ export class SyncComponent {
 
  private translation = inject(Translation);
   t(key: string): string { return this.translation.t(key); }
-  
+
   startSync() {
-    if (this.isSyncing) return; 
+    if (this.isSyncing) return;
 
     this.isSyncing = true;
 
@@ -69,7 +69,7 @@ export class SyncComponent {
         if (res.status !== 'Running') {
           clearInterval(interval);
           this.progress = 100;
-          this.isSyncing = false;  
+          this.isSyncing = false;
           this.loadHistory();
         }
       });

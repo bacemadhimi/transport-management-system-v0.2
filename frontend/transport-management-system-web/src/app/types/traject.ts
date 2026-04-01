@@ -1,4 +1,4 @@
-// types/traject.ts
+﻿
 export interface ITraject {
   id: number;
   name: string;
@@ -8,7 +8,7 @@ export interface ITraject {
   startLocationId: number;
   endLocationId: number;
   isPredefined: boolean;
-  
+
 }
 
 export interface ITrajectPoint {
@@ -16,7 +16,7 @@ export interface ITrajectPoint {
   location?: string;
   order: number;
   trajectId?: number;
-  clientId?: number; 
+  clientId?: number;
   clientName?: string;
 }
 
@@ -28,7 +28,7 @@ export interface ICreateTrajectDto {
 export interface ICreateTrajectPointDto {
   location: string;
   order: number;
-  clientId?: number; 
+  clientId?: number;
 }
 
 export interface IUpdateTrajectDto {
@@ -40,7 +40,7 @@ export interface IPagedTrajectData {
   totalData: number;
 }
 
-// Options pour le formulaire
+
 export interface ITrajectFormData {
   trajectId?: number;
 }

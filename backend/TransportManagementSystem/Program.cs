@@ -8,7 +8,6 @@ using TransportManagementSystem.Entity;
 using TransportManagementSystem.Hubs;
 using TransportManagementSystem.Interfaces;
 using TransportManagementSystem.Repositories;
-using TransportManagementSystem.Service;
 using TransportManagementSystem.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -24,22 +23,16 @@ builder.Services
 builder.Services.AddHttpClient();
 builder.Services.AddOpenApi();
 
-
 builder.Services.AddCors(options =>
 {
-
     options.AddPolicy("SignalRCors", policy =>
     {
-        policy.WithOrigins(
-            "http://localhost:4200",
-            "http://localhost:8100"  
-        )
+        policy.SetIsOriginAllowed(origin => true)
         .AllowAnyHeader()
         .AllowAnyMethod()
         .AllowCredentials();
     });
 
-  
     options.AddPolicy("AllowCrosOrigin", policy =>
     {
         policy.AllowAnyOrigin()
@@ -74,7 +67,6 @@ builder.Services.AddScoped<IRepository<UserRight>, Repository<UserRight>>();
 builder.Services.AddScoped<IRepository<UserGroup2Right>, Repository<UserGroup2Right>>();
 builder.Services.AddScoped<IRepository<UserGroup2User>, Repository<UserGroup2User>>();
 builder.Services.AddScoped<IRepository<Location>, Repository<Location>>();
-builder.Services.AddScoped<IRepository<City>, Repository<City>>();
 builder.Services.AddScoped<IRepository<TypeTruck>, Repository<TypeTruck>>();
 builder.Services.AddScoped<IRepository<Employee>, Repository<Employee>>();
 builder.Services.AddScoped<IRepository<GeneralSettings>, Repository<GeneralSettings>>();
@@ -86,10 +78,11 @@ builder.Services.AddScoped<OrderSyncService>();
 builder.Services.AddScoped<IRepository<Customer>, Repository<Customer>>();
 builder.Services.AddScoped<IRepository<Delivery>, Repository<Delivery>>();
 builder.Services.AddScoped<IRepository<Order>, Repository<Order>>();
+builder.Services.AddScoped<IRepository<GeographicalEntity>, Repository<GeographicalEntity>>();
+builder.Services.AddScoped<IRepository<GeographicalLevel>, Repository<GeographicalLevel>>();
 
 builder.Services.AddSingleton<IConfiguration>(builder.Configuration);
 builder.Services.AddScoped<IRepository<MarqueTruck>, Repository<MarqueTruck>>();
-builder.Services.AddScoped<IRepository<Zone>, Repository<Zone>>();
 builder.Services.AddScoped<IStatisticsService, StatisticsService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddScoped<INotificationRepository, NotificationRepository>();
@@ -125,8 +118,8 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             {
                 var accessToken = context.Request.Query["access_token"];
 
-
                 var path = context.HttpContext.Request.Path;
+
                 if (!string.IsNullOrEmpty(accessToken) &&
                     (path.StartsWithSegments("/triphub") || 
                      path.StartsWithSegments("/gpshub") || 
@@ -188,6 +181,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+app.UseRouting();
 
 app.UseRouting();
 

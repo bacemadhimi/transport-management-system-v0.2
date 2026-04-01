@@ -883,9 +883,6 @@ export class GPSTrackingPage implements OnInit, OnDestroy {
     }
   }
 
-  // Store previous position for calculating direction
-  private previousPosition: { lat: number, lng: number } | null = null;
-
   /**
    * Calculate rotation angle between two GPS coordinates
    */

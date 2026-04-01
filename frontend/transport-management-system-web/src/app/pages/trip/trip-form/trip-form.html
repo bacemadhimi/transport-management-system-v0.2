@@ -1,4 +1,4 @@
-<div class="trip-form-wrapper">
+﻿<div class="trip-form-wrapper">
   <div class="loading-overlay" *ngIf="loading">
     <mat-spinner diameter="50"></mat-spinner>
     <span>Chargement...</span>
@@ -194,14 +194,56 @@
                   </mat-form-field>
                 </div>
 
+                <!-- Global destination address search (Google Maps style) -->
+                <div class="global-destination-card">
+                  <div class="destination-header">
+                    <div class="destination-icon">
+                      <mat-icon>my_location</mat-icon>
+                    </div>
+                    <div class="destination-info">
+                      <h4 class="destination-label">Destination GPS précise</h4>
+                      <p class="destination-subtitle">Recherche intelligente</p>
+                    </div>
+                  </div>
+                  <mat-form-field appearance="outline" class="destination-field">
+                    <mat-label>Tapez une adresse</mat-label>
+                    <input matInput 
+                           [formControl]="globalDestinationAddress"
+                           [matAutocomplete]="globalAuto"
+                           placeholder="Ex: avenue habib bourguiba tunis...">
+                    <button mat-icon-button matSuffix 
+                            *ngIf="globalDestinationAddress.value"
+                            (click)="clearGlobalDestination()"
+                            matTooltip="Effacer la destination"
+                            matTooltipPosition="above">
+                      <mat-icon>close</mat-icon>
+                    </button>
+                    <mat-autocomplete #globalAuto="matAutocomplete"
+                                      (optionSelected)="onGlobalAddressSelected($event.option.value)">
+                      <mat-option *ngFor="let suggestion of globalAddressSuggestions" 
+                                  [value]="suggestion">
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                          <mat-icon>location_on</mat-icon>
+                          <span style="font-size: 14px;">{{ suggestion.address }}</span>
+                        </div>
+                      </mat-option>
+                    </mat-autocomplete>
+                    <mat-hint>Une fois sélectionnée, cette adresse sera utilisée pour le suivi GPS en temps réel</mat-hint>
+                  </mat-form-field>
+                  <div class="destination-status" *ngIf="selectedDestinationCoords">
+                    <mat-icon class="status-icon" style="color: #10b981;">check_circle</mat-icon>
+                    <span class="status-text">Destination définie</span>
+                  </div>
+                </div>
+
               </div>
-              
+
 
               <div class="same-location-checkbox-unified">
                 <mat-checkbox [formControl]="arrivalEqualsDeparture" color="primary">
                   {{ t('ARRIVAL_EQUALS_DEPARTURE') }}
                 </mat-checkbox>
-                <mat-icon class="checkbox-info-icon" matTooltip="Cochez cette case si le camion retourne à son point de départ">info</mat-icon>
+                <mat-icon class="checkbox-info-icon" matTooltip="Cochez cette case si le camion retourne Ã  son point de départ">info</mat-icon>
               </div>
             </div>
 
@@ -916,8 +958,8 @@
                         </div>
                         
                         <div class="client-card-footer">
-                          <div class="client-address" *ngIf="client.adress">
-                            {{ client.adress | slice:0:50 }}{{ client.adress.length > 50 ? '...' : '' }}
+                          <div class="client-address" *ngIf="client.deliveryAddress">
+                            {{ client.deliveryAddress | slice:0:50 }}{{ client.deliveryAddress.length > 50 ? '...' : '' }}
                           </div>
                           <button type="button" mat-icon-button 
                                   class="client-select-btn"
@@ -962,7 +1004,7 @@
                     class="no-clients-empty">
                   <mat-icon class="empty-icon">person_off</mat-icon>
                   <h4>Aucun client avec des commandes en attente</h4>
-                  <p>Tous les clients ont leurs commandes déjà traitées ou aucune commande en attente.</p>
+                  <p>Tous les clients ont leurs commandes déjÃ  traitées ou aucune commande en attente.</p>
                 </div>
               </div>
 
@@ -1083,7 +1125,7 @@
                 <div class="confirmation-actions">
                   <button type="button" mat-raised-button color="primary" (click)="goBackToOrderSelection()">
                     <mat-icon>arrow_back</mat-icon>
-                    Retour à la sélection
+                    Retour Ã  la sélection
                   </button>   
                   <button type="button" mat-raised-button color="primary"
                           (click)="goBackToClientSelection()"
@@ -1314,7 +1356,7 @@
                     <button mat-icon-button 
                             type="button" 
                             (click)="scrollDeliveriesToBottom()"
-                            matTooltip="Aller à la fin">
+                            matTooltip="Aller Ã  la fin">
                       <mat-icon>vertical_align_bottom</mat-icon>
                     </button>
                   </div>
@@ -1447,7 +1489,7 @@
             <button mat-icon-button 
                     type="button" 
                     (click)="scrollLeftToBottom()"
-                    matTooltip="Aller à la fin">
+                    matTooltip="Aller Ã  la fin">
               <mat-icon>vertical_align_bottom</mat-icon>
             </button>
           </div>
@@ -1840,7 +1882,7 @@
                   </div>
                   <div class="legend-item">
                     <span class="legend-color" style="background: #3b82f6"></span>
-                    <span>Élevé</span>
+                    <span>Ã‰levé</span>
                   </div>
                   <div class="legend-item">
                     <span class="legend-color" style="background: #f59e0b"></span>
@@ -2071,7 +2113,7 @@
                     </mat-icon>
                     <div class="warning-content">
                       <div class="warning-title">
-                        {{ calculateCapacityPercentage() >= 90 ? 'DÉPASSEMENT IMMINENT' : 'CAPACITÉ ÉLEVÉE' }}
+                        {{ calculateCapacityPercentage() >= 90 ? 'DÃ‰PASSEMENT IMMINENT' : 'CAPACITÃ‰ Ã‰LEVÃ‰E' }}
                       </div>
                       <div class="warning-text">
                         {{ getCapacityAlert().message }}
@@ -2505,7 +2547,7 @@
           <button mat-icon-button 
                   type="button" 
                   (click)="scrollRightToBottom()"
-                  matTooltip="Aller à la fin">
+                  matTooltip="Aller Ã  la fin">
             <mat-icon>vertical_align_bottom</mat-icon>
           </button>
         </div>
@@ -2619,7 +2661,7 @@
             </div>
             <div class="range-date" *ngIf="!selectedRangeEnd">
               <span class="range-label">Fin:</span>
-              <span class="range-value placeholder">À sélectionner</span>
+              <span class="range-value placeholder">Ã€ sélectionner</span>
             </div>
           </div>
           
@@ -2779,3 +2821,5 @@
     </div>
   </div>
 </div>
+
+

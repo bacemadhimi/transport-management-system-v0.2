@@ -1,14 +1,21 @@
 <header>
   <mat-toolbar class="bg-blue-600! flex justify-between relative shadow-md">
  
-    <!-- Logo -->
-    <div class="flex items-center">
-      <img *ngIf="authService.isLoggedIn"
-           src="logo.jpg"
-           alt="{{ t('APP_TITLE') }}"
-           class="w-10 h-10 rounded-full bg-white p-1 shadow-sm object-cover cursor-pointer ml-2"
-           (click)="drawer.toggle()">
-    </div>
+ <!-- Logo -->
+<div class="flex items-center">
+  <img *ngIf="authService.isLoggedIn && companyLogo"
+       [src]="companyLogo"
+       alt="{{ t('APP_TITLE') }}"
+       class="w-10 h-10 rounded-full bg-white p-1 shadow-sm object-cover cursor-pointer ml-2"
+       (click)="drawer.toggle()">
+  
+  <!-- Optional: Show a placeholder icon when no logo -->
+  <div *ngIf="authService.isLoggedIn && !companyLogo" 
+       class="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center cursor-pointer ml-2"
+       (click)="drawer.toggle()">
+    <mat-icon class="text-gray-500">business</mat-icon>
+  </div>
+</div>
  
     <!-- Right side -->
     <div *ngIf="authService.isLoggedIn" class="flex gap-4 items-center relative">
@@ -543,6 +550,17 @@
           <a matListItemTitle class="sidebar-text">{{ t('ORDERS') }}</a>
         </mat-list-item>
 
+        <!-- Warehouse -->
+<mat-list-item
+  *ngIf="authService.hasRole('SuperAdmin') || authService.hasEntityAccess('WAREHOUSE')"
+  routerLink="/warehouse"
+  routerLinkActive="active-menu-item"
+  class="sidebar-item"
+>
+  <mat-icon matListItemIcon class="sidebar-icon">warehouse</mat-icon>
+  <a matListItemTitle class="sidebar-text">{{ t('WAREHOUSE') || 'Warehouse' }}</a>
+</mat-list-item>
+
         <!-- Divider -->
         <div class="menu-divider"></div>
 
@@ -550,7 +568,7 @@
         <div class="menu-section-header">{{ t('TRAVEL_MANAGEMENT') }}</div>
         
         <mat-expansion-panel
-          *ngIf="authService.hasRole('SuperAdmin') || authService.hasEntityAccess('TRAVEL') || authService.hasEntityAccess('HISTORIQUE_TRAVEL')"
+          *ngIf="authService.hasRole('SuperAdmin') || authService.hasEntityAccess('TRAVEL')"
           class="sidebar-expansion-panel"
           [expanded]="false"
           hideToggle>
@@ -569,15 +587,7 @@
               class="submenu-item">
               <mat-icon matListItemIcon class="submenu-icon">route</mat-icon>
               <a matListItemTitle class="submenu-text">{{ t('TRAVEL') }}</a>
-            </mat-list-item>
-            <mat-list-item 
-              *ngIf="authService.hasRole('SuperAdmin') || authService.hasEntityAccess('HISTORIQUE_TRAVEL')"
-              routerLink="/historic-trips"
-              routerLinkActive="active-submenu-item"
-              class="submenu-item">
-              <mat-icon matListItemIcon class="submenu-icon">history</mat-icon>
-              <a matListItemTitle class="submenu-text">{{ t('HISTORIC_TRIPS') }}</a>
-            </mat-list-item>
+            </mat-list-item>     
             <mat-list-item 
               routerLink="/locations"
               routerLinkActive="active-submenu-item"
@@ -712,14 +722,7 @@
             </mat-panel-title>
           </mat-expansion-panel-header>
           <mat-nav-list class="submenu-list">
-            <mat-list-item 
-              *ngIf="authService.hasRole('SuperAdmin') || authService.hasEntityAccess('MECHANIC')"
-              routerLink="/mechanics"
-              routerLinkActive="active-submenu-item"
-              class="submenu-item">
-              <mat-icon matListItemIcon class="submenu-icon">engineering</mat-icon>
-              <a matListItemTitle class="submenu-text">{{ t('MECHANICS') }}</a>
-            </mat-list-item>
+         
             <mat-list-item 
               *ngIf="authService.hasRole('SuperAdmin') || authService.hasEntityAccess('VENDOR')"
               routerLink="/vendors"

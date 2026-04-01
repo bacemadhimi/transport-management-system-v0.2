@@ -1,4 +1,4 @@
-import { Injectable, Renderer2, RendererFactory2 } from '@angular/core';
+﻿import { Injectable, Renderer2, RendererFactory2 } from '@angular/core';
 
 export interface Theme {
   name: string;
@@ -16,7 +16,7 @@ export interface Theme {
 export class ThemeService {
   private renderer: Renderer2;
   private currentTheme!: Theme;
-  
+
   themes: Theme[] = [
     {
       name: 'Blue',
@@ -243,27 +243,27 @@ export class ThemeService {
 
   setTheme(theme: Theme) {
     this.currentTheme = theme;
-    
-    // Apply CSS variables to root element
+
+
     document.documentElement.style.setProperty('--primary-color', theme.primary);
     document.documentElement.style.setProperty('--primary-gradient', theme.primaryGradient);
     document.documentElement.style.setProperty('--primary-dark', theme.primaryDark);
     document.documentElement.style.setProperty('--sidebar-active', theme.sidebarActive);
     document.documentElement.style.setProperty('--sidebar-active-dark', theme.sidebarActiveDark);
     document.documentElement.style.setProperty('--bg-main', theme.bgMain);
-    
-    // Set RGB values for opacity effects
+
+
     const rgb = this.hexToRgb(theme.primary);
     if (rgb) {
       document.documentElement.style.setProperty('--primary-color-rgb', `${rgb.r}, ${rgb.g}, ${rgb.b}`);
     }
-    
-    // Add theme class to body
+
+
     const bodyClass = `theme-${theme.name.toLowerCase()}`;
-    document.body.className = ''; // Remove all classes
+    document.body.className = '';
     document.body.classList.add(bodyClass);
-    
-    // Save to localStorage
+
+
     localStorage.setItem('selectedTheme', theme.name);
   }
 
@@ -284,7 +284,7 @@ export class ThemeService {
         return;
       }
     }
-    // Default theme
+
     this.setTheme(this.themes[0]);
   }
 

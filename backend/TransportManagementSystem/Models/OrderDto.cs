@@ -10,16 +10,16 @@ public class OrderDto
     public string? CustomerName { get; set; }
     public string? CustomerMatricule { get; set; }
 
-    public string CustomerCity { get; set; }
+    public string? CustomerCity { get; set; }
 
-    public int? ZoneId { get; set; }          
-    public string? ZoneName { get; set; }     
+    public int? ZoneId { get; set; }
+    public string? ZoneName { get; set; }
 
     public string Reference { get; set; } = string.Empty;
     public string? Type { get; set; }
     public decimal Weight { get; set; }
 
-    public string WeightUnit { get; set; } 
+    public string? WeightUnit { get; set; }
     public OrderStatus Status { get; set; }
     public DateTime CreatedDate { get; set; }
 
@@ -28,7 +28,7 @@ public class OrderDto
     public string? Notes { get; set; }
     public int Priority { get; set; }
     public bool HasDelivery { get; set; }
-    public string SourceSystem { get; set; }
+    public DataSource SourceSystem { get; set; }
 }
 
 public class OrderDetailsDto

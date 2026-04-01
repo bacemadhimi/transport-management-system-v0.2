@@ -111,7 +111,10 @@ namespace TransportManagementSystem.Controllers
             var claims = new List<Claim>
     {
         new Claim(ClaimTypes.NameIdentifier, userId.ToString()),
-        new Claim(ClaimTypes.Name, email)
+        new Claim(ClaimTypes.Name, email),
+        new Claim(JwtRegisteredClaimNames.Sub, userId.ToString()), // Add subject claim
+        new Claim(JwtRegisteredClaimNames.Email, email),
+        new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
     };
 
 

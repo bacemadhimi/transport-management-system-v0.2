@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using TransportManagementSystem.Data;
 using TransportManagementSystem.Entity;
 using TransportManagementSystem.Models;
@@ -7,6 +8,7 @@ namespace TransportManagementSystem.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]
+[Authorize]
 public class TypeTruckController : ControllerBase
 {
     private readonly IRepository<TypeTruck> typeTruckRepository;
@@ -69,7 +71,7 @@ public class TypeTruckController : ControllerBase
         {
             Type = model.Type,
             Capacity = model.Capacity,
-            Unit = model.Unit
+          
         };
 
         await typeTruckRepository.AddAsync(typeTruck);
@@ -91,7 +93,7 @@ public class TypeTruckController : ControllerBase
 
         typeTruck.Type = model.Type;
         typeTruck.Capacity = model.Capacity;
-        typeTruck.Unit = model.Unit;
+
 
         typeTruckRepository.Update(typeTruck);
         await typeTruckRepository.SaveChangesAsync();

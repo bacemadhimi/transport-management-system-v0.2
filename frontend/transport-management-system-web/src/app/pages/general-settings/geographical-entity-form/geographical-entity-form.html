@@ -1,0 +1,161 @@
+<mat-card class="form-card">
+  <mat-card-header>
+    <div class="header-icon" mat-card-avatar>
+      <mat-icon>{{ data.entityId ? 'edit' : 'add_location' }}</mat-icon>
+    </div>
+    <div class="header-text">
+      <mat-card-title>
+        {{ data.entityId ? 'Modifier l\'entité' : 'Ajouter une entité' }}
+      </mat-card-title>
+      <mat-card-subtitle>
+        {{ data.entityId ? 'Modifier les informations de l\'entité géographique' : 'Ajouter une nouvelle entité géographique' }}
+      </mat-card-subtitle>
+    </div>
+  </mat-card-header>
+
+  <form [formGroup]="entityForm" (ngSubmit)="onSubmit()">
+    <mat-card-content>
+      <!-- Edit mode badge -->
+      <div *ngIf="data.entityId" class="edit-mode-badge">
+        <mat-icon>info</mat-icon>
+        Mode édition - ID: {{ data.entityId }}
+      </div>
+
+      <!-- Level Selection -->
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Niveau géographique</mat-label>
+        <mat-select formControlName="levelId" (selectionChange)="onLevelChange()">
+          <mat-option *ngFor="let level of levels" [value]="level.id">
+            {{level.name}} (Niveau {{level.levelNumber}}) - {{level.isMappable ? 'Cartographiable' : 'Non cartographiable'}}
+          </mat-option>
+        </mat-select>
+        <mat-icon matSuffix>layers</mat-icon>
+        <mat-error *ngIf="entityForm.get('levelId')?.hasError('required')">
+          Le niveau est requis
+        </mat-error>
+      </mat-form-field>
+
+      <!-- Name -->
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Nom</mat-label>
+        <input 
+          matInput 
+          formControlName="name" 
+          placeholder="ex: Tunis, Sfax, Nord"
+          [readonly]="isSubmitting"
+        />
+        <mat-icon matSuffix>place</mat-icon>
+        <mat-error *ngIf="entityForm.get('name')?.hasError('required')">
+          Le nom est requis
+        </mat-error>
+      </mat-form-field>
+
+      <!-- Parent Entity (for hierarchical levels) -->
+      <mat-form-field appearance="outline" class="full-width" *ngIf="availableParents.length > 0">
+        <mat-label>Entité parente</mat-label>
+        <mat-select formControlName="parentId">
+          <mat-option [value]="null">Aucun parent</mat-option>
+          <mat-option *ngFor="let parent of availableParents" [value]="parent.id">
+            {{parent.name}} ({{getLevelName(parent.levelId)}})
+          </mat-option>
+        </mat-select>
+        <mat-icon matSuffix>account_tree</mat-icon>
+        <mat-hint>Sélectionnez l'entité parente</mat-hint>
+      </mat-form-field>
+
+      <!-- Coordinates Section (for mappable levels) -->
+      <div *ngIf="selectedLevelIsMappable" class="coordinates-section">
+        <div class="section-title">
+          <mat-icon>location_on</mat-icon>
+          <span>Coordonnées géographiques</span>
+        </div>
+
+        <div class="coordinates-grid">
+          <!-- Latitude -->
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Latitude</mat-label>
+            <input 
+              matInput 
+              type="number" 
+              step="0.000001"
+              formControlName="latitude" 
+              placeholder="ex: 36.8065"
+            />
+            <mat-icon matSuffix>north</mat-icon>
+            <mat-hint>Entre -90 et 90</mat-hint>
+            <mat-error *ngIf="entityForm.get('latitude')?.hasError('required')">
+              La latitude est requise pour ce niveau
+            </mat-error>
+            <mat-error *ngIf="entityForm.get('latitude')?.hasError('min') || entityForm.get('latitude')?.hasError('max')">
+              La latitude doit être entre -90 et 90
+            </mat-error>
+          </mat-form-field>
+
+          <!-- Longitude -->
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Longitude</mat-label>
+            <input 
+              matInput 
+              type="number" 
+              step="0.000001"
+              formControlName="longitude" 
+              placeholder="ex: 10.1815"
+            />
+            <mat-icon matSuffix>east</mat-icon>
+            <mat-hint>Entre -180 et 180</mat-hint>
+            <mat-error *ngIf="entityForm.get('longitude')?.hasError('required')">
+              La longitude est requise pour ce niveau
+            </mat-error>
+            <mat-error *ngIf="entityForm.get('longitude')?.hasError('min') || entityForm.get('longitude')?.hasError('max')">
+              La longitude doit être entre -180 et 180
+            </mat-error>
+          </mat-form-field>
+        </div>
+
+        <!-- Map Preview (optional) -->
+        <div class="map-preview" *ngIf="entityForm.get('latitude')?.value && entityForm.get('longitude')?.value">
+          <a [href]="getGoogleMapsUrl()" target="_blank" class="map-link">
+            <mat-icon>map</mat-icon>
+            Voir sur Google Maps
+          </a>
+        </div>
+      </div>
+
+      <!-- Active Status -->
+      <mat-checkbox formControlName="isActive">
+        Actif
+      </mat-checkbox>
+    </mat-card-content>
+
+    <mat-card-actions align="end">
+      <div class="action-buttons">
+        <button 
+          mat-button 
+          type="button" 
+          (click)="onCancel()"
+          [disabled]="isSubmitting"
+        >
+          <mat-icon>close</mat-icon>
+          Annuler
+        </button>
+        
+        <button 
+          mat-raised-button 
+          type="submit"
+          [disabled]="entityForm.invalid || isSubmitting"
+          class="theme-primary-btn"
+        >
+          <span class="button-content">
+            @if (isSubmitting) {
+              <mat-spinner diameter="20" class="button-spinner"></mat-spinner>
+              <span>{{ data.entityId ? 'Modification...' : 'Ajout...' }}</span>
+            } @else {
+              <mat-icon>{{ data.entityId ? 'save' : 'add_location' }}</mat-icon>
+              <span>{{ data.entityId ? 'Modifier' : 'Ajouter' }}</span>
+            }
+          </span>
+        </button>
+      </div>
+    </mat-card-actions>
+  </form>
+</mat-card>

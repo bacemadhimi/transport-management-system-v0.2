@@ -48,9 +48,10 @@ public class TripAssignmentsController : ControllerBase
             if (trip == null)
                 return NotFound(new { message = "Trip non trouvé" });
 
-            var driver = await _context.Drivers.FindAsync(request.DriverId);
+            // Driver is now stored in Users table, find by user_id in Employees table
+            var driver = await _context.Drivers.FirstOrDefaultAsync(d => d.user_id == request.DriverId);
             if (driver == null)
-                return NotFound(new { message = "Chauffeur non trouvé" });
+                return NotFound(new { message = $"Chauffeur non trouvé (UserId: {request.DriverId})" });
 
             // Créer l'assignment
             var assignment = new TripAssignment
@@ -254,15 +255,15 @@ public class TripAssignmentsController : ControllerBase
             {
                 a.Id,
                 a.TripId,
-                TripReference = a.Trip.TripReference,
+                TripReference = a.Trip != null ? a.Trip.TripReference : string.Empty,
                 Status = a.Status.ToString(),
                 a.AssignedAt,
                 a.RespondedAt,
                 a.ExpiresAt,
                 RejectionReason = a.RejectionReason,
-                TripStatus = a.Trip.TripStatus.ToString(),
-                TruckImmatriculation = a.Trip.Truck.Immatriculation,
-                DeliveriesCount = a.Trip.Deliveries.Count
+                TripStatus = a.Trip != null ? a.Trip.TripStatus.ToString() : string.Empty,
+                TruckImmatriculation = a.Trip != null && a.Trip.Truck != null ? a.Trip.Truck.Immatriculation : string.Empty,
+                DeliveriesCount = a.Trip != null && a.Trip.Deliveries != null ? a.Trip.Deliveries.Count : 0
             })
             .ToListAsync();
 

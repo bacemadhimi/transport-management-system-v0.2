@@ -1,40 +1,83 @@
 <div class="employee-page">
   <div class="employee-header">
-    <h1>{{ t('EMPLOYEE_LIST') || 'Employee List' }}</h1>
+    <h1>{{ t('EMPLOYEE_LIST') || 'Liste des employés' }}</h1>
 
     <div class="employee-header__actions">
       <div class="employee-header__left">
-        <mat-form-field appearance="outline" class="employee-search">
-          <mat-label>{{ t('SEARCH_EMPLOYEE') }}</mat-label>
-          <input
-            matInput
-            type="text"
-            [formControl]="searchControl"
-            placeholder="{{ t('SEARCH_EMPLOYEE_PLACEHOLDER') }}"
-          />
-        </mat-form-field>
+        <div class="search-filters-row">
+          <!-- Employee Search -->
+          <mat-form-field appearance="outline" class="employee-search">
+            <mat-label>{{ t('SEARCH_EMPLOYEE') || 'Chercher employé' }}</mat-label>
+            <input
+              matInput
+              type="text"
+              [formControl]="searchControl"
+              placeholder="{{ t('SEARCH_EMPLOYEE_PLACEHOLDER') }}"
+            />
+          </mat-form-field>
 
-        <div class="export-actions" aria-label="Export actions">
-          <button mat-icon-button class="export-btn export-excel" (click)="exportExcel()" title="Export Excel">
-            <svg viewBox="0 0 24 24" class="export-icon" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-              <rect x="2" y="3" width="20" height="18" rx="2" fill="#107C10"></rect>
-              <text x="12" y="16" text-anchor="middle" font-size="10" font-weight="700" fill="#fff">XLS</text>
-            </svg>
-          </button>
+          <!-- Category Filter - DYNAMIC FROM GENERAL SETTINGS -->
+          <mat-form-field appearance="outline" class="employee-category-filter">
+            <mat-label>{{ t('FILTER_BY_CATEGORY') || 'Filtrer par catégorie' }}</mat-label>
+            <mat-select [formControl]="categoryFilterControl">
+              <mat-option [value]="null">{{ t('ALL_CATEGORIES') || 'Toutes les catégories' }}</mat-option>
+              <mat-option *ngFor="let category of categoryOptions" [value]="category.value">
+                {{ category.label }}
+              </mat-option>
+            </mat-select>
+          </mat-form-field>
 
-          <button mat-icon-button class="export-btn export-csv" (click)="exportCSV()" title="Export CSV">
-            <svg viewBox="0 0 24 24" class="export-icon" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-              <rect x="2" y="3" width="20" height="18" rx="2" fill="#1E90FF"></rect>
-              <text x="12" y="16" text-anchor="middle" font-size="9" font-weight="700" fill="#fff">CSV</text>
-            </svg>
-          </button>
+          <!-- Show Disabled Checkbox -->
+          <mat-checkbox 
+            [checked]="showDisabled" 
+            (change)="toggleListe($event.checked)"
+            color="primary"
+            class="show-disabled-checkbox">
+            {{ t('SHOW_DISABLED') || 'Afficher les désactivés' }}
+          </mat-checkbox>
+        </div>
 
-          <button mat-icon-button class="export-btn export-pdf" (click)="exportPDF()" title="Export PDF">
-            <svg viewBox="0 0 24 24" class="export-icon" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-              <rect x="2" y="3" width="20" height="18" rx="2" fill="#D32F2F"></rect>
-              <text x="12" y="16" text-anchor="middle" font-size="9" font-weight="700" fill="#fff">PDF</text>
-            </svg>
+        <!-- Import/Export Actions with Help Button -->
+        <div class="import-export-actions">
+          <button mat-stroked-button class="template-btn" (click)="downloadEmptyTemplate()" matTooltip="Télécharger le modèle Excel vide à remplir">
+            <mat-icon>assignment</mat-icon>
+            Modèle
           </button>
+          
+          <button mat-stroked-button class="import-btn" (click)="triggerFileInput()" [disabled]="isImporting" matTooltip="Importer des employés depuis un fichier Excel">
+            <mat-icon *ngIf="!isImporting">upload</mat-icon>
+            <mat-icon *ngIf="isImporting" class="spinner-icon">autorenew</mat-icon>
+            {{ isImporting ? 'Import...' : 'Importer' }}
+          </button>
+          
+          <button mat-icon-button class="help-btn" (click)="showHelpPopup()">
+            <mat-icon>help_outline</mat-icon>
+          </button>
+          
+          <input #fileInput type="file" (change)="onFileSelected($event)" accept=".xlsx, .xls, .csv" style="display: none" />
+
+          <div class="export-actions" aria-label="Export actions">
+            <button mat-icon-button class="export-btn export-excel" (click)="exportExcel()" title="Export Excel">
+              <svg viewBox="0 0 24 24" class="export-icon" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <rect x="2" y="3" width="20" height="18" rx="2" fill="#107C10"></rect>
+                <text x="12" y="16" text-anchor="middle" font-size="10" font-weight="700" fill="#fff">XLS</text>
+              </svg>
+            </button>
+
+            <button mat-icon-button class="export-btn export-csv" (click)="exportCSV()" title="Export CSV">
+              <svg viewBox="0 0 24 24" class="export-icon" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <rect x="2" y="3" width="20" height="18" rx="2" fill="#1E90FF"></rect>
+                <text x="12" y="16" text-anchor="middle" font-size="9" font-weight="700" fill="#fff">CSV</text>
+              </svg>
+            </button>
+
+            <button mat-icon-button class="export-btn export-pdf" (click)="exportPDF()" title="Export PDF">
+              <svg viewBox="0 0 24 24" class="export-icon" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <rect x="2" y="3" width="20" height="18" rx="2" fill="#D32F2F"></rect>
+                <text x="12" y="16" text-anchor="middle" font-size="9" font-weight="700" fill="#fff">PDF</text>
+              </svg>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -45,7 +88,7 @@
           class="employee-add-btn" 
           (click)="add()" 
           type="button">
-          {{ t('ADD_EMPLOYEE') }}
+          {{ t('ADD_EMPLOYEE') || '+ Nouvel employé' }}
         </button>
       </div>
     </div>

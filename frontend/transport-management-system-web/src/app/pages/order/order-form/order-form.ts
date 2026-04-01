@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, ViewChild } from '@angular/core';
+﻿import { Component, inject, OnInit, ViewChild } from '@angular/core';
 import { FormBuilder, Validators, ReactiveFormsModule, FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
@@ -8,7 +8,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatDialogModule, MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { MatSelectModule } from '@angular/material/select';
 import { Http } from '../../../services/http';
-import { SettingsService } from '../../../services/settings.service'; // ADD THIS
+import { SettingsService } from '../../../services/settings.service';
 import { CreateOrderDto, IOrder, OrderStatus } from '../../../types/order';
 import Swal from 'sweetalert2';
 import { ICustomer } from '../../../types/customer';
@@ -20,8 +20,7 @@ import { MAT_DATE_LOCALE, MAT_DATE_FORMATS } from '@angular/material/core';
 import { FrDateAdapter } from '../../../types/fr-date-adapter';
 import { Translation } from '../../../services/Translation';
 
-// REMOVE this import:
-// import { OrderSettingsService } from '../../../services/order-settings.service';
+
 
 @Component({
   selector: 'app-order-form',
@@ -41,17 +40,17 @@ import { Translation } from '../../../services/Translation';
     MatDialogModule,
     MatSelectModule,
     MatIconModule,
-    MatDatepickerModule, 
+    MatDatepickerModule,
   ],
   templateUrl: './order-form.html',
   styleUrls: ['./order-form.scss']
 })
 export class OrderFormComponent implements OnInit {
   @ViewChild('picker') picker!: MatDatepicker<Date>;
-  
+
   fb = inject(FormBuilder);
   httpService = inject(Http);
-  settingsService = inject(SettingsService); // REPLACE with SettingsService
+  settingsService = inject(SettingsService);
   dialogRef = inject(MatDialogRef<OrderFormComponent>);
   data = inject<{ orderId?: number; loadingUnit?: string }>(MAT_DIALOG_DATA, { optional: true }) ?? {};
 
@@ -60,11 +59,11 @@ export class OrderFormComponent implements OnInit {
   customers: ICustomer[] = [];
   orderStatusEnum = OrderStatus;
   loadingUnit: string = 'palette';
-  minDate: Date = new Date(); 
-  maxDeliveryDate: Date = new Date(); 
+  minDate: Date = new Date();
+  maxDeliveryDate: Date = new Date();
   allowEditDeliveryDate: boolean = true;
-  planningHorizon: number = 3; 
-  
+  planningHorizon: number = 3;
+
   orderForm = this.fb.group({
     customerId: this.fb.control<number | null>(null, [Validators.required]),
     reference: this.fb.control<string>(''),
@@ -77,64 +76,64 @@ export class OrderFormComponent implements OnInit {
 
   ngOnInit() {
     this.loadCustomers();
-    
+
     if (this.data?.loadingUnit) {
       this.loadingUnit = this.data.loadingUnit;
     }
-    
-    // Load settings from new SettingsService
+
+
     this.settingsService.getOrderSettings().subscribe({
       next: (settings) => {
         this.allowEditDeliveryDate = settings.allowEditDeliveryDate;
         this.planningHorizon = settings.planningHorizon;
         this.loadingUnit = settings.loadingUnit || 'palette';
-        
-        this.updateMaxDeliveryDate(); // calculate max date
-        
-        // Disable control if not allowed
+
+        this.updateMaxDeliveryDate();
+
+
         if (!this.allowEditDeliveryDate) {
           this.orderForm.get('deliveryDate')?.disable();
         }
-        
-        // Update weight unit with loading unit from settings
+
+
         this.orderForm.patchValue({
           weightUnit: this.loadingUnit
         });
       },
       error: (err) => {
         console.error('Erreur récupération settings:', err);
-        // Default values on error
+
         this.allowEditDeliveryDate = true;
         this.planningHorizon = 30;
         this.loadingUnit = 'palette';
         this.updateMaxDeliveryDate();
       }
     });
-    
+
     if (this.data.orderId) {
       this.loadOrder(this.data.orderId);
     }
   }
 
-  // Calculate max date based on horizon and existing date
+
   updateMaxDeliveryDate(orderDate?: Date) {
     const today = new Date();
     const horizonDate = new Date();
     horizonDate.setDate(today.getDate() + this.planningHorizon);
 
-    // if existing date > horizon, keep it
+
     if (orderDate && orderDate > horizonDate) {
       this.maxDeliveryDate = orderDate;
     } else {
       this.maxDeliveryDate = horizonDate;
     }
   }
-  
+
   private formatDateLocal(date: Date | null | undefined): string | undefined {
-    if (!date) return undefined; 
+    if (!date) return undefined;
 
     const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0'); 
+    const month = String(date.getMonth() + 1).padStart(2, '0');
     const day = String(date.getDate()).padStart(2, '0');
 
     return `${year}-${month}-${day}`;
@@ -146,7 +145,7 @@ export class OrderFormComponent implements OnInit {
   loadCustomers() {
     this.httpService.getCustomers().subscribe({
       next: (res) => {
-        console.log('Customers loaded:', res); 
+        console.log('Customers loaded:', res);
         this.customers = res;
       },
       error: (err) => console.error(err)
@@ -162,15 +161,15 @@ export class OrderFormComponent implements OnInit {
           customerId: order.customerId,
           reference: order.reference,
           weight: order.weight,
-          weightUnit: order.weightUnit || this.loadingUnit, 
+          weightUnit: order.weightUnit || this.loadingUnit,
           deliveryAddress: order.deliveryAddress || '',
           notes: order.notes || '',
           deliveryDate: order.deliveryDate ? new Date(order.deliveryDate) : null,
         });
-        
-        // update maxDeliveryDate based on existing date
+
+
         this.updateMaxDeliveryDate(order.deliveryDate ? new Date(order.deliveryDate) : undefined);
-        
+
         Object.keys(this.orderForm.controls).forEach(key => {
           const control = this.orderForm.get(key);
           console.log(`📋 ${key}:`, control?.value, 'valid:', control?.valid);
@@ -197,7 +196,7 @@ export class OrderFormComponent implements OnInit {
       weightUnit: formValue.weightUnit || this.loadingUnit,
       deliveryAddress: formValue.deliveryAddress || undefined,
       notes: formValue.notes || undefined,
-      customerCity: selectedCustomer?.gouvernorat,
+      customerCity: '',
       deliveryDate: this.formatDateLocal(formValue.deliveryDate)
     };
 
@@ -228,20 +227,20 @@ export class OrderFormComponent implements OnInit {
 
   getErrorMessage(controlName: string): string {
     const control = this.orderForm.get(controlName);
-    
+
     if (control?.hasError('required')) {
       return `${this.getFieldLabel(controlName)} est obligatoire`;
     }
-    
+
     if (control?.hasError('min')) {
       return `${this.getFieldLabel(controlName)} doit être supérieur à 0`;
     }
-    
+
     if (control?.hasError('minlength')) {
       const requiredLength = control.errors?.['minlength'].requiredLength;
       return `${this.getFieldLabel(controlName)} doit comporter au moins ${requiredLength} caractères`;
     }
-    
+
     return '';
   }
 
@@ -257,7 +256,7 @@ export class OrderFormComponent implements OnInit {
   private showSuccessAlert(message: string) {
     this.isSubmitting = false;
     this.showingAlert = true;
-    
+
     Swal.fire({
       icon: 'success',
       title: message,
@@ -274,7 +273,7 @@ export class OrderFormComponent implements OnInit {
 
   private handleError(err: any, action: string) {
     this.isSubmitting = false;
-    
+
     Swal.fire({
       icon: 'error',
       title: 'Erreur',

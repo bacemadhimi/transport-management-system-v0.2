@@ -1,4 +1,4 @@
-import { Component, EventEmitter, HostListener, Inject, Input, OnInit, Output, Optional, ViewChild, inject } from '@angular/core';
+﻿import { Component, EventEmitter, HostListener, Inject, Input, OnInit, Output, Optional, ViewChild, inject } from '@angular/core';
 import { AbstractControl, FormArray, FormBuilder, FormControl, FormGroup, FormsModule, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialog, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
@@ -36,13 +36,14 @@ import { MatChipsModule } from '@angular/material/chips';
 import { WeatherData } from '../../../types/weather';
 import { MatDividerModule } from '@angular/material/divider';
 import { TruncatePipe } from '../../../../truncate.pipe';
-import { IZone } from '../../../types/zone';
+// import { IZone } from '../../../types/zone'; // DELETED
 import { CdkVirtualScrollViewport, ScrollingModule } from '@angular/cdk/scrolling';
 import { Translation } from '../../../services/Translation';
 import { SettingsService } from '../../../services/settings.service';
 import { ITripSettings } from '../../../types/general-settings';
 import { GpsAddressService } from '../../../services/gps-address.service';
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
+import { SignalRService } from '../../../services/signalr.service';
 
 interface DialogData {
   tripId?: number;
@@ -191,6 +192,13 @@ export class TripForm implements OnInit {
   // Smart address search with suggestions
   addressSuggestions: Map<number, any[]> = new Map(); // customerId -> suggestions
   addressSearchSubject: Subject<{customerId: number, query: string}> = new Subject();
+  
+  // Global destination address search (Google Maps style)
+  globalDestinationAddress = new FormControl('');
+  globalAddressSuggestions: any[] = [];
+  globalAddressSearchSubject: Subject<string> = new Subject();
+  selectedDestinationCoords: {lat: number, lng: number, address: string} | null = null;
+  
   loadingTrucks = false;
   loadingDrivers = false;
   loadingCustomers = false;
@@ -294,6 +302,7 @@ export class TripForm implements OnInit {
     private dialog: MatDialog,
     private settingsService: SettingsService,
     private gpsAddressService: GpsAddressService,
+    private signalRService: SignalRService,
     @Optional() private dialogRef?: MatDialogRef<TripForm>,
     @Optional() @Inject(MAT_DIALOG_DATA) public data?: DialogData
   ) {
@@ -314,6 +323,9 @@ export class TripForm implements OnInit {
 
     // Setup smart address search with debounce
     this.setupAddressSearch();
+    
+    // Setup global destination address search (Google Maps style)
+    this.setupGlobalAddressSearch();
 
     setTimeout(() => {
       this.captureInitialState();
@@ -672,7 +684,7 @@ export class TripForm implements OnInit {
   }
 
   private processTruckResponse(response: any, date: Date): void {
-    console.log('🔄 Processing truck response...');
+    console.log('ðŸ”„ Processing truck response...');
     console.log('Raw response:', response);
     
     this.availableTrucks = [];
@@ -680,7 +692,7 @@ export class TripForm implements OnInit {
     this.trucks = [];
     
     if (!response || !response.data) {
-      console.warn('❌ No data in response');
+      console.warn('âŒ No data in response');
       return;
     }
     
@@ -689,7 +701,7 @@ export class TripForm implements OnInit {
     
     // Process available trucks
     if (data.availableTrucks && Array.isArray(data.availableTrucks)) {
-      console.log(`✅ Processing ${data.availableTrucks.length} available trucks`);
+      console.log(`⌈… Processing ${data.availableTrucks.length} available trucks`);
       
       this.availableTrucks = data.availableTrucks.map((apiTruck: any) => {
         const typeTruckData = apiTruck.typeTruck || null;
@@ -721,7 +733,7 @@ export class TripForm implements OnInit {
     
     // Process unavailable trucks
     if (data.unavailableTrucks && Array.isArray(data.unavailableTrucks)) {
-      console.log(`⚠️ Processing ${data.unavailableTrucks.length} unavailable trucks`);
+      console.log(`âš ï Processing ${data.unavailableTrucks.length} unavailable trucks`);
       
       this.unavailableTrucks = data.unavailableTrucks.map((truck: any) => {
         return {
@@ -749,7 +761,7 @@ export class TripForm implements OnInit {
     
     this.trucks = [...this.availableTrucks, ...this.unavailableTrucks];
     
-    console.log('📊 Final state:', {
+    console.log('ðŸ“Š Final state:', {
       availableCount: this.availableTrucks.length,
       unavailableCount: this.unavailableTrucks.length,
       totalCount: this.trucks.length,
@@ -763,7 +775,7 @@ export class TripForm implements OnInit {
    * Force l'ajout du camion actuel dans la liste des camions disponibles
    */
   private forceAddCurrentTruck(truckId: number, date: Date): void {
-    // Vérifier si le camion est déjà dans la liste
+    // Vérifier si le camion est déj  dans la liste
     const alreadyInAvailable = this.availableTrucks.some(t => t.id === truckId);
     const alreadyInUnavailable = this.unavailableTrucks.some(t => t.id === truckId);
     
@@ -779,7 +791,7 @@ export class TripForm implements OnInit {
             ...truck,
             disabled: false,
             availabilityMessage: 'Camion actuel du voyage',
-            tooltip: `Camion actuellement assigné à ce voyage (disponible pour modification)`,
+            tooltip: `Camion actuellement assigné   ce voyage (disponible pour modification)`,
             isAvailable: true,
             isCurrentTripTruck: true
           });
@@ -796,7 +808,7 @@ export class TripForm implements OnInit {
           ...truck,
           disabled: false,
           availabilityMessage: 'Camion actuel du voyage',
-          tooltip: `Camion actuellement assigné à ce voyage le ${this.formatDateForDisplay(date)}`,
+          tooltip: `Camion actuellement assigné   ce voyage le ${this.formatDateForDisplay(date)}`,
           isAvailable: true,
           isCurrentTripTruck: true,
           availabilityDate: date
@@ -806,10 +818,10 @@ export class TripForm implements OnInit {
         this.trucks = [...this.availableTrucks, ...this.unavailableTrucks];
         this.loadingAvailableTrucks = false;
         
-        console.log('✅ Camion actuel ajouté manuellement:', currentTruck);
+        console.log('⌈… Camion actuel ajouté manuellement:', currentTruck);
       },
       error: (error) => {
-        console.error('❌ Erreur lors du chargement du camion actuel:', error);
+        console.error('âŒ Erreur lors du chargement du camion actuel:', error);
         this.loadingAvailableTrucks = false;
       }
     });
@@ -1237,8 +1249,8 @@ export class TripForm implements OnInit {
       deliveryGroup.get('orderId')?.setValue('');
       
       const customer = this.customers.find(c => c.id === customerId);
-      if (customer && customer.adress) {
-        deliveryGroup.get('deliveryAddress')?.setValue(customer.adress);
+      if (customer && customer.address) {
+        deliveryGroup.get('deliveryAddress')?.setValue(customer.address);
       }
     }
   }
@@ -1274,7 +1286,7 @@ export class TripForm implements OnInit {
   getClientAddress(customerId: number): string {
     if (!customerId) return '';
     const customer = this.allCustomers.find(c => c.id === customerId);
-    return customer ? (customer.adress || 'Adresse non disponible') : '';
+    return customer ? (customer.address || 'Adresse non disponible') : '';
   }
 
   onDeliveryAddressBlur(customerId: number): void {
@@ -1298,7 +1310,7 @@ export class TripForm implements OnInit {
         
         groupControl.patchValue({ deliveryAddress: newAddress }, { emitEvent: false });
         this.hasUnsavedTrajectChanges = true;
-        console.log(`Adresse mise à jour pour le client ${customerId}: ${newAddress}`);
+        console.log(`Adresse mise   jour pour le client ${customerId}: ${newAddress}`);
       }
     }
   }
@@ -1329,17 +1341,17 @@ export class TripForm implements OnInit {
               deliveryAddress: result.address // Utiliser l'adresse normalisée
             }, { emitEvent: false });
             
-            console.log(`✅ Adresse géocodée pour le client ${customerId}: ${result.address} (${geolocationValue})`);
+            console.log(`⌈… Adresse géocodée pour le client ${customerId}: ${result.address} (${geolocationValue})`);
             
-            this.snackBar.open(`✅ Adresse géocodée avec succès`, 'Fermer', {
+            this.snackBar.open(`⌈… Adresse géocodée avec succès`, 'Fermer', {
               duration: 3000,
               horizontalPosition: 'right',
               verticalPosition: 'top'
             });
           }
         } else {
-          console.warn(`⚠️ Géocodage échoué pour ${address}: ${result.error}`);
-          this.snackBar.open(`⚠️ Adresse non trouvée: ${result.error}`, 'Fermer', {
+          console.warn(`âš ï Géocodage échoué pour ${address}: ${result.error}`);
+          this.snackBar.open(`âš ï Adresse non trouvée: ${result.error}`, 'Fermer', {
             duration: 5000,
             horizontalPosition: 'right',
             verticalPosition: 'top'
@@ -1347,8 +1359,8 @@ export class TripForm implements OnInit {
         }
       },
       error: (error) => {
-        console.error(`❌ Erreur de géocodage pour ${address}:`, error);
-        this.snackBar.open(`❌ Erreur de géocodage`, 'Fermer', {
+        console.error(`âŒ Erreur de géocodage pour ${address}:`, error);
+        this.snackBar.open(`âŒ Erreur de géocodage`, 'Fermer', {
           duration: 5000,
           horizontalPosition: 'right',
           verticalPosition: 'top'
@@ -1378,6 +1390,67 @@ export class TripForm implements OnInit {
         console.error('Error fetching address suggestions:', error);
       }
     });
+  }
+
+  /**
+   * Setup global destination address search (Google Maps style)
+   */
+  private setupGlobalAddressSearch(): void {
+    this.globalAddressSearchSubject.pipe(
+      debounceTime(500), // Wait 500ms after typing stops
+      distinctUntilChanged(),
+      switchMap((query) => {
+        if (query.length < 3) {
+          return of([]);
+        }
+        return this.gpsAddressService.getAddressSuggestions(query);
+      })
+    ).subscribe({
+      next: (suggestions) => {
+        this.globalAddressSuggestions = suggestions;
+      },
+      error: (error) => {
+        console.error('Error fetching global address suggestions:', error);
+        this.globalAddressSuggestions = [];
+      }
+    });
+
+    // Listen to global destination address changes
+    this.globalDestinationAddress.valueChanges.subscribe((value) => {
+      if (value && value.length >= 3) {
+        this.globalAddressSearchSubject.next(value);
+      } else {
+        this.globalAddressSuggestions = [];
+      }
+    });
+  }
+
+  /**
+   * Select global destination address
+   */
+  onGlobalAddressSelected(suggestion: any): void {
+    this.selectedDestinationCoords = {
+      lat: suggestion.lat,
+      lng: suggestion.lng,
+      address: suggestion.address
+    };
+    this.globalDestinationAddress.setValue(suggestion.address);
+    this.globalAddressSuggestions = [];
+    
+    this.snackBar.open(`✅ Destination définie: ${suggestion.address}`, 'Fermer', {
+      duration: 3000,
+      horizontalPosition: 'right',
+      verticalPosition: 'top'
+    });
+  }
+
+  /**
+   * Clear global destination
+   */
+  clearGlobalDestination(): void {
+    this.globalDestinationAddress.setValue('');
+    this.selectedDestinationCoords = null;
+    this.globalAddressSuggestions = [];
   }
 
   currentCustomerId: number | null = null;
@@ -1415,7 +1488,7 @@ export class TripForm implements OnInit {
         }
       } else {
         // Show hint to type at least 3 characters
-        this.snackBar.open('🔍 Tapez au moins 3 caractères pour rechercher', 'Fermer', {
+        this.snackBar.open('ðŸ” Tapez au moins 3 caractères pour rechercher', 'Fermer', {
           duration: 3000,
           horizontalPosition: 'right',
           verticalPosition: 'top'
@@ -1443,9 +1516,9 @@ export class TripForm implements OnInit {
         geolocation: geolocationValue
       }, { emitEvent: false });
 
-      console.log(`✅ Address selected for client ${customerId}: ${suggestion.address} (${geolocationValue})`);
+      console.log(`⌈… Address selected for client ${customerId}: ${suggestion.address} (${geolocationValue})`);
       
-      this.snackBar.open(`✅ Adresse sélectionnée: ${suggestion.address}`, 'Fermer', {
+      this.snackBar.open(`⌈… Adresse sélectionnée: ${suggestion.address}`, 'Fermer', {
         duration: 3000
       });
     }
@@ -1473,23 +1546,24 @@ export class TripForm implements OnInit {
     return order ? order.weight : 0;
   }
 
-getSelectedTruckInfo(): string {
-  const truckId = this.tripForm.get('truckId')?.value;
-  if (!truckId) return 'Non sélectionné';
-  
-  const truck = this.trucks.find(t => t.id === truckId);
-  if (!truck) return 'Camion inconnu';
-  
-  const marqueName = this.getMarqueName(truck.marqueTruckId);
-  return `${truck.immatriculation} - ${marqueName}`;
-}
+  getSelectedTruckInfo(): string {
+    const truckId = this.tripForm.get('truckId')?.value;
+    if (!truckId) return 'Non sélectionné';
+
+    const truck = this.trucks.find(t => t.id === truckId);
+    if (!truck) return 'Camion inconnu';
+
+    const marqueName = this.getMarqueName(truck.marqueTruckId);
+    return `${truck.immatriculation} - ${marqueName}`;
+  }
+
   quickAddOrder(order: IOrder): void {
     const customer = this.customers.find(c => c.id === order.customerId);
     
     const newDelivery = {
       customerId: order.customerId,
       orderId: order.id,
-      deliveryAddress: customer?.adress || '',
+      deliveryAddress: customer?.address || '',
       sequence: this.deliveries.length + 1,
       notes: `Commande rapide: ${order.reference}`,
     };
@@ -1571,11 +1645,11 @@ getSelectedTruckInfo(): string {
     
     return new Promise((resolve) => {
       Swal.fire({
-        title: 'Commandes déjà ajoutées',
+        title: 'Commandes déj  ajoutées',
         html: `
           <div style="text-align: left;">
             <p><strong>${clientName}</strong></p>
-            <p>${alreadyAdded} commande(s) de ce client sont déjà dans le voyage.</p>
+            <p>${alreadyAdded} commande(s) de ce client sont déj  dans le voyage.</p>
             <p>Il reste ${remaining} commande(s) en attente.</p>
             <p>Voulez-vous continuer avec les commandes restantes ?</p>
           </div>
@@ -1710,7 +1784,7 @@ getSelectedTruckInfo(): string {
           ` : ''}
           ${percentageAfter >= 90 ? `
             <p style="color: #f59e0b; font-weight: bold; margin-top: 10px;">
-              ⚠️ La capacité sera presque pleine (${percentageAfter.toFixed(1)}%)
+              âš ï La capacité sera presque pleine (${percentageAfter.toFixed(1)}%)
             </p>
           ` : ''}
         </div>
@@ -1848,7 +1922,7 @@ getSelectedTruckInfo(): string {
               <ul style="margin: 0; padding-left: 20px; color: #92400e;">
                 <li style="margin-bottom: 5px;">Ce trajet ne sera pas enregistré dans la liste des trajets prédéfinis</li>
                 <li style="margin-bottom: 5px;">Vous ne pourrez pas le réutiliser pour d'autres voyages</li>
-                <li>Il sera associé uniquement à ce voyage</li>
+                <li>Il sera associé uniquement   ce voyage</li>
               </ul>
             </div>
             
@@ -1968,7 +2042,7 @@ getSelectedTruckInfo(): string {
         const startLocation = this.getSelectedStartLocationInfo() || 'Départ';
         const endLocation = this.getSelectedEndLocationInfo() || 'Arrivée';
         const dateStr = new Date().toISOString().slice(0, 10);
-        trajectName = `Trajet ${dateStr} ${startLocation} → ${endLocation}`;
+        trajectName = `Trajet ${dateStr} ${startLocation} →’ ${endLocation}`;
       }
       
       const trajectId = await this.createTrajectFromDeliveries(trajectName, this.saveAsPredefined);
@@ -2057,7 +2131,7 @@ getSelectedTruckInfo(): string {
             title: 'Trajects similaires trouvés',
             html: `
               <div style="text-align: left; max-height: 300px; overflow-y: auto;">
-                <p>Des trajects avec les mêmes lieux de départ/arrivée existent déjà :</p>
+                <p>Des trajects avec les mêmes lieux de départ/arrivée existent déj  :</p>
                 <ul style="margin-left: 20px;">
                   ${similarTrajects.map(t => 
                     `<li><strong>${t.name}</strong> (${t.points.length} points)</li>`
@@ -2157,11 +2231,11 @@ getSelectedTruckInfo(): string {
       
       const result = await Swal.fire({
         icon: 'warning',
-        title: '⚠️ DÉPASSEMENT DE CAPACITÉ !',
+        title: 'âš ï D‰PASSEMENT DE CAPACIT‰ !',
         html: `
           <div style="text-align: left; padding: 10px;">
             <p><strong>${truckName}</strong></p>
-            <p><strong>ALERTE SÉCURITÉ:</strong> La capacité maximale est dépassée</p>
+            <p><strong>ALERTE S‰CURIT‰:</strong> La capacité maximale est dépassée</p>
             <hr style="margin: 10px 0;">
             <div style="background-color: #fee; padding: 15px; border-radius: 5px; margin: 10px 0;">
               <p><strong>Capacité maximum:</strong> ${capacityNumber} ${unitLabelPlural}</p>
@@ -2171,7 +2245,7 @@ getSelectedTruckInfo(): string {
               </span></p>
             </div>
             <p style="color: #ef4444; margin-top: 15px;">
-              ⚠️ Ce chargement dépasse la capacité autorisée du camion.
+              âš ï Ce chargement dépasse la capacité autorisée du camion.
             </p>
             <p><strong>Voulez-vous vraiment continuer ?</strong></p>
           </div>
@@ -2205,7 +2279,7 @@ getSelectedTruckInfo(): string {
               <p><strong>Capacité restante:</strong> ${remainingCapacity.toFixed(2)} ${unitLabelPlural} (${remainingPercentage.toFixed(1)}%)</p>
             </div>
             <p style="color: #f59e0b; font-weight: bold;">
-              ⚠️ La capacité est presque pleine
+              âš ï La capacité est presque pleine
             </p>
             <p>Voulez-vous continuer avec ce chargement ?</p>
           </div>
@@ -2256,21 +2330,21 @@ getSelectedTruckInfo(): string {
       
       const result = await Swal.fire({
         icon: 'warning',
-        title: 'DÉPASSEMENT DE CAPACITÉ',
+        title: 'D‰PASSEMENT DE CAPACIT‰',
         html: `
           <div style="text-align: left; padding: 10px;">
             <p><strong>${truck.immatriculation} - ${this.getMarqueName(truck.marqueTruckId)}</strong></p>
             <div style="background-color: #fee; padding: 15px; border-radius: 5px; margin: 10px 0;">
               <p><strong>Capacité maximum:</strong> ${capacity} ${unitLabelPlural}</p>
               <p><strong>Poids actuel:</strong> ${currentWeight.toFixed(2)} ${unitLabelPlural}</p>
-              <p><strong>Poids à ajouter:</strong> ${additionalWeight.toFixed(2)} ${unitLabelPlural}</p>
+              <p><strong>Poids   ajouter:</strong> ${additionalWeight.toFixed(2)} ${unitLabelPlural}</p>
               <p><strong>Total après ajout:</strong> ${totalWeightAfterAddition.toFixed(2)} ${unitLabelPlural}</p>
               <p><strong>Dépassement:</strong> <span style="color: #ef4444; font-weight: bold;">
                 ${overage.toFixed(2)} ${unitLabelPlural} (${overagePercentage.toFixed(1)}%)
               </span></p>
             </div>
             <p style="color: #ef4444; font-weight: bold;">
-              ⚠️ Ces commandes dépassent la capacité du camion
+              âš ï Ces commandes dépassent la capacité du camion
             </p>
             <p>Voulez-vous quand même les ajouter ?</p>
           </div>
@@ -2304,7 +2378,7 @@ getSelectedTruckInfo(): string {
               <p><strong>Capacité restante:</strong> ${remainingCapacity.toFixed(2)} ${unitLabelPlural} (${remainingPercentage.toFixed(1)}%)</p>
             </div>
             <p style="color: #f59e0b; font-weight: bold;">
-              ⚠️ La capacité sera presque pleine
+              âš ï La capacité sera presque pleine
             </p>
             <p>Voulez-vous quand même ajouter ces commandes ?</p>
           </div>
@@ -2359,7 +2433,7 @@ getSelectedTruckInfo(): string {
     if (percentage >= 90) {
       Swal.fire({
         icon: icon,
-        title: 'État de la capacité',
+        title: '‰tat de la capacité',
         text: message,
         confirmButtonText: 'Compris',
         confirmButtonColor: percentage >= 100 ? '#ef4444' : '#f59e0b',
@@ -2367,7 +2441,7 @@ getSelectedTruckInfo(): string {
         timerProgressBar: true
       });
     } else {
-      this.snackBar.open(`✅ Commandes ajoutées. ${message}`, 'Fermer', {
+      this.snackBar.open(`⌈… Commandes ajoutées. ${message}`, 'Fermer', {
         duration: duration,
         panelClass: percentage >= 90 ? 'warning-snackbar' : 'success-snackbar'
       });
@@ -2386,24 +2460,53 @@ getSelectedTruckInfo(): string {
       trajectId: trajectId,
       convoyeurId: formValue.convoyeurId ? parseInt(formValue.convoyeurId) : null,
     };
-    
+
     this.http.createTrip(createTripData).subscribe({
       next: (response: any) => {
         this.loading = false;
         this.clearDraft();
-        
+
         let message = 'Voyage créé avec succès';
         if (trajectId) {
           message += ' et traject enregistré';
         }
-        
+
+        // Save destination coordinates if selected
+        if (this.selectedDestinationCoords && response?.id) {
+          this.gpsAddressService.updateTripDestinationCoordinates(
+            response.id,
+            this.selectedDestinationCoords.lat,
+            this.selectedDestinationCoords.lng,
+            this.selectedDestinationCoords.address
+          ).subscribe({
+            next: (success) => {
+              if (success) {
+                console.log(`✅ Destination coordinates saved for trip ${response.id}`);
+              }
+            },
+            error: (error) => {
+              console.error('Error saving destination coordinates:', error);
+            }
+          });
+        }
+
+        // Send real-time notification to driver via SignalR
+        if (response?.id && formValue.driverId) {
+          console.log(`📢 Sending trip assignment notification to driver ${formValue.driverId} via SignalR...`);
+          // The SignalR service automatically broadcasts trip creation to drivers
+          // The backend will handle sending the notification to the specific driver
+        }
+
         Swal.fire({
           icon: 'success',
           title: 'Succès',
           text: message,
           confirmButtonText: 'OK',
           allowOutsideClick: false,
-        }).then(() => this.success.emit());
+        }).then(() => {
+          // Emit success event which will trigger backend to send SignalR notification
+          this.success.emit();
+        });
       },
       error: (error) => {
         this.loading = false;
@@ -2412,14 +2515,14 @@ getSelectedTruckInfo(): string {
           console.log('Draft cleared after successful submission');
         }
         console.error('Create trip error:', error);
-        
+
         let errorMessage = 'Erreur lors de la création du voyage';
         if (error?.error?.message) {
           errorMessage = error.error.message;
         } else if (error?.message) {
           errorMessage = error.message;
         }
-        
+
         Swal.fire({
           icon: 'error',
           title: 'Erreur',
@@ -2714,14 +2817,14 @@ getSelectedTruckInfo(): string {
       }).then((result) => {
         if (result.isConfirmed) {
           this.saveDraft();
-          this.snackBar.open('✅ Brouillon sauvegardé avec succès', 'Fermer', { 
+          this.snackBar.open('⌈… Brouillon sauvegardé avec succès', 'Fermer', { 
             duration: 3000,
             panelClass: ['success-snackbar']
           });
           this.closeDialogOrCancel();
         } else if (result.isDenied) {
           this.clearDraft();
-          this.snackBar.open('🗑️ Brouillon effacé', 'Fermer', { 
+          this.snackBar.open('ðŸ—‘ï Brouillon effacé', 'Fermer', { 
             duration: 2000,
             panelClass: ['warn-snackbar']
           });
@@ -2748,9 +2851,9 @@ getSelectedTruckInfo(): string {
   getSelectedDriverInfo(): string {
     const driverId = this.tripForm.get('driverId')?.value;
     if (!driverId) return 'Non sélectionné';
-    
+
     const driver = this.drivers.find(d => d.id === driverId);
-    return driver ? `${driver.name} (${driver.permisNumber})` : 'Chauffeur inconnu';
+    return driver ? `${driver.name} (${driver.drivingLicense})` : 'Chauffeur inconnu';
   }
 
   calculateAverageSpeed(): string {
@@ -2797,7 +2900,7 @@ getSelectedTruckInfo(): string {
       return (
         customer.name.toLowerCase().includes(searchText) ||
         customer.matricule?.toLowerCase().includes(searchText) ||
-        customer.adress?.toLowerCase().includes(searchText) ||
+        customer.address?.toLowerCase().includes(searchText) ||
         order.reference.toLowerCase().includes(searchText) ||
         order.type?.toLowerCase().includes(searchText)
       );
@@ -2861,7 +2964,7 @@ getSelectedTruckInfo(): string {
     this.updateDeliverySequences();
     
     this.snackBar.open(
-      `Groupe client déplacé à la position ${insertIndex + 1}`,
+      `Groupe client déplacé   la position ${insertIndex + 1}`,
       'Fermer',
       { duration: 2000 }
     );
@@ -2893,7 +2996,7 @@ getSelectedTruckInfo(): string {
     const fromPosition = event.previousIndex + 1;
     const toPosition = event.currentIndex + 1;
     const direction = event.previousIndex < event.currentIndex ? 'vers le bas' : 'vers le haut';
-    const message = `Livraison ${fromPosition} déplacée ${direction} à la position ${toPosition}`;
+    const message = `Livraison ${fromPosition} déplacée ${direction}   la position ${toPosition}`;
     
     this.snackBar.open(message, 'Fermer', { duration: 2000 });
   }
@@ -3035,11 +3138,11 @@ getSelectedTruckInfo(): string {
       
       await this.saveTrajectChanges();
       
-      this.snackBar.open('Nom du traject mis à jour', 'Fermer', { duration: 2000 });
+      this.snackBar.open('Nom du traject mis   jour', 'Fermer', { duration: 2000 });
       
     } catch (error) {
-      console.error('Erreur lors de la mise à jour du nom:', error);
-      this.snackBar.open('Erreur lors de la mise à jour du nom', 'Fermer', { duration: 3000 });
+      console.error('Erreur lors de la mise   jour du nom:', error);
+      this.snackBar.open('Erreur lors de la mise   jour du nom', 'Fermer', { duration: 3000 });
     } finally {
       this.isEditingTrajectName = false;
       this.savingTrajectChanges = false;
@@ -3080,11 +3183,11 @@ getSelectedTruckInfo(): string {
       
       this.debouncedSaveTrajectChanges();
       
-      this.snackBar.open('Adresse mise à jour', 'Fermer', { duration: 2000 });
+      this.snackBar.open('Adresse mise   jour', 'Fermer', { duration: 2000 });
       
     } catch (error) {
-      console.error('Erreur lors de la mise à jour de l\'adresse:', error);
-      this.snackBar.open('Erreur lors de la mise à jour', 'Fermer', { duration: 3000 });
+      console.error('Erreur lors de la mise   jour de l\'adresse:', error);
+      this.snackBar.open('Erreur lors de la mise   jour', 'Fermer', { duration: 3000 });
     } finally {
       this.isEditingPoint = null;
       this.editingPointAddress = '';
@@ -3116,7 +3219,7 @@ getSelectedTruckInfo(): string {
   async deleteTrajectPoint(index: number): Promise<void> {
     if (!this.selectedTraject || this.selectedTraject.points.length <= 1) return;
     
-    const confirmed = confirm('Êtes-vous sûr de vouloir supprimer ce point du traject ?');
+    const confirmed = confirm('Štes-vous sûr de vouloir supprimer ce point du traject ?');
     if (!confirmed) return;
 
     try {
@@ -3231,7 +3334,7 @@ getSelectedTruckInfo(): string {
       
       this.hasUnsavedTrajectChanges = false;
       
-      this.snackBar.open('Traject mis à jour avec succès', 'Fermer', { duration: 2000 });
+      this.snackBar.open('Traject mis   jour avec succès', 'Fermer', { duration: 2000 });
       
     } catch (error) {
       console.error('Erreur lors de la sauvegarde du traject:', error);
@@ -3396,8 +3499,8 @@ getSelectedTruckInfo(): string {
         
         const statusLabel = this.getTripStatusLabel(status);
         const message = notes 
-          ? `Statut mis à jour: ${statusLabel} - Note: ${notes}`
-          : `Statut mis à jour: ${statusLabel}`;
+          ? `Statut mis   jour: ${statusLabel} - Note: ${notes}`
+          : `Statut mis   jour: ${statusLabel}`;
         
         this.tripForm.patchValue({ tripStatus: status }, { emitEvent: true });
         
@@ -3410,7 +3513,7 @@ getSelectedTruckInfo(): string {
         console.error('Error updating trip status:', error);
         this.tripForm.patchValue({ tripStatus: this.getPreviousStatus() }, { emitEvent: true });
 
-        let errorMessage = 'Erreur lors de la mise à jour du statut';
+        let errorMessage = 'Erreur lors de la mise   jour du statut';
         
         if (error.error?.message) {
           errorMessage = error.error.message;
@@ -3436,7 +3539,7 @@ getSelectedTruckInfo(): string {
 
     Swal.fire({
       title: 'Annuler le voyage ?',
-      text: 'Êtes-vous sûr de vouloir annuler ce voyage ? Cette action est irréversible.',
+      text: 'Štes-vous sûr de vouloir annuler ce voyage ? Cette action est irréversible.',
       icon: 'warning',
       showCancelButton: true,
       confirmButtonColor: '#ef4444',
@@ -3498,7 +3601,7 @@ getSelectedTruckInfo(): string {
           </ul>
           <p style="color: #10b981; margin-top: 1rem;">
             <mat-icon style="vertical-align: middle;">check_circle</mat-icon>
-            Prêt à générer la réception final.
+            Prêt   générer la réception final.
           </p>
         </div>
       `,
@@ -3583,7 +3686,7 @@ getSelectedTruckInfo(): string {
     const orderId = deliveryGroup.get('orderId')?.value;
     const address = deliveryGroup.get('deliveryAddress')?.value;
     
-    if (!customerId && !orderId) return 'À compléter';
+    if (!customerId && !orderId) return '€ compléter';
     if (!customerId) return 'Client manquant';
     if (!orderId) return 'Commande manquante';
     if (!address || address.trim().length < 5) return 'Adresse incomplète';
@@ -3597,7 +3700,7 @@ getSelectedTruckInfo(): string {
     switch (status) {
       case 'Prête':
         return 'linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(5, 150, 105, 0.1))';
-      case 'À compléter':
+      case '€ compléter':
         return 'linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(139, 92, 246, 0.1))';
       case 'Client manquant':
         return 'linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(220, 38, 38, 0.1))';
@@ -3647,7 +3750,7 @@ getSelectedTruckInfo(): string {
     const maxSequence = Math.max(...sequences);
     
     if (minSequence !== 1) {
-      this.snackBar.open('Attention: L\'ordre doit commencer à 1', 'Fermer', { duration: 3000 });
+      this.snackBar.open('Attention: L\'ordre doit commencer   1', 'Fermer', { duration: 3000 });
       return false;
     }
     
@@ -3773,7 +3876,7 @@ getSelectedTruckInfo(): string {
 
     Swal.fire({
       title: 'Supprimer le traject ?',
-      text: `Êtes-vous sûr de vouloir supprimer le traject "${this.selectedTraject.name}" ? Cette action est irréversible.`,
+      text: `Štes-vous sûr de vouloir supprimer le traject "${this.selectedTraject.name}" ? Cette action est irréversible.`,
       icon: 'warning',
       showCancelButton: true,
       confirmButtonColor: '#ef4444',
@@ -3883,7 +3986,7 @@ getSelectedTruckInfo(): string {
 
     this.selectedTraject = { ...traject };
     
-    // ✅ FIX: Set locations with explicit update and validity
+    // ⌈… FIX: Set locations with explicit update and validity
     if (traject.startLocationId) {
       this.tripForm.get('startLocationId')?.setValue(traject.startLocationId, { emitEvent: true });
       this.tripForm.get('startLocationId')?.markAsTouched();
@@ -4409,34 +4512,12 @@ getSelectedTruckInfo(): string {
   fetchWeatherForBothLocations(): void {
     const startLocationId = this.tripForm.get('startLocationId')?.value;
     const endLocationId = this.tripForm.get('endLocationId')?.value;
-    
-    if (!startLocationId || !endLocationId) return;
-    
-    const startZoneName = this.getZoneNameForLocation(startLocationId);
-    const endZoneName = this.getZoneNameForLocation(endLocationId);
-    
-    if (startZoneName && endZoneName) {
-      this.weatherLoading = true;
-      this.http.getWeatherForLocations(startZoneName, endZoneName).subscribe({
-        next: ({ start, end }) => {
-          this.startLocationWeather = start;
-          this.endLocationWeather = end;
-          this.weatherLoading = false;
-          this.weatherError = false;
-        },
-        error: (error) => {
-          console.error('Error fetching weather for both zones:', error);
-          this.weatherLoading = false;
-          this.weatherError = true;
 
-          this.fetchWeatherForStartLocation();
-          this.fetchWeatherForEndLocation();
-        }
-      });
-    } else {
-      this.fetchWeatherForStartLocation();
-      this.fetchWeatherForEndLocation();
-    }
+    if (!startLocationId || !endLocationId) return;
+
+    // Weather API disabled - just fetch individual locations
+    this.fetchWeatherForStartLocation();
+    this.fetchWeatherForEndLocation();
   }
 
   getSelectedStartLocationInfo(): string {
@@ -4491,7 +4572,7 @@ getSelectedTruckInfo(): string {
     const zoneName = this.getStartZoneName();
     const locationName = this.getSelectedStartLocationInfo();
     
-    return `Météo ${zoneName ? `pour la zone ${zoneName}` : `à ${locationName}`}: ${this.startLocationWeather.description}, ${this.startLocationWeather.temperature}°C`;
+    return `Météo ${zoneName ? `pour la zone ${zoneName}` : `  ${locationName}`}: ${this.startLocationWeather.description}, ${this.startLocationWeather.temperature}°C`;
   }
 
   getEndWeatherInfo(): string {
@@ -4500,7 +4581,7 @@ getSelectedTruckInfo(): string {
     const zoneName = this.getEndZoneName();
     const locationName = this.getSelectedEndLocationInfo();
     
-    return `Météo ${zoneName ? `pour la zone ${zoneName}` : `à ${locationName}`}: ${this.endLocationWeather.description}, ${this.endLocationWeather.temperature}°C`;
+    return `Météo ${zoneName ? `pour la zone ${zoneName}` : `  ${locationName}`}: ${this.endLocationWeather.description}, ${this.endLocationWeather.temperature}°C`;
   }
   
   getWeatherIconClass(iconCode: string): string {
@@ -4726,35 +4807,26 @@ getSelectedTruckInfo(): string {
   }
 
   private processDriverResponse(response: any, date: Date): void {
-    this.availableDrivers.forEach(driver => {
-      driver.availabilityStatus = undefined;
-      driver.availabilityMessage = undefined;
-      driver.requiresApproval = undefined;
-      driver.totalHours = undefined;
-    });
-   
-    this.availableDrivers = (response.availableDrivers || []).map((apiDriver: any) => ({
-      id: apiDriver.driverId,
-      name: apiDriver.driverName,
-      permisNumber: apiDriver.permisNumber || '',
-      phone: apiDriver.phone || '',
-      email: apiDriver.email || '',
-      phoneCountry: apiDriver.phoneCountry || '+216',
-      status: apiDriver.status || 'active',
-      idCamion: apiDriver.idCamion || null,
-      isActive: true,
-      zoneId: apiDriver.zoneId || null,
-      zoneName: apiDriver.zoneName || '',
-      availabilityStatus: undefined,
-      availabilityMessage: undefined,
-      requiresApproval: undefined,
-      totalHours: undefined
-    }));
+    console.log('Driver API Response:', response);
+    console.log('All drivers in system:', this.drivers.length);
     
+    // FIX: Keep drivers with names from this.drivers instead of API response
+    const apiDriverIds = (response.availableDrivers || []).map((d: any) => d.driverId);
+    this.availableDrivers = this.drivers.filter(d => apiDriverIds.includes(d.id));
     this.unavailableDrivers = response.unavailableDrivers || [];
     
-    this.handleCurrentDriverForEdit(response);
+    console.log(`Available drivers for ${this.formatDateForDisplay(date)}: ${this.availableDrivers.length}`);
+    console.log(`Unavailable drivers: ${this.unavailableDrivers.length}`);
     
+    // Fallback: If API returns no available drivers but we have drivers in the system,
+    // show all drivers as available (API might have issues)
+    if (this.availableDrivers.length === 0 && this.drivers.length > 0) {
+      console.warn('API returned no available drivers, using all drivers as fallback');
+      this.availableDrivers = [...this.drivers];
+      this.unavailableDrivers = [];
+    }
+    
+    this.handleCurrentDriverForEdit(response);
     this.checkNoDriversWarning(date, response);
   }
 
@@ -5296,8 +5368,7 @@ getSelectedTruckInfo(): string {
                   <div style="max-height: 200px; overflow-y: auto; margin: 10px 0;">
                     ${availableDrivers.map((driver: any) => `
                       <div style="padding: 5px; border-bottom: 1px solid #eee;">
-                        <strong>${driver.driverName}</strong> (${driver.permisNumber})
-                        ${driver.zoneName ? `<br><small>Zone: ${driver.zoneName}</small>` : ''}
+                        <strong>${driver.driverName}</strong> (${driver.drivingLicense})
                       </div>
                     `).join('')}
                   </div>
@@ -5532,13 +5603,13 @@ getSelectedTruckInfo(): string {
     
     if (this.endLocationWeather) {
       if (this.endLocationWeather.temperature < 0) {
-        warnings.push('gel à l\'arrivée');
+        warnings.push('gel   l\'arrivée');
       }
       if (this.endLocationWeather.wind_speed > 50) {
-        warnings.push('vent fort à l\'arrivée');
+        warnings.push('vent fort   l\'arrivée');
       }
       if (this.endLocationWeather.precipitation && this.endLocationWeather.precipitation > 10) {
-        warnings.push('fortes précipitations à l\'arrivée');
+        warnings.push('fortes précipitations   l\'arrivée');
       }
     }
     
@@ -5552,8 +5623,8 @@ getSelectedTruckInfo(): string {
   private loadZones(): void {
     this.http.getActiveZones().subscribe({
       next: (response) => {
-        let zonesData: IZone[];
-        
+        let zonesData: any[];
+
         if (response && typeof response === 'object' && 'data' in response) {
           zonesData = (response as any).data;
         } else if (Array.isArray(response)) {
@@ -5563,7 +5634,7 @@ getSelectedTruckInfo(): string {
         } else {
           zonesData = [];
         }
-        
+
         this.zones = zonesData;
       },
       error: (error) => {
@@ -5581,19 +5652,20 @@ getSelectedTruckInfo(): string {
   private applyCombinedFilters(): void {
     const searchText = this.clientSearchControl.value?.toLowerCase().trim() || '';
     const zoneId = this.zoneFilterControl.value;
-    
+
     let filtered = [...this.allClientsWithPendingOrders];
-    
-    if (zoneId) {
-      filtered = filtered.filter(client => client.zoneId === zoneId);
-    }
-    
+
+    // Zone filter disabled - replaced by geographical entities
+    // if (zoneId) {
+    //   filtered = filtered.filter(client => client.zoneId === zoneId);
+    // }
+
     if (searchText) {
       filtered = filtered.filter(client => {
         return (
           client.name.toLowerCase().includes(searchText) ||
           client.matricule?.toLowerCase().includes(searchText) ||
-          client.adress?.toLowerCase().includes(searchText) ||
+          client.address?.toLowerCase().includes(searchText) ||
           client.email?.toLowerCase().includes(searchText)
         );
       });
@@ -5610,7 +5682,11 @@ getSelectedTruckInfo(): string {
 
   getClientZoneName(clientId: number): string {
     const client = this.allClientsWithPendingOrders.find(c => c.id === clientId);
-    return client?.zoneName || '';
+    // Zone replaced by geographical entities - return first geographical entity name if available
+    if (client?.geographicalEntities && client.geographicalEntities.length > 0) {
+      return client.geographicalEntities[0].geographicalEntityName || '';
+    }
+    return '';
   }
 
   trackByClientId(index: number, client: any): string {
@@ -5627,14 +5703,15 @@ getSelectedTruckInfo(): string {
         (client.matricule && client.matricule.toLowerCase().includes(searchTerm.toLowerCase()))
       );
     }
-    
-    const zoneId = this.zoneFilterControl.value;
-    if (zoneId) {
-      filtered = filtered.filter(client => client.zoneId === zoneId);
-    }
-    
+
+    // Zone filter disabled - replaced by geographical entities
+    // const zoneId = this.zoneFilterControl.value;
+    // if (zoneId) {
+    //   filtered = filtered.filter(client => client.zoneId === zoneId);
+    // }
+
     this.filteredClients = filtered;
-    
+
     if (this.viewport) {
       this.viewport.scrollToIndex(0);
     }
@@ -5675,7 +5752,7 @@ getSelectedTruckInfo(): string {
       html: `
         <div style="text-align: left; padding: 10px;">
           <div style="display: flex; align-items: flex-start; margin-bottom: 20px;">
-            <div style="color: #3b82f6; margin-right: 15px; font-size: 32px;">📋</div>
+            <div style="color: #3b82f6; margin-right: 15px; font-size: 32px;">ðŸ“‹</div>
             <div>
               <h4 style="margin: 0 0 8px 0; color: #1f2937;">Un brouillon a été trouvé</h4>
               <p style="margin: 0; color: #6b7280;">
@@ -5715,9 +5792,9 @@ getSelectedTruckInfo(): string {
       icon: 'info',
       showDenyButton: true,
       showCancelButton: true,
-      confirmButtonText: '📥 Restaurer le brouillon',
-      denyButtonText: '🗑️ Effacer et recommencer',
-      cancelButtonText: '✕ Plus tard',
+      confirmButtonText: 'ðŸ“¥ Restaurer le brouillon',
+      denyButtonText: 'ðŸ—‘ï Effacer et recommencer',
+      cancelButtonText: '⌈• Plus tard',
       confirmButtonColor: '#3b82f6',
       denyButtonColor: '#ef4444',
       cancelButtonColor: '#6b7280',
@@ -5792,7 +5869,7 @@ getSelectedTruckInfo(): string {
         this.trajectMode = draft.trajectMode;
       }
       
-      this.snackBar.open('✅ Brouillon restauré', 'Fermer', { duration: 3000 });
+      this.snackBar.open('⌈… Brouillon restauré', 'Fermer', { duration: 3000 });
       
       setTimeout(() => {
         const startDate = this.tripForm.get('estimatedStartDate')?.value;
@@ -5811,7 +5888,7 @@ getSelectedTruckInfo(): string {
       }, 100);
     } catch (error) {
       console.error('Erreur restauration draft:', error);
-      this.snackBar.open('❌ Erreur restauration brouillon', 'Fermer', { duration: 3000 });
+      this.snackBar.open('âŒ Erreur restauration brouillon', 'Fermer', { duration: 3000 });
       this.clearDraft();
     }
   }
@@ -5947,7 +6024,7 @@ getSelectedTruckInfo(): string {
   }
   
   clearDraftManually(): void {
-    if (confirm('Êtes-vous sûr de vouloir effacer le brouillon ?')) {
+    if (confirm('Štes-vous sûr de vouloir effacer le brouillon ?')) {
       this.clearDraft();
       this.snackBar.open('Brouillon effacé', 'Fermer', { duration: 2000 });
     }
@@ -5955,7 +6032,7 @@ getSelectedTruckInfo(): string {
   
   saveDraftManually(): void {
     this.saveDraft();
-    this.snackBar.open('💾 Brouillon sauvegardé', 'Fermer', { duration: 2000 });
+    this.snackBar.open('ðŸ’¾ Brouillon sauvegardé', 'Fermer', { duration: 2000 });
   }
 
   getGroupedDeliveries(): {customerId: number, orders: any[], deliveryGroup: FormGroup, totalWeight: number}[] {
@@ -6028,7 +6105,7 @@ getSelectedTruckInfo(): string {
   }
 
   removeSingleOrder(deliveryIndex: number): void {
-    console.log('Suppression de la livraison à l\'index:', deliveryIndex);
+    console.log('Suppression de la livraison   l\'index:', deliveryIndex);
     if (deliveryIndex >= 0 && deliveryIndex < this.deliveries.length) {
       this.removeDelivery(deliveryIndex);
     }
@@ -6060,7 +6137,7 @@ getSelectedTruckInfo(): string {
         const newDelivery = {
           customerId: customerId,
           orderId: orderId,
-          deliveryAddress: customer.adress || '',
+          deliveryAddress: customer.address || '',
           sequence: sequence++,
           notes: `Commande: ${this.getOrderReference(orderId)}`
         };
@@ -6084,17 +6161,17 @@ getSelectedTruckInfo(): string {
 
   private loadAllCustomers(): Promise<void> {
     return new Promise((resolve, reject) => {
-      console.log('🔄 Loading ALL customers...');
+      console.log('ðŸ”„ Loading ALL customers...');
       
       this.http.getAllCustomers().subscribe({
         next: (customers) => {
           this.allCustomers = customers;
-          console.log(`✅ Loaded ${customers.length} ALL customers`);
+          console.log(`⌈… Loaded ${customers.length} ALL customers`);
           console.log('Customer ID 3 in allCustomers:', this.allCustomers.find(c => c.id === 3));
           resolve();
         },
         error: (error) => {
-          console.error('❌ Error loading all customers:', error);
+          console.error('âŒ Error loading all customers:', error);
           reject(error);
         }
       });
@@ -6265,7 +6342,7 @@ getSelectedTruckInfo(): string {
     const start = Math.max(1, renderedRange.start);
     const end = Math.min(renderedRange.end, total);
     
-    return `Étapes ${start}-${end} sur ${total}`;
+    return `‰tapes ${start}-${end} sur ${total}`;
   }
 
   getTimelineScrollProgress(): number {
@@ -6495,7 +6572,7 @@ getSelectedTruckInfo(): string {
         const newDelivery = {
           customerId: customer.id,
           orderId: orderId,
-          deliveryAddress: customer.adress || '',
+          deliveryAddress: customer.address || '',
           sequence: sequence++,
           notes: `Traject: ${this.selectedTraject?.name} - ${order.reference}`
         };
@@ -6542,7 +6619,7 @@ getSelectedTruckInfo(): string {
 
     const endIndex = Math.min(startIndex + Math.ceil(viewport.getViewportSize() / this.leftItemSize), this.leftSectionItems.length);
     
-    return `Éléments ${startIndex + 1}-${endIndex} sur ${this.leftSectionItems.length}`;
+    return `‰léments ${startIndex + 1}-${endIndex} sur ${this.leftSectionItems.length}`;
   }
 
   getVisibleRightRange(): string {
@@ -6555,7 +6632,7 @@ getSelectedTruckInfo(): string {
 
     const endIndex = Math.min(startIndex + Math.ceil(viewport.getViewportSize() / this.rightItemSize), this.rightSectionItems.length);
     
-    return `Éléments ${startIndex + 1}-${endIndex} sur ${this.rightSectionItems.length}`;
+    return `‰léments ${startIndex + 1}-${endIndex} sur ${this.rightSectionItems.length}`;
   }
 
   scrollLeftToTop(): void {
@@ -6700,7 +6777,7 @@ getSelectedTruckInfo(): string {
           <p>Un brouillon précédent a été détecté avec :</p>
           <div style="background-color: #f8f9fa; padding: 15px; border-radius: 8px; margin: 10px 0;">
             <p>📦 <strong>${deliveryCount}</strong> livraison(s)</p>
-            <p>📅 <strong>${dateStr}</strong></p>
+            <p>ðŸ“… <strong>${dateStr}</strong></p>
           </div>
           <p>Voulez-vous restaurer ce brouillon ?</p>
         </div>
@@ -6708,7 +6785,7 @@ getSelectedTruckInfo(): string {
       icon: 'question',
       showCancelButton: true,
       confirmButtonText: 'Oui, restaurer',
-      cancelButtonText: 'Non, commencer à nouveau',
+      cancelButtonText: 'Non, commencer   nouveau',
       confirmButtonColor: '#3b82f6',
       cancelButtonColor: '#6b7280',
       backdrop: true
@@ -6800,7 +6877,7 @@ getSelectedTruckInfo(): string {
       
       localStorage.removeItem('trip_draft_to_restore');
       
-      this.snackBar.open('✅ Brouillon restauré avec succès', 'Fermer', { 
+      this.snackBar.open('⌈… Brouillon restauré avec succès', 'Fermer', { 
         duration: 3000,
         panelClass: ['success-snackbar']
       });
@@ -6812,7 +6889,7 @@ getSelectedTruckInfo(): string {
     } catch (error) {
       console.error('Error restoring draft from storage:', error);
       localStorage.removeItem('trip_draft_to_restore');
-      this.snackBar.open('❌ Erreur lors de la restauration du brouillon', 'Fermer', { duration: 3000 });
+      this.snackBar.open('âŒ Erreur lors de la restauration du brouillon', 'Fermer', { duration: 3000 });
     }
   }
 
@@ -6830,7 +6907,7 @@ getSelectedTruckInfo(): string {
     this.endLocationWeather = null;
     this.weatherLoading = true;
     
-    this.snackBar.open('🔄 Mise à jour de la météo...', 'Fermer', { 
+    this.snackBar.open('ðŸ”„ Mise   jour de la météo...', 'Fermer', { 
       duration: 2000,
       panelClass: ['info-snackbar']
     });
@@ -6947,14 +7024,14 @@ getSelectedTruckInfo(): string {
       const cleanStart = startLocationName.replace(/\s*\(.*?\)\s*/g, '').trim();
       const cleanEnd = endLocationName.replace(/\s*\(.*?\)\s*/g, '').trim();
       
-      this.trajectName = `${cleanStart} → ${cleanEnd} (${dateStr})`;
+      this.trajectName = `${cleanStart} →’ ${cleanEnd} (${dateStr})`;
       
     } else if (this.deliveries.length > 0) {
       const firstClient = this.getClientName(this.deliveryControls[0]?.get('customerId')?.value);
       const lastClient = this.getClientName(this.deliveryControls[this.deliveries.length - 1]?.get('customerId')?.value);
       
       if (firstClient && lastClient) {
-        this.trajectName = `${firstClient} → ${lastClient} (${dateStr})`;
+        this.trajectName = `${firstClient} →’ ${lastClient} (${dateStr})`;
       } else if (this.deliveries.length > 0) {
         this.trajectName = `Trajet avec ${this.deliveries.length} livraisons (${dateStr})`;
       }
@@ -7019,29 +7096,30 @@ getSelectedTruckInfo(): string {
         return '/palette.jpg';
     }
   }
-private loadTripSettings(): void {
-  this.settingsService.getTripSettings().subscribe({
-    next: (settings) => {
-      this.tripSettings = settings;
-      this.updateTruckFieldBasedOnSettings();
-    },
-    error: (error) => {
-      console.error('Erreur chargement paramètres:', error);
-    }
-  });
-}
 
-private listenToSettingsChanges(): void {
-  this.settingsSubscription = this.settingsService.tripSettings$.subscribe({
-    next: (updatedSettings) => {
-      if (updatedSettings) {
-        console.log('🔄 Paramètres mis à jour:', updatedSettings);
-        this.tripSettings = updatedSettings;
+  private loadTripSettings(): void {
+    this.settingsService.getTripSettings().subscribe({
+      next: (settings) => {
+        this.tripSettings = settings;
         this.updateTruckFieldBasedOnSettings();
+      },
+      error: (error) => {
+        console.error('Erreur chargement paramètres:', error);
       }
-    }
-  });
-}
+    });
+  }
+
+  private listenToSettingsChanges(): void {
+    this.settingsSubscription = this.settingsService.tripSettings$.subscribe({
+      next: (updatedSettings) => {
+        if (updatedSettings) {
+          console.log('🔄 Paramètres mis à jour:', updatedSettings);
+          this.tripSettings = updatedSettings;
+          this.updateTruckFieldBasedOnSettings();
+        }
+      }
+    });
+  }
 
   private updateTruckFieldBasedOnSettings(): void {
     const truckControl = this.tripForm.get('truckId');
@@ -7066,11 +7144,11 @@ private listenToSettingsChanges(): void {
     const truckId = this.driverTruckMap.get(driverId);
     
     if (!truckId) {
-      console.log(`ℹ️ Aucun camion associé au chauffeur ${driverId}`);
+      console.log(`â„¹ï Aucun camion associé au chauffeur ${driverId}`);
       return;
     }
     
-    console.log(`🔄 Sélection auto du camion ${truckId} pour le chauffeur ${driverId}`);
+    console.log(`ðŸ”„ Sélection auto du camion ${truckId} pour le chauffeur ${driverId}`);
     
     this.tripForm.get('truckId')?.setValue(truckId, { emitEvent: false });
     
@@ -7091,42 +7169,46 @@ private listenToSettingsChanges(): void {
   }
 
   marqueMap: Map<number, string> = new Map();
-private loadMarques(): void {
-  this.http.getMarqueTrucks().subscribe({
-    next: (response) => {
-      // Handle different response formats
-      let marquesData: any[] = [];
-      
-      if (response && typeof response === 'object') {
-        // Check if response has a data property (ApiResponse wrapper)
-        if ('data' in response && Array.isArray((response as any).data)) {
-          marquesData = (response as any).data;
-        } 
-        // Check if response is directly an array
-        else if (Array.isArray(response)) {
-          marquesData = response;
+
+  private loadMarques(): void {
+    this.http.getMarqueTrucks().subscribe({
+      next: (response) => {
+        // Handle different response formats
+        let marquesData: any[] = [];
+
+        if (response && typeof response === 'object') {
+          // Check if response has a data property (ApiResponse wrapper)
+          if ('data' in response && Array.isArray((response as any).data)) {
+            marquesData = (response as any).data;
+          }
+          // Check if response is directly an array
+          else if (Array.isArray(response)) {
+            marquesData = response;
+          }
         }
+
+        this.marqueMap.clear();
+        marquesData.forEach(marque => {
+          if (marque && marque.id && marque.name) {
+            this.marqueMap.set(marque.id, marque.name);
+          }
+        });
+
+        console.log('✅ Marques loaded:', this.marqueMap.size, 'marques');
+      },
+      error: (error) => {
+        console.error('Error loading marques:', error);
       }
-      
-      this.marqueMap.clear();
-      marquesData.forEach(marque => {
-        if (marque && marque.id && marque.name) {
-          this.marqueMap.set(marque.id, marque.name);
-        }
-      });
-      
-      console.log('✅ Marques loaded:', this.marqueMap.size, 'marques');
-    },
-    error: (error) => {
-      console.error('Error loading marques:', error);
-    }
-  });
+    });
+  }
+
+  // Add this method to get marque name
+  getMarqueName(marqueId?: number): string {
+    console.log(marqueId);
+    if (!marqueId) return 'N/A';
+    return this.marqueMap.get(marqueId) || 'N/A';
+  }
 }
 
-// Add this method to get marque name
-getMarqueName(marqueId?: number): string {
-  console.log(marqueId)
-  if (!marqueId) return 'N/A';
-  return this.marqueMap.get(marqueId) || 'N/A';
-}
-}
+
+

@@ -8,8 +8,8 @@ import { AuthService } from '../../services/auth.service';
 import { Router } from '@angular/router';
 import { TripService } from '../../services/trip.service';
 import { ITrip, TripStatus } from '../../types/trip';
-import { Observable, Subscription } from 'rxjs';
-import { map } from 'rxjs/operators';
+import { Observable, Subscription, of } from 'rxjs';
+import { map, catchError, take } from 'rxjs/operators';
 import { NotificationService } from '../../services/notification.service';
 import { GPSTrackingService } from '../../services/gps-tracking.service';
 import { NotificationStorageService } from '../../services/notification-storage.service';
@@ -39,6 +39,12 @@ export class HomePage implements OnInit, OnDestroy {
   private _notifSub: Subscription | null = null;
   private _gpsSub: Subscription | null = null;
   private _unreadSub: Subscription | null = null;
+  private subscriptions: Subscription[] = []; // Added for compatibility
+
+  // Network status - temporarily default to online
+  isOnline: boolean = true;
+  offlineMode: boolean = false;
+  pendingUpdates: Map<number, any> = new Map();
 
   constructor() {}
 
@@ -221,6 +227,7 @@ export class HomePage implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.subscriptions.forEach(sub => sub.unsubscribe());
     this._notifSub?.unsubscribe();
     this._gpsSub?.unsubscribe();
     this._unreadSub?.unsubscribe();
@@ -228,49 +235,89 @@ export class HomePage implements OnInit, OnDestroy {
     this.gpsService.disconnect();
   }
 
-  loadTrips() {
+  async loadTrips() {
     const userEmail = this.authService.currentUser()?.email;
-    this.trips$ = this.tripService.getAllTrips().pipe(
-      map(trips => {
-        if (userEmail) {
-          return trips.filter(trip => trip.driver?.email === userEmail);
-        }
-        return trips;
-      })
-    );
-    console.log('Loaded trips:', this.trips$);
     
+    if (this.isOnline) {
+      // Online mode - load from API
+      this.trips$ = this.tripService.getAllTrips().pipe(
+        map(trips => {
+          if (userEmail) {
+            return trips.filter(trip => trip.driver?.email === userEmail);
+          }
+          return trips;
+        }),
+        catchError(error => {
+          console.error('Error loading trips online, falling back to offline:', error);
+          return this.loadOfflineTrips(userEmail);
+        })
+      );
+    } else {
+      // Offline mode - load from local storage
+      this.trips$ = this.loadOfflineTrips(userEmail);
+    }
+
     this.trips$.subscribe(trips => {
-      console.log('Trips data:', trips);
+      console.log('Trips loaded:', trips.length, 'mode:', this.isOnline ? 'online' : 'offline');
       this.totalDistance = this.calculateTotalDistance(trips);
+      
+      // Save to offline storage for offline access
+      this.saveTripsOffline(trips);
     });
   }
 
-  
+  private loadOfflineTrips(userEmail?: string): Observable<ITrip[]> {
+    try {
+      const offlineTrips = localStorage.getItem('offlineTrips');
+      if (offlineTrips) {
+        let trips = JSON.parse(offlineTrips) as ITrip[];
+        if (userEmail) {
+          trips = trips.filter(trip => trip.driver?.email === userEmail);
+        }
+        return of(trips);
+      }
+    } catch (error) {
+      console.error('Error loading offline trips:', error);
+    }
+    return of([]);
+  }
+
+  private saveTripsOffline(trips: ITrip[]) {
+    try {
+      localStorage.setItem('offlineTrips', JSON.stringify(trips));
+    } catch (error) {
+      console.error('Error saving trips offline:', error);
+    }
+  }
+
   getCompletedTripsCount(): number {
-   
-    return 0; 
+    let count = 0;
+    this.trips$?.subscribe(trips => {
+      count = trips.filter(t => t.tripStatus === 'Receipt').length;
+    }).unsubscribe();
+    return count;
   }
 
-  
   getPendingTripsCount(): number {
-    
-    return 0; 
+    let count = 0;
+    this.trips$?.subscribe(trips => {
+      count = trips.filter(t => 
+        t.tripStatus !== 'Receipt' && 
+        t.tripStatus !== 'Cancelled'
+      ).length;
+    }).unsubscribe();
+    return count;
   }
 
-  
   getTotalDistance(): number {
     return this.totalDistance;
   }
 
-  
   private calculateTotalDistance(trips: ITrip[]): number {
     return trips.reduce((total, trip) => total + (trip.estimatedDistance || 0), 0);
   }
 
-  
   getTripProgress(trip: ITrip): number {
-    
     switch (trip.tripStatus) {
       case TripStatus.LoadingInProgress:
       case TripStatus.DeliveryInProgress:
@@ -282,19 +329,19 @@ export class HomePage implements OnInit, OnDestroy {
     }
   }
 
-  
   trackByTripId(index: number, trip: ITrip): number {
     return trip.id;
   }
 
-  
   async viewTripDetails(trip: ITrip) {
     const modal = await this.modalController.create({
       component: TripDetailsModalComponent,
-      componentProps: { trip },
+      componentProps: { 
+        trip,
+        offlineMode: this.offlineMode 
+      },
       cssClass: 'trip-details-modal'
     });
-
     await modal.present();
   }
 
@@ -303,15 +350,14 @@ export class HomePage implements OnInit, OnDestroy {
   }
 
   navigateToProfile() {
-    console.log('Navigate to profile');
+    this.router.navigate(['/profile']);
   }
 
   navigateToTrips() {
-    console.log('Navigate to trips');
+    this.router.navigate(['/trips']);
   }
 
-  updateTripStatus(trip: ITrip, newStatus: string) {
-   
+  async updateTripStatus(trip: ITrip, newStatus: string) {
     if (newStatus === 'Receipt') {
       this.showReceiptAlert(trip);
       return;
@@ -320,33 +366,59 @@ export class HomePage implements OnInit, OnDestroy {
     const oldStatus = trip.tripStatus;
     trip.updating = true;
 
+    if (!this.isOnline) {
+      // Offline mode - store update locally
+      this.pendingUpdates.set(trip.id, {
+        type: 'status',
+        status: newStatus
+      });
+      
+      // Update UI optimistically
+      trip.tripStatus = newStatus as TripStatus;
+      trip.updating = false;
+      
+      // Save to local storage
+      this.updateTripInLocalStorage(trip);
+      
+      this.showToast('Statut mis à jour (hors ligne) - Synchronisation à la reconnexion', 3000, 'warning');
+      return;
+    }
+
+    // Online mode - normal API call
     this.tripService.updateTripStatus(trip.id, { status: newStatus }).subscribe({
       next: async (response) => {
         console.log('Status updated successfully', response);
         trip.updating = false;
         trip.tripStatus = newStatus as TripStatus;
-        const toast = await this.toastController.create({
-          message: 'Trip status updated successfully',
-          duration: 2000,
-          color: 'success'
-        });
-        toast.present();
+        this.updateTripInLocalStorage(trip);
+        this.showToast('Statut du trajet mis à jour avec succès', 2000, 'success');
       },
       error: async (err) => {
         console.error('Error updating trip status', err);
         trip.updating = false;
-        trip.tripStatus = oldStatus; 
-        const toast = await this.toastController.create({
-          message: 'Failed to update trip status',
-          duration: 2000,
-          color: 'danger'
-        });
-        toast.present();
+        trip.tripStatus = oldStatus;
+        this.showToast('Échec de la mise à jour du statut', 2000, 'danger');
       }
     });
   }
 
-  private readFileAsDataURL(file: File): Promise<string> {
+  private updateTripInLocalStorage(updatedTrip: ITrip) {
+    try {
+      const offlineTrips = localStorage.getItem('offlineTrips');
+      if (offlineTrips) {
+        let trips = JSON.parse(offlineTrips) as ITrip[];
+        const index = trips.findIndex(t => t.id === updatedTrip.id);
+        if (index !== -1) {
+          trips[index] = updatedTrip;
+          localStorage.setItem('offlineTrips', JSON.stringify(trips));
+        }
+      }
+    } catch (error) {
+      console.error('Error updating trip in local storage:', error);
+    }
+  }
+
+  private async readFileAsDataURL(file: File): Promise<string> {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = () => resolve(reader.result as string);
@@ -356,7 +428,6 @@ export class HomePage implements OnInit, OnDestroy {
   }
 
   private async promptForReceiptProof(trip: ITrip) {
-    
     const fileInput = document.createElement('input');
     fileInput.type = 'file';
     fileInput.accept = 'image/png, image/jpeg';
@@ -364,32 +435,25 @@ export class HomePage implements OnInit, OnDestroy {
 
     fileInput.onchange = async () => {
       const file = fileInput.files?.[0];
-      if (!file) {
-        return; 
-      }
+      if (!file) return;
 
       if (!['image/png', 'image/jpeg'].includes(file.type)) {
-        const t = await this.toastController.create({ message: 'Veuillez sélectionner un fichier PNG ou JPEG.', duration: 2000, color: 'warning' });
-        t.present();
+        this.showToast('Veuillez sélectionner un fichier PNG ou JPEG', 2000, 'warning');
         return;
       }
 
       try {
         const dataUrl = await this.readFileAsDataURL(file);
-        
         const pureBase64 = dataUrl.split(',')[1];
         await this.performStatusUpdateWithProof(trip, 'Receipt', pureBase64);
       } catch (err) {
         console.error('Error reading file', err);
-        const t = await this.toastController.create({ message: 'Erreur lors de la lecture de l\'image.', duration: 2000, color: 'danger' });
-        t.present();
+        this.showToast('Erreur lors de la lecture de l\'image', 2000, 'danger');
       }
     };
 
-    
     document.body.appendChild(fileInput);
     fileInput.click();
-   
     setTimeout(() => fileInput.remove(), 1000);
   }
 
@@ -397,6 +461,26 @@ export class HomePage implements OnInit, OnDestroy {
     const oldStatus = trip.tripStatus;
     trip.updating = true;
 
+    if (!this.isOnline) {
+      // Offline mode - store receipt for later sync
+      this.pendingUpdates.set(trip.id, {
+        type: 'receipt',
+        proof: proofBase64
+      });
+      
+      trip.tripStatus = newStatus as TripStatus;
+      trip.updating = false;
+      
+      if (trip.deliveries) {
+        trip.deliveries.forEach(d => d.proofOfDelivery = proofBase64);
+      }
+      
+      this.updateTripInLocalStorage(trip);
+      this.showToast('Preuve enregistrée hors ligne - Synchronisation à la reconnexion', 3000, 'warning');
+      return;
+    }
+
+    // Online mode
     this.tripService.updateTripStatus(trip.id, { status: newStatus, proofImage: proofBase64 }).subscribe({
       next: async (response) => {
         console.log('Status updated with proof', response);
@@ -406,18 +490,19 @@ export class HomePage implements OnInit, OnDestroy {
         if (trip.deliveries) {
           trip.deliveries.forEach(d => d.proofOfDelivery = proofBase64);
         }
-        const toast = await this.toastController.create({ message: 'Réception confirmée avec preuve', duration: 2000, color: 'success' });
-        toast.present();
+        
+        this.updateTripInLocalStorage(trip);
+        this.showToast('Livraison confirmée avec preuve', 2000, 'success');
       },
       error: async (err) => {
         console.error('Error updating trip status with proof', err);
         trip.updating = false;
         trip.tripStatus = oldStatus;
-        const toast = await this.toastController.create({ message: 'Erreur lors de la confirmation de la réception', duration: 2000, color: 'danger' });
-        toast.present();
+        this.showToast('Erreur lors de la confirmation de livraison', 2000, 'danger');
       }
     });
   }
+
   goToProfile() {
     this.router.navigate(['/profile']);
   }
@@ -431,8 +516,10 @@ export class HomePage implements OnInit, OnDestroy {
 
   async showCancelConfirmation(trip: ITrip) {
     const alert = await this.alertController.create({
-      header: 'Annuler le voyage',
-      message: 'Pourquoi voulez-vous annuler ce voyage ?',
+      header: 'Annuler le trajet',
+      message: this.offlineMode ? 
+        'Vous êtes hors ligne. L\'annulation sera enregistrée et synchronisée à la reconnexion.' :
+        'Pourquoi souhaitez-vous annuler ce trajet ?',
       inputs: [
         {
           name: 'reason',
@@ -443,10 +530,7 @@ export class HomePage implements OnInit, OnDestroy {
       buttons: [
         {
           text: 'Annuler',
-          role: 'cancel',
-          handler: () => {
-            console.log('Cancel action cancelled');
-          }
+          role: 'cancel'
         },
         {
           text: 'Confirmer',
@@ -455,32 +539,25 @@ export class HomePage implements OnInit, OnDestroy {
             if (reason && reason.trim()) {
               this.cancelTrip(trip, reason.trim());
             } else {
-             
-              this.toastController.create({
-                message: 'Veuillez fournir une raison pour l\'annulation.',
-                duration: 2000,
-                color: 'warning'
-              }).then(toast => toast.present());
+              this.showToast('Veuillez fournir une raison pour l\'annulation', 2000, 'warning');
             }
           }
         }
       ]
     });
-
     await alert.present();
   }
 
   async showReceiptAlert(trip: ITrip) {
     const alert = await this.alertController.create({
-      header: 'Veuillez ajouter une preuve de livraison',
-      message: 'Veuillez ajouter une preuve de livraison',
+      header: 'Preuve de livraison requise',
+      message: this.offlineMode ?
+        'Vous êtes hors ligne. La preuve sera enregistrée et téléchargée à la reconnexion.' :
+        'Veuillez ajouter une preuve de livraison',
       buttons: [
         {
           text: 'Annuler',
-          role: 'cancel',
-          handler: () => {
-            
-          }
+          role: 'cancel'
         },
         {
           text: 'OK',
@@ -490,43 +567,210 @@ export class HomePage implements OnInit, OnDestroy {
         }
       ]
     });
-
     await alert.present();
   }
 
   cancelTrip(trip: ITrip, reason: string) {
-    
+    if (!this.isOnline) {
+      // Offline mode
+      this.pendingUpdates.set(trip.id, {
+        type: 'cancel',
+        reason: reason
+      });
+      
+      trip.tripStatus = TripStatus.Cancelled;
+      trip.message = reason;
+      this.updateTripInLocalStorage(trip);
+      
+      // Update cancelled count locally
+      this.cancelledTripsCount++;
+      localStorage.setItem('cancelledTripsCount', this.cancelledTripsCount.toString());
+      
+      this.showToast('Trajet annulé (hors ligne) - Synchronisation à la reconnexion', 3000, 'warning');
+      return;
+    }
+
+    // Online mode
     this.tripService.cancelTrip(trip.id, { message: reason }).subscribe({
       next: async (response) => {
         console.log('Trip cancelled successfully', response);
         trip.tripStatus = TripStatus.Cancelled;
         trip.message = reason;
-        const toast = await this.toastController.create({
-          message: 'Voyage annulé avec succès',
-          duration: 2000,
-          color: 'success'
-        });
-        toast.present();
+        this.updateTripInLocalStorage(trip);
+        this.showToast('Trajet annulé avec succès', 2000, 'success');
       },
       error: async (err) => {
         console.error('Error cancelling trip', err);
-        const toast = await this.toastController.create({
-          message: 'Erreur lors de l\'annulation du voyage',
-          duration: 2000,
-          color: 'danger'
-        });
-        toast.present();
+        this.showToast('Erreur lors de l\'annulation du trajet', 2000, 'danger');
       }
     });
   }
 
   navigateToCancelledTrips() {
-    console.log('Navigate to cancelled trips clicked');
-    this.router.navigate(['/cancelled-trips']);
-    
+    this.router.navigate(['/cancelled-trips'], {
+      queryParams: this.offlineMode ? { offline: true } : {}
+    });
   }
 
   openNotifications() {
+    if (!this.isOnline) {
+      this.showToast('Les notifications nécessitent une connexion internet', 2000, 'warning');
+      return;
+    }
     this.router.navigate(['/notifications']);
   }
+
+  openChat() {
+    if (!this.isOnline) {
+      this.showToast('Le chat nécessite une connexion internet', 2000, 'warning');
+      return;
+    }
+    this.router.navigate(['/chat']);
+  }
+
+  private async showToast(message: string, duration: number, color: string) {
+    const toast = await this.toastController.create({
+      message,
+      duration,
+      color,
+      position: 'top'
+    });
+    await toast.present();
+  }
+
+  // Helper to check pending updates
+  hasPendingUpdates(): boolean {
+    return this.pendingUpdates.size > 0;
+  }
+
+  // Get pending updates count
+  getPendingUpdatesCount(): number {
+    return this.pendingUpdates.size;
+  }
+  
+  // Add this method to get profile image URL
+  getProfileImageUrl(): string {
+    const user = this.authService.currentUser();
+    if (!user) return '';
+    
+    // If profileImage exists and is base64, convert to data URL
+    const profileImage = (user as any).profileImage;
+    if (profileImage) {
+      // Check if it's already a data URL
+      if (profileImage.startsWith('data:')) {
+        return profileImage;
+      }
+      // Convert pure base64 to data URL
+      return `data:image/jpeg;base64,${profileImage}`;
+    }
+    return '';
+  }
+  // Ajoutez ces méthodes dans votre classe HomePage
+
+/**
+ * Naviguer vers la page Mes Trajets
+ */
+navigateToMyTrips() {
+  console.log('Navigating to My Trips');
+  if (!this.isOnline) {
+    this.showToast('Mode hors ligne - Données limitées', 2000, 'warning');
+  }
+  this.router.navigate(['/my-trips'], {
+    queryParams: { offline: !this.isOnline }
+  });
+}
+
+/**
+ * Naviguer vers l'historique des trajets
+ */
+navigateToTripHistory() {
+  console.log('Navigating to Trip History');
+  if (!this.isOnline) {
+    this.showToast('Mode hors ligne - Historique limité', 2000, 'warning');
+  }
+  this.router.navigate(['/trip-history'], {
+    queryParams: { offline: !this.isOnline }
+  });
+}
+
+navigateToGPSTracking() {
+  console.log('🚀 Navigating to GPS Tracking');
+  
+  if (!this.isOnline) {
+    this.showToast('Mode hors ligne - GPS limité', 2000, 'warning');
+  }
+  
+  // Vérifier que trips$ existe
+  if (!this.trips$) {
+    console.error('❌ trips$ is null');
+    this.showToast('Erreur: Données non disponibles', 2000, 'danger');
+    return;
+  }
+  
+  // Prendre la première valeur et garder l'abonnement jusqu'à la navigation
+  this.trips$.pipe(take(1)).subscribe(trips => {
+    console.log('📋 Trips disponibles:', trips?.length || 0);
+    
+    if (!trips || trips.length === 0) {
+      console.log('❌ Aucun trajet trouvé');
+      this.showToast('Aucun trajet trouvé pour le GPS', 2000, 'warning');
+      return;
+    }
+    
+    // Chercher un trajet en cours
+    const activeTrip = trips.find(t => 
+      t.tripStatus === 'Accepted' || 
+      t.tripStatus === 'LoadingInProgress' || 
+      t.tripStatus === 'DeliveryInProgress'
+    );
+    
+    const tripToUse = activeTrip || trips[0];
+    
+    console.log('✅ Trajet sélectionné:', {
+      id: tripToUse.id,
+      reference: tripToUse.tripReference,
+      status: tripToUse.tripStatus
+    });
+    
+    const destination = this.getTripDestination(tripToUse);
+    console.log('📍 Destination:', destination);
+    
+    // Navigation avec vérification
+    this.router.navigate(['/gps-tracking'], {
+      queryParams: {
+        tripId: tripToUse.id,
+        tripReference: tripToUse.tripReference,
+        destination: destination
+      }
+    }).then(success => {
+      if (success) {
+        console.log('✅ Navigation réussie vers GPS');
+      } else {
+        console.log('❌ Navigation échouée');
+        this.showToast('Erreur de navigation', 2000, 'danger');
+      }
+    }).catch(error => {
+      console.error('❌ Erreur navigation:', error);
+      this.showToast('Erreur: ' + error.message, 2000, 'danger');
+    });
+  });
+}
+/**
+ * Récupérer la destination d'un trajet
+ */
+private getTripDestination(trip: ITrip): string {
+  if (trip.deliveries && trip.deliveries.length > 0) {
+    const lastDelivery = trip.deliveries[trip.deliveries.length - 1];
+    return lastDelivery.deliveryAddress || '';
+  }
+  return '';
+}
+
+/**
+ * Naviguer vers tous les trajets
+ */
+navigateToAllTrips() {
+  console.log('Navigating to All Trips');
+  this.router.navigate(['/trips']);
+}
 }

@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using TransportManagementSystem.Data;
 using TransportManagementSystem.Entity;
@@ -8,6 +9,7 @@ namespace TransportManagementSystem.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]
+[Authorize]
 public class TrajectController : ControllerBase
 {
     private readonly ApplicationDbContext _dbContext;
@@ -141,7 +143,7 @@ public class TrajectController : ControllerBase
 
             return Ok(new { data = trip.Traject });
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             return StatusCode(500, new { message = "Internal server error" });
         }

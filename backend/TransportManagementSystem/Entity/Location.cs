@@ -19,8 +19,6 @@ public class Location
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
-
-
-    public int? ZoneId { get; set; }
-    public Zone? Zone { get; set; }
+    [Required]
+    public string Address { get; set; } = string.Empty;
 }

@@ -15,8 +15,5 @@ public class TypeTruck
     [Required]
     public int Capacity { get; set; } 
 
-    [Required]
-    public string Unit { get; set; }  
-
     public ICollection<Truck>? Trucks { get; set; }  
 }

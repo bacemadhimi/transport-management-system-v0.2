@@ -1,22 +1,20 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using TransportManagementSystem.Entity;
 
-namespace TransportManagementSystem.Entity;
-
-public class Driver
+public class Driver : Employee
 {
     [Key]
-    public int Id { get; set; }
+    public new int Id { get; set; }
     [Required]
-    public string? Name { get; set; }
+    public new string? Name { get; set; }
     [Required]
     [EmailAddress]
-    public string Email { get; set; }
-    public string PermisNumber { get; set; }
-    public string Phone { get; set; }
-    public string Status { get; set; }
+    public new string Email { get; set; }
+    public string PermisNumber { get; set; } = string.Empty;
+    public string Phone { get; set; } = string.Empty;
+    public string Status { get; set; } = string.Empty;
     public int IdCamion { get; set; }
-    public string phoneCountry { get; set; }
 
     // ✅ FIX PERMANENT: Link to User table for authentication
     [ForeignKey("User")]
@@ -24,13 +22,6 @@ public class Driver
     public virtual User? User { get; set; }
 
     public virtual ICollection<DriverAvailability>? Availabilities { get; set; }
-    public DateTime? UpdatedAt { get; set; }
-    public bool IsEnable { get; set; } = true;
-
-    public int? ZoneId { get; set; }
-    public Zone? Zone { get; set; }
-
-    public int? CityId { get; set; }
-    public City? City { get; set; }
     public string? ImageBase64 { get; set; }
+    public new virtual ICollection<DriverGeographicalEntity> DriverGeographicalEntities { get; set; } = new List<DriverGeographicalEntity>();
 }

@@ -24,6 +24,15 @@ export class NotificationsPage implements OnInit {
   unreadCount$: Observable<number>;
   unreadTripAssignmentsCount: number = 0;
 
+  // Network status - temporarily default to online
+  isOnline: boolean = true;
+  offlineMode: boolean = false;
+  lastSyncTime: Date | null = null;
+  allNotifications: TripNotification[] = [];
+  cancelledTrips: TripNotification[] = [];
+  newTrips: TripNotification[] = [];
+  isLoading: boolean = false;
+
   constructor() {
     this.notifications$ = this.notificationStorage.notifications$;
     this.unreadCount$ = this.notificationStorage.unreadCount$;
@@ -327,5 +336,43 @@ export class NotificationsPage implements OnInit {
       position: 'top'
     });
     await toast.present();
+  }
+
+  getOfflineStatusText(): string {
+    if (this.offlineMode) {
+      return '📴 Offline Mode - Showing cached notifications';
+    }
+    if (this.lastSyncTime) {
+      return `Last updated: ${this.lastSyncTime.toLocaleString()}`;
+    }
+    return '';
+  }
+
+  hasNotifications(): boolean {
+    return this.allNotifications.length > 0;
+  }
+
+  getEmptyStateMessage(): string {
+    if (this.isLoading) {
+      return 'Loading notifications...';
+    }
+    if (this.offlineMode && !this.hasNotifications()) {
+      return 'No cached notifications available offline';
+    }
+    return 'No notifications to display';
+  }
+
+  clearCache() {
+    try {
+      localStorage.removeItem('cachedNotifications');
+      localStorage.removeItem('notificationsSyncTime');
+      this.allNotifications = [];
+      this.cancelledTrips = [];
+      this.newTrips = [];
+      this.lastSyncTime = null;
+      this.showToast('Cache cleared', 'success');
+    } catch (error) {
+      console.error('Error clearing cache:', error);
+    }
   }
 }

@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, OnDestroy, ChangeDetectorRef, computed, Output, EventEmitter, Input, ViewChild, ElementRef, HostListener } from '@angular/core';
+﻿import { Component, OnInit, inject, OnDestroy, ChangeDetectorRef, computed, Output, EventEmitter, Input, ViewChild, ElementRef, HostListener } from '@angular/core';
 import { Http } from '../../services/http';
 import { Table } from '../../components/table/table';
 import { MatButtonModule } from '@angular/material/button';
@@ -19,8 +19,8 @@ import autoTable from 'jspdf-autotable';
 import { CommonModule } from '@angular/common';
 import { OrderFormComponent } from './order-form/order-form';
 import { MatIconModule } from '@angular/material/icon';
-import { Auth } from '../../services/auth'; 
-import { SettingsService } from '../../services/settings.service'; 
+import { Auth } from '../../services/auth';
+import { SettingsService } from '../../services/settings.service';
 import { MatPaginatorModule } from '@angular/material/paginator';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatSnackBarModule } from '@angular/material/snack-bar';
@@ -30,7 +30,6 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { DateAdapter, MAT_DATE_FORMATS, MAT_DATE_LOCALE, MatNativeDateModule } from '@angular/material/core';
-import { IZone } from '../../types/zone';
 import { FrDateAdapter } from '../../types/fr-date-adapter';
 import { MatSortModule } from '@angular/material/sort';
 import { MatSort } from '@angular/material/sort';
@@ -66,9 +65,9 @@ export const FR_DATE_FORMATS = {
     MatCardModule,
     MatInputModule,
     MatFormFieldModule,
-    MatDatepickerModule,    
-    MatNativeDateModule ,    
-    MatChipsModule   
+    MatDatepickerModule,
+    MatNativeDateModule ,
+    MatChipsModule
   ],
    providers: [
     { provide: DateAdapter, useClass: FrDateAdapter },
@@ -82,16 +81,16 @@ export class OrdersComponent implements OnInit, OnDestroy {
     @ViewChild(MatSort) sort!: MatSort;
     dataSource = new MatTableDataSource<IOrder>([]);
   ngAfterViewInit() {
-  // Désactivé pour tri serveur
+
   this.dataSource.sort = this.sort;
-  
-  // Écoute le tri côté serveur
+
+
   this.sort.sortChange
     .pipe(takeUntil(this.destroy$))
     .subscribe(sort => {
       this.filter.sortField = sort.active;
-      this.filter.sortDirection = sort.direction; // 'asc' | 'desc' | ''
-      this.filter.pageIndex = 0; // retourne à la première page
+      this.filter.sortDirection = sort.direction;
+      this.filter.pageIndex = 0;
       this.getLatestData();
     });
 }
@@ -101,8 +100,8 @@ export class OrdersComponent implements OnInit, OnDestroy {
     @ViewChild('referenceFilter') referenceFilterDiv!: ElementRef;
  @ViewChild('customerNameFilter') customerNameFilterDiv!: ElementRef;
      @ViewChild('customerCityFilter') customerCityFilterDiv!: ElementRef;
-   
-    
+
+
   columnFilters: { [key: string]: string } = {
   reference: '',
   customerName: '',
@@ -114,25 +113,24 @@ lateControl = new FormControl<boolean | null>(null);
 
 
 isSelectAllActive = false;
-selectAllFiltered: boolean = false;  
-allFilteredIds: number[] = [];    
-allOrders: IOrder[] = []; // toutes les commandes récupérées côté client  
-zones: IZone[] = [];
+selectAllFiltered: boolean = false;
+allFilteredIds: number[] = [];
+allOrders: IOrder[] = [];
 toggleFilter(column: string) {
   if (this.activeFilter === column) {
     this.activeFilter = null;
   } else {
     this.activeFilter = column;
-    // Optionnel : mettre le focus sur le champ input après ouverture
+
     setTimeout(() => {
       const el: any = document.querySelector(`input[ngModel][ngModelChange]`);
       el?.focus();
     }, 0);
   }
 }
-// Nouvelle fonction pour gérer le blur
+
 onFilterBlur(column: string) {
-  // On ne ferme le filtre que si le champ est vide (ou selon ton besoin)
+
   if (!this.columnFilters[column]) {
     this.activeFilter = null;
   }
@@ -165,8 +163,6 @@ onFilterBlur(column: string) {
     'select',
     'reference',
     'client',
-    'zone',           
-    'customerCity',          
     'weight',
     'deliveryAddress',
     'status',
@@ -175,7 +171,7 @@ onFilterBlur(column: string) {
     'action'
   ];
 
-  
+
 applyAllFilters() {
   this.filter.pageIndex = 0;
 
@@ -188,10 +184,10 @@ applyAllFilters() {
 }
 
 
-   OrderStatus = OrderStatus; 
-   
+   OrderStatus = OrderStatus;
 
-zoneControl = new FormControl<number | null>(null);
+
+
   deliveryDateControl = new FormControl('');
   statusControl = new FormControl('');
 sourceControl = new FormControl('');
@@ -204,31 +200,31 @@ loadingUnit: string = 'palette';
 
 private settingsSubscription: Subscription | null = null;
 
-    constructor(public auth: Auth, private snackBar: MatSnackBar, private settingsService: SettingsService) {}  
+    constructor(public auth: Auth, private snackBar: MatSnackBar, private settingsService: SettingsService) {}
 
      showSuccess() {
     this.snackBar.open('Succès', 'OK', { duration: 2000,  verticalPosition: 'top' });
-     
+
   }
     @Output() rowClick = new EventEmitter<any>();
      @Input() showApproveButton: boolean = false;
-     
+
 getActions(row: any, actions: string | string[] | undefined): string[] {
   if (!actions) return [];
   return Array.isArray(actions) ? actions : [actions];
 }
 
 
-  
+
   private destroy$ = new Subject<void>();
   private cdr = inject(ChangeDetectorRef);
-  
+
   httpService = inject(Http);
   pagedOrderData: PagedData<IOrder> = {
     data: [],
     totalData: 0
   };
-  
+
   totalData: number = 0;
 
 filter: any = {
@@ -239,13 +235,13 @@ filter: any = {
   sourceSystem: null,
   deliveryDateStart: null,
   deliveryDateEnd: null,
-  zoneId: null,
+  
     reference: null,
   customerName: null,
   customerCity: null,
-    isLate: null,         
-    sortField: null,       
-  sortDirection: null   
+    isLate: null,
+    sortField: null,
+  sortDirection: null
 };
 
   readonly dialog = inject(MatDialog);
@@ -293,12 +289,11 @@ get currentPagePendingCount(): number {
   }
 
   ngOnInit() {
- 
+
     this.loadSettingsOnce();
     this.subscribeToSettings();
     this.initializeData();
-  
-      this.loadZones(); 
+
     this.searchControl.valueChanges
       .pipe(debounceTime(300), takeUntil(this.destroy$))
       .subscribe((value: string | null) => {
@@ -315,7 +310,7 @@ get currentPagePendingCount(): number {
     this.getLatestData();
   });
 
-  
+
 this.sourceControl.valueChanges
   .pipe(debounceTime(300), takeUntil(this.destroy$))
   .subscribe(value => {
@@ -325,13 +320,6 @@ this.sourceControl.valueChanges
 });
 
 
-this.zoneControl.valueChanges
-  .pipe(takeUntil(this.destroy$))
-  .subscribe((zoneId: number | null) => {
-    this.filter.zoneId = zoneId ?? null;
-    this.filter.pageIndex = 0;
-    this.getLatestData();
-  });
 
 this.lateControl.valueChanges
   .pipe(takeUntil(this.destroy$))
@@ -384,18 +372,18 @@ private loadSettingsOnce(): void {
         this.allowEditOrder = settings.allowEditOrder;
         this.allowLoadLateOrders = settings.allowLoadLateOrders;
         this.acceptOrdersWithoutAddress = settings.acceptOrdersWithoutAddress;
-        
+
         console.log('Loading unit from settings:', this.loadingUnit);
       },
       error: (err) => {
         console.error('Error loading settings:', err);
-        // Use defaults
+
         this.loadingUnit = 'palette';
       }
     });
   }
 
-  // Subscribe to reactive changes (auto-updates when settings change)
+
   private subscribeToSettings(): void {
     this.settingsSubscription = this.settingsService.orderSettings$.subscribe(settings => {
       if (settings) {
@@ -403,7 +391,7 @@ private loadSettingsOnce(): void {
         this.allowEditOrder = settings.allowEditOrder;
         this.allowLoadLateOrders = settings.allowLoadLateOrders;
         this.acceptOrdersWithoutAddress = settings.acceptOrdersWithoutAddress;
-        
+
         console.log('Loading unit updated:', this.loadingUnit);
       }
     });
@@ -426,9 +414,10 @@ getLatestData() {
       const dataArray = result?.data?.data || [];
       const totalCount = result?.data?.totalData || 0;
 
+
       this.pagedOrderData = { data: dataArray, totalData: totalCount };
       this.dataSource.data = dataArray;
-          this.allOrders = dataArray; 
+          this.allOrders = dataArray;
 
 
       if (this.isSelectAllActive) {
@@ -472,7 +461,7 @@ getStatusText(status: any): string {
 
   return statusStr;
 }
-//Call services to get translation 
+
   private translation = inject(Translation);
  t(key: string): string { return this.translation.t(key); }
 
@@ -486,7 +475,7 @@ getStatusClass(status: any): string {
     return 'status-pending';
   }
   if (statusStr === 'readytoload') {
-        return 'status-ready'; 
+        return 'status-ready';
   }
   if (statusStr === 'inprogress') {
     return 'status-in-progress';
@@ -501,36 +490,36 @@ getStatusClass(status: any): string {
 
 formatDate(date: any): string {
   if (!date) return '-';
-  
+
   try {
-  
+
     let dateObj: Date;
-    
+
     if (date instanceof Date) {
       dateObj = date;
     } else if (typeof date === 'string') {
-     
+
       dateObj = new Date(date);
     } else if (typeof date === 'number') {
-      
+
       dateObj = new Date(date);
     } else {
-  
+
       dateObj = new Date();
     }
-    
-   
+
+
     if (isNaN(dateObj.getTime())) {
       console.warn('Invalid date:', date);
       return '-';
     }
-    
+
     return dateObj.toLocaleDateString('fr-FR', {
       year: 'numeric',
       month: '2-digit',
       day: '2-digit'
     });
-    
+
   } catch (error) {
     console.error('Error formatting date:', date, error);
     return '-';
@@ -539,12 +528,12 @@ formatDate(date: any): string {
 
   add() {
     const ref = this.dialog.open(OrderFormComponent, {
-      width: '900px', 
-      maxWidth: '95vw', 
-      maxHeight: '90vh', 
-      panelClass: ['dialog-overlay', 'wide-dialog'], 
+      width: '900px',
+      maxWidth: '95vw',
+      maxHeight: '90vh',
+      panelClass: ['dialog-overlay', 'wide-dialog'],
          data: {
-      loadingUnit: this.loadingUnit  
+      loadingUnit: this.loadingUnit
     }
     });
 
@@ -557,13 +546,13 @@ formatDate(date: any): string {
 
   edit(order: IOrder) {
     const ref = this.dialog.open(OrderFormComponent, {
-      width: '900px', 
-      maxWidth: '95vw', 
-      maxHeight: '90vh', 
-      panelClass: ['dialog-overlay', 'wide-dialog'], 
-       data: { 
+      width: '900px',
+      maxWidth: '95vw',
+      maxHeight: '90vh',
+      panelClass: ['dialog-overlay', 'wide-dialog'],
+       data: {
       orderId: order.id,
-      loadingUnit: this.loadingUnit   
+      loadingUnit: this.loadingUnit
     }
     });
 
@@ -578,18 +567,18 @@ formatDate(date: any): string {
       const message = this
     .t('ORDER_DELETE_CONFIRM')
     .replace('{{reference}}', order.reference);
-      
-    // if (confirm(`Voulez-vous vraiment supprimer la commande "${order.reference}"? Cette action est irréversible.`)) {
+
+
     if (confirm(message)) {
       this.httpService.deleteOrder(order.id).subscribe({
         next: () => {
-          // alert("Commande supprimée avec succès");
+
           alert(this.t('ORDER_DELETE_SUCCESS'));
           this.getLatestData();
         },
         error: (error) => {
           console.error('Error deleting order:', error);
-          // alert("Erreur lors de la suppression de la commande");
+
            alert(this.t('ORDER_DELETE_ERROR'));
         }
       });
@@ -604,7 +593,7 @@ pageChange(event: any) {
 
 
   onRowClick(event: any) {
-    
+
     if (event.btn === "Modifier" && event.rowData) {
       this.edit(event.rowData);
     }
@@ -622,9 +611,9 @@ pageChange(event: any) {
       alert('Aucune donnée à exporter');
       return;
     }
-    
+
     const rows = this.pagedOrderData.data;
-    
+
     const csvContent = [
       ['ID', 'Référence', 'Client', 'Poids (kg)', 'Statut', 'Date création', 'Adresse', 'Notes'],
       ...rows.map(o => [
@@ -633,7 +622,7 @@ pageChange(event: any) {
         `"${o.customerName}"`,
         o.weight || 0,
         `"${this.getStatusText(o.status)}"`,
-     
+
         `"${o.deliveryAddress || ''}"`,
         `"${o.notes || ''}"`
       ])
@@ -653,14 +642,14 @@ pageChange(event: any) {
       alert('Aucune donnée à exporter');
       return;
     }
-    
+
     const data = this.pagedOrderData.data.map(order => ({
       'ID': order.id,
       'Référence': order.reference,
       'Client': order.customerName,
       'Poids (kg)': order.weight || 0,
       'Statut': this.getStatusText(order.status),
-     
+
       'Adresse livraison': order.deliveryAddress || '',
       'Notes': order.notes || ''
     }));
@@ -688,9 +677,9 @@ pageChange(event: any) {
       alert('Aucune donnée à exporter');
       return;
     }
-    
+
     const doc = new jsPDF('landscape');
-    
+
     const headers = [['ID', 'Référence', 'Client', 'Poids (kg)', 'Statut', 'Date création']];
     const body = this.pagedOrderData.data.map(o => [
       o.id.toString(),
@@ -698,12 +687,12 @@ pageChange(event: any) {
       o.customerName,
       (o.weight || 0).toString(),
       this.getStatusText(o.status),
-     
+
     ]);
 
     doc.setFontSize(16);
     doc.text('Liste des Commandes', 14, 15);
-    
+
     doc.setFontSize(10);
     const dateStr = new Date().toLocaleDateString('fr-FR');
     doc.text(`Date d'export: ${dateStr}`, 14, 25);
@@ -749,11 +738,11 @@ isAllSelected() {
 }
 
 fetchAllFilteredIds() {
-  const filterCopy = { ...this.filter, pageIndex: 0, pageSize: this.totalData }; // récupérer tout
+  const filterCopy = { ...this.filter, pageIndex: 0, pageSize: this.totalData };
   this.httpService.getOrdersList(filterCopy).subscribe({
     next: (result: any) => {
       this.allFilteredIds = result?.data?.data?.map((o: any) => o.id) || [];
-      // si Select All était actif, on sélectionne tous
+
       if (this.isSelectAllActive) {
         this.selectedOrders = new Set(this.allFilteredIds);
       }
@@ -768,7 +757,7 @@ fetchAllFilteredIds() {
 toggleSelectAll(event: any) {
   if (event.checked) {
     this.isSelectAllActive = true;
-    //  récupérer tous les IDs filtrés côté serveur
+
     this.fetchAllFilteredIds();
   } else {
     this.isSelectAllActive = false;
@@ -781,7 +770,7 @@ toggleSelectAll(event: any) {
 
 
 
-// Pour cocher/décocher une seule commande
+
 toggleOrderSelection(orderId: number) {
   if (this.selectedOrders.has(orderId)) {
     this.selectedOrders.delete(orderId);
@@ -817,24 +806,24 @@ markSelectedReadyToLoad() {
     return;
   }
 
-  // Récupérer toutes les commandes filtrées côté serveur
+
   const filterCopy = { ...this.filter, pageIndex: 0, pageSize: this.totalData };
   this.httpService.getOrdersList(filterCopy).subscribe({
     next: (result: any) => {
       const allFilteredOrders: IOrder[] = result?.data?.data || [];
 
-        // On filtre selon les paramètres globaux
+
       const ids = Array.from(this.selectedOrders)
         .map(id => allFilteredOrders.find(o => o.id === id))
         .filter(o => {
           if (!o) return false;
 
-          // Si les paramètres permettent tout charger, on ne filtre rien
+
           if (this.allowLoadLateOrders && this.acceptOrdersWithoutAddress) {
             return true;
           }
 
-          // Sinon on applique les règles actuelles
+
           if (!this.allowLoadLateOrders && this.isLate(o)) return false;
           if (!this.acceptOrdersWithoutAddress && !o.deliveryAddress) return false;
 
@@ -850,7 +839,7 @@ markSelectedReadyToLoad() {
       this.httpService.markOrdersReadyToLoad(ids).subscribe({
         next: () => {
           this.snackBar.open("Commandes chargées avec succès", "OK", { duration: 3000, verticalPosition: 'top' });
-          // Décocher uniquement les commandes chargées
+
           ids.forEach(id => this.selectedOrders.delete(id));
           this.selectAllFiltered = false;
           this.getLatestData();
@@ -868,7 +857,7 @@ markSelectedReadyToLoad() {
 }
 
 onButtonClick(btn: string, rowData: any, event: MouseEvent) {
-  event.stopPropagation(); 
+  event.stopPropagation();
   this.rowClick.emit({ btn, rowData });
 }
 canMarkReadyToLoad(order: any): boolean {
@@ -895,15 +884,7 @@ get filteredOrders(): IOrder[] {
     }
   }
 
-//   statusOptions = [
-//   { value: '', label: 'Tous' },
-//   { value: OrderStatus.Pending, label: 'En attente' },
-//   { value: OrderStatus.ReadyToLoad, label: 'À charger' },
-//   { value: OrderStatus.InProgress, label: 'En cours de livraison' },
-//   { value: OrderStatus.Received, label: 'Réception' },
-//   { value: OrderStatus.Closed, label: 'Clôturée' },
-//   { value: OrderStatus.Cancelled, label: 'Annulée' }
-// ];
+
 
 statusOptions = [
   { value: '', label: this.t('STATUS_ALL') },
@@ -914,7 +895,7 @@ statusOptions = [
   { value: OrderStatus.Closed, label: this.t('STATUS_CLOSED') },
   { value: OrderStatus.Cancelled, label: this.t('STATUS_CANCELLED') }
 ];
- 
+
 
 sourceOptions = [
   { value: '', label: 'Toutes' },
@@ -937,22 +918,21 @@ resetFilters() {
   this.deliveryDateEndControl.setValue(null);
 this.lateControl.setValue(null);
 
-this.zoneControl.setValue(null);
 
 
   this.filter = {
     pageIndex: 0,
     pageSize: 10,
     search: '',
-  status: null,         
-  sourceSystem: null,   
+  status: null,
+  sourceSystem: null,
     deliveryDateStart: '',
     deliveryDateEnd: '',
     isLate: null,
-      zoneId: null 
+ 
   };
 
-  this.isSelectAllActive = false;  
+  this.isSelectAllActive = false;
   this.selectedOrders.clear();
   this.selectAllFiltered = false;
   this.allFilteredIds = [];
@@ -968,36 +948,27 @@ isDeliveryDateRangeInvalid(): boolean {
   const end = this.deliveryDateEndControl.value;
 
   if (!start || !end) {
-    return false; // pas de contrôle si une des deux dates est vide
+    return false;
   }
 
   return new Date(start) > new Date(end);
 }
-loadZones() {
-  this.httpService.getActiveZones().subscribe({
-    next: res => {
-      this.zones = res.data; // ApiResponse<IZone[]>
-    },
-    error: () => {
-      this.zones = [];
-    }
-  });
-}
+
 private formatDateLocal(date: Date | null | undefined): string | undefined {
-  if (!date) return undefined; // null ou undefined → undefined
+  if (!date) return undefined;
 
   const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0'); // mois 0-indexé
+  const month = String(date.getMonth() + 1).padStart(2, '0');
   const day = String(date.getDate()).padStart(2, '0');
 
   return `${year}-${month}-${day}`;
 }
-// --- DATE UTILS ---
+
 private normalizeDate(d: Date): Date {
   return new Date(d.getFullYear(), d.getMonth(), d.getDate());
 }
 
-// --- EN RETARD ---
+
 isLate(order: IOrder): boolean {
   if (!order.deliveryDate) return false;
 
@@ -1010,7 +981,7 @@ isLate(order: IOrder): boolean {
   return delivery < today && !isClosed;
 }
 
-// --- AUJOURD’HUI ---
+
 isToday(order: IOrder): boolean {
   if (!order.deliveryDate) return false;
 
@@ -1020,24 +991,24 @@ isToday(order: IOrder): boolean {
   return delivery.getTime() === today.getTime();
 }
 
-// --- ACTIONS BLOQUÉES ---
+
 canInteract(order: IOrder): boolean {
   return !this.isLate(order);
 }
 toggleSort(column: string) {
-  // Si on reclique sur la même colonne, on inverse le sens
+
   if (this.filter.sortField === column) {
     this.filter.sortDirection = this.filter.sortDirection === 'asc' ? 'desc' : 'asc';
   } else {
-    // Si nouvelle colonne, tri croissant par défaut
+
     this.filter.sortField = column;
     this.filter.sortDirection = 'asc';
   }
 
-  // On retourne à la première page après changement de tri
+
   this.filter.pageIndex = 0;
 
-  // Recharge les données avec le tri appliqué
+
   this.getLatestData();
 }
 

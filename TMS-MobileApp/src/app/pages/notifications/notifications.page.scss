@@ -1,22 +1,40 @@
+/* Notifications Page - Truck Theme */
 .notifications-toolbar {
-  --background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  --color: white;
+  --background: rgba(0, 0, 0, 0.95);
+  --border-color: rgba(255, 140, 0, 0.3);
+  --color: #ff8c00;
+}
 
-  ion-title {
-    font-weight: 600;
-  }
+.notifications-toolbar ion-title {
+  font-weight: 600;
+  color: #ff8c00;
+}
 
-  ion-back-button {
-    --color: white;
-  }
+.notifications-toolbar ion-back-button {
+  --color: #ff8c00;
 }
 
 .notifications-content {
-  --background: #f5f5f5;
+  --background: transparent;
+  position: relative;
+}
+
+.notifications-content::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: url('https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80');
+  background-size: cover;
+  background-position: center;
+  opacity: 0.3;
+  z-index: -1;
 }
 
 .notifications-feed {
-  padding: 0;
+  padding: 16px;
 }
 
 .section {
@@ -30,39 +48,42 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.8px;
-  color: #667eea;
-  background: rgba(102, 126, 234, 0.05);
-  border-left: 3px solid #667eea;
+  background: rgba(0, 0, 0, 0.85);
+  border-left: 4px solid #ff8c00;
+  color: #ff8c00;
+  border-radius: 8px 8px 0 0;
 
   &.cancelled {
-    color: #dc2626;
-    background: rgba(220, 38, 38, 0.05);
-    border-left-color: #dc2626;
+    border-left-color: #f44336;
+    color: #f44336;
   }
 
   &.new {
-    color: #16a34a;
-    background: rgba(22, 163, 74, 0.05);
-    border-left-color: #16a34a;
+    border-left-color: #4caf50;
+    color: #4caf50;
   }
 }
 
 .notification-item {
-  background: white;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
-  padding: 12px 16px;
-  transition: all 0.2s ease;
+  background: rgba(0, 0, 0, 0.85);
+  border-bottom: 1px solid rgba(255, 140, 0, 0.2);
+  padding: 16px;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+  border-radius: 0 0 12px 12px;
+  margin-bottom: 2px;
 
   &:hover {
-    background: rgba(102, 126, 234, 0.02);
+    background: rgba(0, 0, 0, 0.9);
+    transform: translateX(5px);
   }
 
   &.cancelled {
-    border-left: 4px solid #dc2626;
+    border-left: 4px solid #f44336;
   }
 
   &.new {
-    border-left: 4px solid #16a34a;
+    border-left: 4px solid #4caf50;
   }
 }
 
@@ -70,68 +91,65 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 8px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .trip-reference {
   margin: 0;
-  font-size: 15px;
-  font-weight: 600;
-  color: #1f2937;
+  font-size: 16px;
+  font-weight: 700;
+  color: #ff8c00;
 }
 
 .status-badge {
   display: inline-block;
-  padding: 4px 10px;
-  border-radius: 16px;
-  font-size: 10px;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 11px;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
   white-space: nowrap;
 
   &.cancelled-badge {
-    background: rgba(220, 38, 38, 0.1);
-    color: #dc2626;
+    background: rgba(244, 67, 54, 0.2);
+    color: #f44336;
+    border: 1px solid rgba(244, 67, 54, 0.5);
   }
 
   &.planned-badge {
-    background: rgba(59, 130, 246, 0.1);
-    color: #1e40af;
+    background: rgba(76, 175, 80, 0.2);
+    color: #4caf50;
+    border: 1px solid rgba(76, 175, 80, 0.5);
   }
 }
 
 .notification-body {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
 }
 
 .info-line {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   font-size: 13px;
-  color: #6b7280;
+  color: #cccccc;
 
   ion-icon {
     font-size: 16px;
-    color: #667eea;
+    color: #ff8c00;
     flex-shrink: 0;
-
-    &.cancelled {
-      color: #dc2626;
-    }
-
-    &.new {
-      color: #16a34a;
-    }
   }
 
   .info-text {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    color: #cccccc;
   }
 }
 
@@ -140,47 +158,65 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  min-height: 400px;
+  min-height: 70vh;
   padding: 24px;
   text-align: center;
+}
 
-  ion-icon {
-    font-size: 64px;
-    color: #d1d5db;
-    margin-bottom: 16px;
+.empty-state ion-icon {
+  font-size: 64px;
+  color: #ff8c00;
+  margin-bottom: 20px;
+  background: rgba(255, 140, 0, 0.2);
+  padding: 20px;
+  border-radius: 50%;
+}
+
+.empty-state h2 {
+  margin: 0 0 8px 0;
+  font-size: 20px;
+  font-weight: 700;
+  color: #ff8c00;
+}
+
+.empty-state p {
+  margin: 0;
+  color: #cccccc;
+  font-size: 14px;
+}
+
+/* Responsive */
+@media (max-width: 480px) {
+  .notifications-feed {
+    padding: 12px;
   }
-
-  h2 {
-    margin: 0 0 8px 0;
-    font-size: 18px;
-    font-weight: 600;
-    color: #6b7280;
+  
+  .notification-item {
+    padding: 12px;
   }
-
-  p {
-    margin: 0;
-    color: #9ca3af;
+  
+  .trip-reference {
     font-size: 14px;
+  }
+  
+  .section-title {
+    padding: 10px 12px 6px;
+    font-size: 11px;
+  }
+  
+  .info-line {
+    font-size: 12px;
+    
+    ion-icon {
+      font-size: 14px;
+    }
   }
 }
 
-
-@media (prefers-color-scheme: dark) {
-  .notification-item {
-    background: rgba(255, 255, 255, 0.05);
-    border-bottom-color: rgba(255, 255, 255, 0.1);
-  }
-
-  .trip-reference {
-    color: #f3f4f6;
-  }
-
-  .info-line {
-    color: #d1d5db;
-  }
-
-  .section-title {
-    background: rgba(255, 255, 255, 0.05);
+@media (max-width: 360px) {
+  .notification-header {
+    flex-direction: column;
+    align-items: flex-start;
   }
 }
 

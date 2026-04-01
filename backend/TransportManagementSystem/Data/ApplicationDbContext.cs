@@ -13,12 +13,10 @@ namespace TransportManagementSystem.Data
 
         public DbSet<Truck> Trucks { get; set; }
         public DbSet<User> Users { get; set; }
-        public DbSet<Driver> Drivers { get; set; }
         public DbSet<Trip> Trips { get; set; }
         public DbSet<Customer> Customers { get; set; }
         public DbSet<FuelVendor> FuelVendors { get; set; }
         public DbSet<Fuel> Fuels { get; set; }
-        public DbSet<Mechanic> Mechanics { get; set; }
         public DbSet<Vendor> Vendors { get; set; }
         public DbSet<Maintenance> Maintenances { get; set; }
 
@@ -33,7 +31,6 @@ namespace TransportManagementSystem.Data
         public DbSet<Traject> Trajects { get; set; }
         public DbSet<TrajectPoint> TrajectPoints { get; set; }
         public DbSet<Location> Locations { get; set; }
-        public DbSet<Convoyeur> Convoyeurs { get; set; }
         public DbSet<DayOff> DayOffs { get; set; }
         public DbSet<OvertimeSetting> OvertimeSettings { get; set; }
         public DbSet<DriverAvailability> DriverAvailabilities { get; set; }
@@ -43,10 +40,9 @@ namespace TransportManagementSystem.Data
         public DbSet<SyncHistoryDetail> SyncHistoryDetails { get; set; }
         public DbSet<TruckAvailability> TruckAvailabilities { get; set; }
         public DbSet<Translation> Translations { get; set; }
-        public DbSet<Zone> Zones { get; set; }
-        public DbSet<City> Citys { get; set; }
         public DbSet<TypeTruck> TypeTrucks { get; set; }
         public DbSet<Employee> Employees { get; set; }
+        public DbSet<Driver> Drivers { get; set; }
         //public DbSet<Category> Categories { get; set; }
         public DbSet<GeneralSettings> GeneralSettings { get; set; }
         public DbSet<Notification> Notifications { get; set; }
@@ -56,6 +52,14 @@ namespace TransportManagementSystem.Data
         public DbSet<PositionGPS> PositionsGPS { get; set; }
         public DbSet<ResultatOptimisation> ResultatOptimisations { get; set; }
         public DbSet<TripAssignment> TripAssignments { get; set; }
+        
+        // Geographical entities
+        public DbSet<GeographicalEntity> GeographicalEntities { get; set; }
+        public DbSet<GeographicalLevel> GeographicalLevels { get; set; }
+        public DbSet<DriverGeographicalEntity> DriverGeographicalEntities { get; set; }
+        public DbSet<CustomerGeographicalEntity> CustomerGeographicalEntities { get; set; }
+        public DbSet<TruckGeographicalEntity> TruckGeographicalEntities { get; set; }
+        public DbSet<Entity.ChatMessage> ChatMessages { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -162,6 +166,13 @@ namespace TransportManagementSystem.Data
                 .HasForeignKey(d => d.OrderId)
                 .OnDelete(DeleteBehavior.NoAction);
 
+            // Fix cascade delete for Maintenances
+            modelBuilder.Entity<Maintenance>()
+                .HasOne(m => m.Trip)
+                .WithMany()
+                .HasForeignKey(m => m.TripId)
+                .OnDelete(DeleteBehavior.Restrict);
+
             modelBuilder.Entity<SyncHistoryDetail>()
                .HasOne(d => d.SyncHistory)
                .WithMany(h => h.Details)
@@ -182,53 +193,6 @@ namespace TransportManagementSystem.Data
                .HasForeignKey(o => o.CustomerId)
                .OnDelete(DeleteBehavior.Restrict);
 
-          
-            modelBuilder.Entity<Location>()
-                .HasOne(l => l.Zone)
-                .WithMany(z => z.Locations) 
-                .HasForeignKey(l => l.ZoneId)
-                .IsRequired()
-                .OnDelete(DeleteBehavior.Restrict);
-
-      
-            modelBuilder.Entity<Driver>()
-                .HasOne(d => d.Zone)
-                .WithMany(z => z.Drivers) 
-                .HasForeignKey(d => d.ZoneId)
-                .IsRequired()
-                .OnDelete(DeleteBehavior.Restrict);
-
-
-            modelBuilder.Entity<Customer>()
-                  .HasOne(c => c.Zone)
-                  .WithMany(z => z.Customers)
-                  .HasForeignKey(c => c.ZoneId)
-                  .IsRequired(false)  
-                  .OnDelete(DeleteBehavior.Restrict);
-
-
-            modelBuilder.Entity<Driver>()
-                 .HasOne(c => c.City)
-                 .WithMany(z => z.Drivers)
-                 .HasForeignKey(c => c.CityId)
-                 .IsRequired(false)
-                 .OnDelete(DeleteBehavior.Restrict);
-
-            modelBuilder.Entity<Convoyeur>()
-                 .HasOne(c => c.City)
-                 .WithMany(z => z.Convoyeurs)
-                 .HasForeignKey(c => c.CityId)
-                 .IsRequired(false)
-                 .OnDelete(DeleteBehavior.Restrict);
-
-
-            modelBuilder.Entity<Truck>()
-                .HasOne(d => d.Zone)
-                .WithMany(z => z.Trucks)
-                .HasForeignKey(d => d.ZoneId)
-                .IsRequired()
-                .OnDelete(DeleteBehavior.Restrict);
-
             modelBuilder.Entity<Truck>(entity =>
             {
                 entity.HasOne(t => t.TypeTruck)
@@ -237,9 +201,17 @@ namespace TransportManagementSystem.Data
                     .OnDelete(DeleteBehavior.Cascade); 
             });
 
-            modelBuilder.Entity<GeneralSettings>()
-                   .HasIndex(p => new { p.ParameterType, p.ParameterCode })
-                   .IsUnique();
+            modelBuilder.Entity<GeneralSettings>(entity =>
+            {
+                entity.Property(e => e.ParameterType)
+                    .HasMaxLength(255);
+
+                entity.Property(e => e.ParameterCode)
+                    .HasMaxLength(255);
+
+                entity.HasIndex(e => new { e.ParameterType, e.ParameterCode })
+                    .IsUnique();
+            });
 
             modelBuilder.Entity<UserNotification>()
                    .HasIndex(un => new { un.NotificationId, un.UserId })
@@ -269,6 +241,15 @@ namespace TransportManagementSystem.Data
             modelBuilder.Entity<Maintenance>()
                 .Property(m => m.OilQuantity)
                 .HasPrecision(18, 2);
+
+            // Fix decimal precision warnings for GeographicalEntity
+            modelBuilder.Entity<GeographicalEntity>()
+                .Property(g => g.Latitude)
+                .HasPrecision(9, 6);
+
+            modelBuilder.Entity<GeographicalEntity>()
+                .Property(g => g.Longitude)
+                .HasPrecision(9, 6);
 
         }
 

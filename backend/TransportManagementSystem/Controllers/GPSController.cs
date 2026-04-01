@@ -516,7 +516,7 @@ namespace TransportManagementSystem.Controllers
                         }
                     }
                 }
-                else if (trip.Traject != null && trip.Traject.Points.Any())
+                else if (trip.Traject != null && trip.Traject.Points != null && trip.Traject.Points.Any())
                 {
                     if (string.IsNullOrWhiteSpace(destinationAddress))
                     {

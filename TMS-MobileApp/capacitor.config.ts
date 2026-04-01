@@ -2,8 +2,12 @@ import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
   appId: 'io.ionic.starter',
-  appName: 'mobileSQLiteApp',
-  webDir: 'www'
+  appName: 'TMS',
+  webDir: 'www',
+  server: {
+    androidScheme: 'http', 
+    cleartext: true         
+  }
 };
 
 export default config;
