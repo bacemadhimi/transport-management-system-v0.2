@@ -37,11 +37,15 @@ export class GpsService {
   private async initStorage() {
     try {
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
       this.storage = await Storage.create({
         name: 'gps_offline_db'
       });
     } catch (error) {
       console.error('Error initializing storage:', error);
+<<<<<<< HEAD
 =======
       // ✅ Correction - créer l'instance d'abord, puis appeler create()
       const storage = new Storage();
@@ -50,6 +54,8 @@ export class GpsService {
     } catch (error) {
       console.error('❌ Error initializing storage:', error);
 >>>>>>> dev
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
     }
   }
 
@@ -190,6 +196,7 @@ export class GpsService {
       await this.storage.set('offline_positions', positions);
 
 <<<<<<< HEAD
+<<<<<<< HEAD
       console.log(`Synced ${unsyncedPositions.length} positions`);
     } catch (error) {
       console.error('Error syncing offline positions:', error);
@@ -198,6 +205,11 @@ export class GpsService {
     } catch (error) {
       console.error('❌ Error syncing offline positions:', error);
 >>>>>>> dev
+=======
+      console.log(`Synced ${unsyncedPositions.length} positions`);
+    } catch (error) {
+      console.error('Error syncing offline positions:', error);
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
     }
   }
 
@@ -211,7 +223,11 @@ export class GpsService {
     await this.storage.remove('offline_positions');
   }
 <<<<<<< HEAD
+<<<<<<< HEAD
 }
 =======
 }
 >>>>>>> dev
+=======
+}
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d

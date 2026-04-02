@@ -13,15 +13,15 @@ import { Network } from '@capacitor/network';
 })
 export class TripDetailsModalComponent implements OnInit, OnDestroy {
   @Input() trip!: ITrip;
-  
+
   private modalCtrl = inject(ModalController);
   private toastCtrl = inject(ToastController);
-  
+
   // Offline mode flags
   isOnline: boolean = true;
   offlineMode: boolean = false;
   private networkListener: any;
-  
+
   // Cached data
   cachedImages: Map<string, string> = new Map();
   imageLoadError: boolean = false;

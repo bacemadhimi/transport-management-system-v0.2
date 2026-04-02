@@ -9,9 +9,13 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatBadgeModule } from '@angular/material/badge';
 <<<<<<< HEAD
+<<<<<<< HEAD
 import { MatChipsModule } from '@angular/material/chips';
 =======
 >>>>>>> dev
+=======
+import { MatChipsModule } from '@angular/material/chips';
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
 import { Router } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { SignalRService } from '../../services/signalr.service';
@@ -24,9 +28,13 @@ interface ActiveTrip {
   status: string;
   driverName?: string;
 <<<<<<< HEAD
+<<<<<<< HEAD
   driverPhone?: string;
 =======
 >>>>>>> dev
+=======
+  driverPhone?: string;
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
   truckImmatriculation?: string;
   currentLatitude?: number;
   currentLongitude?: number;
@@ -35,11 +43,17 @@ interface ActiveTrip {
   estimatedDistance?: number;
   estimatedDuration?: number;
 <<<<<<< HEAD
+<<<<<<< HEAD
   destination?: string;
   destinationLat?: number;
   destinationLng?: number;
 =======
 >>>>>>> dev
+=======
+  destination?: string;
+  destinationLat?: number;
+  destinationLng?: number;
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
 }
 
 @Component({
@@ -56,12 +70,18 @@ interface ActiveTrip {
     MatCardModule,
     MatIconModule,
 <<<<<<< HEAD
+<<<<<<< HEAD
     MatButtonModule,
     MatBadgeModule,
     MatChipsModule
 =======
     MatButtonModule
 >>>>>>> dev
+=======
+    MatButtonModule,
+    MatBadgeModule,
+    MatChipsModule
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
   ]
 })
 export class LiveGPSTrackingPage implements OnInit, OnDestroy {
@@ -74,17 +94,25 @@ export class LiveGPSTrackingPage implements OnInit, OnDestroy {
   map!: L.Map;
   truckMarkers: Map<number, L.Marker> = new Map();
 <<<<<<< HEAD
+<<<<<<< HEAD
   routePolylines: Map<number, L.Polyline> = new Map();
 =======
 >>>>>>> dev
+=======
+  routePolylines: Map<number, L.Polyline> = new Map();
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
   positionUpdates: Map<number, any> = new Map();
 
   private subscriptions: Subscription[] = [];
   public connectionStatus: boolean = false;
 <<<<<<< HEAD
+<<<<<<< HEAD
   private refreshInterval?: any;
 =======
 >>>>>>> dev
+=======
+  private refreshInterval?: any;
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
 
   constructor(
     private router: Router,
@@ -94,6 +122,9 @@ export class LiveGPSTrackingPage implements OnInit, OnDestroy {
 
   ngOnInit() {
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
     this.initMap();
     this.connectToGPSHub();
     this.loadActiveTrips();
@@ -102,20 +133,29 @@ export class LiveGPSTrackingPage implements OnInit, OnDestroy {
     this.refreshInterval = setInterval(() => {
       this.loadActiveTrips();
     }, 5000);
+<<<<<<< HEAD
 =======
     this.connectToGPSHub();
     this.loadActiveTrips();
 >>>>>>> dev
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
   }
 
   ngOnDestroy() {
     this.subscriptions.forEach(s => s.unsubscribe());
+<<<<<<< HEAD
 <<<<<<< HEAD
     if (this.refreshInterval) {
       clearInterval(this.refreshInterval);
     }
 =======
 >>>>>>> dev
+=======
+    if (this.refreshInterval) {
+      clearInterval(this.refreshInterval);
+    }
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
     if (this.map) {
       this.map.remove();
     }
@@ -135,12 +175,18 @@ export class LiveGPSTrackingPage implements OnInit, OnDestroy {
   }
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
   getTotalTrips(): number {
     return this.activeTrips.length;
   }
 
+<<<<<<< HEAD
 =======
 >>>>>>> dev
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
   // Check if position is live (less than 1 minute old)
   isPositionLive(lastUpdate?: Date): boolean {
     if (!lastUpdate) return false;
@@ -148,6 +194,9 @@ export class LiveGPSTrackingPage implements OnInit, OnDestroy {
   }
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
   // Get time ago string
   getTimeAgo(date?: Date): string {
     if (!date) return 'Inconnu';
@@ -158,8 +207,11 @@ export class LiveGPSTrackingPage implements OnInit, OnDestroy {
     return `${Math.floor(seconds / 86400)} j`;
   }
 
+<<<<<<< HEAD
 =======
 >>>>>>> dev
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
   // Get badge color class
   getStatusBadgeClass(status: string): string {
     const statusMap: Record<string, string> = {
@@ -168,11 +220,16 @@ export class LiveGPSTrackingPage implements OnInit, OnDestroy {
       'Arrived': 'success',
       'Completed': 'success',
 <<<<<<< HEAD
+<<<<<<< HEAD
       'Assigned': 'accent',
       'Refused': 'danger'
 =======
       'Assigned': 'accent'
 >>>>>>> dev
+=======
+      'Assigned': 'accent',
+      'Refused': 'danger'
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
     };
     return statusMap[status] || 'medium';
   }
@@ -187,9 +244,12 @@ export class LiveGPSTrackingPage implements OnInit, OnDestroy {
           console.log('🔌 GPS Hub connection status:', connected);
           if (connected) {
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
             // Wait a bit for connection to stabilize
 >>>>>>> dev
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
             setTimeout(() => {
               this.joinAllTripsTracking();
             }, 500);
@@ -198,6 +258,9 @@ export class LiveGPSTrackingPage implements OnInit, OnDestroy {
       );
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
       // Listen for GPS positions - REAL TIME UPDATES
       this.signalR.onGPSPosition((position: any) => {
         console.log('📍 GPS Position received in real-time:', position);
@@ -205,6 +268,7 @@ export class LiveGPSTrackingPage implements OnInit, OnDestroy {
       });
 
       // Listen for trip status changes
+<<<<<<< HEAD
 =======
       // Écouter les positions GPS
       this.signalR.onGPSPosition((position: any) => {
@@ -214,6 +278,8 @@ export class LiveGPSTrackingPage implements OnInit, OnDestroy {
 
       // Écouter les changements de statut
 >>>>>>> dev
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
       this.signalR.onTripStatusChanged((update: any) => {
         console.log('📊 Trip status changed:', update);
         this.updateTripStatus(update);
@@ -225,6 +291,9 @@ export class LiveGPSTrackingPage implements OnInit, OnDestroy {
   }
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
   // Update truck position from SignalR real-time data
   private updateTruckPositionFromSignalR(position: any) {
     const tripId = position.tripId;
@@ -256,8 +325,11 @@ export class LiveGPSTrackingPage implements OnInit, OnDestroy {
     }
   }
 
+<<<<<<< HEAD
 =======
 >>>>>>> dev
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
   private async joinAllTripsTracking() {
     try {
       console.log('🚛 Requesting active trips from GPS Hub...');
@@ -278,6 +350,9 @@ export class LiveGPSTrackingPage implements OnInit, OnDestroy {
   private async loadActiveTrips() {
     try {
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
       console.log('📋 Loading active trips from API...');
       
       // Get all trips and filter active ones
@@ -361,16 +436,22 @@ export class LiveGPSTrackingPage implements OnInit, OnDestroy {
         this.applyFilters();
         this.updateMapMarkers();
       }
+<<<<<<< HEAD
 =======
       console.log('📋 Loading active trips...');
       await this.signalR.invokeGetActiveTrips();
 >>>>>>> dev
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
     } catch (error) {
       console.error('❌ Error loading active trips:', error);
     }
   }
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
   // Fetch latest GPS positions for all active trips - NOW USING SIGNALR ONLY
   private async fetchGPSPositionsForActiveTrips() {
     console.log('📡 GPS positions will be received via SignalR real-time updates');
@@ -390,13 +471,19 @@ export class LiveGPSTrackingPage implements OnInit, OnDestroy {
     console.log('🗺️ Map initialized');
   }
 
+<<<<<<< HEAD
 =======
 >>>>>>> dev
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
   private updateTruckPosition(position: any) {
     const tripId = position.tripId;
     if (!tripId) return;
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
     console.log('📍 GPS Position received via SignalR:', position);
     this.positionUpdates.set(tripId, position);
 
@@ -427,6 +514,7 @@ export class LiveGPSTrackingPage implements OnInit, OnDestroy {
       }
 
       // Pan map to new position
+<<<<<<< HEAD
 =======
     this.positionUpdates.set(tripId, position);
 
@@ -450,12 +538,17 @@ export class LiveGPSTrackingPage implements OnInit, OnDestroy {
 
       // Animation de la carte
 >>>>>>> dev
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
       this.map.panTo(newPosition, { animate: true, duration: 0.5 });
     }
   }
 
   private updateTripStatus(update: any) {
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
     const tripIndex = this.activeTrips.findIndex(t => t.id === update.TripId);
     if (tripIndex !== -1) {
       this.activeTrips[tripIndex].status = update.NewStatus;
@@ -580,6 +673,7 @@ export class LiveGPSTrackingPage implements OnInit, OnDestroy {
   }
 
   applyFilters() {
+<<<<<<< HEAD
 =======
     const tripIndex = this.activeTrips.findIndex(t => t.id === update.tripId);
     if (tripIndex !== -1) {
@@ -678,6 +772,8 @@ export class LiveGPSTrackingPage implements OnInit, OnDestroy {
 
   public applyFilters() {
 >>>>>>> dev
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
     this.filteredTrips = this.activeTrips.filter(trip => {
       const matchesSearch = !this.searchQuery || 
         trip.tripReference.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
@@ -691,6 +787,9 @@ export class LiveGPSTrackingPage implements OnInit, OnDestroy {
   }
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
   selectTrip(trip: ActiveTrip) {
     this.selectedTrip = trip;
     
@@ -727,6 +826,7 @@ export class LiveGPSTrackingPage implements OnInit, OnDestroy {
     toast.textContent = message;
     document.body.appendChild(toast);
     setTimeout(() => toast.remove(), 3000);
+<<<<<<< HEAD
 =======
   public getStatusBadgeColor(status: string): string {
     const colors: Record<string, string> = {
@@ -749,5 +849,7 @@ export class LiveGPSTrackingPage implements OnInit, OnDestroy {
     const hours = Math.floor(minutes / 60);
     return `Il y a ${hours}h ${minutes % 60}min`;
 >>>>>>> dev
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
   }
 }

@@ -1,7 +1,10 @@
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 ﻿
 >>>>>>> dev
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
@@ -69,9 +72,12 @@ export class NotificationService {
     return this.http.delete(`${this.apiUrl}`, { headers: this.getHeaders() });
   }
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 
 deleteAllNotifications(): Observable<any> {
   return this.http.delete(`${this.apiUrl}/delete-all`);
 >>>>>>> dev
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
 }

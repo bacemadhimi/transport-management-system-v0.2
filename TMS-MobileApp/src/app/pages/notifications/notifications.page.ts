@@ -1,11 +1,15 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
 import { IonicModule, AlertController, ToastController } from '@ionic/angular';
 import { RouterModule, Router } from '@angular/router';
 import { NotificationStorageService, TripNotification } from '../../services/notification-storage.service';
 import { GPSTrackingService } from '../../services/gps-tracking.service';
 import { Observable } from 'rxjs';
+<<<<<<< HEAD
 =======
 import { IonicModule, ToastController } from '@ionic/angular';
 import { RouterModule } from '@angular/router';
@@ -14,6 +18,8 @@ import { ITrip, TripStatus } from '../../types/trip';
 import { Subscription } from 'rxjs';
 import { Network } from '@capacitor/network';
 >>>>>>> dev
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
 
 @Component({
   selector: 'app-notifications',
@@ -23,23 +29,41 @@ import { Network } from '@capacitor/network';
   imports: [CommonModule, IonicModule, RouterModule]
 })
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
 export class NotificationsPage implements OnInit {
   notificationStorage = inject(NotificationStorageService);
   gpsService = inject(GPSTrackingService);
   alertController = inject(AlertController);
   toastController = inject(ToastController);
   router = inject(Router);
+<<<<<<< HEAD
 =======
 export class NotificationsPage implements OnInit, OnDestroy {
   tripService = inject(TripService);
   toastController = inject(ToastController);
 >>>>>>> dev
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
 
   notifications$: Observable<TripNotification[]>;
   unreadCount$: Observable<number>;
   unreadTripAssignmentsCount: number = 0;
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+  // Network status - temporarily default to online
+  isOnline: boolean = true;
+  offlineMode: boolean = false;
+  lastSyncTime: Date | null = null;
+  allNotifications: TripNotification[] = [];
+  cancelledTrips: TripNotification[] = [];
+  newTrips: TripNotification[] = [];
+  isLoading: boolean = false;
+
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
   constructor() {
     this.notifications$ = this.notificationStorage.notifications$;
     this.unreadCount$ = this.notificationStorage.unreadCount$;
@@ -267,6 +291,7 @@ export class NotificationsPage implements OnInit, OnDestroy {
         tripId: notification.tripId,
         tripReference: notification.tripReference,
         destination: notification.destination || ''
+<<<<<<< HEAD
 =======
   private _sub: Subscription | null = null;
   private networkListener: any;
@@ -322,10 +347,13 @@ export class NotificationsPage implements OnInit, OnDestroy {
         // Just came online - refresh data
         await this.loadNotifications();
         this.showToast('Connection restored - Notifications updated', 'success');
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
       }
     });
   }
 
+<<<<<<< HEAD
   loadNotifications() {
     if (!this.isOnline) {
       // Still show cached data when offline
@@ -352,12 +380,15 @@ export class NotificationsPage implements OnInit, OnDestroy {
   }
 
 <<<<<<< HEAD
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
   /**
    * Mark all as read
    */
   async markAllAsRead() {
     this.notificationStorage.markAllAsRead();
     await this.showToast('✅ Toutes les notifications ont été marquées comme lues', 'success');
+<<<<<<< HEAD
 =======
   private processTrips(trips: ITrip[]) {
     this.cancelledTrips = trips
@@ -432,6 +463,8 @@ export class NotificationsPage implements OnInit, OnDestroy {
     }
     return trip.truck?.immatriculation || 'No vehicle';
 >>>>>>> dev
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
   }
 
   /**

@@ -153,6 +153,7 @@ loadNotificationsFromDatabase(pageIndex: number = 0, pageSize: number = 20) {
   this.http.get(`${environment.apiUrl}/api/notifications?pageIndex=${pageIndex}&pageSize=${pageSize}`, { headers }).subscribe({
     next: (response: any) => {
 <<<<<<< HEAD
+<<<<<<< HEAD
       if (response?.success && response?.data) {
         // Get ALL notifications from database and map them
         const allDbNotifications = (response.data.notifications || []).map((n: any) => ({
@@ -161,6 +162,11 @@ loadNotificationsFromDatabase(pageIndex: number = 0, pageSize: number = 20) {
 
         const allDbNotifications = (response.data.notifications as any[]).map((n: any) => ({
 >>>>>>> dev
+=======
+      if (response?.success && response?.data) {
+        // Get ALL notifications from database and map them
+        const allDbNotifications = (response.data.notifications || []).map((n: any) => ({
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
           ...n,
 
           isRead: n.isRead === true || n.isRead === 1 || n.isRead === 'true',
@@ -168,6 +174,9 @@ loadNotificationsFromDatabase(pageIndex: number = 0, pageSize: number = 20) {
         })) as TripNotification[];
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
         // Store all for reference
         this.allNotifications = allDbNotifications;
 
@@ -182,6 +191,7 @@ loadNotificationsFromDatabase(pageIndex: number = 0, pageSize: number = 20) {
           this.notifications = relevantNotifications;
         } else {
           // Subsequent pages - append (check duplicates)
+<<<<<<< HEAD
 =======
 
         this.allNotifications = allDbNotifications;
@@ -197,12 +207,17 @@ loadNotificationsFromDatabase(pageIndex: number = 0, pageSize: number = 20) {
         } else {
 
 >>>>>>> dev
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
           const existingIds = new Set(this.notifications.map((n: TripNotification) => n.id));
           const uniqueNew = relevantNotifications.filter((n: TripNotification) => !existingIds.has(n.id));
           this.notifications = [...this.notifications, ...uniqueNew];
         }
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
         // Count ONLY unread relevant notifications
         this.unreadNotificationsCount = this.notifications.filter((n: TripNotification) => !n.isRead).length;
 
@@ -212,6 +227,7 @@ loadNotificationsFromDatabase(pageIndex: number = 0, pageSize: number = 20) {
         console.log('📚 DB Load - Relevant notifications:', this.notifications.length);
         console.log('📚 Unread count:', this.unreadNotificationsCount);
         console.log('📚 Relevant notifications:', relevantNotifications);
+<<<<<<< HEAD
 =======
 
         this.unreadNotificationsCount = this.notifications.filter((n: TripNotification) => !n.isRead).length;
@@ -222,6 +238,8 @@ loadNotificationsFromDatabase(pageIndex: number = 0, pageSize: number = 20) {
         console.log('📚 DB Load - Cancelled only:', this.notifications.length);
         console.log('📚 Unread count:', this.unreadNotificationsCount);
 >>>>>>> dev
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
       } else {
         console.warn('⚠️ Invalid notification response:', response);
         // Initialize with empty arrays on invalid response
@@ -256,10 +274,14 @@ initializeSignalR() {
       console.log('📬 Raw real-time notifications:', realtimeNotifications);
 
 <<<<<<< HEAD
+<<<<<<< HEAD
       // Ensure isRead is boolean and timestamp is Date
 =======
 
 >>>>>>> dev
+=======
+      // Ensure isRead is boolean and timestamp is Date
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
       const processedNotifications = realtimeNotifications.map(n => ({
         ...n,
         isRead: n.isRead === true,
@@ -267,6 +289,9 @@ initializeSignalR() {
       }));
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
       // Store ALL real-time notifications for reference
       this.allNotifications = [...this.allNotifications, ...processedNotifications];
 
@@ -296,6 +321,7 @@ initializeSignalR() {
 
       console.log('📋 Current notifications:', this.notifications.length);
       console.log('📋 Unread count:', this.unreadNotificationsCount);
+<<<<<<< HEAD
 =======
 
       this.allNotifications = [...this.allNotifications, ...processedNotifications];
@@ -323,6 +349,8 @@ initializeSignalR() {
       console.log('📋 Current cancelled notifications:', this.notifications.length);
       console.log('📋 Unread cancelled count:', this.unreadNotificationsCount);
 >>>>>>> dev
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
     }
   );
 }

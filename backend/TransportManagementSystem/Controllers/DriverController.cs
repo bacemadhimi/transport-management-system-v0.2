@@ -202,7 +202,7 @@ public class DriversController : ControllerBase
             EmployeeCategory = "DRIVER",
             IsInternal = model.IsInternal,
             Status = model.Status ?? "Disponible",
-            IdCamion = model.IdCamion,
+            IdCamion = model.IdCamion ?? 0,
             ImageBase64 = model.ImageBase64,
             DriverGeographicalEntities = new List<DriverGeographicalEntity>()
         };
@@ -317,7 +317,7 @@ public class DriversController : ControllerBase
         driver.TypeTruckId = model.TypeTruckId;
         driver.IsInternal = model.IsInternal;
         driver.Status = model.Status;
-        driver.IdCamion = model.IdCamion;
+        driver.IdCamion = model.IdCamion ?? 0;
         driver.ImageBase64 = model.ImageBase64;
         driver.UpdatedAt = DateTime.UtcNow;
 
@@ -395,7 +395,9 @@ public class DriversController : ControllerBase
             .FirstOrDefaultAsync(d => d.Id == id);
 
         if (driver == null)
-            return NotFound(new ApiResponse(false, $"Chauffeur {id} non trouvé"));
+        {
+            return NotFound(new ApiResponse(false, "Chauffeur non trouvé"));
+        }
 
         // Check if driver is used in any trips
         var hasTrips = await context.Trips.AnyAsync(t => t.DriverId == id);
@@ -411,6 +413,7 @@ public class DriversController : ControllerBase
             context.DriverGeographicalEntities.RemoveRange(driver.DriverGeographicalEntities);
         }
 
+        // Remove the driver
         context.Employees.Remove(driver);
         await context.SaveChangesAsync();
 
@@ -418,17 +421,35 @@ public class DriversController : ControllerBase
     }
 
     [HttpGet("list")]
+    [AllowAnonymous] // Allow anonymous access for driver list (used in trip creation)
     public async Task<ActionResult<IEnumerable<DriverDto>>> GetDriversList()
     {
-        var drivers = await context.Employees
-            .OfType<Driver>()
-            .Include(d => d.TypeTruck)
-            .Include(d => d.DriverGeographicalEntities)
-                .ThenInclude(dg => dg.GeographicalEntity)
-                    .ThenInclude(g => g.Level)
-            .Where(d => d.IsEnable && d.EmployeeCategory == "DRIVER")
+        // Query from Users table - drivers are users with email containing "@tms.demo" or name containing "Driver"
+        // This matches the new database structure where drivers are stored in Users table
+        var drivers = await context.Users
+            .Where(u => u.Email.Contains("@tms.demo") || (u.Name != null && u.Name.Contains("Driver")))
+            .Select(u => new DriverDto
+            {
+                Id = u.Id, // User Id = Driver Id for SignalR notifications
+                IdNumber = $"DRV-{u.Id:D4}",
+                Name = u.Name ?? $"Driver {u.Id}",
+                Email = u.Email ?? "",
+                PhoneNumber = u.Phone ?? "",
+                PhoneCountry = u.phoneCountry ?? "+216",
+                DrivingLicense = "",
+                TypeTruckId = null,
+                TypeTruck = null,
+                IsEnable = true,
+                EmployeeCategory = "DRIVER",
+                IsInternal = true,
+                Status = "active",
+                IdCamion = 0,
+                ImageBase64 = null,
+                GeographicalEntities = new List<DriverGeographicalEntityDto>()
+            })
             .ToListAsync();
 
+<<<<<<< HEAD
 <<<<<<< HEAD
         if (driver == null)
             return NotFound();
@@ -500,10 +521,32 @@ public class DriversController : ControllerBase
             .Where(d => d.IsEnable && d.ZoneId == zoneId)
             .Select(d => new Driver
 =======
+=======
+        return Ok(drivers);
+    }
+
+    /// <summary>
+    /// Get all drivers without filtering by EmployeeCategory (for debugging)
+    /// </summary>
+    [HttpGet("all-drivers")]
+    public async Task<ActionResult<IEnumerable<DriverDto>>> GetAllDrivers()
+    {
+        var allEmployees = await context.Employees
+            .Include(e => e.TypeTruck)
+            .Include(e => (e as Driver).DriverGeographicalEntities)
+                .ThenInclude(dg => dg.GeographicalEntity)
+                    .ThenInclude(g => g.Level)
+            .ToListAsync();
+
+        // Filter only Driver type employees
+        var drivers = allEmployees.OfType<Driver>().ToList();
+
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
         var driverDtos = drivers.Select(d => new DriverDto
         {
             Id = d.Id,
             IdNumber = d.IdNumber,
+<<<<<<< HEAD
             Name = d.Name,
             Email = d.Email,
             PhoneNumber = d.PhoneNumber,
@@ -512,18 +555,25 @@ public class DriversController : ControllerBase
             TypeTruckId = d.TypeTruckId,
             TypeTruck = d.TypeTruck != null ? new TypeTruckDto
 >>>>>>> dev
+=======
+            Name = d.Name ?? $"Chauffeur {d.Id}",
+            Email = d.Email ?? "",
+            PhoneNumber = d.PhoneNumber ?? "",
+            PhoneCountry = d.PhoneCountry ?? "+216",
+            DrivingLicense = d.DrivingLicense ?? "",
+            TypeTruckId = d.TypeTruckId,
+            TypeTruck = d.TypeTruck != null ? new TypeTruckDto
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
             {
                 Id = d.TypeTruck.Id,
                 Type = d.TypeTruck.Type,
                 Capacity = d.TypeTruck.Capacity,
-               
             } : null,
             IsEnable = d.IsEnable,
-            EmployeeCategory = d.EmployeeCategory,
+            EmployeeCategory = d.EmployeeCategory ?? "DRIVER",
             IsInternal = d.IsInternal,
-            Status = d.Status,
+            Status = d.Status ?? "active",
             IdCamion = d.IdCamion,
-
             ImageBase64 = d.ImageBase64,
             GeographicalEntities = d.DriverGeographicalEntities?
                 .Where(dg => dg.GeographicalEntity != null && dg.GeographicalEntity.IsActive)
@@ -538,7 +588,12 @@ public class DriversController : ControllerBase
                 }).ToList() ?? new List<DriverGeographicalEntityDto>()
         }).ToList();
 
-        return Ok(driverDtos);
+        return Ok(new
+        {
+            drivers = driverDtos,
+            totalCount = drivers.Count,
+            message = drivers.Count == 0 ? "No drivers found in database" : "Drivers loaded successfully"
+        });
     }
 
     [HttpGet("by-geographical-entity/{entityId}")]

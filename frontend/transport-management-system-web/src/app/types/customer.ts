@@ -9,11 +9,9 @@ export interface ICustomer {
   matricule: string;
   contact: string;
   sourceSystem?: string;
-
-
+  address?: string;
+  deliveryAddress?: string;
   geographicalEntities?: IGeographicalEntityWithDetails[];
-
-
   createdAt?: Date;
   updatedAt?: Date;
 }

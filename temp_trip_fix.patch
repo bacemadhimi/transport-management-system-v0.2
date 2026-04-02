@@ -1,0 +1,44 @@
+diff --git a/frontend/transport-management-system-web/src/app/pages/trip/trip-form/trip-form.ts b/frontend/transport-management-system-web/src/app/pages/trip/trip-form/trip-form.ts
+index 780d54c..68d1e86 100644
+--- a/frontend/transport-management-system-web/src/app/pages/trip/trip-form/trip-form.ts
++++ b/frontend/transport-management-system-web/src/app/pages/trip/trip-form/trip-form.ts
+@@ -4726,35 +4726,12 @@ getSelectedTruckInfo(): string {
+   }
+ 
+   private processDriverResponse(response: any, date: Date): void {
+-    this.availableDrivers.forEach(driver => {
+-      driver.availabilityStatus = undefined;
+-      driver.availabilityMessage = undefined;
+-      driver.requiresApproval = undefined;
+-      driver.totalHours = undefined;
+-    });
+-   
+-    this.availableDrivers = (response.availableDrivers || []).map((apiDriver: any) => ({
+-      id: apiDriver.driverId,
+-      name: apiDriver.driverName,
+-      permisNumber: apiDriver.permisNumber || '',
+-      phone: apiDriver.phone || '',
+-      email: apiDriver.email || '',
+-      phoneCountry: apiDriver.phoneCountry || '+216',
+-      status: apiDriver.status || 'active',
+-      idCamion: apiDriver.idCamion || null,
+-      isActive: true,
+-      zoneId: apiDriver.zoneId || null,
+-      zoneName: apiDriver.zoneName || '',
+-      availabilityStatus: undefined,
+-      availabilityMessage: undefined,
+-      requiresApproval: undefined,
+-      totalHours: undefined
+-    }));
+-    
++    // ✅ FIX: Keep drivers with names from this.drivers instead of API response
++    const apiDriverIds = (response.availableDrivers || []).map((d: any) => d.driverId);
++    this.availableDrivers = this.drivers.filter(d => apiDriverIds.includes(d.id));
+     this.unavailableDrivers = response.unavailableDrivers || [];
+-    
++    console.log(`✅ Processed: ${this.availableDrivers.length} drivers`);
+     this.handleCurrentDriverForEdit(response);
+-    
+     this.checkNoDriversWarning(date, response);
+   }
+ 

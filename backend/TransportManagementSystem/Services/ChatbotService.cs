@@ -326,7 +326,7 @@ RÉPONSE (en français, professionnel, utile, avec emojis si pertinent) :";
         return new DriverInfo
         {
             IsAvailable = true,
-            DriverName = driver.Name,
+            DriverName = driver.Name ?? string.Empty,
             TripReference = currentTrip?.TripReference ?? "Aucun",
             Status = currentTrip?.TripStatus.ToString() ?? "En attente",
             DeliveriesCount = deliveriesCount
@@ -346,7 +346,7 @@ RÉPONSE (en français, professionnel, utile, avec emojis si pertinent) :";
         return sb.ToString();
     }
 
-    private string BuildPrompt(string userMessage, string context, DriverInfo driverInfo, List<ChatMessage>? history)
+    private string BuildPrompt(string userMessage, string context, DriverInfo driverInfo, List<TransportManagementSystem.Entity.ChatMessage>? history)
     {
         var systemPrompt = @"Tu es un assistant IA intelligent et professionnel pour les chauffeurs de transport routier.
 Tu aides les chauffeurs avec :
@@ -382,7 +382,7 @@ Réponds à la question du chauffeur en utilisant le contexte si disponible.";
         {
             foreach (var msg in history.TakeLast(10)) // Keep last 10 messages
             {
-                messages.Add(new { role = msg.Role, content = msg.Content });
+                messages.Add(new { role = msg.MessageType, content = msg.Message });
             }
         }
 

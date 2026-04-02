@@ -92,12 +92,18 @@ builder.Services.AddScoped<IGeocodingService, GeocodingService>();
 builder.Services.AddHttpClient("Nominatim");
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
 // AI Chatbot services
 builder.Services.AddScoped<IChatbotService, ChatbotService>();
 builder.Services.AddHttpClient("Ollama");
 
+<<<<<<< HEAD
 =======
 >>>>>>> dev
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
 // Notification Hub Service
 builder.Services.AddSingleton<NotificationHubService>();
 
@@ -115,9 +121,13 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 
 =======
 >>>>>>> dev
+=======
+
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
         options.Events = new JwtBearerEvents
         {
             OnMessageReceived = context =>
@@ -128,17 +138,23 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
                 if (!string.IsNullOrEmpty(accessToken) &&
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
                     (path.StartsWithSegments("/triphub") || 
                      path.StartsWithSegments("/gpshub") || 
                      path.StartsWithSegments("/notificationhub")))
                 {
 
+<<<<<<< HEAD
 =======
                     (path.StartsWithSegments("/triphub") ||
                      path.StartsWithSegments("/gpshub") ||
                      path.StartsWithSegments("/notificationhub") || path.StartsWithSegments("/chathub")))
                 {
 >>>>>>> dev
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
                     context.Token = accessToken;
                 }
                 return Task.CompletedTask;
@@ -197,10 +213,15 @@ if (app.Environment.IsDevelopment())
 app.UseRouting();
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 app.UseRouting();
 
 =======
 >>>>>>> dev
+=======
+app.UseRouting();
+
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
 app.UseCors("SignalRCors");
 
 app.UseHttpsRedirection();
@@ -210,9 +231,12 @@ app.UseAuthorization();
 // Map SignalR hubs
 app.MapHub<TripHub>("/triphub");
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 app.MapHub<ChatHub>("/chathub");
 >>>>>>> dev
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
 app.MapHub<GPSHub>("/gpshub");
 app.MapHub<NotificationHub>("/notificationhub");
 

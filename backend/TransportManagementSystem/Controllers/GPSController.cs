@@ -1,16 +1,23 @@
 using Microsoft.AspNetCore.Mvc;
 <<<<<<< HEAD
+<<<<<<< HEAD
 using TransportManagementSystem.Service;
 =======
 >>>>>>> dev
+=======
+using TransportManagementSystem.Service;
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
 using TransportManagementSystem.Models;
 using TransportManagementSystem.Data;
 using TransportManagementSystem.Entity;
 using Microsoft.EntityFrameworkCore;
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 using TransportManagementSystem.Services;
 >>>>>>> dev
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
 
 namespace TransportManagementSystem.Controllers
 {
@@ -523,7 +530,7 @@ namespace TransportManagementSystem.Controllers
                         }
                     }
                 }
-                else if (trip.Traject != null && trip.Traject.Points.Any())
+                else if (trip.Traject != null && trip.Traject.Points != null && trip.Traject.Points.Any())
                 {
                     if (string.IsNullOrWhiteSpace(destinationAddress))
                     {
@@ -686,7 +693,7 @@ namespace TransportManagementSystem.Controllers
                 var count = await _context.GeocodingCache.CountAsync();
                 _context.GeocodingCache.RemoveRange(_context.GeocodingCache);
                 await _context.SaveChangesAsync();
-                
+
                 return Ok(new { message = $"Cache vidé: {count} entrées supprimées" });
             }
             catch (Exception ex)
@@ -695,6 +702,68 @@ namespace TransportManagementSystem.Controllers
                 return StatusCode(500, new { message = "Erreur lors du vidage du cache" });
             }
         }
+
+        /// <summary>
+        /// Mettre à jour les coordonnées de destination d'un voyage
+        /// </summary>
+        [HttpPut("trip-destination/{tripId}")]
+        public async Task<IActionResult> UpdateTripDestination(int tripId, [FromBody] TripDestinationDto dto)
+        {
+            try
+            {
+                var trip = await _context.Trips.FindAsync(tripId);
+                if (trip == null)
+                    return NotFound(new { message = "Voyage non trouvé" });
+
+                // Save destination coordinates
+                trip.EndLatitude = dto.Latitude;
+                trip.EndLongitude = dto.Longitude;
+
+                // Also update the destination address if provided
+                if (!string.IsNullOrWhiteSpace(dto.Address))
+                {
+                    // Try to find and update the last delivery's address
+                    var lastDelivery = await _context.Deliveries
+                        .Where(d => d.TripId == tripId)
+                        .OrderByDescending(d => d.Sequence)
+                        .FirstOrDefaultAsync();
+
+                    if (lastDelivery != null)
+                    {
+                        if (string.IsNullOrWhiteSpace(lastDelivery.DeliveryAddress))
+                        {
+                            lastDelivery.DeliveryAddress = dto.Address;
+                        }
+                    }
+                }
+
+                await _context.SaveChangesAsync();
+
+                _logger.LogInformation($"✅ Destination coordinates saved for trip {tripId}: {dto.Latitude}, {dto.Longitude}");
+
+                return Ok(new
+                {
+                    success = true,
+                    tripId = tripId,
+                    latitude = dto.Latitude,
+                    longitude = dto.Longitude,
+                    address = dto.Address
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error updating trip destination: {ex.Message}");
+                return StatusCode(500, new { message = "Erreur lors de la mise à jour" });
+            }
+        }
+    }
+
+    // DTO for updating trip destination
+    public class TripDestinationDto
+    {
+        public double Latitude { get; set; }
+        public double Longitude { get; set; }
+        public string Address { get; set; } = string.Empty;
     }
 
     // Helper class for Nominatim API response

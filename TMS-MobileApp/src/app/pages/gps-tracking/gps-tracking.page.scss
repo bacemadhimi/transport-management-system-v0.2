@@ -1,5 +1,8 @@
 .gps-tracking-content {
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
   --background: #f8fafc;
 
   // Header toolbar styling - VISIBLE
@@ -215,6 +218,7 @@
           font-size: 13px;
           color: #94a3b8;
         }
+<<<<<<< HEAD
 =======
   --background: #0a0a0a;
   position: relative;
@@ -253,11 +257,16 @@
         color: #ff8c00;
         animation: pulse 1.5s infinite;
 >>>>>>> dev
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
       }
     }
   }
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
   .map-wrapper {
     position: relative;
     height: 500px;
@@ -271,6 +280,7 @@
     display: block;
     visibility: visible;
     opacity: 1;
+<<<<<<< HEAD
 =======
   // Map Wrapper
   .map-wrapper {
@@ -285,11 +295,16 @@
     border: 1px solid rgba(255, 140, 0, 0.3);
     background: #1a1a1a;
 >>>>>>> dev
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
 
     #map {
       width: 100%;
       height: 100%;
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
       z-index: 1;
       display: block;
       visibility: visible;
@@ -297,6 +312,7 @@
       background: #e5e7eb;
     }
 
+<<<<<<< HEAD
 =======
       background: #2a2a2a;
       z-index: 1;
@@ -308,12 +324,17 @@
 
     // Overlay Info Card
 >>>>>>> dev
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
     .map-overlay {
       position: absolute;
       top: 12px;
       left: 12px;
       right: 12px;
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
       z-index: 1000;
 
       .info-card {
@@ -327,6 +348,7 @@
 
         ion-card-content {
           padding: 12px;
+<<<<<<< HEAD
 =======
       z-index: 100;
 
@@ -341,24 +363,34 @@
         ion-card-content {
           padding: 16px;
 >>>>>>> dev
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
 
           .info-header {
             display: flex;
             justify-content: space-around;
 <<<<<<< HEAD
+<<<<<<< HEAD
             margin-bottom: 8px;
 =======
             margin-bottom: 12px;
 >>>>>>> dev
+=======
+            margin-bottom: 8px;
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
 
             .info-item {
               display: flex;
               align-items: center;
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
               gap: 8px;
 
               ion-icon {
                 font-size: 24px;
+<<<<<<< HEAD
 =======
               gap: 12px;
 
@@ -366,11 +398,16 @@
                 font-size: 28px;
                 color: #ff8c00;
 >>>>>>> dev
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
               }
 
               .info-label {
                 font-size: 11px;
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
                 color: #718096;
                 margin-bottom: 2px;
               }
@@ -379,6 +416,7 @@
                 font-size: 16px;
                 font-weight: 700;
                 color: #2d3748;
+<<<<<<< HEAD
 =======
                 color: #ff8c00;
                 font-weight: 600;
@@ -392,6 +430,8 @@
                 font-weight: 700;
                 color: #ffffff;
 >>>>>>> dev
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
               }
             }
           }
@@ -401,6 +441,9 @@
             align-items: center;
             justify-content: center;
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
             gap: 6px;
             padding: 8px;
             background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
@@ -418,6 +461,7 @@
               font-size: 14px;
               font-weight: 700;
               color: #2d3748;
+<<<<<<< HEAD
 =======
             gap: 8px;
             padding: 10px;
@@ -440,6 +484,8 @@
                 font-weight: 700;
               }
 >>>>>>> dev
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
             }
           }
 
@@ -448,6 +494,9 @@
             align-items: center;
             justify-content: center;
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
             gap: 4px;
             font-size: 11px;
             color: #718096;
@@ -456,6 +505,7 @@
             ion-icon {
               font-size: 12px;
               color: #48bb78;
+<<<<<<< HEAD
 =======
             gap: 6px;
             font-size: 11px;
@@ -465,6 +515,8 @@
               font-size: 12px;
               color: #ff8c00;
 >>>>>>> dev
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
             }
           }
         }
@@ -472,6 +524,7 @@
     }
   }
 
+<<<<<<< HEAD
 <<<<<<< HEAD
   .destination-info {
     margin: 0 16px 16px;
@@ -660,10 +713,13 @@
   }
 
   // Destination Info Section
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
   .destination-info {
     margin: 0 16px 16px;
 
     ion-card {
+<<<<<<< HEAD
       --background: rgba(0, 0, 0, 0.85);
       border-radius: 20px;
       box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
@@ -672,10 +728,19 @@
 
       ion-card-header {
         padding-bottom: 8px;
+=======
+      --border-radius: 12px;
+      box-shadow: 0 2px 12px rgba(102, 126, 234, 0.1);
+      margin: 0;
+
+      ion-card-header {
+        padding-bottom: 12px;
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
 
         ion-card-title {
           display: flex;
           align-items: center;
+<<<<<<< HEAD
           gap: 10px;
           font-size: 16px;
           font-weight: 600;
@@ -685,6 +750,16 @@
             font-size: 20px;
             color: #ff8c00;
 >>>>>>> dev
+=======
+          gap: 8px;
+          font-size: 16px;
+          font-weight: 600;
+          color: #2d3748;
+
+          ion-icon {
+            color: #667eea;
+            font-size: 20px;
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
           }
         }
       }
@@ -696,6 +771,9 @@
             align-items: center;
             gap: 12px;
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
             padding: 8px 0;
             font-size: 14px;
             color: #4a5568;
@@ -703,6 +781,7 @@
             &:first-child {
               font-weight: 600;
               color: #2d3748;
+<<<<<<< HEAD
 =======
             padding: 10px 0;
             font-size: 14px;
@@ -717,10 +796,13 @@
               font-weight: 600;
               color: #ffffff;
 >>>>>>> dev
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
             }
 
             ion-icon {
               font-size: 18px;
+<<<<<<< HEAD
 <<<<<<< HEAD
               color: #667eea;
               width: 20px;
@@ -733,6 +815,10 @@
               flex: 1;
               word-break: break-word;
 >>>>>>> dev
+=======
+              color: #667eea;
+              width: 20px;
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
             }
           }
         }
@@ -740,6 +826,9 @@
     }
   }
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
 
   .actions-section {
     padding: 0 16px 32px;
@@ -766,6 +855,7 @@
       border-radius: 16px;
       box-shadow: 0 4px 20px rgba(76, 175, 80, 0.3);
       animation: celebrate 0.5s ease-in-out;
+<<<<<<< HEAD
 =======
 }
 
@@ -787,10 +877,13 @@ ion-header {
     
     ion-button {
       --color: #000000;
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
     }
   }
 }
 
+<<<<<<< HEAD
 // ==================== ANIMATIONS ====================
 
 @keyframes pulse {
@@ -970,6 +1063,8 @@ ion-header {
 }
 
 <<<<<<< HEAD
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
 // ==================== WHITE TRUCK STYLES ====================
 
 // Voice navigation button animations - MODERN PROFESSIONAL
@@ -1057,6 +1152,7 @@ ion-header {
   100% {
     transform: scale(1);
     opacity: 1;
+<<<<<<< HEAD
 =======
 // ==================== SAFE AREA ====================
 
@@ -1087,5 +1183,7 @@ ion-header {
       background: #2a2a2a;
     }
 >>>>>>> dev
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
   }
 }

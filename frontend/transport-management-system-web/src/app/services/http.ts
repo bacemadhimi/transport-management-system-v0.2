@@ -186,9 +186,18 @@ private formatDateForApi(date: string | Date): string {
 }
 
 getDrivers(): Observable<IDriver[]> {
+  console.log('📡 HTTP SERVICE: Calling /api/Drivers/list...');
   return this.http.get<IDriver[]>(`${environment.apiUrl}/api/Drivers/list`).pipe(
+    tap(response => {
+      console.log('✅ HTTP SERVICE: Drivers response received:', response);
+      console.log('✅ HTTP SERVICE: Drivers count:', response ? response.length : 0);
+      if (response && response.length > 0) {
+        console.log('✅ HTTP SERVICE: First driver:', response[0]);
+      }
+    }),
     catchError(error => {
-      console.error('Error loading drivers:', error);
+      console.error('❌ HTTP SERVICE: Error loading drivers:', error);
+      console.error('❌ HTTP SERVICE: Error details:', JSON.stringify(error, null, 2));
       return of([]);
     })
   );
@@ -1457,6 +1466,15 @@ getWeatherForTrip(startLocationId: number, endLocationId: number): Observable<an
 getWeatherForecast(cityName: string): Observable<any> {
   return this.http.get(`${environment.apiUrl}/api/Weather/forecast?q=${encodeURIComponent(cityName)}`);
 }
+
+getWeatherByCity(cityName: string): Observable<any> {
+  return this.http.get(`${environment.apiUrl}/api/Weather?city=${encodeURIComponent(cityName)}`);
+}
+
+getActiveZones(): Observable<any[]> {
+  return this.http.get<any[]>(`${environment.apiUrl}/api/GeographicalEntities/active`);
+}
+
 getTodayTripCount(): Observable<any> {
   return this.http.get(`${environment.apiUrl}/api/trips/today-count`);
 }

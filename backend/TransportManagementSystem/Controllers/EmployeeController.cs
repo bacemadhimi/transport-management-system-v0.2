@@ -530,7 +530,7 @@ public class EmployeeController : ControllerBase
         return File(fileBytes, GetMimeType(employee.AttachmentFileType), fileName);
     }
 
-    private string GetMimeType(string fileExtension)
+    private string GetMimeType(string? fileExtension)
     {
         return fileExtension?.ToLower() switch
         {
@@ -665,7 +665,7 @@ public class EmployeeController : ControllerBase
         }
 
         // Check if already enabled
-        if (employee.IsEnable)
+        if (employee.IsEnable == true)
         {
             return Ok(new ApiResponse(true, $"Employé {id} est déjà activé", employee));
         }

@@ -36,8 +36,6 @@ import { GeneralSettings } from './pages/general-settings/general-settings';
 import { LiveGPSTrackingPage } from './pages/live-gps-tracking/live-gps-tracking.page';
 
 import { WarehousePlantItComponent } from './pages/warehouse/warehouse';
-
-import { LiveGPSTrackingPage } from './pages/live-gps-tracking/live-gps-tracking.page';
 import { StorageLocationDetailsComponent } from './pages/storage-location-details/storage-location-details';
 
 
@@ -218,6 +216,7 @@ export const routes: Routes = [
     canActivate: [AuthGuard],
   },
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
   
   {
@@ -226,6 +225,8 @@ export const routes: Routes = [
     canActivate: [AuthGuard],
   },
 >>>>>>> dev
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
   {
     path: '**',
     redirectTo: 'login'

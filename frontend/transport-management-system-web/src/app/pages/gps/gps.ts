@@ -64,6 +64,9 @@ export class GpsPage implements OnInit, OnDestroy, AfterViewInit {
     this.signalR.connectionStatus$.subscribe(connected => {
       this.isRealTimeConnected = connected;
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
       console.log('📡 SignalR connection state:', connected);
       
       // Refresh trips when connection is established
@@ -75,17 +78,21 @@ export class GpsPage implements OnInit, OnDestroy, AfterViewInit {
     });
 
     // Refresh data every 10 seconds
+<<<<<<< HEAD
 =======
       console.log('SignalR connection state:', connected);
     });
 
 >>>>>>> dev
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
     this.refreshInterval = setInterval(() => {
       this.refreshData();
     }, 10000);
   }
 
   connectToSignalR() {
+<<<<<<< HEAD
 <<<<<<< HEAD
     console.log('🔌 Connecting to SignalR for real-time GPS tracking...');
     
@@ -101,6 +108,10 @@ export class GpsPage implements OnInit, OnDestroy, AfterViewInit {
     }, 1000);
 
 >>>>>>> dev
+=======
+    console.log('🔌 Connecting to SignalR for real-time GPS tracking...');
+    
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
     // Listen for GPS positions
     this.signalR.onGPSPosition((position: any) => {
       console.log('📍 GPS Position received:', position);
@@ -116,10 +127,14 @@ export class GpsPage implements OnInit, OnDestroy, AfterViewInit {
     // Listen for active trips
     this.signalR.onActiveTrips((trips: any[]) => {
 <<<<<<< HEAD
+<<<<<<< HEAD
       console.log('🚛 Active trips received via SignalR:', trips.length);
 =======
       console.log('🚛 Active trips received:', trips.length);
 >>>>>>> dev
+=======
+      console.log('🚛 Active trips received via SignalR:', trips.length);
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
       // Update trips with real-time data
       trips.forEach(trip => {
         const existingTrip = this.trips.find(t => t.id === trip.id);
@@ -135,6 +150,9 @@ export class GpsPage implements OnInit, OnDestroy, AfterViewInit {
 
   ngAfterViewInit() {
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
     console.log('🗺️ ngAfterViewInit called - waiting for view to be ready...');
     
     // Wait for view to be fully rendered and map container to have dimensions
@@ -166,6 +184,7 @@ export class GpsPage implements OnInit, OnDestroy, AfterViewInit {
       setTimeout(() => this.initMap(), 500);
       return;
     }
+<<<<<<< HEAD
 =======
     setTimeout(() => this.initMap(), 500);
   }
@@ -173,6 +192,8 @@ export class GpsPage implements OnInit, OnDestroy, AfterViewInit {
   initMap() {
     if (this.map) return;
 >>>>>>> dev
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
 
     // Configure Leaflet icons to fix default marker icon issues
     this.configureLeafletIcons();
@@ -195,18 +216,24 @@ export class GpsPage implements OnInit, OnDestroy, AfterViewInit {
       if (this.map) {
         this.map.invalidateSize();
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
         console.log('✅ Map size invalidated');
       }
     }, 300);
 
     // Load initial data
     console.log('✅ Map initialized successfully');
+<<<<<<< HEAD
 =======
       }
     }, 300);
 
     console.log('Map initialized');
 >>>>>>> dev
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
     this.refreshData();
   }
 
@@ -225,22 +252,31 @@ export class GpsPage implements OnInit, OnDestroy, AfterViewInit {
 
   handleRealTimePosition(position: any) {
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
     console.log('📍 Real-time position received:', position);
     
     // Add or update position - match by driverId OR truckId OR by trip ID (which mobile sends as driverId/truckId)
     const exists = this.positions.find(p =>
       p.driverId === position.driverId ||
+<<<<<<< HEAD
 =======
     // Add or update position - match by driverId OR truckId OR by trip ID (which mobile sends as driverId/truckId)
     const exists = this.positions.find(p => 
       p.driverId === position.driverId || 
 >>>>>>> dev
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
       p.truckId === position.truckId ||
       p.driverId === position.truckId
     );
     if (!exists) {
       this.positions.push(position);
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
       console.log('✅ New real-time position added:', position);
     } else {
       const index = this.positions.findIndex(p =>
@@ -265,6 +301,7 @@ export class GpsPage implements OnInit, OnDestroy, AfterViewInit {
     this.loadTrips();
     this.loadLatestPositions();
     // updateTripMarkersOnMap will be called automatically when trips are loaded
+<<<<<<< HEAD
 =======
       console.log('New real-time position added:', position);
     } else {
@@ -284,11 +321,16 @@ export class GpsPage implements OnInit, OnDestroy, AfterViewInit {
     this.loadLatestPositions();
     if (this.map) this.updateTripMarkersOnMap();
 >>>>>>> dev
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
   }
 
   updateTripMarkersOnMap() {
     if (!this.map) {
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
       console.error('❌ Map not initialized! Waiting...');
       // Retry after 500ms if map is not ready
       setTimeout(() => {
@@ -298,9 +340,12 @@ export class GpsPage implements OnInit, OnDestroy, AfterViewInit {
           console.error('❌ Map still not initialized after retry');
         }
       }, 500);
+<<<<<<< HEAD
 =======
       console.error('❌ Map not initialized!');
 >>>>>>> dev
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
       return;
     }
 
@@ -317,6 +362,9 @@ export class GpsPage implements OnInit, OnDestroy, AfterViewInit {
     const activeTrips = this.trips.filter(t =>
       t.tripStatus === 'DeliveryInProgress' ||
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
       t.tripStatus === 'LoadingInProgress' ||
       t.tripStatus === 'Accepted'
     );
@@ -327,6 +375,7 @@ export class GpsPage implements OnInit, OnDestroy, AfterViewInit {
     if (activeTrips.length === 0) {
       console.log('⚠️ No active trips to display on map');
       console.log('💡 Available trips:', this.trips.map(t => `${t.tripReference} - ${t.tripStatus}`));
+<<<<<<< HEAD
 =======
       t.tripStatus === 'LoadingInProgress'
     );
@@ -336,6 +385,8 @@ export class GpsPage implements OnInit, OnDestroy, AfterViewInit {
     if (activeTrips.length === 0) {
       console.log('⚠️ No active trips to display on map');
 >>>>>>> dev
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
       return;
     }
 
@@ -505,12 +556,17 @@ export class GpsPage implements OnInit, OnDestroy, AfterViewInit {
       // Add all delivery points
       deliveries.forEach((delivery: any, deliveryIndex: number) => {
 <<<<<<< HEAD
+<<<<<<< HEAD
         let deliveryLat: number = 0;
         let deliveryLng: number = 0;
 =======
         let deliveryLat: number | null = null;
         let deliveryLng: number | null = null;
 >>>>>>> dev
+=======
+        let deliveryLat: number = 0;
+        let deliveryLng: number = 0;
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
         const isLast = deliveryIndex === deliveries.length - 1;
 
         console.log(`    Delivery ${deliveryIndex + 1}/${deliveries.length}:`, {
@@ -518,6 +574,9 @@ export class GpsPage implements OnInit, OnDestroy, AfterViewInit {
           geolocation: delivery.geolocation,
           lat: delivery.latitude,
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
           lng: delivery.longitude,
           isLast: isLast
         });
@@ -535,6 +594,7 @@ export class GpsPage implements OnInit, OnDestroy, AfterViewInit {
             } else {
               console.log(`      ⚠️ Invalid geolocation coordinates`);
             }
+<<<<<<< HEAD
 =======
           lng: delivery.longitude
         });
@@ -547,15 +607,21 @@ export class GpsPage implements OnInit, OnDestroy, AfterViewInit {
             deliveryLng = parseFloat(parts[1].trim());
             console.log(`      ✅ From geolocation: ${deliveryLat}, ${deliveryLng}`);
 >>>>>>> dev
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
           }
         }
 
         // Priority 2: latitude/longitude fields
 <<<<<<< HEAD
+<<<<<<< HEAD
         if (deliveryLat === 0 && delivery.latitude && delivery.longitude) {
 =======
         if ((deliveryLat === null || deliveryLng === null) && delivery.latitude && delivery.longitude) {
 >>>>>>> dev
+=======
+        if (deliveryLat === 0 && delivery.latitude && delivery.longitude) {
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
           deliveryLat = delivery.latitude;
           deliveryLng = delivery.longitude;
           console.log(`      ✅ From lat/lng: ${deliveryLat}, ${deliveryLng}`);
@@ -563,21 +629,29 @@ export class GpsPage implements OnInit, OnDestroy, AfterViewInit {
 
         // Priority 3: deliveryLatitude/deliveryLongitude
 <<<<<<< HEAD
+<<<<<<< HEAD
         if (deliveryLat === 0 && delivery.deliveryLatitude && delivery.deliveryLongitude) {
 =======
         if ((deliveryLat === null || deliveryLng === null) && delivery.deliveryLatitude && delivery.deliveryLongitude) {
 >>>>>>> dev
+=======
+        if (deliveryLat === 0 && delivery.deliveryLatitude && delivery.deliveryLongitude) {
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
           deliveryLat = delivery.deliveryLatitude;
           deliveryLng = delivery.deliveryLongitude;
           console.log(`      ✅ From delivery lat/lng: ${deliveryLat}, ${deliveryLng}`);
         }
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
         // Fallback: use truck position + offset (for display purposes)
         if (deliveryLat === 0) {
           deliveryLat = truckLat + (deliveryIndex + 1) * 0.05;
           deliveryLng = truckLng + (deliveryIndex + 1) * 0.05;
           console.log(`      ⚠️ Using fallback position: ${deliveryLat}, ${deliveryLng}`);
+<<<<<<< HEAD
 =======
         // Fallback: use truck position + offset
         if (deliveryLat === null || deliveryLng === null) {
@@ -585,6 +659,8 @@ export class GpsPage implements OnInit, OnDestroy, AfterViewInit {
           deliveryLng = 10.0 + deliveryIndex * 0.12;
           console.log(`      ⚠️ Using fallback: ${deliveryLat}, ${deliveryLng}`);
 >>>>>>> dev
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
         }
 
         // Create marker
@@ -596,11 +672,15 @@ export class GpsPage implements OnInit, OnDestroy, AfterViewInit {
 
         const deliveryMarker = L.marker([deliveryLat, deliveryLng], { icon: deliveryIcon }).addTo(this.map!);
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
 
         if (isLast) {
           deliveryMarker.bindPopup(`
             <div style="min-width:200px;">
               <b>🏁 DESTINATION FINALE - ${trip.tripReference}</b><br>
+<<<<<<< HEAD
 =======
         
         if (isLast) {
@@ -608,6 +688,8 @@ export class GpsPage implements OnInit, OnDestroy, AfterViewInit {
             <div style="min-width:200px;">
               <b>🏁 DESTINATION FINALE</b><br>
 >>>>>>> dev
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
               <b>Client:</b> ${delivery.customerName || 'N/A'}<br>
               <b>Adresse:</b> ${delivery.deliveryAddress || 'Non définie'}<br>
               <small>Coords: ${deliveryLat.toFixed(4)}, ${deliveryLng.toFixed(4)}</small>
@@ -616,6 +698,9 @@ export class GpsPage implements OnInit, OnDestroy, AfterViewInit {
           console.log(`      🏁 DESTINATION MARKER ADDED at ${deliveryLat}, ${deliveryLng}`);
         } else {
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
           deliveryMarker.bindPopup(`
             <div style="min-width:200px;">
               <b>📦 Point ${deliveryIndex + 1} - ${trip.tripReference}</b><br>
@@ -623,8 +708,11 @@ export class GpsPage implements OnInit, OnDestroy, AfterViewInit {
               <b>Adresse:</b> ${delivery.deliveryAddress || 'Non définie'}
             </div>
           `);
+<<<<<<< HEAD
 =======
 >>>>>>> dev
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
           console.log(`      ✅ Delivery marker ${deliveryIndex + 1} added at ${deliveryLat}, ${deliveryLng}`);
         }
 

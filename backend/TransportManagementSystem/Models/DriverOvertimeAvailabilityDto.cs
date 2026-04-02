@@ -92,17 +92,17 @@ public class DriverTripInfoDto
 public class DriverOvertimeAvailabilityDto
 {
     public int DriverId { get; set; }
-    public string DriverName { get; set; }
-    public string PermisNumber { get; set; }
+    public string DriverName { get; set; } = string.Empty;
+    public string PermisNumber { get; set; } = string.Empty;
     public bool IsAvailable { get; set; }
-    public string Status { get; set; }
-    public string StatusMessage { get; set; }
+    public string Status { get; set; } = string.Empty;
+    public string StatusMessage { get; set; } = string.Empty;
     public decimal TotalHours { get; set; }
     public decimal MaxNormalHours { get; set; }
     public decimal OvertimeHours { get; set; }
     public bool RequiresApproval { get; set; }
-    public string StatusColor { get; set; }
-    public string StatusIcon { get; set; }
+    public string StatusColor { get; set; } = string.Empty;
+    public string StatusIcon { get; set; } = string.Empty;
 }
 
 

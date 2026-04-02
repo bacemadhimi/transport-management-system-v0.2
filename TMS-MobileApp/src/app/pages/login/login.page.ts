@@ -30,6 +30,7 @@ export class LoginPage implements AfterViewInit {
   @ViewChild('usernameInput') usernameInput!: IonInput;
   @ViewChild('passwordInput') passwordInput!: IonInput;
 <<<<<<< HEAD
+<<<<<<< HEAD
  
   apiUrl = 'http://localhost:5191/api/Auth/login';
  
@@ -38,6 +39,11 @@ export class LoginPage implements AfterViewInit {
   apiUrl = environment.apiUrl + '/api/Auth/login';
   
 >>>>>>> dev
+=======
+ 
+  apiUrl = 'http://localhost:5191/api/Auth/login';
+ 
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
   isLoading = false;
   errorMessage = '';
   showPassword = false;
@@ -253,16 +259,22 @@ export class LoginPage implements AfterViewInit {
       }
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
       console.log('📋 Login response:', JSON.stringify(res, null, 2));
 
       // Create auth token object - include driverId if available
       const authToken: any = {
+<<<<<<< HEAD
 =======
       // Save credentials based on platform
       await this.saveCredentials(email, password);
 
       const authToken = {
 >>>>>>> dev
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
         id: res.id,
         email: res.email,
         token: res.token,
@@ -271,6 +283,9 @@ export class LoginPage implements AfterViewInit {
       };
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
       // If driverId is returned in response, save it
       if (res.driverId) {
         authToken.driverId = res.driverId;
@@ -292,12 +307,15 @@ export class LoginPage implements AfterViewInit {
       await this.showToast('Login successful!', 1500);
 
       // Navigate to home
+<<<<<<< HEAD
 =======
       this.authService.saveToken(authToken);
       
       await this.showToast('Login successful!', 1500, 'success');
       this.isLoading = false;
 >>>>>>> dev
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
       setTimeout(() => {
         this.router.navigate(['/home']);
       }, 1500);

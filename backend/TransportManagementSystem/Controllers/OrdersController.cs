@@ -141,6 +141,7 @@ public class OrdersController : ControllerBase
             CustomerId = o.CustomerId,
             CustomerName = o.Customer?.Name,
 <<<<<<< HEAD
+<<<<<<< HEAD
             CustomerMatricule = o.Customer?.Matricule,
             ZoneId = o.Customer?.ZoneId,
             ZoneName = o.Customer?.Zone?.Name,
@@ -148,6 +149,12 @@ public class OrdersController : ControllerBase
 =======
             CustomerMatricule = o.Customer?.Matricule, 
 >>>>>>> dev
+=======
+            CustomerMatricule = o.Customer?.Matricule,
+            // ZoneId = o.Customer?.ZoneId, // Temporarily commented - ZoneId doesn't exist
+            // ZoneName = o.Customer?.Zone?.Name, // Temporarily commented - Zone doesn't exist
+            // CustomerCity = o.Customer?.City, // Temporarily commented - City doesn't exist
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
             DeliveryAddress = o.DeliveryAddress,
             Reference = o.Reference,
             Type = o.Type,
@@ -173,18 +180,22 @@ public class OrdersController : ControllerBase
     {
         var query = _orderRepository.Query()
             .AsNoTracking() // ✅ move early
+            .Include(o => o.Customer)
             .Select(o => new OrderDto
             {
                 Id = o.Id,
                 CustomerId = o.CustomerId,
                 CustomerName = o.Customer != null ? o.Customer.Name : null,
                 CustomerMatricule = o.Customer != null ? o.Customer.Matricule : null,
+                CustomerCity = null,
+                ZoneId = null,
+                ZoneName = null,
                 Reference = o.Reference,
                 Type = o.Type,
                 Weight = o.Weight,
                 WeightUnit = o.WeightUnit,
                 Status = o.Status,
-                SourceSystem = o.SourceSystem, 
+                SourceSystem = o.SourceSystem,
                 CreatedDate = o.CreatedDate,
                 DeliveryDate = o.DeliveryDate
             });
@@ -193,6 +204,7 @@ public class OrdersController : ControllerBase
             .OrderByDescending(o => o.CreatedDate)
             .ToListAsync();
 
+<<<<<<< HEAD
 <<<<<<< HEAD
         var orderDtos = orders.Select(o => new OrderDto
         {
@@ -217,6 +229,9 @@ public class OrdersController : ControllerBase
 =======
         return Ok(new ApiResponse(true, "Commandes récupérées avec succès", data));
 >>>>>>> dev
+=======
+        return Ok(new ApiResponse(true, "Commandes récupérées avec succès", data));
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
     }
 
     [HttpGet("pending")]
@@ -236,16 +251,22 @@ public class OrdersController : ControllerBase
             CustomerName = o.Customer?.Name,
             CustomerMatricule = o.Customer?.Matricule,
 <<<<<<< HEAD
+<<<<<<< HEAD
             CustomerCity = o.Customer?.City,
 
             ZoneId = o.Customer?.ZoneId,
             ZoneName = o.Customer?.Zone?.Name,
 =======
 >>>>>>> dev
+=======
+            CustomerCity = null,
+            ZoneId = null,
+            ZoneName = null,
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
             Reference = o.Reference,
             Type = o.Type,
             Weight = o.Weight,
-            WeightUnit = o.WeightUnit ?? "",
+            WeightUnit = o.WeightUnit,
             Status = o.Status,
             CreatedDate = o.CreatedDate,
             DeliveryAddress = o.DeliveryAddress,

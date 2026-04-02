@@ -1,4 +1,7 @@
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
 import { Routes } from '@angular/router';
 import { LoginPage } from './pages/login/login.page';
 import { HomePage } from './pages/home/home.page';
@@ -65,6 +68,7 @@ export const routes: Routes = [
 
 
   // Future routes will be added here
+<<<<<<< HEAD
 =======
 import { Routes } from '@angular/router';
 import { LoginPage } from './pages/login/login.page';
@@ -112,4 +116,6 @@ export const routes: Routes = [
   }
  
 >>>>>>> dev
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
 ];

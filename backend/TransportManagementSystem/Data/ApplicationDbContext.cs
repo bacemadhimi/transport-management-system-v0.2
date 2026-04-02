@@ -1,11 +1,15 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using TransportManagementSystem.Entity;
 <<<<<<< HEAD
+<<<<<<< HEAD
 using TransportManagementSystem.Models;
 =======
 using TransportManagementSystem.Entity.PlantIt;
 using TransportManagementSystem.Entity.PlantIt.TMS.Models;
 >>>>>>> dev
+=======
+using TransportManagementSystem.Models;
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
 
 namespace TransportManagementSystem.Data
 {
@@ -47,10 +51,12 @@ namespace TransportManagementSystem.Data
         public DbSet<Translation> Translations { get; set; }
         public DbSet<TypeTruck> TypeTrucks { get; set; }
         public DbSet<Employee> Employees { get; set; }
+        public DbSet<Driver> Drivers { get; set; }
         //public DbSet<Category> Categories { get; set; }
         public DbSet<GeneralSettings> GeneralSettings { get; set; }
         public DbSet<Notification> Notifications { get; set; }
         public DbSet<UserNotification> UserNotifications { get; set; }
+<<<<<<< HEAD
 <<<<<<< HEAD
         public DbSet<KnowledgeBase> KnowledgeBases { get; set; }
 =======
@@ -85,15 +91,29 @@ namespace TransportManagementSystem.Data
 
         public DbSet<SyncHistoryPlantItToTms> SyncHistoryPlantItToTms { get; set; }
 >>>>>>> dev
+=======
+        public DbSet<KnowledgeBase> KnowledgeBases { get; set; }
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
         public DbSet<GeocodingCache> GeocodingCache { get; set; }
         public DbSet<PositionGPS> PositionsGPS { get; set; }
         public DbSet<ResultatOptimisation> ResultatOptimisations { get; set; }
         public DbSet<TripAssignment> TripAssignments { get; set; }
+        
+        // Geographical entities
+        public DbSet<GeographicalEntity> GeographicalEntities { get; set; }
+        public DbSet<GeographicalLevel> GeographicalLevels { get; set; }
+        public DbSet<DriverGeographicalEntity> DriverGeographicalEntities { get; set; }
+        public DbSet<CustomerGeographicalEntity> CustomerGeographicalEntities { get; set; }
+        public DbSet<TruckGeographicalEntity> TruckGeographicalEntities { get; set; }
+        public DbSet<Entity.ChatMessage> ChatMessages { get; set; }
 
+<<<<<<< HEAD
 <<<<<<< HEAD
 =======
 
 >>>>>>> dev
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -199,6 +219,13 @@ namespace TransportManagementSystem.Data
                 .HasForeignKey(d => d.OrderId)
                 .OnDelete(DeleteBehavior.NoAction);
 
+            // Fix cascade delete for Maintenances
+            modelBuilder.Entity<Maintenance>()
+                .HasOne(m => m.Trip)
+                .WithMany()
+                .HasForeignKey(m => m.TripId)
+                .OnDelete(DeleteBehavior.Restrict);
+
             modelBuilder.Entity<SyncHistoryDetail>()
                .HasOne(d => d.SyncHistory)
                .WithMany(h => h.Details)
@@ -256,6 +283,9 @@ namespace TransportManagementSystem.Data
                 .OnDelete(DeleteBehavior.Cascade);
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
             // Fix decimal precision warnings
             modelBuilder.Entity<Trip>()
                 .Property(t => t.EstimatedDistance)
@@ -269,6 +299,7 @@ namespace TransportManagementSystem.Data
                 .Property(m => m.OilQuantity)
                 .HasPrecision(18, 2);
 
+<<<<<<< HEAD
 =======
             modelBuilder.Entity<GeographicalLevel>()
            .HasIndex(l => l.LevelNumber)
@@ -313,6 +344,17 @@ namespace TransportManagementSystem.Data
                       .HasForeignKey(m => m.TripId)
                       .OnDelete(DeleteBehavior.Restrict);
 >>>>>>> dev
+=======
+            // Fix decimal precision warnings for GeographicalEntity
+            modelBuilder.Entity<GeographicalEntity>()
+                .Property(g => g.Latitude)
+                .HasPrecision(9, 6);
+
+            modelBuilder.Entity<GeographicalEntity>()
+                .Property(g => g.Longitude)
+                .HasPrecision(9, 6);
+
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
         }
 
         public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)

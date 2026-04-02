@@ -5,9 +5,13 @@ using Microsoft.EntityFrameworkCore;
 using System.Collections.Concurrent;
 using TransportManagementSystem.Services;
 <<<<<<< HEAD
+<<<<<<< HEAD
 using System.Text.Json;
 =======
 >>>>>>> dev
+=======
+using System.Text.Json;
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
 
 namespace TransportManagementSystem.Hubs;
 
@@ -139,6 +143,9 @@ public class GPSHub : Hub
 
     /// <summary>
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
     /// Rejoindre le groupe Tous les Trips (pour web admin)
     /// </summary>
     public async Task JoinAllTripsGroup()
@@ -148,8 +155,11 @@ public class GPSHub : Hub
     }
 
     /// <summary>
+<<<<<<< HEAD
 =======
 >>>>>>> dev
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
     /// Rejoindre le groupe Drivers
     /// </summary>
     public async Task JoinDriverGroup(int driverId)
@@ -255,6 +265,9 @@ public class GPSHub : Hub
     public async Task AcceptTrip(int tripId)
     {
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
         try
         {
             var trip = await _context.Trips
@@ -310,6 +323,7 @@ public class GPSHub : Hub
         {
             _logger.LogError(ex, $"❌ ERROR in AcceptTrip");
             await Clients.Caller.SendAsync("Error", $"Erreur: {ex.Message}");
+<<<<<<< HEAD
 =======
         await UpdateTripStatus(tripId, TripStatus.Accepted.ToString(), "Trip accepté");
         
@@ -334,6 +348,8 @@ public class GPSHub : Hub
                 Timestamp = DateTime.UtcNow
             });
 >>>>>>> dev
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
         }
     }
 
@@ -343,6 +359,9 @@ public class GPSHub : Hub
     public async Task RejectTrip(int tripId, string reason, string reasonCode)
     {
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
         try
         {
             var trip = await _context.Trips
@@ -375,6 +394,7 @@ public class GPSHub : Hub
                 await _context.SaveChangesAsync();
             }
 
+<<<<<<< HEAD
 =======
         await UpdateTripStatus(tripId, TripStatus.Refused.ToString(), reason);
         
@@ -386,12 +406,17 @@ public class GPSHub : Hub
         if (assignment != null)
         {
 >>>>>>> dev
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
             assignment.Status = AssignmentStatus.Rejected;
             assignment.RejectionReason = reason;
             assignment.RejectionReasonCode = reasonCode;
             assignment.RespondedAt = DateTime.UtcNow;
             await _context.SaveChangesAsync();
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
 
             trip.TripStatus = TripStatus.Refused;
             await _context.SaveChangesAsync();
@@ -452,6 +477,7 @@ public class GPSHub : Hub
         {
             _logger.LogError(ex, $"❌ ERROR in RejectTrip");
             await Clients.Caller.SendAsync("Error", $"Erreur: {ex.Message}");
+<<<<<<< HEAD
 =======
             
             // Notifier les admins
@@ -465,6 +491,8 @@ public class GPSHub : Hub
                 Timestamp = DateTime.UtcNow
             });
 >>>>>>> dev
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
         }
     }
 
@@ -532,15 +560,21 @@ public class GPSHub : Hub
         _logger.LogInformation($"GPS Client connected: {Context.ConnectionId}");
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
         // Auto-join BOTH Admins and AllTrips groups for all connections
         await Groups.AddToGroupAsync(Context.ConnectionId, "Admins");
         await Groups.AddToGroupAsync(Context.ConnectionId, "AllTrips");
         
         _logger.LogInformation($"✅ Client {Context.ConnectionId} auto-joined Admins and AllTrips groups");
+<<<<<<< HEAD
 =======
         // Auto-join Admins group for all connections
         await Groups.AddToGroupAsync(Context.ConnectionId, "Admins");
 >>>>>>> dev
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
 
         // Try to get driver ID from JWT claims - check multiple possible claim types
         var userIdClaim = Context.User?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;

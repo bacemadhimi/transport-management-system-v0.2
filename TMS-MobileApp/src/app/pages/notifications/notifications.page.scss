@@ -214,6 +214,16 @@
 }
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+@media (max-width: 360px) {
+  .notification-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
 /* Trip Notification Alert Styling */
 .trip-notification-alert .alert-message {
   white-space: pre-line;
@@ -240,6 +250,7 @@
   color: #16a34a;
   font-weight: 600;
 }
+<<<<<<< HEAD
 =======
 @media (max-width: 360px) {
   .notification-header {
@@ -252,3 +263,5 @@
   }
 }
 >>>>>>> dev
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d

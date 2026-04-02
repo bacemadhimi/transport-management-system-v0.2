@@ -199,10 +199,14 @@ export class NotificationStorageService {
     const unreadCount = notifications.filter(n => !n.isRead).length;
     this.unreadCountSubject.next(unreadCount);
 <<<<<<< HEAD
+<<<<<<< HEAD
 
 =======
     
 >>>>>>> dev
+=======
+
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
     // Update browser badge (if supported)
     if ('setAppBadge' in navigator) {
       if (unreadCount > 0) {
@@ -212,10 +216,14 @@ export class NotificationStorageService {
       }
     }
 <<<<<<< HEAD
+<<<<<<< HEAD
 
 =======
     
 >>>>>>> dev
+=======
+
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
     // Update document title
     if (unreadCount > 0) {
       document.title = `(${unreadCount}) TMS Mobile`;
@@ -224,6 +232,9 @@ export class NotificationStorageService {
     }
   }
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
 
   /**
    * Sync notifications from server (for offline drivers)
@@ -297,6 +308,9 @@ export class NotificationStorageService {
       console.error('❌ Error syncing notifications:', error);
     }
   }
+<<<<<<< HEAD
 =======
 >>>>>>> dev
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
 }

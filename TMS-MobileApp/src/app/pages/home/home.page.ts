@@ -12,6 +12,7 @@ import { Observable, Subscription, of } from 'rxjs';
 import { map, catchError, take } from 'rxjs/operators';
 import { NotificationService } from '../../services/notification.service';
 <<<<<<< HEAD
+<<<<<<< HEAD
 import { GPSTrackingService } from '../../services/gps-tracking.service';
 import { NotificationStorageService } from '../../services/notification-storage.service';
 =======
@@ -20,6 +21,10 @@ import { SignalRChatService } from 'src/app/services/signalr-chat.service';
 import { Network } from '@capacitor/network';
 import { Capacitor } from '@capacitor/core';
 >>>>>>> dev
+=======
+import { GPSTrackingService } from '../../services/gps-tracking.service';
+import { NotificationStorageService } from '../../services/notification-storage.service';
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
 
 @Component({
   selector: 'app-home',
@@ -37,18 +42,24 @@ export class HomePage implements OnInit, OnDestroy {
   notificationService = inject(NotificationService);
   modalController = inject(ModalController);
 <<<<<<< HEAD
+<<<<<<< HEAD
   gpsService = inject(GPSTrackingService);
   notificationStorage = inject(NotificationStorageService);
 =======
   signalRService = inject(SignalRService);
   chatService = inject(SignalRChatService);
 >>>>>>> dev
+=======
+  gpsService = inject(GPSTrackingService);
+  notificationStorage = inject(NotificationStorageService);
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
 
   trips$: Observable<ITrip[]> | null = null;
   totalDistance: number = 0;
   cancelledTripsCount: number = 0;
   unreadNotificationsCount: number = 0;
   private _notifSub: Subscription | null = null;
+<<<<<<< HEAD
 <<<<<<< HEAD
   private _gpsSub: Subscription | null = null;
   private _unreadSub: Subscription | null = null;
@@ -63,15 +74,29 @@ export class HomePage implements OnInit, OnDestroy {
   private networkListener: any;
   pendingUpdates: Map<number, any> = new Map(); // Store pending updates for sync when online
 >>>>>>> dev
+=======
+  private _gpsSub: Subscription | null = null;
+  private _unreadSub: Subscription | null = null;
+  private subscriptions: Subscription[] = []; // Added for compatibility
+
+  // Network status - temporarily default to online
+  isOnline: boolean = true;
+  offlineMode: boolean = false;
+  pendingUpdates: Map<number, any> = new Map();
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
 
   constructor() {}
 
   async ngOnInit() {
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
     this.loadTrips();
     this.notificationService.startPolling(5000);
     this._notifSub = this.notificationService.cancelledCount$.subscribe(count => {
       this.cancelledTripsCount = count;
+<<<<<<< HEAD
 =======
     await this.checkNetworkStatus();
     this.setupNetworkListener();
@@ -213,6 +238,8 @@ export class HomePage implements OnInit, OnDestroy {
         }, 1000);
       }
 >>>>>>> dev
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
     });
 
     // Subscribe to unread count
@@ -393,6 +420,7 @@ export class HomePage implements OnInit, OnDestroy {
     this._unreadSub?.unsubscribe();
     this.notificationService.stopPolling();
 <<<<<<< HEAD
+<<<<<<< HEAD
     this.gpsService.disconnect();
 =======
     if (this.isOnline) {
@@ -402,6 +430,9 @@ export class HomePage implements OnInit, OnDestroy {
       this.networkListener.remove();
     }
 >>>>>>> dev
+=======
+    this.gpsService.disconnect();
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
   }
 
   async loadTrips() {

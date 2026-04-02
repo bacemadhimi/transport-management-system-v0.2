@@ -3,6 +3,7 @@ import { HubConnection, HubConnectionBuilder, HubConnectionState } from '@micros
 import { BehaviorSubject, Observable, Subject } from 'rxjs';
 import { NotificationStorageService, TripNotification } from './notification-storage.service';
 <<<<<<< HEAD
+<<<<<<< HEAD
 
 const API_URL = 'http://localhost:5191';
 =======
@@ -10,6 +11,10 @@ import { environment } from 'src/environments/environment';
 
 const API_URL = environment.apiUrl;
 >>>>>>> dev
+=======
+
+const API_URL = 'http://localhost:5191';
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
 
 export interface GPSPosition {
   driverId?: number;
@@ -388,6 +393,9 @@ export class GPSTrackingService {
    */
   public async acceptTrip(tripId: number): Promise<void> {
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
     console.log('📢📢📢 acceptTrip called with tripId:', tripId);
     console.log('📢 HubConnection state:', this.hubConnection?.state);
     
@@ -412,6 +420,7 @@ export class GPSTrackingService {
       
     } catch (error) {
       console.error('❌❌❌ Error accepting trip:', error);
+<<<<<<< HEAD
 =======
     if (!this.hubConnection) return;
 
@@ -421,12 +430,17 @@ export class GPSTrackingService {
     } catch (error) {
       console.error('Error accepting trip:', error);
 >>>>>>> dev
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
       throw error;
     }
   }
 
   /**
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
    * Fallback: Save acceptance directly to database
    */
   private async saveAcceptanceToDatabase(tripId: number): Promise<void> {
@@ -485,6 +499,7 @@ export class GPSTrackingService {
       
     } catch (error) {
       console.error('❌❌❌ Error rejecting trip:', error);
+<<<<<<< HEAD
 =======
    * Refuser un trip
    */
@@ -497,12 +512,17 @@ export class GPSTrackingService {
     } catch (error) {
       console.error('Error rejecting trip:', error);
 >>>>>>> dev
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
       throw error;
     }
   }
 
   /**
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
    * Fallback: Save rejection directly to database
    */
   private async saveRejectionToDatabase(tripId: number, reason: string, reasonCode: string): Promise<void> {
@@ -527,8 +547,11 @@ export class GPSTrackingService {
   }
 
   /**
+<<<<<<< HEAD
 =======
 >>>>>>> dev
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
    * Démarrer le chargement
    */
   public async startLoading(tripId: number): Promise<void> {

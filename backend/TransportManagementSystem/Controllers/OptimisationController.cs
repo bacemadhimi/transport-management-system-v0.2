@@ -1,11 +1,16 @@
 using Microsoft.AspNetCore.Mvc;
 <<<<<<< HEAD
+<<<<<<< HEAD
 using TransportManagementSystem.Service;
 using TransportManagementSystem.Models;
 =======
 using TransportManagementSystem.Models;
 using TransportManagementSystem.Services;
 >>>>>>> dev
+=======
+using TransportManagementSystem.Service;
+using TransportManagementSystem.Models;
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
 
 namespace TransportManagementSystem.Controllers
 {

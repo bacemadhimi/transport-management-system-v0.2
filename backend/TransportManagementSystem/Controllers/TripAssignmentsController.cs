@@ -49,12 +49,17 @@ public class TripAssignmentsController : ControllerBase
                 return NotFound(new { message = "Trip non trouvé" });
 
 <<<<<<< HEAD
+<<<<<<< HEAD
             var driver = await _context.Drivers.FindAsync(request.DriverId);
 =======
             var driver = await _context.Set<Driver>().FindAsync(request.DriverId);
 >>>>>>> dev
+=======
+            // Driver is now stored in Users table, find by user_id in Employees table
+            var driver = await _context.Drivers.FirstOrDefaultAsync(d => d.user_id == request.DriverId);
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
             if (driver == null)
-                return NotFound(new { message = "Chauffeur non trouvé" });
+                return NotFound(new { message = $"Chauffeur non trouvé (UserId: {request.DriverId})" });
 
             // Créer l'assignment
             var assignment = new TripAssignment
@@ -113,6 +118,9 @@ public class TripAssignmentsController : ControllerBase
             _logger.LogInformation($"📨 Sending notification to User ID {userIdForNotification} and group driver-{request.DriverId}");
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
             // ✅ SAUVEGARDER LA NOTIFICATION EN BASE DE DONNÉES (pour persistance)
             // IMPORTANT: Use DriverId as UserId so driver can retrieve notification when reconnecting
             var notificationEntity = new Notification
@@ -169,6 +177,7 @@ public class TripAssignmentsController : ControllerBase
             // await _gpsHub.Clients.Group($"driver-{request.DriverId}").SendAsync("NewTripAssigned", notification);
 
             // Broadcast to admins only (they need to know)
+<<<<<<< HEAD
 =======
             // Method 1: Send to User ID (SignalR uses JWT User ID)
             await _gpsHub.Clients.User(userIdForNotification.ToString()).SendAsync("NewTripAssigned", notification);
@@ -180,6 +189,8 @@ public class TripAssignmentsController : ControllerBase
 
             // Broadcast à tous les admins
 >>>>>>> dev
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
             await _gpsHub.Clients.Group("Admins").SendAsync("TripAssigned", new
             {
                 tripId = trip.Id,
@@ -271,15 +282,20 @@ public class TripAssignmentsController : ControllerBase
                 a.Id,
                 a.TripId,
 <<<<<<< HEAD
+<<<<<<< HEAD
                 TripReference = a.Trip.TripReference,
 =======
                 TripReference = a.Trip != null ? a.Trip.TripReference : null,
 >>>>>>> dev
+=======
+                TripReference = a.Trip != null ? a.Trip.TripReference : string.Empty,
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
                 Status = a.Status.ToString(),
                 a.AssignedAt,
                 a.RespondedAt,
                 a.ExpiresAt,
                 RejectionReason = a.RejectionReason,
+<<<<<<< HEAD
 <<<<<<< HEAD
                 TripStatus = a.Trip.TripStatus.ToString(),
                 TruckImmatriculation = a.Trip.Truck.Immatriculation,
@@ -289,6 +305,11 @@ public class TripAssignmentsController : ControllerBase
                 TruckImmatriculation = a.Trip != null && a.Trip.Truck != null ? a.Trip.Truck.Immatriculation : null,
                 DeliveriesCount = a.Trip != null ? a.Trip.Deliveries.Count : 0
 >>>>>>> dev
+=======
+                TripStatus = a.Trip != null ? a.Trip.TripStatus.ToString() : string.Empty,
+                TruckImmatriculation = a.Trip != null && a.Trip.Truck != null ? a.Trip.Truck.Immatriculation : string.Empty,
+                DeliveriesCount = a.Trip != null && a.Trip.Deliveries != null ? a.Trip.Deliveries.Count : 0
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
             })
             .ToListAsync();
 
@@ -314,10 +335,14 @@ public class TripAssignmentsController : ControllerBase
                 DriverId = a.DriverId,
                 DriverName = a.Driver != null ? a.Driver.Name : null,
 <<<<<<< HEAD
+<<<<<<< HEAD
                 DriverPhone = a.Driver != null ? a.Driver.Phone : null,
 =======
                 DriverPhone = a.Driver != null ? a.Driver.PhoneNumber : null,
 >>>>>>> dev
+=======
+                DriverPhone = a.Driver != null ? a.Driver.Phone : null,
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
                 a.AssignedAt,
                 a.ExpiresAt,
                 IsExpired = a.ExpiresAt < DateTime.UtcNow

@@ -1,4 +1,5 @@
 <<<<<<< HEAD
+<<<<<<< HEAD
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 =======
@@ -8,24 +9,32 @@ using System.ComponentModel.DataAnnotations.Schema;
 public class Driver : Employee
 {
 <<<<<<< HEAD
+=======
+﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+using TransportManagementSystem.Entity;
+
+public class Driver : Employee
+{
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
     [Key]
-    public int Id { get; set; }
+    public new int Id { get; set; }
     [Required]
-    public string? Name { get; set; }
+    public new string? Name { get; set; }
     [Required]
     [EmailAddress]
-    public string Email { get; set; }
-    public string PermisNumber { get; set; }
-    public string Phone { get; set; }
-    public string Status { get; set; }
+    public new string Email { get; set; }
+    public string PermisNumber { get; set; } = string.Empty;
+    public string Phone { get; set; } = string.Empty;
+    public string Status { get; set; } = string.Empty;
     public int IdCamion { get; set; }
-    public string phoneCountry { get; set; }
 
     // ✅ FIX PERMANENT: Link to User table for authentication
     [ForeignKey("User")]
     public int? user_id { get; set; }
     public virtual User? User { get; set; }
 
+<<<<<<< HEAD
 =======
     public Driver()
     {
@@ -34,7 +43,9 @@ public class Driver : Employee
     public string? Status { get; set; }
     public int? IdCamion { get; set; }
 >>>>>>> dev
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
     public virtual ICollection<DriverAvailability>? Availabilities { get; set; }
     public string? ImageBase64 { get; set; }
-    public virtual ICollection<DriverGeographicalEntity> DriverGeographicalEntities { get; set; } = new List<DriverGeographicalEntity>();
+    public new virtual ICollection<DriverGeographicalEntity> DriverGeographicalEntities { get; set; } = new List<DriverGeographicalEntity>();
 }

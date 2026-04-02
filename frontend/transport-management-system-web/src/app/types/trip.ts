@@ -56,9 +56,12 @@ export interface IDelivery {
   proofOfDelivery?: string;
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 
 >>>>>>> dev
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
   // Relations (optionnelles)
   customer?: ICustomer;
   order?: IOrder;

@@ -1,5 +1,8 @@
 <ion-header>
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
   <ion-toolbar color="primary">
     <ion-buttons slot="start">
       <ion-back-button defaultHref="/home"></ion-back-button>
@@ -113,6 +116,7 @@
       </ion-button>
       <ion-button (click)="refreshPosition()" style="opacity: 1 !important; visibility: visible !important;">
         <ion-icon slot="icon-only" name="refresh" style="color: white !important; font-size: 22px;"></ion-icon>
+<<<<<<< HEAD
 =======
   <ion-toolbar style="--background: linear-gradient(135deg, #ff8c00, #ffcc00); --color: #000000;">
     <ion-buttons slot="start">
@@ -123,6 +127,8 @@
       <ion-button (click)="refreshPosition()" style="--color: #000000;">
         <ion-icon slot="icon-only" name="refresh"></ion-icon>
 >>>>>>> dev
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
       </ion-button>
     </ion-buttons>
   </ion-toolbar>
@@ -147,10 +153,14 @@
           <div class="info-header">
             <div class="info-item">
 <<<<<<< HEAD
+<<<<<<< HEAD
               <ion-icon name="speedometer" color="primary"></ion-icon>
 =======
               <ion-icon name="speedometer" class="icon-orange"></ion-icon>
 >>>>>>> dev
+=======
+              <ion-icon name="speedometer" color="primary"></ion-icon>
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
               <div>
                 <div class="info-label">Vitesse</div>
                 <div class="info-value">{{ speed | number:'1.0-0' }} km/h</div>
@@ -159,10 +169,14 @@
 
             <div class="info-item">
 <<<<<<< HEAD
+<<<<<<< HEAD
               <ion-icon name="navigate" color="secondary"></ion-icon>
 =======
               <ion-icon name="navigate" class="icon-orange"></ion-icon>
 >>>>>>> dev
+=======
+              <ion-icon name="navigate" color="secondary"></ion-icon>
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
               <div>
                 <div class="info-label">Distance</div>
                 <div class="info-value">{{ getDistanceRemaining() }} km</div>
@@ -172,6 +186,9 @@
 
           <div class="info-footer">
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
             <ion-icon name="time" color="tertiary"></ion-icon>
             <span>Temps estimé: <strong>{{ getEstimatedTime() }}</strong></span>
           </div>
@@ -183,6 +200,7 @@
 
           <div class="accuracy-info" *ngIf="accuracy">
             <ion-icon name="location"></ion-icon>
+<<<<<<< HEAD
 =======
             <ion-icon name="time" class="icon-orange"></ion-icon>
             <span>Temps estimé: <strong>{{ getEstimatedTime() }}</strong></span>
@@ -191,6 +209,8 @@
           <div class="accuracy-info" *ngIf="accuracy">
             <ion-icon name="location" class="icon-orange"></ion-icon>
 >>>>>>> dev
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
             <span>Précision: {{ accuracy | number:'1.0-0' }}m</span>
             <span *ngIf="lastUpdate">• {{ lastUpdate | date:'HH:mm:ss' }}</span>
           </div>
@@ -205,10 +225,14 @@
       <ion-card-header>
         <ion-card-title>
 <<<<<<< HEAD
+<<<<<<< HEAD
           <ion-icon name="clipboard"></ion-icon>
 =======
           <ion-icon name="clipboard" class="icon-orange"></ion-icon>
 >>>>>>> dev
+=======
+          <ion-icon name="clipboard"></ion-icon>
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
           État de la Mission
         </ion-card-title>
         <ion-card-subtitle>{{ tripReference }}</ion-card-subtitle>
@@ -225,6 +249,9 @@
 
         <div class="status-actions">
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
           <!-- Bouton ACCEPTER - Style Moderne -->
           <ion-button
             *ngIf="missionStatus === 'pending'"
@@ -279,6 +306,7 @@
           >
             <ion-icon slot="start" name="checkmark-done-circle-outline"></ion-icon>
             Terminer la Livraison
+<<<<<<< HEAD
 =======
           <!-- Bouton ACCEPTER -->
           <ion-button
@@ -335,12 +363,17 @@
             <ion-icon slot="start" name="checkmark-done-circle"></ion-icon>
             Livraison Terminée
 >>>>>>> dev
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
           </ion-button>
 
           <!-- Message MISSION TERMINEE -->
           <ion-card
             *ngIf="missionStatus === 'completed'"
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
             color="success"
             class="completed-card"
           >
@@ -348,6 +381,7 @@
               <ion-icon name="checkmark-done-circle" style="font-size: 48px; margin-bottom: 8px;"></ion-icon>
               <h3 style="margin: 0;">🎉 Mission Terminée !</h3>
               <p style="margin: 8px 0 0 0; opacity: 0.8;">Merci pour votre travail</p>
+<<<<<<< HEAD
 =======
             class="completed-card"
           >
@@ -356,6 +390,8 @@
               <h3>🎉 Mission Terminée !</h3>
               <p>Merci pour votre travail</p>
 >>>>>>> dev
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
             </ion-card-content>
           </ion-card>
         </div>
@@ -369,10 +405,14 @@
       <ion-card-header>
         <ion-card-title>
 <<<<<<< HEAD
+<<<<<<< HEAD
           <ion-icon name="location"></ion-icon>
 =======
           <ion-icon name="location" class="icon-orange"></ion-icon>
 >>>>>>> dev
+=======
+          <ion-icon name="location"></ion-icon>
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
           Destination Finale
         </ion-card-title>
       </ion-card-header>
@@ -380,12 +420,16 @@
         <div class="destination-details">
           <div class="destination-row">
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
             <ion-icon name="map"></ion-icon>
             <span>{{ destination.address }}</span>
           </div>
           <div class="destination-row">
             <ion-icon name="navigate"></ion-icon>
             <span>Coordinates: {{ destination.lat.toFixed(4) }}, {{ destination.lng.toFixed(4) }}</span>
+<<<<<<< HEAD
 =======
             <ion-icon name="map" class="icon-orange"></ion-icon>
             <span>{{ destination.address }}</span>
@@ -394,6 +438,8 @@
             <ion-icon name="navigate" class="icon-orange"></ion-icon>
             <span>Coordonnées: {{ destination.lat.toFixed(4) }}, {{ destination.lng.toFixed(4) }}</span>
 >>>>>>> dev
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
           </div>
         </div>
       </ion-card-content>
@@ -401,6 +447,9 @@
   </div>
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
 </ion-content>
 
 <style>
@@ -600,6 +649,9 @@
     border-radius: 2px;
   }
 </style>
+<<<<<<< HEAD
 =======
 </ion-content>
 >>>>>>> dev
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d

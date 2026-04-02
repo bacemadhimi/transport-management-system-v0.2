@@ -45,12 +45,17 @@
                 {
                   "type": "anyComponentStyle",
 <<<<<<< HEAD
+<<<<<<< HEAD
                   "maximumWarning": "8kb",
                   "maximumError": "16kb"
 =======
                   "maximumWarning": "20kb",
                   "maximumError": "40kb"
 >>>>>>> dev
+=======
+                  "maximumWarning": "8kb",
+                  "maximumError": "16kb"
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
                 }
               ],
               "fileReplacements": [

@@ -5,9 +5,12 @@ import { Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { HttpClient } from '@angular/common/http';
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 import { environment } from 'src/environments/environment.prod';
 >>>>>>> dev
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
 
 interface MyTrip {
   id: number;
@@ -22,10 +25,15 @@ interface MyTrip {
   truckImmatriculation?: string;
   startDate?: string;
 <<<<<<< HEAD
+<<<<<<< HEAD
   endDate?: string;
   deliveries?: any[];
 =======
 >>>>>>> dev
+=======
+  endDate?: string;
+  deliveries?: any[];
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
 }
 
 @Component({
@@ -46,6 +54,7 @@ export class MyTripsPage implements OnInit {
   driverId: number | null = null;
   error: string | null = null;
 <<<<<<< HEAD
+<<<<<<< HEAD
   refreshing: boolean = false;
 
   private readonly API_URL = 'http://localhost:5191/api/Trips';
@@ -53,6 +62,11 @@ export class MyTripsPage implements OnInit {
 
   private readonly API_URL = `${environment.apiUrl}/api/Trips`;
 >>>>>>> dev
+=======
+  refreshing: boolean = false;
+
+  private readonly API_URL = 'http://localhost:5191/api/Trips';
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
 
   constructor(
     private authService: AuthService,
@@ -70,9 +84,12 @@ export class MyTripsPage implements OnInit {
 
     try {
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
       // Get current user info
 >>>>>>> dev
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
       const user = this.authService.currentUser();
       if (!user) {
         this.error = 'Utilisateur non connecté';
@@ -83,22 +100,31 @@ export class MyTripsPage implements OnInit {
       this.driverId = (user as any).driverId || user.id;
       console.log('📦 Loading trips for driver:', this.driverId);
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
       console.log('👤 User object:', JSON.stringify(user, null, 2));
 
       const token = localStorage.getItem('token');
       console.log('🔑 Token:', token ? 'PRESENT (' + token.length + ' chars)' : 'MISSING');
       
+<<<<<<< HEAD
 =======
 
       // Get token
       const token = localStorage.getItem('token');
 >>>>>>> dev
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
       const headers = {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
       };
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
       // Fetch ALL trips for this driver (both active and history)
       const apiUrl = `${this.API_URL}/driver/${this.driverId}`;
       console.log('📡 API URL:', apiUrl);
@@ -144,6 +170,7 @@ export class MyTripsPage implements OnInit {
             console.log('✅ Active trips:', this.activeTrips.length, this.activeTrips.map(t => `${t.tripReference} (${t.status})`));
             console.log('📚 History trips:', this.historyTrips.length, this.historyTrips.map(t => `${t.tripReference} (${t.status})`));
 
+<<<<<<< HEAD
 =======
       // Fetch real trips from API - Filter by driver
       this.http.get<any[]>(`${this.API_URL}?status=all`, { headers })
@@ -182,16 +209,23 @@ export class MyTripsPage implements OnInit {
             console.log('📚 History trips:', this.historyTrips.length);
             
 >>>>>>> dev
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
             this.loading = false;
           },
           error: (err) => {
             console.error('❌ Error loading trips:', err);
+<<<<<<< HEAD
 <<<<<<< HEAD
             console.error('❌ Error details:', JSON.stringify(err, null, 2));
             this.error = 'Erreur de chargement des trajets: ' + (err.message || err.error?.message || 'Inconnue');
 =======
             this.error = 'Erreur de chargement des trajets';
 >>>>>>> dev
+=======
+            console.error('❌ Error details:', JSON.stringify(err, null, 2));
+            this.error = 'Erreur de chargement des trajets: ' + (err.message || err.error?.message || 'Inconnue');
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
             this.trips = [];
             this.activeTrips = [];
             this.historyTrips = [];
@@ -202,10 +236,14 @@ export class MyTripsPage implements OnInit {
     } catch (error) {
       console.error('Error loading trips:', error);
 <<<<<<< HEAD
+<<<<<<< HEAD
       this.error = 'Erreur inattendue: ' + (error as any).message;
 =======
       this.error = 'Erreur inattendue';
 >>>>>>> dev
+=======
+      this.error = 'Erreur inattendue: ' + (error as any).message;
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
       this.trips = [];
       this.activeTrips = [];
       this.historyTrips = [];
@@ -215,6 +253,7 @@ export class MyTripsPage implements OnInit {
 
   private getDestination(trip: any): string {
 <<<<<<< HEAD
+<<<<<<< HEAD
     if (trip.Deliveries && trip.Deliveries.length > 0) {
       const lastDelivery = trip.Deliveries[trip.Deliveries.length - 1];
       return lastDelivery.CustomerName || lastDelivery.DeliveryAddress || 'Destination inconnue';
@@ -223,12 +262,20 @@ export class MyTripsPage implements OnInit {
       const lastDelivery = trip.deliveries[trip.deliveries.length - 1];
       return lastDelivery.customerName || lastDelivery.deliveryAddress || 'Destination inconnue';
 >>>>>>> dev
+=======
+    if (trip.Deliveries && trip.Deliveries.length > 0) {
+      const lastDelivery = trip.Deliveries[trip.Deliveries.length - 1];
+      return lastDelivery.CustomerName || lastDelivery.DeliveryAddress || 'Destination inconnue';
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
     }
     return 'Destination inconnue';
   }
 
   private isActiveStatus(status: string): boolean {
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
     const activeStatuses = [
       'Pending',
       'Planned',
@@ -240,15 +287,21 @@ export class MyTripsPage implements OnInit {
       'InDelivery',
       'Arrived'
     ];
+<<<<<<< HEAD
 =======
     const activeStatuses = ['Planned', 'Accepted', 'LoadingInProgress', 'DeliveryInProgress', 'InDelivery', 'Loading'];
 >>>>>>> dev
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
     return activeStatuses.includes(status);
   }
 
   getStatusColor(status: string): string {
     const colors: Record<string, string> = {
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
       'Pending': 'medium',
       'Planned': 'medium',
       'Assigned': 'primary',
@@ -258,6 +311,7 @@ export class MyTripsPage implements OnInit {
       'DeliveryInProgress': 'primary',
       'InDelivery': 'primary',
       'Arrived': 'success',
+<<<<<<< HEAD
 =======
       'Planned': 'medium',
       'Accepted': 'primary',
@@ -266,6 +320,8 @@ export class MyTripsPage implements OnInit {
       'DeliveryInProgress': 'primary',
       'InDelivery': 'primary',
 >>>>>>> dev
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
       'Completed': 'success',
       'Receipt': 'success',
       'Cancelled': 'danger',
@@ -277,6 +333,9 @@ export class MyTripsPage implements OnInit {
   getStatusText(status: string): string {
     const texts: Record<string, string> = {
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
       'Pending': 'En attente',
       'Planned': 'Planifié',
       'Assigned': 'Assigné',
@@ -286,6 +345,7 @@ export class MyTripsPage implements OnInit {
       'DeliveryInProgress': 'Livraison',
       'InDelivery': 'Livraison',
       'Arrived': 'Arrivé',
+<<<<<<< HEAD
 =======
       'Planned': 'Planifié',
       'Accepted': 'Accepté',
@@ -294,6 +354,8 @@ export class MyTripsPage implements OnInit {
       'DeliveryInProgress': 'Livraison',
       'InDelivery': 'Livraison',
 >>>>>>> dev
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
       'Completed': 'Terminé',
       'Receipt': 'Livré',
       'Cancelled': 'Annulé',
@@ -303,6 +365,9 @@ export class MyTripsPage implements OnInit {
   }
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
   getStatusIcon(status: string): string {
     const icons: Record<string, string> = {
       'Pending': 'time',
@@ -322,20 +387,29 @@ export class MyTripsPage implements OnInit {
     return icons[status] || 'document';
   }
 
+<<<<<<< HEAD
 =======
 >>>>>>> dev
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
   viewTrip(trip: MyTrip) {
     this.router.navigate([`/trip/${trip.id}`]);
   }
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
   viewGPS(trip: MyTrip, event?: Event) {
     if (event) {
       event.stopPropagation();
     }
+<<<<<<< HEAD
 =======
   viewGPS(trip: MyTrip) {
 >>>>>>> dev
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
     this.router.navigate([`/gps-tracking`], {
       queryParams: {
         tripId: trip.id,
@@ -345,15 +419,21 @@ export class MyTripsPage implements OnInit {
   }
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
   doRefresh(event: any) {
     this.refreshing = true;
     this.loadMyTrips().finally(() => {
       this.refreshing = false;
       event.target.complete();
     });
+<<<<<<< HEAD
 =======
   refreshData() {
     this.loadMyTrips();
 >>>>>>> dev
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
   }
 }

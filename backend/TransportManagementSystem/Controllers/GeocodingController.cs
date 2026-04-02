@@ -70,10 +70,14 @@ public class GeocodingController : ControllerBase
             IsValidated = true,
             IsActive = dto.IsActive ?? true,
 <<<<<<< HEAD
+<<<<<<< HEAD
             ZoneId = dto.ZoneId.Value,
 =======
             //ZoneId = dto.ZoneId.Value,
 >>>>>>> dev
+=======
+            // ZoneId = dto.ZoneId.Value, // Temporarily commented - ZoneId property doesn't exist
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
         };

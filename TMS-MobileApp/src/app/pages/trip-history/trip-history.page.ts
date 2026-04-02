@@ -5,10 +5,14 @@ import { IonicModule } from '@ionic/angular';
 import { AuthService } from '../../services/auth.service';
 import { HttpClient } from '@angular/common/http';
 <<<<<<< HEAD
+<<<<<<< HEAD
 import { Router } from '@angular/router';
 =======
 import { environment } from 'src/environments/environment.prod';
 >>>>>>> dev
+=======
+import { Router } from '@angular/router';
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
 
 interface TripHistory {
   id: number;
@@ -21,9 +25,13 @@ interface TripHistory {
   destination?: string;
   truckImmatriculation?: string;
 <<<<<<< HEAD
+<<<<<<< HEAD
   deliveries?: any[];
 =======
 >>>>>>> dev
+=======
+  deliveries?: any[];
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
 }
 
 @Component({
@@ -45,14 +53,21 @@ export class TripHistoryPage implements OnInit {
   driverId: number | null = null;
   error: string | null = null;
 <<<<<<< HEAD
+<<<<<<< HEAD
   refreshing: boolean = false;
 =======
 >>>>>>> dev
+=======
+  refreshing: boolean = false;
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
   stats = {
     total: 0,
     completed: 0,
     cancelled: 0,
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
     refused: 0,
     totalDistance: 0
   };
@@ -63,6 +78,7 @@ export class TripHistoryPage implements OnInit {
     private authService: AuthService,
     private http: HttpClient,
     private router: Router
+<<<<<<< HEAD
 =======
     totalDistance: 0
   };
@@ -73,6 +89,8 @@ export class TripHistoryPage implements OnInit {
     private authService: AuthService,
     private http: HttpClient
 >>>>>>> dev
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
   ) {}
 
   ngOnInit() {
@@ -85,9 +103,12 @@ export class TripHistoryPage implements OnInit {
 
     try {
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
       // Get current user info
 >>>>>>> dev
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
       const user = this.authService.currentUser();
       if (!user) {
         this.error = 'Utilisateur non connecté';
@@ -99,9 +120,12 @@ export class TripHistoryPage implements OnInit {
       console.log('📚 Loading history for driver:', this.driverId);
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
       // Get token
 >>>>>>> dev
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
       const token = localStorage.getItem('token');
       const headers = {
         'Authorization': `Bearer ${token}`,
@@ -109,6 +133,9 @@ export class TripHistoryPage implements OnInit {
       };
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
       // Use the new driver-specific endpoint with history filter
       this.http.get<any[]>(`${this.API_URL}/driver/${this.driverId}?status=history`, { headers })
         .subscribe({
@@ -131,6 +158,7 @@ export class TripHistoryPage implements OnInit {
 
             this.calculateStats();
             this.applyFilter();
+<<<<<<< HEAD
 =======
       // Fetch real trips from API
       this.http.get<any[]>(`${this.API_URL}?status=all`, { headers })
@@ -169,6 +197,8 @@ export class TripHistoryPage implements OnInit {
             this.applyFilter();
             
 >>>>>>> dev
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
             this.loading = false;
           },
           error: (err) => {
@@ -191,6 +221,7 @@ export class TripHistoryPage implements OnInit {
 
   private getDestination(trip: any): string {
 <<<<<<< HEAD
+<<<<<<< HEAD
     if (trip.Deliveries && trip.Deliveries.length > 0) {
       const lastDelivery = trip.Deliveries[trip.Deliveries.length - 1];
       return lastDelivery.CustomerName || lastDelivery.DeliveryAddress || 'Destination inconnue';
@@ -199,6 +230,11 @@ export class TripHistoryPage implements OnInit {
       const lastDelivery = trip.deliveries[trip.deliveries.length - 1];
       return lastDelivery.customerName || lastDelivery.deliveryAddress || 'Destination inconnue';
 >>>>>>> dev
+=======
+    if (trip.Deliveries && trip.Deliveries.length > 0) {
+      const lastDelivery = trip.Deliveries[trip.Deliveries.length - 1];
+      return lastDelivery.CustomerName || lastDelivery.DeliveryAddress || 'Destination inconnue';
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
     }
     return 'Destination inconnue';
   }
@@ -206,17 +242,23 @@ export class TripHistoryPage implements OnInit {
   private calculateStats() {
     this.stats.total = this.history.length;
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
     this.stats.completed = this.history.filter(h => h.status === 'Completed' || h.status === 'Arrived' || h.status === 'Receipt').length;
     this.stats.cancelled = this.history.filter(h => h.status === 'Cancelled').length;
     this.stats.refused = this.history.filter(h => h.status === 'Refused').length;
     this.stats.totalDistance = this.history.reduce((sum, h) => sum + (h.distance || 0), 0);
 
+<<<<<<< HEAD
 =======
     this.stats.completed = this.history.filter(h => h.status === 'Completed' || h.status === 'Receipt').length;
     this.stats.cancelled = this.history.filter(h => h.status === 'Cancelled' || h.status === 'Refused').length;
     this.stats.totalDistance = this.history.reduce((sum, h) => sum + (h.distance || 0), 0);
     
 >>>>>>> dev
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
     console.log('📊 Stats:', this.stats);
   }
 
@@ -224,12 +266,18 @@ export class TripHistoryPage implements OnInit {
     if (this.filterStatus === 'all') {
       this.filteredHistory = this.history;
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
     } else if (this.filterStatus === 'completed') {
       this.filteredHistory = this.history.filter(h => 
         h.status === 'Completed' || h.status === 'Arrived' || h.status === 'Receipt'
       );
+<<<<<<< HEAD
 =======
 >>>>>>> dev
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
     } else {
       this.filteredHistory = this.history.filter(h => h.status === this.filterStatus);
     }
@@ -239,9 +287,13 @@ export class TripHistoryPage implements OnInit {
     const colors: Record<string, string> = {
       'Completed': 'success',
 <<<<<<< HEAD
+<<<<<<< HEAD
       'Arrived': 'success',
 =======
 >>>>>>> dev
+=======
+      'Arrived': 'success',
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
       'Receipt': 'success',
       'Cancelled': 'danger',
       'Refused': 'danger'
@@ -253,9 +305,13 @@ export class TripHistoryPage implements OnInit {
     const icons: Record<string, string> = {
       'Completed': 'checkmark-done-circle',
 <<<<<<< HEAD
+<<<<<<< HEAD
       'Arrived': 'checkmark-done-circle',
 =======
 >>>>>>> dev
+=======
+      'Arrived': 'checkmark-done-circle',
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
       'Receipt': 'checkmark-done-circle',
       'Cancelled': 'close-circle',
       'Refused': 'close-circle'
@@ -267,9 +323,13 @@ export class TripHistoryPage implements OnInit {
     const texts: Record<string, string> = {
       'Completed': 'Terminé',
 <<<<<<< HEAD
+<<<<<<< HEAD
       'Arrived': 'Arrivé',
 =======
 >>>>>>> dev
+=======
+      'Arrived': 'Arrivé',
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
       'Receipt': 'Livré',
       'Cancelled': 'Annulé',
       'Refused': 'Refusé'
@@ -280,9 +340,13 @@ export class TripHistoryPage implements OnInit {
   formatDate(date: Date): string {
     return new Date(date).toLocaleDateString('fr-FR', {
 <<<<<<< HEAD
+<<<<<<< HEAD
       weekday: 'short',
 =======
 >>>>>>> dev
+=======
+      weekday: 'short',
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
       day: 'numeric',
       month: 'short',
       year: 'numeric',
@@ -306,6 +370,9 @@ export class TripHistoryPage implements OnInit {
 
   viewDetails(trip: TripHistory) {
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
     this.router.navigate([`/trip/${trip.id}`]);
   }
 
@@ -315,6 +382,7 @@ export class TripHistoryPage implements OnInit {
       this.refreshing = false;
       event.target.complete();
     });
+<<<<<<< HEAD
 =======
     console.log('View details:', trip);
   }
@@ -322,5 +390,7 @@ export class TripHistoryPage implements OnInit {
   refreshData() {
     this.loadHistory();
 >>>>>>> dev
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
   }
 }

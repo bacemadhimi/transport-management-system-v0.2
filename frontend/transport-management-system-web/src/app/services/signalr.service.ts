@@ -1,7 +1,10 @@
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 ﻿
 >>>>>>> dev
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
  
 import { Injectable, inject } from '@angular/core';
 import * as signalR from '@microsoft/signalr';
@@ -181,8 +184,40 @@ export class SignalRService {
 
   private registerHandlers() {
 
+    // Handler for New Trip Assignment - REAL TIME NOTIFICATION TO DRIVER
+    this.hubConnection.on('NewTripAssigned', (data: any) => {
+      console.log('🚛🚛🚛=================================');
+      console.log('🚛 NEW TRIP ASSIGNED - REAL TIME SIGNALR!');
+      console.log('🚛 Data:', JSON.stringify(data, null, 2));
+      console.log('🚛🚛🚛=================================');
+
+      const notification: TripNotification = {
+        id: Date.now(),
+        type: 'NEW_TRIP_ASSIGNMENT',
+        title: '🚛 Nouvelle Mission Assignée',
+        message: `Trip ${data.tripReference || ''} assigné - Destination: ${data.destination || 'Non définie'}`,
+        timestamp: new Date(data.timestamp) || new Date(),
+        tripId: data.tripId,
+        tripReference: data.tripReference,
+        driverName: data.driverName,
+        truckImmatriculation: data.truckImmatriculation,
+        newStatus: 'Planifié',
+        isRead: false,
+        additionalData: data
+      };
+
+      this.addNotification(notification, 20);
+      this.showBrowserNotification(notification);
+
+      // Reload notifications from DB to ensure sync
+      setTimeout(() => this.loadInitialNotifications(), 500);
+    });
+
     this.hubConnection.on('ReceiveNotification', (notification: TripNotification) => {
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
       console.log('🔔 Received new notification:', notification);
       this.addNotification(notification, 20);
     });
@@ -275,6 +310,7 @@ export class SignalRService {
     });
 
 
+<<<<<<< HEAD
 =======
     console.log('🔔 Received new notification:', notification);
 
@@ -283,6 +319,8 @@ export class SignalRService {
 
 
 >>>>>>> dev
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
     this.hubConnection.on('UpdateUnreadCount', (count: number) => {
       console.log('📊 Unread count updated:', count);
       this.unreadCountSubject.next(count);
@@ -303,6 +341,9 @@ export class SignalRService {
       this.positionSubject.next(position);
     });
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
     
     console.log('✅ All SignalR handlers registered successfully');
   }
@@ -334,8 +375,11 @@ export class SignalRService {
       this.notificationPollingInterval = null;
       console.log('⏹️ Notification polling stopped');
     }
+<<<<<<< HEAD
 =======
 >>>>>>> dev
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
   }
 
 
@@ -427,9 +471,12 @@ private addNotification(notification: TripNotification, pageSize: number = 20) {
   }
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 
 >>>>>>> dev
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
   joinTripGroup(tripId: number) {
     if (this.hubConnection.state === signalR.HubConnectionState.Connected) {
       this.hubConnection.invoke('JoinTripGroup', tripId)
@@ -546,9 +593,12 @@ private addNotification(notification: TripNotification, pageSize: number = 20) {
   }
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 
 >>>>>>> dev
+=======
+>>>>>>> 937f419bcbe87468db350f976736fa00128c160d
   stopConnection() {
     this.disconnect();
   }
