@@ -7,6 +7,7 @@ using TransportManagementSystem.Data;
 using TransportManagementSystem.Entity;
 using TransportManagementSystem.Hubs;
 using TransportManagementSystem.Interfaces;
+using TransportManagementSystem.Models;
 using TransportManagementSystem.Repositories;
 using TransportManagementSystem.Services;
 

@@ -74,7 +74,7 @@ public class ChatbotController : ControllerBase
             }
 
             // TODO: Implement conversation history storage
-            var history = new List<ChatMessage>();
+            var history = new List<ChatBotMessage>();
 
             return Ok(new ApiResponse(true, "History retrieved", history));
         }

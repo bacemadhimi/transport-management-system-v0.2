@@ -1,6 +1,6 @@
 namespace TransportManagementSystem.Models;
 
-public class ChatMessage
+public class ChatBotMessage
 {
     public string Role { get; set; } = "user"; // "user", "assistant", "system"
     public string Content { get; set; } = string.Empty;
@@ -11,7 +11,7 @@ public class ChatRequest
 {
     public int DriverId { get; set; }
     public string Message { get; set; } = string.Empty;
-    public List<ChatMessage>? ConversationHistory { get; set; }
+    public List<ChatBotMessage>? ConversationHistory { get; set; }
 }
 
 public class ChatResponse
