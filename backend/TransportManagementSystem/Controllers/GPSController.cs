@@ -491,16 +491,9 @@ namespace TransportManagementSystem.Controllers
                     _logger.LogInformation($"Delivery address: {destinationAddress}");
                     
                     // PRIORITY 1: Check if delivery has Location with coordinates (most reliable)
-                    if (!destinationLatitude.HasValue && !destinationLongitude.HasValue &&
-                        lastDelivery.Location != null && lastDelivery.Location.Latitude.HasValue && lastDelivery.Location.Longitude.HasValue)
-                    {
-                        destinationLatitude = lastDelivery.Location.Latitude;
-                        destinationLongitude = lastDelivery.Location.Longitude;
-                        geolocationSource = "Location table";
-                        _logger.LogInformation($"Using coordinates from Location: {destinationLatitude}, {destinationLongitude}");
-                    }
+
                     // PRIORITY 2: Check if delivery has Geolocation field with coordinates
-                    else if (!destinationLatitude.HasValue && !destinationLongitude.HasValue && !string.IsNullOrWhiteSpace(lastDelivery.Geolocation))
+                     if (!destinationLatitude.HasValue && !destinationLongitude.HasValue && !string.IsNullOrWhiteSpace(lastDelivery.Geolocation))
                     {
                         var geoParts = lastDelivery.Geolocation.Split(',');
                         if (geoParts.Length >= 2)

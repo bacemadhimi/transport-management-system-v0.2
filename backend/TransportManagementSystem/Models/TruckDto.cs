@@ -27,6 +27,6 @@ public class TruckGeographicalEntityDto
     public string? GeographicalEntityName { get; set; }
     public string? LevelName { get; set; }
     public int LevelNumber { get; set; }
-    public decimal? Latitude { get; set; }
-    public decimal? Longitude { get; set; }
+    public double? Latitude { get; set; }
+    public double? Longitude { get; set; }
 }

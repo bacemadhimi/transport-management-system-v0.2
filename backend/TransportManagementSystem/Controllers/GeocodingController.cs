@@ -64,9 +64,6 @@ public class GeocodingController : ControllerBase
         var location = new Location
         {
             Name = dto.Name,
-            AddressText = dto.DisplayName ?? dto.AddressText,
-            Latitude = dto.Latitude,
-            Longitude = dto.Longitude,
             IsValidated = true,
             IsActive = dto.IsActive ?? true,
             //ZoneId = dto.ZoneId.Value,
@@ -81,9 +78,6 @@ public class GeocodingController : ControllerBase
         {
             location.Id,
             location.Name,
-            location.AddressText,
-            location.Latitude,
-            location.Longitude,
             location.IsValidated
         }));
     }

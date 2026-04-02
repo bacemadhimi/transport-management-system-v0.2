@@ -16,9 +16,9 @@
 
 <ion-content class="ion-padding trip-details-content">
   <div class="trip-status-row">
-    <div class="status-badge" [ngClass]="trip.tripStatus.toLowerCase()">
+    <div class="status-badge" [ngClass]="getStatusClass(trip.tripStatus)">
       <ion-icon name="flag-outline" class="status-icon"></ion-icon>
-      {{ trip.tripStatus }}
+      {{ getStatusText(trip.tripStatus) }}
     </div>
   </div>
 
@@ -41,7 +41,7 @@
       </div>
       <div class="card-content">
         <span class="card-label">Statut Actuel</span>
-        <span class="card-value" [ngClass]="trip.tripStatus.toLowerCase()">{{ trip.tripStatus }}</span>
+        <span class="card-value" [ngClass]="getStatusClass(trip.tripStatus)">{{ getStatusText(trip.tripStatus) }}</span>
       </div>
     </div>
 
@@ -112,11 +112,100 @@
     </div>
   </div>
 
-  <!-- Proof of Delivery Section -->
-  <div *ngIf="trip.tripStatus === 'Receipt'" class="proof-section">
+  <!-- QR Code Scanner Section - For delivery in progress -->
+  <div *ngIf="isDeliveryInProgress()" class="proof-section">
     <div class="section-title">
-      <ion-icon name="camera-outline"></ion-icon>
-      <h4>Preuve de Livraison</h4>
+      <ion-icon name="qr-code-outline"></ion-icon>
+      <h4>Validation par QR Code</h4>
+    </div>
+    
+    <div class="qr-delivery-container">
+      <div class="qr-info">
+        <p>Scannez le QR Code du client pour valider la livraison</p>
+      </div>
+
+      <!-- Scanner Section -->
+      <div class="scanner-section">
+        <div class="qr-code-scanner">
+          <div class="scanner-frame">
+            <div class="scanner-animation" *ngIf="!scannedQRCode"></div>
+            <div class="scanner-success" *ngIf="scannedQRCode">
+              <ion-icon name="checkmark-circle"></ion-icon>
+            </div>
+          </div>
+          
+          <ion-button 
+            expand="block" 
+            class="scan-btn"
+            (click)="scanQRCodeForDelivery()"
+            [disabled]="isScanning">
+            <ion-icon slot="start" [name]="isScanning ? 'sync-outline' : 'scan-outline'"></ion-icon>
+            {{ isScanning ? 'Scan en cours...' : 'Scanner le QR Code' }}
+          </ion-button>
+        </div>
+
+        <!-- Manual input for web -->
+        <div class="manual-input">
+          <ion-item lines="none" class="manual-input-item">
+            <ion-label position="floating">Ou saisir manuellement le QR Code</ion-label>
+            <ion-input 
+              [(ngModel)]="manualQRCode" 
+              placeholder="Entrez le contenu du QR Code"
+              clearInput>
+            </ion-input>
+          </ion-item>
+        </div>
+
+        <!-- Scanned QR Code Data Display -->
+        <div *ngIf="scannedQRCode" class="qr-data-preview">
+          <div class="data-header">
+            <ion-icon name="checkmark-circle" class="success-icon"></ion-icon>
+            <span>QR Code scanné avec succès !</span>
+          </div>
+          <div class="data-content">
+            <div class="data-row">
+              <ion-icon name="document-text-outline"></ion-icon>
+              <span><strong>Contenu:</strong></span>
+              <code>{{ scannedQRCode.content }}</code>
+            </div>
+            <div class="data-row" *ngIf="scannedQRCode.format">
+              <ion-icon name="barcode-outline"></ion-icon>
+              <span><strong>Format:</strong></span>
+              <span>{{ barcodeScanner.getFormatName(scannedQRCode.format) }}</span>
+            </div>
+            <div class="data-row" *ngIf="scannedQRCode.timestamp">
+              <ion-icon name="time-outline"></ion-icon>
+              <span><strong>Scanné à:</strong></span>
+              <span>{{ scannedQRCode.timestamp | date:'HH:mm:ss' }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="qr-action-buttons">
+        <ion-button 
+          fill="outline" 
+          class="cancel-btn"
+          (click)="cancelQRScan()">
+          Annuler
+        </ion-button>
+        <ion-button 
+          class="confirm-btn"
+          (click)="confirmDeliveryWithQR()"
+          [disabled]="!scannedQRCode && !manualQRCode">
+          <ion-icon slot="start" name="checkmark-done-outline"></ion-icon>
+          Confirmer Livraison
+        </ion-button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Display QR Code Data for Completed Trips -->
+  <div *ngIf="isDeliveryCompleted()" class="proof-section">
+    <div class="section-title">
+      <ion-icon name="qr-code-outline"></ion-icon>
+      <h4>Données de Livraison</h4>
     </div>
 
     <div *ngIf="trip.deliveries && trip.deliveries.length > 0; else noDeliveries">
@@ -126,20 +215,32 @@
             <div class="proof-card">
               <div class="proof-header">
                 <span class="proof-number">Livraison #{{ d.sequence }}</span>
+                <span *ngIf="d.qrCodeData" class="qr-badge">
+                  <ion-icon name="qr-code-outline"></ion-icon> QR Validé
+                </span>
               </div>
-              <div *ngIf="d.proofOfDelivery; else noProof">
-                <img [src]="getDataUrl(d.proofOfDelivery)" class="proof-img" alt="Preuve de livraison" />
-                <div class="proof-footer">
-                  <ion-icon name="checkmark-circle-outline" class="proof-check"></ion-icon>
-                  <span>Preuve validée</span>
+              <!-- Display QR Code Data -->
+              <div *ngIf="d.qrCodeData" class="qr-data-display">
+                <div class="qr-data-row">
+                  <ion-icon name="document-text-outline"></ion-icon>
+                  <span><strong>Données QR:</strong></span>
+                  <span class="qr-content-text">{{ d.qrCodeData }}</span>
+                </div>
+                <div *ngIf="d.qrCodeFormat" class="qr-data-row">
+                  <ion-icon name="barcode-outline"></ion-icon>
+                  <span><strong>Format:</strong></span>
+                  <span>{{ d.qrCodeFormat }}</span>
+                </div>
+                <div *ngIf="d.qrCodeTimestamp" class="qr-data-row">
+                  <ion-icon name="time-outline"></ion-icon>
+                  <span><strong>Date validation:</strong></span>
+                  <span>{{ d.qrCodeTimestamp | date:'dd/MM/yyyy HH:mm:ss' }}</span>
                 </div>
               </div>
-              <ng-template #noProof>
-                <div class="no-proof">
-                  <ion-icon name="image-outline"></ion-icon>
-                  <p>Aucune preuve pour la livraison #{{ d.sequence }}</p>
-                </div>
-              </ng-template>
+              <div *ngIf="!d.qrCodeData" class="no-proof">
+                <ion-icon name="qr-code-outline"></ion-icon>
+                <p>En attente de validation QR</p>
+              </div>
             </div>
           </ion-col>
         </ion-row>
@@ -152,6 +253,34 @@
         <p>Aucune livraison associée à ce trajet.</p>
       </div>
     </ng-template>
+  </div>
+
+  <!-- Action Buttons for In-Progress Trips -->
+  <div class="action-buttons" *ngIf="shouldShowActionButtons()">
+    <ion-button 
+      expand="block" 
+      class="update-status-btn"
+      *ngIf="trip.tripStatus === 'Pending' || trip.tripStatus === 'Planned'"
+      (click)="updateStatus('Accepted')">
+      <ion-icon name="checkmark-circle-outline" slot="start"></ion-icon>
+      Accepter le Trajet
+    </ion-button>
+    <ion-button 
+      expand="block" 
+      class="update-status-btn"
+      *ngIf="trip.tripStatus === 'Accepted'"
+      (click)="updateStatus('LoadingInProgress')">
+      <ion-icon name="cube-outline" slot="start"></ion-icon>
+      Démarrer Chargement
+    </ion-button>
+    <ion-button 
+      expand="block" 
+      class="update-status-btn"
+      *ngIf="trip.tripStatus === 'LoadingInProgress' || trip.tripStatus === 'Loading'"
+      (click)="updateStatus('DeliveryInProgress')">
+      <ion-icon name="location-outline" slot="start"></ion-icon>
+      Démarrer Livraison
+    </ion-button>
   </div>
 
   <!-- Action Buttons for In-Progress Trips -->
