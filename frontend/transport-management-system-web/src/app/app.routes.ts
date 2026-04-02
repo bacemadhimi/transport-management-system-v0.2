@@ -1,12 +1,11 @@
-// app.routes.ts
+﻿
 import { Routes } from '@angular/router';
 import { Home } from './pages/home/home';
 import { Login } from './pages/login/login';
 import { Profile } from './pages/profile/profile';
-import { AuthGuard } from './services/auth.guard'; 
+import { AuthGuard } from './services/auth.guard';
 import { User } from './pages/user/user';
 import { Truck } from './pages/truck/truck';
-import { Driver } from './pages/driver/driver';
 import { Employee } from './pages/employee/employee';
 import { Trip } from './pages/trip/trip';
 import { HistoricTrip } from './pages/historic-trip/historic-trip';
@@ -14,7 +13,6 @@ import { HistoricTrip } from './pages/historic-trip/historic-trip';
 import { Customer } from './pages/customer/customer';
 import { FuelVendor } from './pages/fuel-vendor/fuel-vendor';
 import { Fuel } from './pages/fuel/fuel';
-import { Mechanic } from './pages/mechanic/mechanic';
 import { Vendor } from './pages/vendor/vendor';
 
 import { Permissions } from './pages/permissions/permissions';
@@ -22,16 +20,12 @@ import { Maintenance } from './pages/maintenance/maintenance';
 import { Role } from './pages/role/role';
 import { TrajectComponent } from './pages/traject/traject';
 import { LocationComponent } from './pages/location/location';
-import { Convoyeur } from './pages/convoyeur/convoyeur';
 import { DayOff } from './pages/day-off/day-off';
 import { Overtime } from './pages/overtime/overtime';
 import { AvailabilityComponent } from './pages/availability/availability';
 import { OrdersComponent } from './pages/order/order';
 import { TruckAvailabilityComponent } from './pages/truck-availability/truck-availability';
 import { SyncComponent } from './pages/sync/sync';
-import { ZoneComponent } from './pages/zone/zone';
-import { CityComponent } from './pages/city/city';
-
 import { StatisticsComponent } from './pages/statistics/statistics.component';
 import { TripCreatePageComponent } from './pages/trip-create-page.component/trip-create-page.component';
 import { TripEditPageComponent } from './pages/trip-edit-page.component/trip-edit-page.component';
@@ -39,6 +33,12 @@ import { TypeTruck } from './pages/type-truck/type-truck';
 import { Categories } from './pages/categories/categories';
 import { Marque } from './pages/marque/marque';
 import { GeneralSettings } from './pages/general-settings/general-settings';
+
+import { WarehousePlantItComponent } from './pages/warehouse/warehouse';
+
+import { LiveGPSTrackingPage } from './pages/live-gps-tracking/live-gps-tracking.page';
+import { StorageLocationDetailsComponent } from './pages/storage-location-details/storage-location-details';
+
 
 
 export const routes: Routes = [
@@ -54,11 +54,6 @@ export const routes: Routes = [
   {
     path: "home",
     component: Home,
-    canActivate: [AuthGuard]
-  },
-  {
-    path: 'drivers',
-    component: Driver,
     canActivate: [AuthGuard]
   },
 
@@ -88,50 +83,45 @@ export const routes: Routes = [
   {
     path: "trucks",
     component: Truck,
-    canActivate: [AuthGuard]  
+    canActivate: [AuthGuard]
   },
   {
     path: "trips",
     component: Trip,
-    canActivate: [AuthGuard]  
+    canActivate: [AuthGuard]
   },
     {
     path: "historic-trips",
     component: HistoricTrip,
-    canActivate: [AuthGuard]  
+    canActivate: [AuthGuard]
   },
   {
     path: "customers",
     component: Customer,
-    canActivate: [AuthGuard]  
+    canActivate: [AuthGuard]
   },
   {
     path: "fuel-vendors",
     component: FuelVendor,
-    canActivate: [AuthGuard]  
+    canActivate: [AuthGuard]
   },
   {
     path: "fuels",
     component: Fuel,
-    canActivate: [AuthGuard]  
-  },
-{
-    path: "mechanics",
-    component: Mechanic,
-    canActivate: [AuthGuard]  
+    canActivate: [AuthGuard]
   },
 {
     path: "vendors",
     component: Vendor,
-    canActivate: [AuthGuard]  
+    canActivate: [AuthGuard]
   },
 
 {
     path: "roles",
     component: Role,
-    canActivate: [AuthGuard]  
+    canActivate: [AuthGuard]
   },
- 
+
 {
   path: "permissions",
   component: Permissions,
@@ -147,13 +137,8 @@ export const routes: Routes = [
     component: LocationComponent,
     canActivate: [AuthGuard]
   },
-  {
-  path: 'convoyeurs',
-  component: Convoyeur,
-  canActivate: [AuthGuard]
-},
 {
-    path: 'dayoff', 
+    path: 'dayoff',
     component: DayOff,
     canActivate: [AuthGuard]
   },
@@ -187,21 +172,8 @@ export const routes: Routes = [
 {
   path: 'sync',
   component: SyncComponent,
-  canActivate: [AuthGuard] // si tu en as un
+  canActivate: [AuthGuard]
 },
-   {
-    path: 'zones',
-    component: ZoneComponent,
-    canActivate: [AuthGuard]
-  },
-
-  {
-    path: 'city',
-    component: CityComponent,
-    canActivate: [AuthGuard]
-  }
-  ,
-
   {
   path: 'statics',
   component: StatisticsComponent,
@@ -210,12 +182,12 @@ export const routes: Routes = [
   {
     path: 'trips/create',
     component: TripCreatePageComponent,
-     canActivate: [AuthGuard] 
+     canActivate: [AuthGuard]
   },
   {
     path: 'trips/edit/:id',
     component: TripEditPageComponent,
-     canActivate: [AuthGuard] 
+     canActivate: [AuthGuard]
   },
 {
   path: 'type-trucks',
@@ -226,11 +198,28 @@ export const routes: Routes = [
   path: 'marques',
   component: Marque,
   canActivate: [AuthGuard],
-   
+
+},
+{
+  path: 'warehouse',
+  component: WarehousePlantItComponent,
+  canActivate: [AuthGuard],
+
 },
 {
     path: 'general-settings',
     component: GeneralSettings,
+    canActivate: [AuthGuard],
+  },
+  {
+    path: 'gps-tracking',
+    component: LiveGPSTrackingPage,
+    canActivate: [AuthGuard],
+  },
+  
+  {
+    path: 'warehouse/:id/storage-locations',
+    component: StorageLocationDetailsComponent,
     canActivate: [AuthGuard],
   },
   {

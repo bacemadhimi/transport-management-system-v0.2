@@ -1,5 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using TransportManagementSystem.Entity;
+using TransportManagementSystem.Entity.PlantIt;
+using TransportManagementSystem.Entity.PlantIt.TMS.Models;
 
 namespace TransportManagementSystem.Data
 {
@@ -12,12 +14,10 @@ namespace TransportManagementSystem.Data
 
         public DbSet<Truck> Trucks { get; set; }
         public DbSet<User> Users { get; set; }
-        public DbSet<Driver> Drivers { get; set; }
         public DbSet<Trip> Trips { get; set; }
         public DbSet<Customer> Customers { get; set; }
         public DbSet<FuelVendor> FuelVendors { get; set; }
         public DbSet<Fuel> Fuels { get; set; }
-        public DbSet<Mechanic> Mechanics { get; set; }
         public DbSet<Vendor> Vendors { get; set; }
         public DbSet<Maintenance> Maintenances { get; set; }
 
@@ -32,7 +32,6 @@ namespace TransportManagementSystem.Data
         public DbSet<Traject> Trajects { get; set; }
         public DbSet<TrajectPoint> TrajectPoints { get; set; }
         public DbSet<Location> Locations { get; set; }
-        public DbSet<Convoyeur> Convoyeurs { get; set; }
         public DbSet<DayOff> DayOffs { get; set; }
         public DbSet<OvertimeSetting> OvertimeSettings { get; set; }
         public DbSet<DriverAvailability> DriverAvailabilities { get; set; }
@@ -42,17 +41,65 @@ namespace TransportManagementSystem.Data
         public DbSet<SyncHistoryDetail> SyncHistoryDetails { get; set; }
         public DbSet<TruckAvailability> TruckAvailabilities { get; set; }
         public DbSet<Translation> Translations { get; set; }
-        public DbSet<Zone> Zones { get; set; }
-        public DbSet<City> Citys { get; set; }
         public DbSet<TypeTruck> TypeTrucks { get; set; }
         public DbSet<Employee> Employees { get; set; }
         //public DbSet<Category> Categories { get; set; }
         public DbSet<GeneralSettings> GeneralSettings { get; set; }
         public DbSet<Notification> Notifications { get; set; }
         public DbSet<UserNotification> UserNotifications { get; set; }
+        public DbSet<ChatMessage> ChatMessages { get; set; }
+        public DbSet<GeographicalLevel> GeographicalLevels { get; set; }
+        public DbSet<GeographicalEntity> GeographicalEntities { get; set; }
+        public DbSet<TruckGeographicalEntity> TruckGeographicalEntities { get; set; }
+        public DbSet<DriverGeographicalEntity> DriverGeographicalEntities { get; set; }
+        public DbSet<CustomerGeographicalEntity> CustomerGeographicalEntities { get; set; }
+
+        public DbSet<CPDataX> CPDataX { get; set; }
+        public DbSet<CPUnits> tblCPUnits { get; set; }
+        public DbSet<PMMWarehouse> PMMWarehouse { get; set; }
+        public DbSet<PMMStorageLocation> tblPMMStorageLocation { get; set; }
+        public DbSet<ItpProcessCell> tblItpProcessCell { get; set; }
+        public DbSet<ItpProcessLine> tblItpProcessLine { get; set; }
+        public DbSet<ItpProcessLineUnit> tblItpProcessLineUnit { get; set; }
+        public DbSet<ItpProcessUnit> tblItpProcessUnit { get; set; }
+        public DbSet<ItpProcessUnitClass> tblItpProcessUnitClass { get; set; }
+        public DbSet<ItpProcessUnitClassGroup> tblItpProcessUnitClassGroup { get; set; }
+
+        public DbSet<PMMQuant> tblPMMQuant { get; set; }
+        public DbSet<PMMMaterial> tblPMMMaterial { get; set; }
+        public DbSet<PMMMaterialClass> tblPMMMaterialClass { get; set; }
+        public DbSet<PMMBookingJournal> tblPMMBookingJournal { get; set; }
+        public DbSet<PMMBookingKey> tblPMMBookingKey { get; set; }
+        public DbSet<PMMBookingKeyRelation> tblPMMBookingKeyRelation { get; set; }
+        public DbSet<PMMBookingType> tblPMMBookingType { get; set; }
+        public DbSet<PMMMaterialGroup> tblPMMMaterialGroup { get; set; }
+        public DbSet<PMMItemGroup> tblPMMItemGroup { get; set; }
+        public DbSet<IdcLanguage> tblIdcLanguage { get; set; }
+        public DbSet<IdcLanguageText> tblIdcLanguageText { get; set; }
+
+        public DbSet<SyncHistoryPlantItToTms> SyncHistoryPlantItToTms { get; set; }
+        public DbSet<GeocodingCache> GeocodingCache { get; set; }
+        public DbSet<PositionGPS> PositionsGPS { get; set; }
+        public DbSet<ResultatOptimisation> ResultatOptimisations { get; set; }
+        public DbSet<TripAssignment> TripAssignments { get; set; }
+
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
+
+            // TripAssignment - Disable cascade delete to avoid multiple cascade paths
+            modelBuilder.Entity<TripAssignment>()
+                .HasOne(a => a.Trip)
+                .WithMany()
+                .HasForeignKey(a => a.TripId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<TripAssignment>()
+                .HasOne(a => a.Driver)
+                .WithMany()
+                .HasForeignKey(a => a.DriverId)
+                .OnDelete(DeleteBehavior.Restrict);
 
             // Enum → string
             modelBuilder.Entity<Trip>()
@@ -162,53 +209,6 @@ namespace TransportManagementSystem.Data
                .HasForeignKey(o => o.CustomerId)
                .OnDelete(DeleteBehavior.Restrict);
 
-          
-            modelBuilder.Entity<Location>()
-                .HasOne(l => l.Zone)
-                .WithMany(z => z.Locations) 
-                .HasForeignKey(l => l.ZoneId)
-                .IsRequired()
-                .OnDelete(DeleteBehavior.Restrict);
-
-      
-            modelBuilder.Entity<Driver>()
-                .HasOne(d => d.Zone)
-                .WithMany(z => z.Drivers) 
-                .HasForeignKey(d => d.ZoneId)
-                .IsRequired()
-                .OnDelete(DeleteBehavior.Restrict);
-
-
-            modelBuilder.Entity<Customer>()
-                  .HasOne(c => c.Zone)
-                  .WithMany(z => z.Customers)
-                  .HasForeignKey(c => c.ZoneId)
-                  .IsRequired(false)  
-                  .OnDelete(DeleteBehavior.Restrict);
-
-
-            modelBuilder.Entity<Driver>()
-                 .HasOne(c => c.City)
-                 .WithMany(z => z.Drivers)
-                 .HasForeignKey(c => c.CityId)
-                 .IsRequired(false)
-                 .OnDelete(DeleteBehavior.Restrict);
-
-            modelBuilder.Entity<Convoyeur>()
-                 .HasOne(c => c.City)
-                 .WithMany(z => z.Convoyeurs)
-                 .HasForeignKey(c => c.CityId)
-                 .IsRequired(false)
-                 .OnDelete(DeleteBehavior.Restrict);
-
-
-            modelBuilder.Entity<Truck>()
-                .HasOne(d => d.Zone)
-                .WithMany(z => z.Trucks)
-                .HasForeignKey(d => d.ZoneId)
-                .IsRequired()
-                .OnDelete(DeleteBehavior.Restrict);
-
             modelBuilder.Entity<Truck>(entity =>
             {
                 entity.HasOne(t => t.TypeTruck)
@@ -217,9 +217,17 @@ namespace TransportManagementSystem.Data
                     .OnDelete(DeleteBehavior.Cascade); 
             });
 
-            modelBuilder.Entity<GeneralSettings>()
-                   .HasIndex(p => new { p.ParameterType, p.ParameterCode })
-                   .IsUnique();
+            modelBuilder.Entity<GeneralSettings>(entity =>
+            {
+                entity.Property(e => e.ParameterType)
+                    .HasMaxLength(255);
+
+                entity.Property(e => e.ParameterCode)
+                    .HasMaxLength(255);
+
+                entity.HasIndex(e => new { e.ParameterType, e.ParameterCode })
+                    .IsUnique();
+            });
 
             modelBuilder.Entity<UserNotification>()
                    .HasIndex(un => new { un.NotificationId, un.UserId })
@@ -237,6 +245,48 @@ namespace TransportManagementSystem.Data
                 .HasForeignKey(un => un.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
 
+            modelBuilder.Entity<GeographicalLevel>()
+           .HasIndex(l => l.LevelNumber)
+           .IsUnique();
+
+            modelBuilder.Entity<GeographicalLevel>()
+                .HasIndex(l => l.Name)
+                .IsUnique();
+
+            // GeographicalEntity configuration
+            modelBuilder.Entity<GeographicalEntity>()
+                .HasOne(e => e.Level)
+                .WithMany()
+                .HasForeignKey(e => e.LevelId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<GeographicalEntity>()
+                .HasOne(e => e.Parent)
+                .WithMany(e => e.Children)
+                .HasForeignKey(e => e.ParentId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<GeographicalEntity>()
+                .HasIndex(e => new { e.LevelId, e.Name })
+                .IsUnique();
+            modelBuilder.Entity<Employee>(entity =>
+            {
+
+                entity.HasDiscriminator<string>("EmployeeDiscriminator")
+                    .HasValue<Employee>("EMPLOYEE")
+                    .HasValue<Driver>("DRIVER")
+                    .HasValue<Convoyeur>("CONVOYEUR")
+                    .HasValue<Mechanic>("MECHANIC");
+
+                entity.Property(e => e.EmployeeCategory)
+                    .IsRequired()
+                    .HasMaxLength(50);
+            });
+                    modelBuilder.Entity<Maintenance>()
+                      .HasOne(m => m.Trip)
+                      .WithMany()
+                      .HasForeignKey(m => m.TripId)
+                      .OnDelete(DeleteBehavior.Restrict);
         }
 
         public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)

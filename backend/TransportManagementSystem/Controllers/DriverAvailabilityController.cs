@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using TransportManagementSystem.Data;
 using TransportManagementSystem.Entity;
@@ -8,6 +9,7 @@ namespace TransportManagementSystem.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]
+[Authorize]
 public class DriverAvailabilityController : ControllerBase
 {
     private readonly ApplicationDbContext _context;
@@ -22,19 +24,20 @@ public class DriverAvailabilityController : ControllerBase
     {
         try
         {
-            var driversQuery = _context.Drivers.AsQueryable();
+           
+            var driversQuery = _context.Set<Driver>().AsQueryable();
 
             if (!string.IsNullOrEmpty(filter.Search))
             {
                 driversQuery = driversQuery.Where(d =>
                     (d.Name != null && d.Name.Contains(filter.Search)) ||
-                    (d.PermisNumber != null && d.PermisNumber.Contains(filter.Search)) ||
-                    d.Phone.Contains(filter.Search) ||
+                    (d.DrivingLicense != null && d.DrivingLicense.Contains(filter.Search)) ||
+                    d.PhoneNumber.Contains(filter.Search) ||
                     (d.Status != null && d.Status.Contains(filter.Search))
                 );
             }
 
-            
+
             var totalCount = await driversQuery.CountAsync();
 
             if (filter.PageIndex.HasValue && filter.PageSize.HasValue)
@@ -72,7 +75,7 @@ public class DriverAvailabilityController : ControllerBase
                 {
                     DriverId = driver.Id,
                     DriverName = driver.Name,
-                    Phone = driver.Phone,
+                    Phone = driver.PhoneNumber, // Use PhoneNumber instead of Phone
                     Status = driver.Status,
                     Availability = new Dictionary<string, AvailabilityDayDto>()
                 };
@@ -88,22 +91,22 @@ public class DriverAvailabilityController : ControllerBase
                     var isCompanyDayOff = companyDayOffs.Contains(date.Date);
                     var isDayOff = isWeekend || isCompanyDayOff;
 
-                    
+
                     bool isAvailable;
 
                     if (isDayOff)
                     {
-                       
+
                         isAvailable = false;
                     }
                     else if (existing != null)
                     {
-                        
+
                         isAvailable = existing.IsAvailable;
                     }
                     else
                     {
-                      
+
                         isAvailable = true;
                     }
 
@@ -142,8 +145,8 @@ public class DriverAvailabilityController : ControllerBase
     {
         try
         {
-          
-            var driver = await _context.Drivers.FindAsync(driverId);
+            // Use Set<Driver>() instead of Drivers DbSet
+            var driver = await _context.Set<Driver>().FindAsync(driverId);
             if (driver == null)
             {
                 return NotFound(new
@@ -155,7 +158,7 @@ public class DriverAvailabilityController : ControllerBase
 
             var date = DateTime.ParseExact(updateDto.Date, "yyyy-MM-dd", null);
 
-           
+
             var isWeekend = date.DayOfWeek == DayOfWeek.Sunday || date.DayOfWeek == DayOfWeek.Saturday;
             if (isWeekend)
             {
@@ -166,7 +169,7 @@ public class DriverAvailabilityController : ControllerBase
                 });
             }
 
-           
+
             var isCompanyDayOff = await _context.DayOffs
                 .AnyAsync(cdo => cdo.Date == date);
             if (isCompanyDayOff)
@@ -178,13 +181,13 @@ public class DriverAvailabilityController : ControllerBase
                 });
             }
 
-           
+
             var existingAvailability = await _context.DriverAvailabilities
                 .FirstOrDefaultAsync(da => da.DriverId == driverId && da.Date == date);
 
             if (existingAvailability != null)
             {
-               
+
                 existingAvailability.IsAvailable = updateDto.IsAvailable;
                 existingAvailability.IsDayOff = updateDto.IsDayOff;
                 existingAvailability.Reason = updateDto.Reason ?? "";
@@ -192,11 +195,12 @@ public class DriverAvailabilityController : ControllerBase
             }
             else
             {
-                
+
                 var newAvailability = new DriverAvailability
                 {
                     DriverId = driverId,
-                    Date = date,
+                    StartDate = date,
+                    EndDate = date,
                     IsAvailable = updateDto.IsAvailable,
                     IsDayOff = updateDto.IsDayOff,
                     Reason = updateDto.Reason ?? "",
@@ -227,7 +231,7 @@ public class DriverAvailabilityController : ControllerBase
         }
     }
 
- 
+
     [HttpGet("CompanyDayOffs")]
     public async Task<IActionResult> GetCompanyDayOffs()
     {
@@ -265,8 +269,8 @@ public class DriverAvailabilityController : ControllerBase
     {
         try
         {
-          
-            var driver = await _context.Drivers.FindAsync(driverId);
+            // Use Set<Driver>() instead of Drivers DbSet
+            var driver = await _context.Set<Driver>().FindAsync(driverId);
             if (driver == null)
             {
                 return NotFound(new
@@ -278,19 +282,19 @@ public class DriverAvailabilityController : ControllerBase
 
             var dateList = dates.Select(d => DateTime.ParseExact(d, "yyyy-MM-dd", null)).ToList();
 
-            
+
             var companyDayOffs = await _context.DayOffs
                 .Where(cdo => dateList.Contains(cdo.Date))
                 .Select(cdo => cdo.Date)
                 .ToListAsync();
 
-            
+
             var existingDates = await _context.DriverAvailabilities
                 .Where(da => da.DriverId == driverId && dateList.Contains(da.Date))
                 .Select(da => da.Date)
                 .ToListAsync();
 
-            
+
             var newDates = dateList.Where(d => !existingDates.Contains(d)).ToList();
 
             if (newDates.Any())
@@ -303,7 +307,8 @@ public class DriverAvailabilityController : ControllerBase
                     return new DriverAvailability
                     {
                         DriverId = driverId,
-                        Date = date,
+                        StartDate = date,
+                        EndDate = date,
                         IsAvailable = !isWeekend && !isCompanyDayOff, // Disponible par défaut
                         IsDayOff = isWeekend || isCompanyDayOff,
                         Reason = isWeekend ? "Weekend" : isCompanyDayOff ? "Jour férié" : "",
@@ -342,7 +347,8 @@ public class DriverAvailabilityController : ControllerBase
         {
             var targetDate = DateTime.ParseExact(date, "yyyy-MM-dd", null);
 
-            var totalDrivers = await _context.Drivers.CountAsync();
+            // Use Set<Driver>() instead of Drivers DbSet
+            var totalDrivers = await _context.Set<Driver>().CountAsync();
             var availableDrivers = await _context.DriverAvailabilities
                 .Where(da => da.Date == targetDate && da.IsAvailable && !da.IsDayOff)
                 .CountAsync();
@@ -375,6 +381,7 @@ public class DriverAvailabilityController : ControllerBase
             });
         }
     }
+
     [HttpGet("AvailableDrivers")]
     public async Task<ActionResult<AvailableDriversResponseDto>> GetAvailableDrivers(
         [FromQuery] string date,
@@ -389,10 +396,9 @@ public class DriverAvailabilityController : ControllerBase
             bool isWeekend = checkDate.DayOfWeek == DayOfWeek.Saturday || checkDate.DayOfWeek == DayOfWeek.Sunday;
             bool isCompanyDayOff = await IsCompanyDayOff(checkDate);
 
-            // Fetch all drivers
-            var allDrivers = await _context.Drivers
-                .Include(d => d.Zone)
-                .Where(d => d.IsEnable && (!zoneId.HasValue || d.ZoneId == zoneId.Value))
+            // Fetch all drivers using Set<Driver>()
+            var allDrivers = await _context.Set<Driver>()
+                .Where(d => d.IsEnable)
                 .ToListAsync();
 
             // Get trips on the date, excluding the current trip
@@ -484,8 +490,8 @@ public class DriverAvailabilityController : ControllerBase
                     DriverName = driver.Name,
                     IsAvailable = isAvailable,
                     Reason = reason,
-                    ZoneName = driver.Zone?.Name,
-                    PermisNumber = driver.PermisNumber
+                    ZoneName = "",
+                    PermisNumber = driver.DrivingLicense
                 };
 
                 if (isAvailable)
@@ -527,13 +533,13 @@ public class DriverAvailabilityController : ControllerBase
                 return BadRequest("Invalid date format. Use YYYY-MM-DD.");
             }
 
-            var driver = await _context.Drivers
+            var driver = await _context.Set<Driver>()
                 .Where(d => d.Id == driverId && d.IsEnable)
                 .Select(d => new
                 {
                     d.Id,
                     d.Name,
-                    d.PermisNumber
+                    DrivingLicense = d.DrivingLicense
                 })
                 .FirstOrDefaultAsync();
 
@@ -542,7 +548,7 @@ public class DriverAvailabilityController : ControllerBase
                 return NotFound($"Chauffeur avec ID {driverId} non trouvé.");
             }
 
-           
+
             var availabilityRecord = await _context.DriverAvailabilities
                 .Where(da => da.DriverId == driverId && da.Date.Date == checkDate.Date)
                 .Select(da => new
@@ -555,7 +561,7 @@ public class DriverAvailabilityController : ControllerBase
                 })
                 .FirstOrDefaultAsync();
 
-           
+
             if (availabilityRecord != null)
             {
                 if (availabilityRecord.IsDayOff)
@@ -567,7 +573,7 @@ public class DriverAvailabilityController : ControllerBase
                         IsAvailable = false,
                         IsDayOff = true,
                         Reason = availabilityRecord.Reason ?? "Day off scheduled",
-                        
+                        PermisNumber = driver.DrivingLicense
                     });
                 }
                 else if (!availabilityRecord.IsAvailable)
@@ -579,10 +585,10 @@ public class DriverAvailabilityController : ControllerBase
                         IsAvailable = false,
                         IsDayOff = false,
                         Reason = availabilityRecord.Reason ?? "Manually marked as unavailable",
-                        
+                        PermisNumber = driver.DrivingLicense
                     });
                 }
-               
+
             }
 
             bool isWeekend = checkDate.DayOfWeek == DayOfWeek.Saturday || checkDate.DayOfWeek == DayOfWeek.Sunday;
@@ -603,7 +609,7 @@ public class DriverAvailabilityController : ControllerBase
                 })
                 .FirstOrDefaultAsync();
 
-           
+
             if (isWeekend && availabilityRecord == null)
             {
                 return Ok(new DriverAvailabilityDto
@@ -613,11 +619,11 @@ public class DriverAvailabilityController : ControllerBase
                     IsAvailable = false,
                     IsDayOff = true,
                     Reason = "Weekend - No scheduled work",
-                    
+                    PermisNumber = driver.DrivingLicense
                 });
             }
 
-      
+
             if (isCompanyDayOff && availabilityRecord == null)
             {
                 return Ok(new DriverAvailabilityDto
@@ -627,14 +633,14 @@ public class DriverAvailabilityController : ControllerBase
                     IsAvailable = false,
                     IsDayOff = true,
                     Reason = "Company holiday - No scheduled work",
-                    
+                    PermisNumber = driver.DrivingLicense
                 });
             }
 
-           
+
             if ((isWeekend || isCompanyDayOff) && availabilityRecord != null && availabilityRecord.IsAvailable)
             {
-               
+
                 if (conflictingTrip != null)
                 {
                     return Ok(new DriverAvailabilityDto
@@ -644,8 +650,7 @@ public class DriverAvailabilityController : ControllerBase
                         IsAvailable = false,
                         IsDayOff = false,
                         Reason = $"Already assigned to trip #{conflictingTrip.Id}",
-                        
-                      
+                        PermisNumber = driver.DrivingLicense
                     });
                 }
 
@@ -656,11 +661,11 @@ public class DriverAvailabilityController : ControllerBase
                     IsAvailable = true,
                     IsDayOff = false,
                     Reason = availabilityRecord.Reason ?? $"Available by override ({(isWeekend ? "Weekend" : "Holiday")})",
-                    
+                    PermisNumber = driver.DrivingLicense
                 });
             }
 
-           
+
             if (conflictingTrip != null)
             {
                 return Ok(new DriverAvailabilityDto
@@ -670,11 +675,11 @@ public class DriverAvailabilityController : ControllerBase
                     IsAvailable = false,
                     IsDayOff = false,
                     Reason = $"Already assigned to trip #{conflictingTrip.Id}",
-                   
+                    PermisNumber = driver.DrivingLicense
                 });
             }
 
-          
+
             return Ok(new DriverAvailabilityDto
             {
                 DriverId = driver.Id,
@@ -682,19 +687,19 @@ public class DriverAvailabilityController : ControllerBase
                 IsAvailable = true,
                 IsDayOff = false,
                 Reason = availabilityRecord?.Reason ?? "Available for assignment",
-                
+                PermisNumber = driver.DrivingLicense
             });
         }
         catch (Exception ex)
         {
-           
+
             return StatusCode(500, "Une erreur est survenue lors de la vérification de disponibilité.");
         }
     }
 
     private async Task<bool> IsCompanyDayOff(DateTime date)
     {
-      
+
         var isDayOff = await _context.DayOffs
             .AnyAsync(d => d.Date.Date == date.Date);
 

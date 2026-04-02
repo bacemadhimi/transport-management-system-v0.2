@@ -1,4 +1,4 @@
-import { Component, OnInit, Inject } from '@angular/core';
+﻿import { Component, OnInit, Inject } from '@angular/core';
 import { FormArray, FormBuilder, FormGroup, Validators, AbstractControl } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
@@ -89,7 +89,7 @@ import { ICreateTrajectDto, ITraject } from '../../../types/traject';
             </div>
             <div class="section-badge departure-badge">Départ</div>
           </div>
-          
+
           <mat-form-field appearance="outline" class="full-width">
             <mat-label>Lieu de départ</mat-label>
             <textarea
@@ -122,17 +122,17 @@ import { ICreateTrajectDto, ITraject } from '../../../types/traject';
           </div>
 
           <!-- Liste des points avec Drag & Drop -->
-          <div class="points-container" 
+          <div class="points-container"
                cdkDropList
                [cdkDropListData]="pointControls"
                (cdkDropListDropped)="dropPoint($event)"
                [cdkDropListDisabled]="points.length <= 1">
-            
-            <div *ngFor="let pointGroup of pointControls; let i = index" 
+
+            <div *ngFor="let pointGroup of pointControls; let i = index"
                  class="point-card"
                  cdkDrag
                  [cdkDragDisabled]="points.length <= 1">
-              
+
               <!-- Drag Handle -->
               <div class="drag-handle" cdkDragHandle *ngIf="points.length > 1">
                 <mat-icon>drag_indicator</mat-icon>
@@ -194,7 +194,7 @@ import { ICreateTrajectDto, ITraject } from '../../../types/traject';
             </div>
             <div class="section-badge arrival-badge">Arrivée</div>
           </div>
-          
+
           <mat-form-field appearance="outline" class="full-width">
             <mat-label>Lieu d'arrivée</mat-label>
             <textarea
@@ -217,7 +217,7 @@ import { ICreateTrajectDto, ITraject } from '../../../types/traject';
             <mat-icon class="section-icon">info</mat-icon>
             <h3>Informations estimées</h3>
           </div>
-          
+
           <div class="estimates-grid">
             <mat-form-field appearance="outline">
               <mat-label>Distance totale estimée</mat-label>
@@ -259,7 +259,7 @@ import { ICreateTrajectDto, ITraject } from '../../../types/traject';
             <mat-icon class="section-icon">preview</mat-icon>
             <h3>Aperçu du traject</h3>
           </div>
-          
+
           <div class="preview-timeline">
             <!-- Départ -->
             <div class="preview-point start">
@@ -312,7 +312,7 @@ import { ICreateTrajectDto, ITraject } from '../../../types/traject';
             <span *ngIf="!loading">Créer le traject</span>
             <span *ngIf="loading">Création en cours...</span>
           </button>
-          
+
           <button mat-button type="button" (click)="onCancel()" [disabled]="loading">
             Annuler
           </button>
@@ -332,7 +332,7 @@ export class TrajectFormSimpleComponent implements OnInit {
     private http: Http,
     private dialogRef: MatDialogRef<TrajectFormSimpleComponent>,
     private snackBar: MatSnackBar,
-    @Inject(MAT_DIALOG_DATA) public data: { 
+    @Inject(MAT_DIALOG_DATA) public data: {
       onTrajectCreated: (traject: ITraject) => void,
       deliveryAddresses?: string[]
     }
@@ -380,7 +380,7 @@ export class TrajectFormSimpleComponent implements OnInit {
     }
   }
 
-  // Gestion des points avec typage correct
+
   get pointControls(): FormGroup[] {
     return this.points.controls as FormGroup[];
   }
@@ -406,30 +406,30 @@ export class TrajectFormSimpleComponent implements OnInit {
     });
   }
 
-  // Correction du type pour le Drag & Drop
+
   dropPoint(event: CdkDragDrop<FormGroup[]>): void {
     if (event.previousIndex !== event.currentIndex) {
-      // Utiliser moveItemInArray pour réorganiser le FormArray
+
       const controls = this.pointControls;
       moveItemInArray(controls, event.previousIndex, event.currentIndex);
-      
-      // Reconstruire le FormArray avec le nouvel ordre
+
+
       this.points.clear();
       controls.forEach(control => this.points.push(control));
-      
-      // Mettre à jour les ordres
+
+
       this.updatePointOrders();
     }
   }
 
-  // Prévisualisation
+
   showPreview(): boolean {
-    return !!(this.trajectForm.get('departureLocation')?.value || 
-              this.trajectForm.get('arrivalLocation')?.value || 
+    return !!(this.trajectForm.get('departureLocation')?.value ||
+              this.trajectForm.get('arrivalLocation')?.value ||
               this.points.length > 0);
   }
 
-  // Soumission
+
   onSubmit(): void {
     if (this.trajectForm.invalid) {
       this.markFormGroupTouched(this.trajectForm);
@@ -437,8 +437,8 @@ export class TrajectFormSimpleComponent implements OnInit {
     }
 
     const formValue = this.trajectForm.value;
-    
-    // Préparer tous les points (départ + intermédiaires + arrivée)
+
+
     const allPoints = [
       {
         location: formValue.departureLocation,
@@ -463,30 +463,30 @@ export class TrajectFormSimpleComponent implements OnInit {
         location: p.location,
         order: p.order
       })),
-     
+
     };
 
     this.loading = true;
     this.http.createTraject(trajectData).subscribe({
       next: (traject: ITraject) => {
-        this.snackBar.open('Traject créé avec succès', 'Fermer', { 
+        this.snackBar.open('Traject créé avec succès', 'Fermer', {
           duration: 3000,
           panelClass: ['success-snackbar']
         });
-        
+
         if (this.data.onTrajectCreated) {
           this.data.onTrajectCreated(traject);
         }
-        
+
         this.dialogRef.close(traject);
         this.loading = false;
       },
       error: (error) => {
         console.error('Create traject error:', error);
-        const errorMessage = error.error?.message || 
-                           error.error?.errors?.[0]?.message || 
+        const errorMessage = error.error?.message ||
+                           error.error?.errors?.[0]?.message ||
                            'Erreur lors de la création du traject';
-        this.snackBar.open(errorMessage, 'Fermer', { 
+        this.snackBar.open(errorMessage, 'Fermer', {
           duration: 5000,
           panelClass: ['error-snackbar']
         });
@@ -495,7 +495,7 @@ export class TrajectFormSimpleComponent implements OnInit {
     });
   }
 
-  // Helper pour la validation
+
   private markFormGroupTouched(formGroup: FormGroup): void {
     Object.values(formGroup.controls).forEach(control => {
       control.markAsTouched();

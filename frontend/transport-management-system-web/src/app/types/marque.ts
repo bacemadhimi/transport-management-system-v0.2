@@ -1,4 +1,4 @@
-export interface IMarque {
+﻿export interface IMarque {
     id: number;
     name: string;
     createdDate?: string;
@@ -6,5 +6,5 @@ export interface IMarque {
 
 export interface IMarqueDto {
     name: string;
-    id?: number; 
+    id?: number;
 }

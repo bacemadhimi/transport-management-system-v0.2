@@ -28,7 +28,7 @@ public class OrderDto
     public string? Notes { get; set; }
     public int Priority { get; set; }
     public bool HasDelivery { get; set; }
-    public string SourceSystem { get; set; }
+    public DataSource SourceSystem { get; set; }
 }
 
 public class OrderDetailsDto

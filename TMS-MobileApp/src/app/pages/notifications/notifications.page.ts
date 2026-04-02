@@ -1,10 +1,11 @@
 import { Component, OnInit, OnDestroy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { IonicModule } from '@ionic/angular';
+import { IonicModule, ToastController } from '@ionic/angular';
 import { RouterModule } from '@angular/router';
 import { TripService } from '../../services/trip.service';
 import { ITrip, TripStatus } from '../../types/trip';
 import { Subscription } from 'rxjs';
+import { Network } from '@capacitor/network';
 
 @Component({
   selector: 'app-notifications',
@@ -15,41 +16,159 @@ import { Subscription } from 'rxjs';
 })
 export class NotificationsPage implements OnInit, OnDestroy {
   tripService = inject(TripService);
+  toastController = inject(ToastController);
 
   allNotifications: (ITrip & { notificationType?: 'cancelled' | 'new' })[] = [];
   cancelledTrips: (ITrip & { notificationType?: 'cancelled' })[] = [];
   newTrips: (ITrip & { notificationType?: 'new' })[] = [];
 
   private _sub: Subscription | null = null;
+  private networkListener: any;
+  
+  // Offline mode flags
+  isOnline: boolean = true;
+  offlineMode: boolean = false;
+  isLoading: boolean = false;
+  lastSyncTime: Date | null = null;
 
-  ngOnInit() {
-    this.loadNotifications();
+  async ngOnInit() {
+    await this.checkNetworkStatus();
+    this.setupNetworkListener();
+    
+    // Always load from cache first for offline viewing
+    this.loadFromCache();
+    
+    // Then try to load fresh data if online
+    if (this.isOnline) {
+      this.loadNotifications();
+    }
   }
 
   ngOnDestroy() {
     this._sub?.unsubscribe();
+    if (this.networkListener) {
+      this.networkListener.remove();
+    }
+  }
+
+  private async checkNetworkStatus() {
+    try {
+      const status = await Network.getStatus();
+      this.isOnline = status.connected;
+      this.offlineMode = !this.isOnline;
+      console.log('Network status:', this.isOnline ? 'online' : 'offline');
+    } catch (error) {
+      console.error('Error checking network:', error);
+      this.isOnline = false;
+      this.offlineMode = true;
+    }
+  }
+
+  private setupNetworkListener() {
+    Network.addListener('networkStatusChange', async (status) => {
+      const wasOffline = !this.isOnline;
+      this.isOnline = status.connected;
+      this.offlineMode = !this.isOnline;
+      
+      console.log('Network changed:', this.isOnline ? 'online' : 'offline');
+      
+      if (wasOffline && this.isOnline) {
+        // Just came online - refresh data
+        await this.loadNotifications();
+        this.showToast('Connection restored - Notifications updated', 'success');
+      }
+    });
   }
 
   loadNotifications() {
+    if (!this.isOnline) {
+      // Still show cached data when offline
+      this.showToast('Offline - Showing cached notifications', 'warning');
+      return;
+    }
+
+    this.isLoading = true;
+    
     this._sub = this.tripService.getAllTrips().subscribe({
       next: (trips) => {
-        this.cancelledTrips = trips
-          .filter(t => t.tripStatus === TripStatus.Cancelled)
-          .map(t => ({ ...t, notificationType: 'cancelled' as const }));
-
-        this.newTrips = trips
-          .filter(t => t.tripStatus === TripStatus.Planned)
-          .map(t => ({ ...t, notificationType: 'new' as const }));
-
-        this.allNotifications = [
-          ...this.cancelledTrips,
-          ...this.newTrips
-        ];
+        this.processTrips(trips);
+        this.cacheNotifications(trips);
+        this.lastSyncTime = new Date();
+        this.isLoading = false;
       },
       error: (err) => {
         console.error('Error loading notifications:', err);
+        this.showToast('Failed to load notifications', 'danger');
+        this.isLoading = false;
       }
     });
+  }
+
+  private processTrips(trips: ITrip[]) {
+    this.cancelledTrips = trips
+      .filter(t => t.tripStatus === TripStatus.Cancelled)
+      .map(t => ({ ...t, notificationType: 'cancelled' as const }));
+
+    this.newTrips = trips
+      .filter(t => t.tripStatus === TripStatus.Planned)
+      .map(t => ({ ...t, notificationType: 'new' as const }));
+
+    this.allNotifications = [
+      ...this.cancelledTrips,
+      ...this.newTrips
+    ];
+  }
+
+  private loadFromCache() {
+    try {
+      const cached = localStorage.getItem('cachedNotifications');
+      const syncTime = localStorage.getItem('notificationsSyncTime');
+      
+      if (cached) {
+        const trips = JSON.parse(cached) as ITrip[];
+        this.processTrips(trips);
+        
+        if (syncTime) {
+          this.lastSyncTime = new Date(parseInt(syncTime));
+        }
+        
+        console.log('Loaded notifications from cache:', trips.length);
+      }
+    } catch (error) {
+      console.error('Error loading from cache:', error);
+    }
+  }
+
+  private cacheNotifications(trips: ITrip[]) {
+    try {
+      localStorage.setItem('cachedNotifications', JSON.stringify(trips));
+      localStorage.setItem('notificationsSyncTime', Date.now().toString());
+      console.log('Notifications cached successfully');
+    } catch (error) {
+      console.error('Error caching notifications:', error);
+    }
+  }
+
+  async refreshNotifications(event?: any) {
+    if (this.isOnline) {
+      await this.loadNotifications();
+    } else {
+      this.showToast('Cannot refresh while offline - Showing cached data', 'warning');
+    }
+    
+    if (event) {
+      event.target.complete();
+    }
+  }
+
+  private async showToast(message: string, color: 'success' | 'danger' | 'warning' = 'success') {
+    const toast = await this.toastController.create({
+      message,
+      duration: 3000,
+      color,
+      position: 'top'
+    });
+    await toast.present();
   }
 
   getReasonOrVehicle(trip: ITrip): string {
@@ -69,5 +188,43 @@ export class NotificationsPage implements OnInit, OnDestroy {
 
   getSectionTitle(type: 'cancelled' | 'new'): string {
     return type === 'cancelled' ? '🚫 CANCELLED TRIPS' : '✨ NEW TRIPS';
+  }
+
+  getOfflineStatusText(): string {
+    if (this.offlineMode) {
+      return '📴 Offline Mode - Showing cached notifications';
+    }
+    if (this.lastSyncTime) {
+      return `Last updated: ${this.lastSyncTime.toLocaleString()}`;
+    }
+    return '';
+  }
+
+  hasNotifications(): boolean {
+    return this.allNotifications.length > 0;
+  }
+
+  getEmptyStateMessage(): string {
+    if (this.isLoading) {
+      return 'Loading notifications...';
+    }
+    if (this.offlineMode && !this.hasNotifications()) {
+      return 'No cached notifications available offline';
+    }
+    return 'No notifications to display';
+  }
+
+  clearCache() {
+    try {
+      localStorage.removeItem('cachedNotifications');
+      localStorage.removeItem('notificationsSyncTime');
+      this.allNotifications = [];
+      this.cancelledTrips = [];
+      this.newTrips = [];
+      this.lastSyncTime = null;
+      this.showToast('Cache cleared', 'success');
+    } catch (error) {
+      console.error('Error clearing cache:', error);
+    }
   }
 }

@@ -1,4 +1,4 @@
-﻿using System.ComponentModel;
+﻿
 using System.Text.Json.Serialization;
 
 namespace TransportManagementSystem.Entity;
@@ -15,6 +15,12 @@ public class Trip
     public DateTime? ActualEndDate { get; set; }
     public DateTime? EstimatedStartDate { get; set; }
     public DateTime? EstimatedEndDate { get; set; }
+
+    // GPS coordinates for trip start and end
+    public double? EndLatitude { get; set; }
+    public double? EndLongitude { get; set; }
+    public double? StartLatitude { get; set; }
+    public double? StartLongitude { get; set; }
 
 
     public int TruckId { get; set; }
@@ -46,16 +52,35 @@ public class Trip
     [JsonIgnore]
     internal User? UpdatedBy { get; set; }
 
+    // GPS Tracking fields
+    public string? CurrentLatitude { get; set; } // Position actuelle du chauffeur
+    public string? CurrentLongitude { get; set; }
+    public DateTime? LastPositionUpdate { get; set; } // Dernière mise à jour GPS
 
+    // Assignment tracking
+    public bool IsAssigned { get; set; } = false;
+    public DateTime? AssignedAt { get; set; }
+    public DateTime? AcceptedAt { get; set; }
 
 }
 
+/// <summary>
+/// Statut complet du voyage pour le workflow mobile
+/// </summary>
 public enum TripStatus
 {
-    Planned,              // Planifié (par l'opérateur)
-    Accepted,            // Accepté (par le chauffeur mobile)
-    LoadingInProgress,   // En cours de chargement (après confirmation)
-    DeliveryInProgress,  // En cours de livraison (en route)
-    Receipt,             // Réception (Livrée - arrivée destination)
-    Cancelled            // Annulé
+    Pending,              // En attente d'assignment (nouveau)
+    Assigned,             // Assigné à un chauffeur (en attente d'acceptation)
+    Accepted,             // Accepté par le chauffeur
+    Loading,              // Chargement en cours
+    InDelivery,           // En cours de livraison (sur la route)
+    Arrived,              // Arrivé à destination
+    Completed,            // Livraison terminée
+    Cancelled,            // Annulé
+    Refused,              // Refusé par le chauffeur
+    // Anciens noms pour compatibilité (deprecated)
+    Planned = Pending,
+    LoadingInProgress = Loading,
+    DeliveryInProgress = InDelivery,
+    Receipt = Arrived
 }

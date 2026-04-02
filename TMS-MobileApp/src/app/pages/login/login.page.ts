@@ -1,11 +1,17 @@
 import { Component, ViewChild, AfterViewInit } from '@angular/core';
 import { IonicModule, IonInput, AlertController, ToastController } from '@ionic/angular';
-import { HttpClient, HttpParams, HttpClientModule } from '@angular/common/http';
+import { HttpClient, HttpClientModule } from '@angular/common/http';
 import { Router, RouterModule } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../services/auth.service';
- 
+import { Network } from '@capacitor/network';
+import { Capacitor } from '@capacitor/core';
+import { Preferences } from '@capacitor/preferences';
+import { App } from '@capacitor/app';
+import { firstValueFrom } from 'rxjs';
+import { DatabaseService } from 'src/app/services/sqlite.service';
+import { environment } from 'src/environments/environment';
 
 @Component({
   selector: 'app-login',
@@ -21,32 +27,151 @@ import { AuthService } from '../../services/auth.service';
   ]
 })
 export class LoginPage implements AfterViewInit {
- 
   @ViewChild('usernameInput') usernameInput!: IonInput;
   @ViewChild('passwordInput') passwordInput!: IonInput;
- 
-  //apiUrl = 'http://localhost:5191/api/User';
-  apiUrl = 'https://localhost:7287/api/Auth/login';
- 
+  
+  apiUrl = environment.apiUrl + '/api/Auth/login';
+  
   isLoading = false;
   errorMessage = '';
   showPassword = false;
+  isOnline = true;
+  offlineMode = false;
+  rememberMe = false; // Add this for the checkbox
+  platform: string;
 
   constructor(
     private alertCtrl: AlertController,
     private toastCtrl: ToastController,
     private http: HttpClient,
     private router: Router,
-    private authService: AuthService
-  ) {}
- 
-  ngAfterViewInit() {
-    // Clear inputs on page load
-    this.usernameInput.value = '';
-    this.passwordInput.value = '';
+    private authService: AuthService,
+    private dbService: DatabaseService
+  ) {
+    this.platform = Capacitor.getPlatform();
+    console.log('Running on platform:', this.platform);
   }
 
-  // Toggle password visibility
+  async ngAfterViewInit() {
+    await this.checkNetworkStatus();
+    await this.loadSavedCredentials();
+    
+    // Listen for network changes
+    Network.addListener('networkStatusChange', (status) => {
+      this.isOnline = status.connected;
+      console.log('Network status changed:', this.isOnline ? 'online' : 'offline');
+      
+      if (this.isOnline) {
+        this.offlineMode = false;
+        this.showToast('Connection restored - Online mode', 2000, 'success');
+      } else {
+        this.showToast('You are offline - Using local credentials', 3000, 'warning');
+      }
+    });
+  }
+
+  async checkNetworkStatus() {
+    try {
+      const status = await Network.getStatus();
+      this.isOnline = status.connected;
+      console.log('Initial network status:', this.isOnline ? 'online' : 'offline');
+    } catch (error) {
+      console.error('Error checking network status:', error);
+      this.isOnline = false;
+    }
+  }
+
+  async loadSavedCredentials() {
+    try {
+      if (this.platform === 'android' || this.platform === 'ios') {
+        // Native platform - use SQLite
+        const lastCreds = await this.dbService.getLastCredentials();
+        
+        if (lastCreds) {
+          if (this.usernameInput) {
+            const input = await this.usernameInput.getInputElement();
+            input.value = lastCreds.email;
+            
+            // Optionally auto-fill password if remember me was checked
+            // You might want to store a flag for this
+            const rememberPref = await Preferences.get({ key: 'rememberMe' });
+            if (rememberPref.value === 'true') {
+              const passwordInput = await this.passwordInput.getInputElement();
+              passwordInput.value = lastCreds.password;
+              this.rememberMe = true;
+            }
+          }
+          
+          if (!this.isOnline) {
+            this.offlineMode = true;
+            this.showToast('Offline mode - Using saved credentials', 3000, 'warning');
+          }
+        }
+      } else {
+        // Web platform - use Preferences
+        const savedEmail = await Preferences.get({ key: 'saved_email' });
+        const savedPassword = await Preferences.get({ key: 'saved_password' });
+        const rememberPref = await Preferences.get({ key: 'rememberMe' });
+        
+        if (savedEmail.value && this.usernameInput) {
+          const input = await this.usernameInput.getInputElement();
+          input.value = savedEmail.value;
+          
+          if (rememberPref.value === 'true' && savedPassword.value) {
+            const passwordInput = await this.passwordInput.getInputElement();
+            passwordInput.value = savedPassword.value;
+            this.rememberMe = true;
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error loading saved credentials:', error);
+    }
+  }
+
+  async saveCredentials(email: string, password: string) {
+    try {
+      if (this.platform === 'android' || this.platform === 'ios') {
+        // Native platforms - save to SQLite (always save for offline access)
+        await this.dbService.saveCredentials(email, password);
+        console.log('✅ Credentials saved to SQLite database');
+        
+        // Save remember me preference
+        await Preferences.set({
+          key: 'rememberMe',
+          value: String(this.rememberMe)
+        });
+      } else {
+        // Web platform - save to Preferences (only if remember me is checked)
+        if (this.rememberMe) {
+          await Preferences.set({
+            key: 'saved_email',
+            value: email
+          });
+          await Preferences.set({
+            key: 'saved_password',
+            value: password
+          });
+          await Preferences.set({
+            key: 'rememberMe',
+            value: 'true'
+          });
+          console.log('✅ Credentials saved to Preferences (web)');
+        } else {
+          // Clear saved credentials if remember me is not checked
+          await Preferences.remove({ key: 'saved_email' });
+          await Preferences.remove({ key: 'saved_password' });
+          await Preferences.set({
+            key: 'rememberMe',
+            value: 'false'
+          });
+        }
+      }
+    } catch (error) {
+      console.error('❌ Error saving credentials:', error);
+    }
+  }
+
   togglePassword() {
     this.showPassword = !this.showPassword;
     const input = this.passwordInput;
@@ -55,18 +180,16 @@ export class LoginPage implements AfterViewInit {
     }
   }
 
-  // Reusable toast method
-  async showToast(message: string, duration = 2000) {
+  async showToast(message: string, duration = 2000, color: string = 'success') {
     const toast = await this.toastCtrl.create({
       message,
       duration,
-      color: 'success',
-      position: 'middle'
+      color,
+      position: 'top'
     });
     await toast.present();
   }
 
-  // Reusable alert method
   async showAlert(header: string, message: string) {
     const alert = await this.alertCtrl.create({
       header,
@@ -75,103 +198,57 @@ export class LoginPage implements AfterViewInit {
     });
     await alert.present();
   }
- 
- 
-//    async login() {
-//   const email = (await this.usernameInput.getInputElement()).value as string;
-//   const password = (await this.passwordInput.getInputElement()).value as string;
- 
-//   if (!email || !password) {
-//     this.errorMessage = 'Please enter both email and password';
-//     return;
-//   }
- 
-//   // Clear previous error
-//   this.errorMessage = '';
-//   this.isLoading = true;
- 
 
-//   // Clear previous error
-//   this.errorMessage = '';
-//   this.isLoading = true;
+  async login() {
+    const email = (await this.usernameInput.getInputElement()).value as string;
+    const password = (await this.passwordInput.getInputElement()).value as string;
 
-//   const body = {
-//     email: email,
-//     password: password
-//   };
+    if (!email || !password) {
+      this.errorMessage = 'Please enter both email and password';
+      return;
+    }
 
+    this.errorMessage = '';
+    this.isLoading = true;
 
-//   this.http.post<any>(this.apiUrl, body).subscribe(
-//     async (res) => {
-//       // Create auth token object
-//       const authToken = {
-//         id: res.id,
-//         email: res.email,
-//         token: res.token,
-//         role: res.roles?.[0] || 'user', // Assuming roles is an array
-//         permissions: res.permissions || []
-//       };
- 
-//       // Use auth service to save token
-//       this.authService.saveToken(authToken);
-//       console.log('Token saved, isLoggedIn:', this.authService.isLoggedIn());
- 
-//       await this.showToast('Login successful!', 1500);
- 
+    // Check current network status
+    try {
+      const status = await Network.getStatus();
+      this.isOnline = status.connected;
+    } catch {
+      this.isOnline = false;
+    }
 
-//       // Use auth service to save token
-//       this.authService.saveToken(authToken);
-//       console.log('Token saved, isLoggedIn:', this.authService.isLoggedIn());
-
-//       await this.showToast('Login successful!', 1500);
-
-//       setTimeout(() => {
-//         console.log('Navigating to home...');
-//         this.router.navigate(['/home']);
-//       }, 1500);
-//     },
-//     async (err) => {
-//       this.isLoading = false;
-//       const msg = err?.error?.message || 'Invalid email or password';
-//       this.errorMessage = msg;
-//       console.error('Login error:', err);
-//     }
-//   );
-// }
-
-   async login() {
-  const email = (await this.usernameInput.getInputElement()).value as string;
-  const password = (await this.passwordInput.getInputElement()).value as string;
-
-  if (!email || !password) {
-    this.errorMessage = 'Please enter both email and password';
-    return;
+    if (!this.isOnline) {
+      await this.handleOfflineLogin(email, password);
+    } else {
+      await this.handleOnlineLogin(email, password);
+    }
   }
 
-  // Clear previous error and start loading
-  this.errorMessage = '';
-  this.isLoading = true;
+  private async handleOnlineLogin(email: string, password: string) {
+    const body = {
+      email: email,
+      password: password
+    };
 
-  const body = {
-    email: email,
-    password: password
-  };
-
-  this.http.post<any>(this.apiUrl, body).subscribe(
-    async (res) => {
+    try {
+      const res = await firstValueFrom(this.http.post<any>(this.apiUrl, body));
+      
       const roles = res.roles || [];
 
-      // 🚨 Only allow Driver role
       if (!roles.includes('Driver')) {
         this.isLoading = false;
         await this.showAlert(
-          'Accès refusé',
-          'Vous n\'avez pas le droit d\'accéder à cette application.'
+          'Access Denied',
+          'You do not have permission to access this application.'
         );
         return;
       }
 
-      // Create auth token object
+      // Save credentials based on platform
+      await this.saveCredentials(email, password);
+
       const authToken = {
         id: res.id,
         email: res.email,
@@ -180,38 +257,172 @@ export class LoginPage implements AfterViewInit {
         permissions: res.permissions || []
       };
 
-      // Save token
       this.authService.saveToken(authToken);
-      console.log('Token saved, isLoggedIn:', this.authService.isLoggedIn());
-
-      await this.showToast('Login successful!', 1500);
-
-      // Navigate to home
+      
+      await this.showToast('Login successful!', 1500, 'success');
+      this.isLoading = false;
       setTimeout(() => {
-        console.log('Navigating to home...');
         this.router.navigate(['/home']);
       }, 1500);
-    },
-    async (err) => {
+
+    } catch (error: any) {
       this.isLoading = false;
-      const msg = err?.error?.message || 'Invalid email or password';
-      this.errorMessage = msg;
-      console.error('Login error:', err);
-    }
-  );
+      console.log('API login failed, attempting offline fallback...');
+    
+      let errorMessage = 'Login failed\n\n';
+
+if (error.status === 0) {
+    errorMessage += 'Network error: Cannot reach server\n\n';
+    errorMessage += `Error message: ${error.message || 'No message'}\n`;
+    errorMessage += `URL called: ${this.apiUrl}\n`;
+    errorMessage += `App origin: ${window.location.origin}\n`;
+    errorMessage += `Platform: ${this.platform}\n`;
+    
+} else if (error.status === 404) {
+    errorMessage += `API endpoint not found (404)\n\n`;
+    errorMessage += `URL called: ${this.apiUrl}\n`;
+    errorMessage += `App origin: ${window.location.origin}\n`;
+    errorMessage += `Message: ${error.message}`;
+    
+} else if (error.status === 405) {
+    errorMessage += `Method not allowed (405)\n\n`;
+    errorMessage += `URL called: ${this.apiUrl}\n`;
+    errorMessage += `App origin: ${window.location.origin}\n`;
+    errorMessage += `Message: ${error.message}`;
+    
+} else {
+    errorMessage += `Status: ${error.status}\n`;
+    errorMessage += `Message: ${error.message}\n`;
+    errorMessage += `URL called: ${this.apiUrl}\n`;
+    errorMessage += `App origin: ${window.location.origin}`;
 }
 
+await this.showAlert('Login Error', errorMessage);
+      await this.handleOfflineLogin(email, password);
+    }
+  }
 
+  private async handleOfflineLogin(email: string, password: string) {
+    try {
+      let isValid = false;
+
+      if (this.platform === 'android' || this.platform === 'ios') {
+        // Native - validate against SQLite
+        isValid = await this.dbService.validateCredentials(email, password);
+      } else {
+        // Web - validate against saved Preferences
+        const savedPassword = await Preferences.get({ key: 'saved_password' });
+        isValid = savedPassword.value === password;
+      }
+      
+      if (isValid) {
+        let authToken: any = {
+          email: email,
+          role: 'Driver',
+          permissions: ['offline'],
+          offlineMode: true
+        };
+
+        if (this.platform === 'android' || this.platform === 'ios') {
+          const savedCreds = await this.dbService.getLastCredentials();
+          authToken.id = savedCreds?.id || 0;
+          authToken.token = 'offline-token';
+          await this.dbService.updateLastLogin(email);
+        } else {
+          authToken.id = 0;
+          authToken.token = 'offline-token';
+        }
+
+        this.authService.saveToken(authToken);
+        
+        await this.showToast('Offline login successful!', 2000, 'warning');
+        this.isLoading = false;
+        setTimeout(() => {
+          this.router.navigate(['/home'], { 
+            queryParams: { offline: true }
+          });
+        }, 1500);
+      } else {
+        this.isLoading = false;
+        this.errorMessage = 'Invalid credentials (offline mode)';
+      }
+    } catch (dbError) {
+      this.isLoading = false;
+      console.error('Offline login error:', dbError);
+      this.errorMessage = 'Offline authentication failed';
+    }
+  }
+
+  async clearSavedCredentials() {
+    try {
+      if (this.platform === 'android' || this.platform === 'ios') {
+        await this.dbService.clearAll();
+      } else {
+        await Preferences.remove({ key: 'saved_email' });
+        await Preferences.remove({ key: 'saved_password' });
+        await Preferences.remove({ key: 'rememberMe' });
+      }
+      await this.showToast('Saved credentials cleared', 2000, 'success');
+    } catch (error) {
+      console.error('Error clearing credentials:', error);
+    }
+  }
+
+  async getPlatformStorageInfo() {
+    if (this.platform === 'android' || this.platform === 'ios') {
+      const dbInfo = await this.dbService.getDatabaseInfo();
+      const stats = await this.dbService.getStats();
+      
+      const message = `
+        Platform: ${this.platform}
+        Storage: SQLite Database
+        Records: ${dbInfo.recordCount}
+        Last Login: ${stats.lastRecord?.lastLogin || 'None'}
+        File: ${dbInfo.filePath}
+      `;
+      
+      await this.showAlert('Storage Info', message);
+    } else {
+      const email = await Preferences.get({ key: 'saved_email' });
+      const rememberMe = await Preferences.get({ key: 'rememberMe' });
+      
+      const message = `
+        Platform: Web
+        Storage: Capacitor Preferences
+        Email Saved: ${email.value ? 'Yes' : 'No'}
+        Remember Me: ${rememberMe.value === 'true' ? 'Yes' : 'No'}
+      `;
+      
+      await this.showAlert('Storage Info', message);
+    }
+  }
 
   async quit() {
     const alert = await this.alertCtrl.create({
-      header: 'Quitter ?',
-      message: 'Vous voulez vraiment quitter ?',
+      header: 'Exit',
+      message: 'Are you sure you want to exit the application?',
       buttons: [
-        { text: 'Non', role: 'cancel' },
-        { text: 'Oui', handler: () => window.close() }
+        {
+          text: 'Cancel',
+          role: 'cancel',
+          cssClass: 'secondary'
+        },
+        {
+          text: 'Exit',
+          handler: () => {
+            this.isLoading = true;
+            setTimeout(() => {
+              if (this.platform === 'android' || this.platform === 'ios') {
+                App.exitApp();
+              } else {
+                window.close();
+              }
+            }, 500);
+          }
+        }
       ]
     });
+
     await alert.present();
   }
 }

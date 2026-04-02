@@ -31,7 +31,16 @@ export const routes: Routes = [
   {
     path: 'profile',
     loadComponent: () => import('./profile/profile.page').then( m => m.ProfilePage)
+  },
+{
+    path: 'chat',
+    loadComponent: () => import('./pages/chat/chat.component').then( m => m.ChatComponent),
+    canActivate: [authGuard]
+  },
+  {
+    path: 'barcode-test',
+    loadComponent: () => import('./pages/barcode-test/barcode-test.page').then( m => m.BarcodeTestPage),
+    canActivate: [authGuard]
   }
-
-  // Future routes will be added here
+ 
 ];

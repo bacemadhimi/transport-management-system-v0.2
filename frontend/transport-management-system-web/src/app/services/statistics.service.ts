@@ -1,11 +1,11 @@
-import { Injectable } from '@angular/core';
+﻿import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, catchError, map, of } from 'rxjs';
 import { environment } from '../../environments/environment.development';
-import { 
-  TripStatistics, 
-  StatisticsFilter, 
-  Truck, 
+import {
+  TripStatistics,
+  StatisticsFilter,
+  Truck,
   Driver,
   PieChartData
 } from '../types/pie-chart-data.model';
@@ -22,11 +22,11 @@ export class StatisticsService {
 
   getTripStatistics(filter: StatisticsFilter): Observable<TripStatistics> {
     const params = this.buildQueryParams(filter);
-    
+
     return this.http.get<TripStatistics>(`${this.baseUrl}/trip-statistics`, { params }).pipe(
       catchError(error => {
         console.error('Error fetching trip statistics:', error);
-        // Return fallback data if API fails
+
         return of(this.getFallbackStatistics(filter));
       })
     );
@@ -34,7 +34,7 @@ export class StatisticsService {
 
   getTripStatusDistribution(filter: StatisticsFilter): Observable<PieChartData[]> {
     const params = this.buildQueryParams(filter);
-    
+
     return this.http.get<PieChartData[]>(`${this.baseUrl}/trip-status-distribution`, { params }).pipe(
       catchError(error => {
         console.error('Error fetching trip status distribution:', error);
@@ -45,7 +45,7 @@ export class StatisticsService {
 
   getTruckUtilization(filter: StatisticsFilter): Observable<PieChartData[]> {
     const params = this.buildQueryParams(filter);
-    
+
     return this.http.get<PieChartData[]>(`${this.baseUrl}/truck-utilization`, { params }).pipe(
       catchError(error => {
         console.error('Error fetching truck utilization:', error);
@@ -56,7 +56,7 @@ export class StatisticsService {
 
   getOrdersByType(filter: StatisticsFilter): Observable<PieChartData[]> {
     const params = this.buildQueryParams(filter);
-    
+
     return this.http.get<PieChartData[]>(`${this.baseUrl}/orders-by-type`, { params }).pipe(
       catchError(error => {
         console.error('Error fetching orders by type:', error);
@@ -65,14 +65,14 @@ export class StatisticsService {
     );
   }
 
-  // Alternative: Get all statistics at once
+
   getAllStatistics(filter: StatisticsFilter): Observable<{
     statusDistribution: PieChartData[];
     truckUtilization: PieChartData[];
     deliveryByType: PieChartData[];
   }> {
-    return this.http.get<TripStatistics>(`${this.baseUrl}/trip-statistics`, { 
-      params: this.buildQueryParams(filter) 
+    return this.http.get<TripStatistics>(`${this.baseUrl}/trip-statistics`, {
+      params: this.buildQueryParams(filter)
     }).pipe(
       map(response => ({
         statusDistribution: response.statusDistribution || [],
@@ -100,7 +100,7 @@ export class StatisticsService {
   }
 
   getDrivers(): Observable<IDriver[]> {
-    return this.http.get<IDriver[]>(environment.apiUrl + '/api/Driver/ListOfDrivers').pipe(
+    return this.http.get<IDriver[]>(environment.apiUrl + '/api/Drivers/list').pipe(
       catchError(error => {
         console.error('Error fetching drivers:', error);
         return of([]);
@@ -128,9 +128,9 @@ export class StatisticsService {
 
   private buildQueryParams(filter: StatisticsFilter): HttpParams {
     let params = new HttpParams();
-    
+
     if (filter.startDate) {
-      // Format date as YYYY-MM-DD
+
       const dateStr = filter.startDate.toISOString().split('T')[0];
       params = params.set('startDate', dateStr);
     }
@@ -144,11 +144,11 @@ export class StatisticsService {
     if (filter.driverId) {
       params = params.set('driverId', filter.driverId.toString());
     }
-    
+
     return params;
   }
 
-  // Fallback data methods
+
   private getFallbackStatistics(filter: StatisticsFilter): TripStatistics {
     return {
       statusDistribution: this.getFallbackStatusDistribution(),
@@ -164,20 +164,20 @@ private getFallbackStatusDistribution(): PieChartData[] {
     { label: 'Accepted', value: 20, color: '#751cc8', count: 12 },
     { label: 'LoadingInProgress', value: 10, color: '#36b9cc', count: 6 },
     { label: 'DeliveryInProgress', value: 30, color: '#f6c23e', count: 18 },
-    { label: 'Receipt', value: 12, color: '#20c9a6', count: 7 },  
+    { label: 'Receipt', value: 12, color: '#20c9a6', count: 7 },
     { label: 'Cancelled', value: 3, color: '#e74a3b', count: 2 }
   ];
 }
 
   private getFallbackTruckUtilization(filter: StatisticsFilter): PieChartData[] {
     if (filter.truckId) {
-      // If specific truck is selected
+
       return [
         { label: `Truck ${filter.truckId}`, value: 85, color: '#4e73df', count: 17 }
       ];
     }
-    
-    // General truck utilization
+
+
     return [
       { label: 'TRK-001 (Volvo)', value: 85, color: '#4e73df', count: 17 },
       { label: 'TRK-002 (Mercedes)', value: 90, color: '#1cc88a', count: 18 },

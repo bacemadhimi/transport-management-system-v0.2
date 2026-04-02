@@ -1,0 +1,155 @@
+<ion-header>
+  <ion-toolbar class="test-toolbar">
+    <ion-title>
+      <ion-icon name="qr-code-outline" slot="start"></ion-icon>
+      Scanner Code-Barres
+    </ion-title>
+    <ion-buttons slot="end">
+      <ion-button (click)="showInfo()">
+        <ion-icon name="information-circle-outline"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="test-content">
+  <!-- Device Info -->
+  <div class="device-info" [class.native]="isNativeDevice">
+    <ion-icon [name]="isNativeDevice ? 'phone-portrait-outline' : 'globe-outline'"></ion-icon>
+    <span>{{ deviceInfo }}</span>
+  </div>
+
+  <!-- Last Scan Result -->
+  <div class="last-scan" *ngIf="lastScan">
+    <h3>📌 Dernier scan</h3>
+    <div class="scan-card" [class]="'scan-' + lastScan.formatType">
+      <div class="scan-icon">
+        <ion-icon [name]="getFormatIcon(lastScan.formatType)"></ion-icon>
+      </div>
+      <div class="scan-content">
+        <div class="scan-value" (click)="copyToClipboard(lastScan.content)">
+          {{ lastScan.content }}
+          <ion-icon name="copy-outline" class="copy-icon"></ion-icon>
+        </div>
+        <div class="scan-meta">
+          <span class="scan-format">{{ barcodeScanner.getFormatName(lastScan.format) }}</span>
+          <span class="scan-type" [class]="'type-' + lastScan.formatType">
+            {{ lastScan.formatType === '2D' ? 'Code 2D' : 'Code 1D' }}
+          </span>
+        </div>
+        <div class="scan-time">
+          <ion-icon name="time-outline"></ion-icon>
+          {{ lastScan.timestamp | date:'dd/MM/yyyy HH:mm:ss' }}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Action Buttons -->
+  <div class="action-section">
+    <div class="section-title">
+      <ion-icon name="flash-outline"></ion-icon>
+      <span>Actions</span>
+    </div>
+    
+    <div class="action-buttons">
+      <ion-button 
+        expand="block" 
+        class="scan-btn"
+        (click)="scanBarcode()"
+        [disabled]="isScanning"
+      >
+        <ion-icon name="camera-outline" slot="start"></ion-icon>
+        {{ isScanning ? 'Scan en cours...' : 'Scanner un code' }}
+      </ion-button>
+      
+      <ion-button 
+        expand="block" 
+        fill="outline" 
+        class="multiple-btn"
+        (click)="scanMultipleBarcodes()"
+        [disabled]="isScanning"
+      >
+        <ion-icon name="layers-outline" slot="start"></ion-icon>
+        Scanner multiple
+      </ion-button>
+      
+      <ion-button 
+        expand="block" 
+        fill="outline" 
+        class="test-btn"
+        (click)="testScanner()"
+        [disabled]="isScanning"
+      >
+        <ion-icon name="flask-outline" slot="start"></ion-icon>
+        Test (Mock)
+      </ion-button>
+      
+      <ion-button 
+        expand="block" 
+        fill="clear" 
+        class="fullscreen-btn"
+        (click)="openFullScanner()"
+        *ngIf="isNativeDevice"
+      >
+        <ion-icon name="expand-outline" slot="start"></ion-icon>
+        Scanner plein écran
+      </ion-button>
+    </div>
+  </div>
+
+  <!-- Scan History -->
+  <div class="history-section" *ngIf="scanHistory.length > 0">
+    <div class="history-header">
+      <div class="section-title">
+        <ion-icon name="time-outline"></ion-icon>
+        <span>Historique ({{ scanHistory.length }})</span>
+      </div>
+      <ion-button fill="clear" size="small" (click)="clearHistory()" class="clear-btn">
+        <ion-icon name="trash-outline"></ion-icon>
+        Effacer tout
+      </ion-button>
+    </div>
+    
+    <div class="history-list">
+      <div class="history-item" *ngFor="let scan of scanHistory; let i = index">
+        <div class="history-number">{{ i + 1 }}</div>
+        <div class="history-content">
+          <div class="history-value" (click)="copyToClipboard(scan.content)">
+            {{ scan.content }}
+            <ion-icon name="copy-outline" class="copy-icon-small"></ion-icon>
+          </div>
+          <div class="history-meta">
+            <span class="history-format">{{ barcodeScanner.getFormatName(scan.format) }}</span>
+            <span class="history-type" [class]="'type-' + scan.formatType">
+              {{ scan.formatType === '2D' ? '2D' : '1D' }}
+            </span>
+          </div>
+        </div>
+        <div class="history-time">
+          {{ scan.timestamp | date:'HH:mm:ss' }}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Empty State -->
+  <div class="empty-state" *ngIf="!lastScan && scanHistory.length === 0 && !isScanning">
+    <div class="empty-icon">
+      <ion-icon name="qr-code-outline"></ion-icon>
+    </div>
+    <h3>Aucun scan effectué</h3>
+    <p>Cliquez sur "Scanner un code" pour commencer</p>
+    <p class="small">
+      <ion-icon name="information-circle-outline"></ion-icon>
+      Support: Codes 1D (EAN, UPC, Code 128) et 2D (QR, Data Matrix)
+    </p>
+  </div>
+
+  <!-- Loading State -->
+  <div class="loading-state" *ngIf="isScanning">
+    <ion-spinner name="crescent"></ion-spinner>
+    <p>Scan en cours...</p>
+    <p class="small">Placez le code devant la caméra</p>
+  </div>
+</ion-content>

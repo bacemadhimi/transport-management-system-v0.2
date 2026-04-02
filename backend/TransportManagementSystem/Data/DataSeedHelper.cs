@@ -18,13 +18,72 @@ namespace TransportManagementSystem.Data
             this.passwordHelper = new PasswordHelper();
         }
 
+        /// <summary>
+        /// Seed le client par défaut pour les commandes provenant de Plant IT
+        /// </summary>
+        private void SeedDefaultCustomer()
+        {
+            try
+            {
+                // Vérifier si le client par défaut existe déjà
+                var existingDefaultCustomer = dbContext.Customers
+                    .FirstOrDefault(c => c.Matricule == "DEFAULT_PLANT_IT" || c.Name == "Plant IT - À assigner");
 
-        public void InsertData()
+                if (existingDefaultCustomer == null)
+                {
+                    // Créer le client par défaut
+                    var defaultCustomer = new Customer
+                    {
+                        SourceSystem = DataSource.PlantIt,
+                        ExternalId = "DEFAULT",
+                        Name = "Plant IT - À assigner",
+                        Phone = null,
+                        PhoneCountry = null,
+                        Email = null,
+                        Matricule = "DEFAULT_PLANT_IT",
+                        Contact = "Admin TMS",
+                        CreatedAt = DateTime.UtcNow,
+                        UpdatedAt = null
+                    };
+
+                    dbContext.Customers.Add(defaultCustomer);
+                    dbContext.SaveChanges();
+
+                    Console.WriteLine("✔ Customer par défaut 'Plant IT - À assigner' créé avec succès !");
+                    Console.WriteLine($"   ID: {defaultCustomer.Id}, Matricule: {defaultCustomer.Matricule}");
+                }
+                else
+                {
+                    Console.WriteLine("ℹ️ Customer par défaut 'Plant IT - À assigner' existe déjà.");
+                    Console.WriteLine($"   ID: {existingDefaultCustomer.Id}, Matricule: {existingDefaultCustomer.Matricule}");
+
+                    // Optionnel: Mettre à jour si nécessaire
+                    if (existingDefaultCustomer.Name != "Plant IT - À assigner")
+                    {
+                        existingDefaultCustomer.Name = "Plant IT - À assigner";
+                        existingDefaultCustomer.UpdatedAt = DateTime.UtcNow;
+                        dbContext.SaveChanges();
+                        Console.WriteLine("   ✅ Customer par défaut mis à jour");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Erreur lors de la création du client par défaut : {ex.Message}");
+                throw;
+            }
+        }
+
+   
+    
+
+public void InsertData()
         {
             try
             {
                 // Appliquer les migrations
                 dbContext.Database.Migrate();
+                SeedDefaultCustomer();
                 // Check if ORDER or TRIP settings already exist
                 if (!dbContext.GeneralSettings.Any(p => p.ParameterType == "ORDER" || p.ParameterType == "TRIP"))
                 {
@@ -34,43 +93,37 @@ namespace TransportManagementSystem.Data
         new GeneralSettings
         {
             ParameterType = "ORDER",
-            ParameterCode = "ALLOW_EDIT_ORDER",
-            Value = "true",
+            ParameterCode = "ALLOW_EDIT_ORDER=true",
             Description = "Allow editing orders"
         },
         new GeneralSettings
         {
             ParameterType = "ORDER",
-            ParameterCode = "ALLOW_DELIVERY_DATE_EDIT",
-            Value = "true",
+            ParameterCode = "ALLOW_DELIVERY_DATE_EDIT=true",
             Description = "Allow editing delivery date"
         },
         new GeneralSettings
         {
             ParameterType = "ORDER",
-            ParameterCode = "ALLOW_LOAD_LATE_ORDERS",
-            Value = "true",
+            ParameterCode = "ALLOW_LOAD_LATE_ORDERS=true",
             Description = "Allow loading late orders"
         },
         new GeneralSettings
         {
             ParameterType = "ORDER",
-            ParameterCode = "ACCEPT_ORDERS_WITHOUT_ADDRESS",
-            Value = "true",
+            ParameterCode = "ACCEPT_ORDERS_WITHOUT_ADDRESS=true",
             Description = "Accept orders without address"
         },
         new GeneralSettings
         {
             ParameterType = "ORDER",
-            ParameterCode = "LOADING_UNIT",
-            Value = "palette",
+            ParameterCode = "LOADING_UNIT=palette",
             Description = "Default loading unit"
         },
         new GeneralSettings
         {
             ParameterType = "ORDER",
-            ParameterCode = "PLANNING_HORIZON",
-            Value = "30",
+            ParameterCode = "PLANNING_HORIZON=30",
             Description = "Planning horizon in days"
         },
 
@@ -78,64 +131,55 @@ namespace TransportManagementSystem.Data
         new GeneralSettings
         {
             ParameterType = "TRIP",
-            ParameterCode = "ALLOW_EDIT_TRIPS",
-            Value = "true",
+            ParameterCode = "ALLOW_EDIT_TRIPS=true",
             Description = "Allow editing trips"
         },
         new GeneralSettings
         {
             ParameterType = "TRIP",
-            ParameterCode = "ALLOW_DELETE_TRIPS",
-            Value = "true",
+            ParameterCode = "ALLOW_DELETE_TRIPS=true",
             Description = "Allow deleting trips"
         },
         new GeneralSettings
         {
             ParameterType = "TRIP",
-            ParameterCode = "EDIT_TIME_LIMIT",
-            Value = "60",
+            ParameterCode = "EDIT_TIME_LIMIT=60",
             Description = "Edit limit in minutes"
         },
         new GeneralSettings
         {
             ParameterType = "TRIP",
-            ParameterCode = "MAX_TRIPS_PER_DAY",
-            Value = "10",
+            ParameterCode = "MAX_TRIPS_PER_DAY=10",
             Description = "Maximum trips per day"
         },
         new GeneralSettings
         {
             ParameterType = "TRIP",
-            ParameterCode = "TRIP_ORDER",
-            Value = "chronological",
+            ParameterCode = "TRIP_ORDER=chronological",
             Description = "Trip ordering method"
         },
         new GeneralSettings
         {
             ParameterType = "TRIP",
-            ParameterCode = "REQUIRE_DELETE_CONFIRMATION",
-            Value = "true",
+            ParameterCode = "REQUIRE_DELETE_CONFIRMATION=true",
             Description = "Require delete confirmation"
         },
         new GeneralSettings
         {
             ParameterType = "TRIP",
-            ParameterCode = "NOTIFY_ON_TRIP_EDIT",
-            Value = "false",
+            ParameterCode = "NOTIFY_ON_TRIP_EDIT=false",
             Description = "Notify when trip edited"
         },
         new GeneralSettings
         {
             ParameterType = "TRIP",
-            ParameterCode = "NOTIFY_ON_TRIP_DELETE",
-            Value = "false",
+            ParameterCode = "NOTIFY_ON_TRIP_DELETE=false",
             Description = "Notify when trip deleted"
         },
         new GeneralSettings
         {
             ParameterType = "TRIP",
-            ParameterCode = "LINK_DRIVER_TO_TRUCK",
-            Value = "true",
+            ParameterCode = "LINK_DRIVER_TO_TRUCK=true",
             Description = "Driver must match truck"
         }
     };
@@ -168,11 +212,12 @@ namespace TransportManagementSystem.Data
 
                     var superAdminUser = new User
                     {
+                        Name= "Super Admin",
                         Email = "superAdmin@gmail.com",
                         Password = passwordHelper.HashPassword("12345"),
                     };
                     var adminUser = new User
-                    {
+                    {   Name = "Admin",
                         Email = "admin@gmail.com",
                         Password = passwordHelper.HashPassword("12345")
                     };
@@ -337,293 +382,52 @@ namespace TransportManagementSystem.Data
                 Console.WriteLine($"Erreur lors du seeding : {ex.Message}");
                 throw;
             }
-            var tunisianZones = new List<string>
-{"Tunis","Ariana","Ben Arous","Manouba","Bizerte","Nabeul","Zaghouan","Sousse","Monastir", "Mahdia", "Sfax", "Kairouan","Kasserine","Sidi Bouzid",
-    "Gabès",
-    "Médenine",
-    "Tataouine",
-    "Gafsa",
-    "Tozeur",
-    "Kébili",
-    "Béja",
-    "Jendouba",
-    "Le Kef",
-    "Siliana"
-};
-
-            //  Seed Zones (Tunisie)
-            if (!dbContext.Zones.Any())
+          
+            if (!dbContext.Set<Convoyeur>().Any())
             {
                 var now = DateTime.UtcNow;
-
-                var zones = tunisianZones.Select(name => new Zone
-                {
-                    Name = name,
-                    IsActive = true,
-                    CreatedAt = now,
-                    UpdatedAt = now
-                }).ToList();
-
-                dbContext.Zones.AddRange(zones);
-                dbContext.SaveChanges();
-
-                Console.WriteLine("Zones de Tunisie seedées avec succès !");
-            }
-            // Seed Governorates (Tunisia)
-            if (!dbContext.GeneralSettings.Any(p => p.ParameterType == "GOVERNORATE"))
-            {
-                var now = DateTime.UtcNow;
-
-                var tunisianGovernorates = new List<string>
-    {
-        "Tunis", "Ariana", "Ben Arous", "Manouba", "Bizerte", "Nabeul", "Zaghouan",
-        "Sousse", "Monastir", "Mahdia", "Sfax", "Kairouan", "Kasserine", "Sidi Bouzid",
-        "Gabès", "Médenine", "Tataouine", "Gafsa", "Tozeur", "Kébili", "Béja",
-        "Jendouba", "Le Kef", "Siliana"
-    };
-
-                int codeIndex = 1; // GOV1, GOV2, ...
-
-                var governorates = tunisianGovernorates.Select(name => new GeneralSettings
-                {
-                    ParameterType = "GOVERNORATE",
-                    ParameterCode = name,
-                    Description = $"Governorate {name}",
-                    Value = $"GOV{codeIndex++}"   // <-- optional Value field
-                }).ToList();
-
-                dbContext.GeneralSettings.AddRange(governorates);
-                dbContext.SaveChanges();
-
-                Console.WriteLine($"✔ {governorates.Count} Governorates seeded!");
-            }
-            if (!dbContext.Citys.Any())
-            {
-                var now = DateTime.UtcNow;
-
-                var zoneCities = new Dictionary<string, List<string>>
-    {
-        { "Tunis", new List<string> { "Tunis", "Carthage", "La Marsa", "Le Bardo", "Sidi Bou Saïd", "El Menzah", "Bab Saadoun" } },
-        { "Ariana", new List<string> { "Ariana Ville", "Raoued", "Kalaat el-Andalous", "La Soukra", "Mnihla", "Ettadhamen" } },
-        { "Ben Arous", new List<string> { "Ben Arous", "Ezzahra", "Rades", "Mégrine", "Fouchana", "Hammam Chott", "Bou Mhel" } },
-        { "Manouba", new List<string> { "Manouba", "Oued Ellil", "Douar Hicher", "Den Den", "Tebourba", "Mornaguia" } },
-        { "Bizerte", new List<string> { "Bizerte", "Menzel Bourguiba", "Ras Jebel", "Ghar El Melh", "Mateur", "Sejnane" } },
-        { "Nabeul", new List<string> { "Nabeul", "Hammamet", "Kelibia", "Korba", "Béni Khalled", "Takelsa", "El Haouaria" } },
-        { "Zaghouan", new List<string> { "Zaghouan", "Bir Mcherga", "Nadhour", "El Fahs", "Zriba" } },
-        { "Sousse", new List<string> { "Sousse", "Hergla", "Akouda", "Kondar", "Sousse Riadh", "Enfidha" } },
-        { "Monastir", new List<string> { "Monastir", "Ksar Hellal", "Ouerdanine", "Bekalta", "Teboulba" } },
-        { "Mahdia", new List<string> { "Mahdia", "Chorbane", "El Jem", "Ksour Essef", "Chebba" } },
-        { "Sfax", new List<string> { "Sfax", "Sakiet Eddaier", "Agareb", "Thyna", "Kerkennah", "El Amra" } },
-        { "Kairouan", new List<string> { "Kairouan", "Sbikha", "Chebika", "Oueslatia", "Haffouz" } },
-        { "Kasserine", new List<string> { "Kasserine", "Foussana", "Thala", "Sbeitla", "Sbiba", "Majel Bel Abbès" } },
-        { "Sidi Bouzid", new List<string> { "Sidi Bouzid", "Cebbala", "Meknassy", "Jilma", "Regueb" } },
-        { "Gabès", new List<string> { "Gabès", "Ghannouch", "Mareth", "Matmata", "El Hamma" } },
-        { "Médenine", new List<string> { "Médenine", "Beni Khedache", "Djerba", "Houmt Souk", "Ajim", "Midoun" } },
-        { "Tataouine", new List<string> { "Tataouine", "Dhiba", "Bir Lahmar", "Ghomrassen", "Remada" } },
-        { "Gafsa", new List<string> { "Gafsa", "El Ksar", "Redeyef", "Metlaoui", "Moularès" } },
-        { "Tozeur", new List<string> { "Tozeur", "Degache", "Tamerza", "Nefta" } },
-        { "Kébili", new List<string> { "Kébili", "Douz", "El Golaa", "Souk Lahad" } },
-        { "Béja", new List<string> { "Béja", "Testour", "Nefza", "Goubellat" } },
-        { "Jendouba", new List<string> { "Jendouba", "Fernana", "Aïn Draham", "Ghardimaou" } },
-        { "Le Kef", new List<string> { "Le Kef", "El Ksour", "Nebeur", "Kalaat Khasba" } },
-        { "Siliana", new List<string> { "Siliana", "Bargou", "Bou Arada", "Kesra" } },
-    };
-
-                var zones = dbContext.Zones.ToList();
-                var cities = new List<City>();
-
-                foreach (var kvp in zoneCities)
-                {
-                    var zoneName = kvp.Key;
-                    var cityNames = kvp.Value;
-
-                    var zone = zones.FirstOrDefault(z => z.Name == zoneName);
-                    if (zone == null)
-                    {
-                        Console.WriteLine($"Zone {zoneName} non trouvée !");
-                        continue;
-                    }
-
-                    cities.AddRange(cityNames.Select(cityName => new City
-                    {
-                        Name = cityName,
-                        ZoneId = zone.Id,
-                        IsActive = true,
-                        CreatedAt = now,
-                        UpdatedAt = now
-                    }));
-                }
-
-                dbContext.Citys.AddRange(cities);
-                dbContext.SaveChanges();
-
-                Console.WriteLine("Toutes les villes de Tunisie seedées et associées à leurs zones !");
-            }
-            // Seed MANY Locations (Zone only)
-            if (!dbContext.Locations.Any())
-            {
-                var now = DateTime.UtcNow;
-                var zones = dbContext.Zones.ToList();
-
-                var locations = new List<Location>();
-
-                var locationNames = new[]
-                {
-        "Entrepôt",
-        "Dépôt",
-        "Plateforme",
-        "Centre Logistique",
-        "Hub"
-    };
-
-                int index = 1;
-
-                foreach (var zone in zones)
-                {
-                    // 4 à 6 locations par zone
-                    for (int i = 0; i < 5; i++)
-                    {
-                        locations.Add(new Location
-                        {
-                            Name = $"{locationNames[i % locationNames.Length]} {zone.Name} {index++}",
-                            ZoneId = zone.Id,
-                            IsActive = true,
-                            CreatedAt = now,
-                            UpdatedAt = now
-                        });
-                    }
-                }
-
-                dbContext.Locations.AddRange(locations);
-                dbContext.SaveChanges();
-
-                Console.WriteLine($"✔ {locations.Count} Locations seedées (par zone) !");
-            }
-            var driverGroup = dbContext.UserGroups.First(r => r.Name == "Driver");
-            // Seed MANY Drivers + Users
-            if (!dbContext.Drivers.Any())
-            {
-                var now = DateTime.UtcNow;
-                var zones = dbContext.Zones.ToList();
-                var cities = dbContext.Citys.ToList();
-                var rnd = new Random();
-
-                var drivers = new List<Driver>();
-                var users = new List<User>();
-                var userGroupLinks = new List<UserGroup2User>();
-
-                var names = new[]
-                {
-        "Ahmed","Yassine","Sami","Mohamed","Ali","Hichem","Karim","Walid",
-        "Nabil","Fathi","Aymen","Anis","Slim","Marwen","Bilel",
-        "Oussama","Zied","Rami","Tarek","Lotfi"
-    };
-
-                int index = 1;
-
-                foreach (var name in names)
-                {
-                    var zone = zones[rnd.Next(zones.Count)];
-                    var city = cities.Where(c => c.ZoneId == zone.Id)
-                                      .OrderBy(x => rnd.Next())
-                                      .First();
-
-                    var email = $"{name.ToLower()}{index}@tms.demo";
-
-                    // DRIVER
-                    var driver = new Driver
-                    {
-                        Name = $"{name} Driver {index}",
-                        Email = email,
-                        Phone = $"2{rnd.Next(1000000, 9999999)}",
-                        phoneCountry = "+216",
-                        PermisNumber = $"TN-{rnd.Next(10000, 99999)}",
-                        Status = "Disponible",
-                        IsEnable = true,
-                        ZoneId = zone.Id,
-                        CityId = city.Id,
-                        UpdatedAt = now
-                    };
-
-                    drivers.Add(driver);
-
-                    // USER
-                    var user = new User
-                    {
-                        Email = email,
-                        Password = passwordHelper.HashPassword("12345"),
-                        Name = driver.Name,
-                        Phone = driver.Phone,
-                        phoneCountry = driver.phoneCountry
-                    };
-
-                    users.Add(user);
-
-                    index++;
-                }
-
-                // Save Drivers + Users
-                dbContext.Drivers.AddRange(drivers);
-                dbContext.Users.AddRange(users);
-                dbContext.SaveChanges();
-
-                // Link Users to Driver Group
-                foreach (var user in users)
-                {
-                    userGroupLinks.Add(new UserGroup2User
-                    {
-                        UserId = user.Id,
-                        UserGroupId = driverGroup.Id
-                    });
-                }
-
-                dbContext.UserGroup2Users.AddRange(userGroupLinks);
-                dbContext.SaveChanges();
-
-                Console.WriteLine($"✔ {drivers.Count} Drivers + Users Driver seedés !");
-            }
-
-            // 8Seed MANY Convoyeurs
-            if (!dbContext.Convoyeurs.Any())
-            {
-                var now = DateTime.UtcNow;
-                var zones = dbContext.Zones.ToList();
-                var cities = dbContext.Citys.ToList();
                 var rnd = new Random();
 
                 var convoyeurs = new List<Convoyeur>();
 
                 for (int i = 1; i <= 15; i++)
                 {
-                    var zone = zones[rnd.Next(zones.Count)];
-                    var city = cities.Where(c => c.ZoneId == zone.Id)
-                                      .OrderBy(x => rnd.Next())
-                                      .First();
-
-                    convoyeurs.Add(new Convoyeur
+                    var convoyeur = new Convoyeur
                     {
+                        // Employee base properties
+                        IdNumber = $"CONV{1000 + i}",
                         Name = $"Convoyeur {i}",
-                        Matricule = $"CV-{1000 + i}",
-                        Phone = $"5{rnd.Next(1000000, 9999999)}",
+                        PhoneNumber = $"5{rnd.Next(1000000, 9999999)}",
                         PhoneCountry = "+216",
-                        PermisNumber = $"PC-{rnd.Next(10000, 99999)}",
+                        Email = $"convoyeur{i}@tms.demo",
+                        DrivingLicense = $"PC-{rnd.Next(10000, 99999)}",
+                        TypeTruckId = null,
+                        CreatedAt = now,
+                        UpdatedAt = now,
+                        IsEnable = true,
+                        EmployeeCategory = "CONVOYEUR", // This is the discriminator
+                        IsInternal = true,
+
+                        // Convoyeur-specific properties
+                        Matricule = $"CV-{1000 + i}",
                         Status = "ACTIVE",
-                        ZoneId = zone.Id,
-                        CityId = city.Id
-                    });
+
+                 
+                    };
+
+                    convoyeurs.Add(convoyeur);
                 }
 
-                dbContext.Convoyeurs.AddRange(convoyeurs);
+                dbContext.Set<Convoyeur>().AddRange(convoyeurs);
                 dbContext.SaveChanges();
 
-                Console.WriteLine($"✔ {convoyeurs.Count} Convoyeurs seedés !");
+                Console.WriteLine($"✔ {convoyeurs.Count} Convoyeurs seedés dans la table Employees avec EmployeeCategory='CONVOYEUR' !");
             }
             // 9️⃣ Seed Trucks (Capacity in PALETTE)
             if (!dbContext.Trucks.Any())
             {
                 var now = DateTime.UtcNow;
                 var rnd = new Random();
-                var zones = dbContext.Zones.ToList();
                 var MarqueTruckIds = new[] { "Volvo", "Scania", "MAN", "Mercedes", "DAF", "Iveco", "Renault" };
                 var colors = new[]
                                   {
@@ -642,9 +446,9 @@ namespace TransportManagementSystem.Data
                 {
                     var types = new List<TypeTruck>
                     {
-                        new TypeTruck { Type = "Poids lourd", Capacity = 33, Unit = "Palette" },
-                        new TypeTruck { Type = "Utilitaire", Capacity = 12, Unit = "Palette" },
-                        new TypeTruck { Type = "Camion moyen", Capacity = 20, Unit = "Palette" }
+                        new TypeTruck { Type = "Poids lourd", Capacity = 33 },
+                        new TypeTruck { Type = "Utilitaire", Capacity = 12},
+                        new TypeTruck { Type = "Camion moyen", Capacity = 20 }
                     };
 
                     dbContext.TypeTrucks.AddRange(types);
@@ -672,24 +476,109 @@ namespace TransportManagementSystem.Data
                 }
                 if (!dbContext.GeneralSettings.Any(p =>
                     p.ParameterType == "EMPLOYEE_CATEGORY" &&
-                    p.ParameterCode == "DRIVER"))
-                                {
-                                    var employeeCategories = new List<GeneralSettings>
-                    {
-                        new GeneralSettings
+                    (p.ParameterCode == "DRIVER" || p.ParameterCode == "CONVOYEUR")))
+                {
+                    var employeeCategories = new List<GeneralSettings>
                         {
-                            ParameterType = "EMPLOYEE_CATEGORY",
-                            ParameterCode = "DRIVER",
-                            Description = "Driver",
-                            Value = "DRIVER"
-                        }
-                    };
-
-                    dbContext.GeneralSettings.AddRange(employeeCategories);
+                            new GeneralSettings
+                            {
+                                ParameterType = "EMPLOYEE_CATEGORY",
+                                ParameterCode = "DRIVER",
+                                Description = "Driver",
+                            },
+                            new GeneralSettings
+                            {
+                                ParameterType = "EMPLOYEE_CATEGORY",
+                                ParameterCode = "CONVOYEUR",
+                                Description = "Convoyeur",
+                            }
+                        };
+                                    
+                dbContext.GeneralSettings.AddRange(employeeCategories);
                     dbContext.SaveChanges();
 
                     Console.WriteLine("✔ Employee Category DRIVER seeded !");
                 }
+                var driverGroup = dbContext.UserGroups.First(r => r.Name == "Driver");
+                // Seed MANY Drivers + Users
+                var driverCategory = dbContext.GeneralSettings.First(p =>
+             p.ParameterType == "EMPLOYEE_CATEGORY" &&
+             p.ParameterCode == "DRIVER");
+                if (!dbContext.Employees.Any(e => e.CategoryId == driverCategory.Id))
+                {
+                    var employees = new List<Employee>();
+
+                    var names = new[]
+                    {
+        "Ahmed","Yassine","Sami","Mohamed","Ali","Hichem","Karim","Walid",
+        "Nabil","Fathi","Aymen","Anis","Slim","Marwen","Bilel",
+        "Oussama","Zied","Rami","Tarek","Lotfi"
+    };
+
+                    int index = 1;
+
+                    foreach (var name in names)
+                    {
+                        employees.Add(new Driver
+                        {
+
+                            IdNumber = $"DRV-{1000 + index}",
+                            Name = $"{name} Driver {index}",
+                            PhoneNumber = $"2{rnd.Next(1000000, 9999999)}",
+                            Email = $"{name.ToLower()}{index}@tms.demo",
+                            CategoryId = driverCategory.Id,
+
+
+                            EmployeeCategory = "DRIVER",
+                            DrivingLicense = $"TN-{rnd.Next(10000, 99999)}",
+                            IsInternal = true,
+                            IsEnable = true,
+
+                            CreatedAt = now,
+                            UpdatedAt = now
+                        });
+
+                        index++;
+                    }
+
+                    dbContext.Employees.AddRange(employees);
+                    dbContext.SaveChanges();
+
+                    Console.WriteLine($"✔ {employees.Count} Employees (DRIVER) seedés !");
+        
+                    var passwordHelper = new PasswordHelper();
+
+                    foreach (var driver in employees.OfType<Driver>())
+                    {
+                        var existingUser = dbContext.Users
+                            .FirstOrDefault(u => u.Email == driver.Email);
+
+                        if (existingUser == null)
+                        {
+                            var user = new User
+                            {
+                                Name = driver.Name,
+                                Email = driver.Email,
+                                Phone = driver.PhoneNumber,
+                                Password = passwordHelper.HashPassword("12345"),
+                            };
+
+                            dbContext.Users.Add(user);
+                            dbContext.SaveChanges();
+
+                            dbContext.UserGroup2Users.Add(new UserGroup2User
+                            {
+                                UserId = user.Id,
+                                UserGroupId = driverGroup.Id
+                            });
+
+                            dbContext.SaveChanges();
+                        }
+                    }
+
+                    Console.WriteLine("✔ Users created for DRIVER employees!");
+                }
+
                 // ✅ Seed Trucks
                 if (!dbContext.Trucks.Any())
                 {
@@ -697,7 +586,7 @@ namespace TransportManagementSystem.Data
                     var typeVehicules = dbContext.TypeTrucks.ToList();
                     var brands = dbContext.MarqueTrucks.ToList();
 
-					if (!typeVehicules.Any() || !brands.Any() || !zones.Any())
+					if (!typeVehicules.Any() || !brands.Any())
                     {
                         Console.WriteLine("⚠ Cannot seed trucks. Missing TypeTruck, MarqueTruck or Zone data.");
                         return;
@@ -710,7 +599,7 @@ namespace TransportManagementSystem.Data
                         int codeGouv = 100 + rnd.Next(0, 80);
                         int numero = 1000 + i;
 
-                        var zone = zones[rnd.Next(zones.Count)];
+                      
                         var selectedType = typeVehicules[rnd.Next(typeVehicules.Count)];
                         var selectedBrand = brands[rnd.Next(brands.Count)];
 
@@ -724,7 +613,6 @@ namespace TransportManagementSystem.Data
                             EmptyWeight = rnd.Next(3000, 12000),
                             Status = statuses[rnd.Next(statuses.Length)],
                             IsEnable = true,
-                            ZoneId = zone.Id,
                             TypeTruckId = selectedType.Id
                         });
                     }

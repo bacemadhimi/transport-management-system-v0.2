@@ -1,7 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
-using TransportManagementSystem.Entity;
 using TransportManagementSystem.Models;
 using TransportManagementSystem.Services;
 
@@ -44,9 +43,9 @@ public class NotificationsController : ControllerBase
 
             return Ok(new ApiResponse(true, "Notifications retrieved successfully", new
             {
-                Notifications = notifications,
-                UnreadCount = unreadCount,
-                TotalCount = notifications.Count()
+                notifications = notifications,
+                unreadCount = unreadCount,
+                totalCount = notifications.Count()
             }));
         }
         catch (Exception ex)

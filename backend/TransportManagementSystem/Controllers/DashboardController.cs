@@ -9,6 +9,7 @@ namespace TransportManagementSystem.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class DashboardController : ControllerBase
     {
         private readonly ApplicationDbContext _context;
@@ -25,7 +26,7 @@ namespace TransportManagementSystem.Controllers
             var result = new
             {
                 userCount = await _context.Users.AsNoTracking().CountAsync(),
-                driverCount = await _context.Drivers.AsNoTracking().CountAsync(),
+                driverCount = await _context.Employees.OfType<Driver>().AsNoTracking().CountAsync(),
                 truckCount = await _context.Trucks.AsNoTracking().CountAsync(),
                 tripCount = await _context.Trips.AsNoTracking().CountAsync(),
                 orderCount = await _context.Orders.AsNoTracking().CountAsync()

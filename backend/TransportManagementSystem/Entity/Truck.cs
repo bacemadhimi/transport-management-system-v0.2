@@ -38,8 +38,12 @@ public class Truck
     public string? ImagesJson { get; set; }
     public bool IsEnable { get; set; } = true;
     public virtual ICollection<TruckAvailability>? Availabilities { get; set; }
-    public int? ZoneId { get; set; }
-    public Zone? Zone { get; set; }
     public int TypeTruckId { get; set; }
     public TypeTruck? TypeTruck { get; set; }
+    public virtual ICollection<TruckGeographicalEntity> TruckGeographicalEntities { get; set; }
+
+    public int? DriverId { get; set; }
+
+    [ForeignKey("DriverId")]
+    public virtual Employee? Driver { get; set; }
 }

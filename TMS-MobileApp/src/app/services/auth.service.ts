@@ -87,4 +87,16 @@ export class AuthService {
   }
   return null;
 }
+  getCurrentUserId(): number {
+  const user = this.currentUser();
+  return user?.id || 0;
+}
+  getCurrentUserName(): string {
+    const user = this.currentUser();
+    return user?.name || user?.email?.split('@')[0] || 'Unknown User';
+  }
+  getCurrentUserIdString(): string {
+  const user = this.currentUser();
+  return user?.id?.toString() || '';
+}
 }

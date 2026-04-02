@@ -4,6 +4,8 @@ export interface IAuthToken {
   token: string;
   role: string;
   permissions?: string[];
+  name?:string;
+  profileImage?: string;
 }
 
 export interface ILoginRequest {

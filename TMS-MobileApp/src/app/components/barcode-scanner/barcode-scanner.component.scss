@@ -1,0 +1,149 @@
+.scanner-content {
+  --background: #000;
+}
+
+.scanner-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background: #000;
+  display: flex;
+  flex-direction: column;
+}
+
+.scanner-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px;
+  background: rgba(0,0,0,0.8);
+  
+  ion-icon {
+    font-size: 24px;
+    color: #ff8c00;
+  }
+  
+  h3 {
+    margin: 0;
+    color: white;
+    font-size: 18px;
+  }
+  
+  .close-btn {
+    --color: white;
+  }
+}
+
+.scanner-preview {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.scan-frame {
+  position: relative;
+  width: 250px;
+  height: 250px;
+  border: 2px solid #ff8c00;
+  border-radius: 20px;
+  
+  .scan-line {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, #ff8c00, transparent);
+    animation: scan 2s linear infinite;
+  }
+  
+  .corner {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    border-color: #ff8c00;
+    border-style: solid;
+    
+    &.top-left {
+      top: -2px;
+      left: -2px;
+      border-width: 3px 0 0 3px;
+    }
+    
+    &.top-right {
+      top: -2px;
+      right: -2px;
+      border-width: 3px 3px 0 0;
+    }
+    
+    &.bottom-left {
+      bottom: -2px;
+      left: -2px;
+      border-width: 0 0 3px 3px;
+    }
+    
+    &.bottom-right {
+      bottom: -2px;
+      right: -2px;
+      border-width: 0 3px 3px 0;
+    }
+  }
+}
+
+@keyframes scan {
+  0% { top: 0; }
+  100% { top: 100%; }
+}
+
+.scanner-info {
+  padding: 20px;
+  text-align: center;
+  
+  p {
+    color: white;
+    margin-bottom: 12px;
+  }
+  
+  .formats {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+    
+    .format-badge {
+      background: rgba(255, 140, 0, 0.2);
+      color: #ff8c00;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 11px;
+      
+      &.more {
+        background: rgba(255,255,255,0.1);
+        color: #ccc;
+      }
+    }
+  }
+}
+
+.error-message {
+  position: absolute;
+  bottom: 20px;
+  left: 20px;
+  right: 20px;
+  background: rgba(244, 67, 54, 0.9);
+  color: white;
+  padding: 12px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  
+  .retry-btn {
+    --color: white;
+    --padding-start: 8px;
+    --padding-end: 8px;
+  }
+}

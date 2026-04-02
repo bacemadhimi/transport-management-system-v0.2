@@ -1,0 +1,181 @@
+<ion-header>
+  <ion-toolbar style="--background: linear-gradient(135deg, #ff8c00, #ffcc00); --color: #000000;">
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/home" style="--color: #000000;"></ion-back-button>
+    </ion-buttons>
+    <ion-title style="--color: #000000;">Suivi GPS - {{ tripReference }}</ion-title>
+    <ion-buttons slot="end">
+      <ion-button (click)="refreshPosition()" style="--color: #000000;">
+        <ion-icon slot="icon-only" name="refresh"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="gps-tracking-content">
+
+  <!-- Connection Status -->
+  <div class="connection-status" [class.connected]="connectionStatus">
+    <ion-icon name="radio-button-on"></ion-icon>
+    <span>{{ connectionStatus ? 'Connecté' : 'Déconnecté' }}</span>
+  </div>
+
+  <!-- Carte -->
+  <div class="map-wrapper">
+    <div id="map"></div>
+
+    <!-- Overlay infos -->
+    <div class="map-overlay">
+      <ion-card class="info-card">
+        <ion-card-content>
+          <div class="info-header">
+            <div class="info-item">
+              <ion-icon name="speedometer" class="icon-orange"></ion-icon>
+              <div>
+                <div class="info-label">Vitesse</div>
+                <div class="info-value">{{ speed | number:'1.0-0' }} km/h</div>
+              </div>
+            </div>
+
+            <div class="info-item">
+              <ion-icon name="navigate" class="icon-orange"></ion-icon>
+              <div>
+                <div class="info-label">Distance</div>
+                <div class="info-value">{{ getDistanceRemaining() }} km</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="info-footer">
+            <ion-icon name="time" class="icon-orange"></ion-icon>
+            <span>Temps estimé: <strong>{{ getEstimatedTime() }}</strong></span>
+          </div>
+
+          <div class="accuracy-info" *ngIf="accuracy">
+            <ion-icon name="location" class="icon-orange"></ion-icon>
+            <span>Précision: {{ accuracy | number:'1.0-0' }}m</span>
+            <span *ngIf="lastUpdate">• {{ lastUpdate | date:'HH:mm:ss' }}</span>
+          </div>
+        </ion-card-content>
+      </ion-card>
+    </div>
+  </div>
+
+  <!-- Mission Status Section -->
+  <div class="mission-status-section">
+    <ion-card>
+      <ion-card-header>
+        <ion-card-title>
+          <ion-icon name="clipboard" class="icon-orange"></ion-icon>
+          État de la Mission
+        </ion-card-title>
+        <ion-card-subtitle>{{ tripReference }}</ion-card-subtitle>
+      </ion-card-header>
+      <ion-card-content>
+        <div class="status-indicator" [class]="'status-' + missionStatus">
+          <ion-icon 
+            [name]="getStatusIcon()" 
+            [color]="getStatusColor()"
+            class="status-icon"
+          ></ion-icon>
+          <span class="status-text">{{ getStatusText() }}</span>
+        </div>
+
+        <div class="status-actions">
+          <!-- Bouton ACCEPTER -->
+          <ion-button
+            *ngIf="missionStatus === 'pending'"
+            expand="block"
+            class="btn-orange"
+            (click)="acceptMission()"
+          >
+            <ion-icon slot="start" name="checkmark-circle"></ion-icon>
+            Accepter la Mission
+          </ion-button>
+
+          <!-- Bouton REFUSER -->
+          <ion-button
+            *ngIf="missionStatus === 'pending'"
+            expand="block"
+            fill="outline"
+            class="btn-outline-orange"
+            (click)="rejectMission()"
+          >
+            <ion-icon slot="start" name="close-circle"></ion-icon>
+            Refuser la Mission
+          </ion-button>
+
+          <!-- BOUTON COMMENCER CHARGEMENT -->
+          <ion-button
+            *ngIf="missionStatus === 'accepted'"
+            expand="block"
+            class="btn-orange"
+            (click)="startLoading()"
+          >
+            <ion-icon slot="start" name="cube"></ion-icon>
+            Commencer le Chargement
+          </ion-button>
+
+          <!-- BOUTON COMMENCER LIVRAISON -->
+          <ion-button
+            *ngIf="missionStatus === 'loading'"
+            expand="block"
+            class="btn-orange"
+            (click)="startDelivery()"
+          >
+            <ion-icon slot="start" name="boat"></ion-icon>
+            Commencer la Livraison
+          </ion-button>
+
+          <!-- BOUTON TERMINER -->
+          <ion-button
+            *ngIf="missionStatus === 'delivery'"
+            expand="block"
+            class="btn-green"
+            (click)="completeMission()"
+          >
+            <ion-icon slot="start" name="checkmark-done-circle"></ion-icon>
+            Livraison Terminée
+          </ion-button>
+
+          <!-- Message MISSION TERMINEE -->
+          <ion-card
+            *ngIf="missionStatus === 'completed'"
+            class="completed-card"
+          >
+            <ion-card-content style="text-align: center;">
+              <ion-icon name="checkmark-done-circle" class="icon-success"></ion-icon>
+              <h3>🎉 Mission Terminée !</h3>
+              <p>Merci pour votre travail</p>
+            </ion-card-content>
+          </ion-card>
+        </div>
+      </ion-card-content>
+    </ion-card>
+  </div>
+
+  <!-- Destination Info -->
+  <div class="destination-info" *ngIf="destination">
+    <ion-card>
+      <ion-card-header>
+        <ion-card-title>
+          <ion-icon name="location" class="icon-orange"></ion-icon>
+          Destination Finale
+        </ion-card-title>
+      </ion-card-header>
+      <ion-card-content>
+        <div class="destination-details">
+          <div class="destination-row">
+            <ion-icon name="map" class="icon-orange"></ion-icon>
+            <span>{{ destination.address }}</span>
+          </div>
+          <div class="destination-row">
+            <ion-icon name="navigate" class="icon-orange"></ion-icon>
+            <span>Coordonnées: {{ destination.lat.toFixed(4) }}, {{ destination.lng.toFixed(4) }}</span>
+          </div>
+        </div>
+      </ion-card-content>
+    </ion-card>
+  </div>
+
+</ion-content>

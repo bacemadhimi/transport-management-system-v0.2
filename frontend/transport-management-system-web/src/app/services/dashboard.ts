@@ -1,4 +1,4 @@
-import { inject, Injectable } from '@angular/core';
+﻿import { inject, Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../environments/environment.development';
 import { IDashboard } from '../types/dashboard';
@@ -27,17 +27,17 @@ export class Dashboard {
 
   constructor() { }
 
-  // Statistiques totales (utilisateurs, chauffeurs, camions)
+
   getDashboardData() {
     return this.http.get<IDashboard>(`${environment.apiUrl}/api/Dashboard`);
   }
 
-  // Nombre de trajets par camion
+
   getTripsByTruck() {
     return this.http.get<ITripByTruck[]>(`${environment.apiUrl}/api/Dashboard/trips-by-truck`);
   }
 
-  // Trajets du jour
+
   getTodayTrips() {
     return this.http.get<ITodayTrip[]>(`${environment.apiUrl}/api/Dashboard/today-trips`);
   }

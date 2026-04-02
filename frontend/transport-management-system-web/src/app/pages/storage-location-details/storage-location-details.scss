@@ -1,0 +1,135 @@
+.storage-location-page {
+
+      .expired {
+    color: #f44336;
+    font-weight: bold;
+  }
+  
+  padding: 24px;
+
+  .page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 24px;
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+
+      .header-info {
+        h2 {
+          margin: 0 0 4px 0;
+          font-size: 24px;
+          font-weight: 500;
+        }
+
+        .warehouse-description {
+          margin: 0;
+          color: rgba(0, 0, 0, 0.6);
+          font-size: 14px;
+        }
+      }
+    }
+  }
+
+  .filters {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 24px;
+
+    .filter-field {
+      flex: 1;
+    }
+  }
+
+  mat-card {
+    position: relative;
+    overflow: auto;
+
+    .loading-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(255, 255, 255, 0.8);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 10;
+    }
+
+    .table-container {
+      overflow-x: auto;
+
+      table {
+        width: 100%;
+
+        .storage-location-info {
+          strong {
+            font-size: 14px;
+          }
+
+          .storage-location-desc {
+            font-size: 12px;
+            color: rgba(0, 0, 0, 0.6);
+          }
+        }
+
+        .material-info {
+          .material-name {
+            font-weight: 500;
+          }
+
+          .material-details {
+            font-size: 11px;
+            color: rgba(0, 0, 0, 0.5);
+          }
+        }
+
+        .center {
+          text-align: center;
+        }
+
+        .low-stock {
+          color: #ff9800;
+          font-weight: bold;
+        }
+
+        .expired {
+          color: #f44336;
+          font-weight: bold;
+        }
+
+        .no-data {
+          text-align: center;
+          padding: 48px;
+
+          .no-data-message {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 16px;
+            color: rgba(0, 0, 0, 0.54);
+
+            mat-icon {
+              font-size: 48px;
+              width: 48px;
+              height: 48px;
+            }
+
+            span {
+              font-size: 16px;
+            }
+          }
+        }
+      }
+    }
+
+    mat-paginator {
+      margin-top: 16px;
+    }
+  }
+}

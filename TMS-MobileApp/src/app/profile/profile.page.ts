@@ -20,6 +20,7 @@ import {
 
 import { AuthService } from '../services/auth.service';
 import { HttpService, UserDto, ChangePasswordDto } from '../services/http.service';
+import { Network } from '@capacitor/network';
 
 @Component({
   selector: 'app-profile',
@@ -90,6 +91,13 @@ export class ProfilePage implements OnInit {
     hasSpecialChar: false
   };
 
+  // Offline mode flags
+  isOnline: boolean = true;
+  offlineMode: boolean = false;
+  private networkListener: any;
+  private readonly CACHE_KEY = 'cached_profile';
+  private readonly PENDING_CHANGES_KEY = 'pending_profile_changes';
+
   constructor() {
   
     addIcons({
@@ -101,9 +109,48 @@ export class ProfilePage implements OnInit {
     });
   }
 
-  ngOnInit() {
+  async ngOnInit() {
+    await this.checkNetworkStatus();
+    this.setupNetworkListener();
     this.initializeForms();
-    this.loadUserProfile();
+    
+    // Always load from cache first for offline viewing
+    this.loadFromCache();
+    
+    // Then try to load fresh data if online
+    if (this.isOnline) {
+      await this.loadUserProfile();
+    }
+  }
+
+  private async checkNetworkStatus() {
+    try {
+      const status = await Network.getStatus();
+      this.isOnline = status.connected;
+      this.offlineMode = !this.isOnline;
+      console.log('Network status:', this.isOnline ? 'online' : 'offline');
+    } catch (error) {
+      console.error('Error checking network:', error);
+      this.isOnline = false;
+      this.offlineMode = true;
+    }
+  }
+
+  private setupNetworkListener() {
+    Network.addListener('networkStatusChange', async (status) => {
+      const wasOffline = !this.isOnline;
+      this.isOnline = status.connected;
+      this.offlineMode = !this.isOnline;
+      
+      console.log('Network changed:', this.isOnline ? 'online' : 'offline');
+      
+      if (wasOffline && this.isOnline) {
+        // Just came online - sync pending changes and refresh data
+        await this.syncPendingChanges();
+        await this.loadUserProfile();
+        this.showToast('Connection restored - Profile synced', 'success');
+      }
+    });
   }
 
   initializeForms() {
@@ -132,27 +179,103 @@ export class ProfilePage implements OnInit {
     });
   }
 
+  private loadFromCache() {
+    try {
+      const cached = localStorage.getItem(this.CACHE_KEY);
+      if (cached) {
+        const cachedData = JSON.parse(cached);
+        
+        this.profileForm.patchValue({
+          name: cachedData.name || '',
+          email: cachedData.email || '',
+          phone: cachedData.phone || '',
+          profileImage: cachedData.profileImage || ''
+        });
+
+        if (cachedData.profileImage) {
+          this.profileImageSrc = this.httpService.createDataUrlFromBase64(cachedData.profileImage);
+        }
+        
+        this.currentUserGroupIds = cachedData.userGroupIds || [];
+        
+        console.log('Loaded profile from cache');
+      }
+    } catch (error) {
+      console.error('Error loading from cache:', error);
+    }
+  }
+
+  private cacheProfileData(userData: any) {
+    try {
+      localStorage.setItem(this.CACHE_KEY, JSON.stringify(userData));
+      console.log('Profile cached successfully');
+    } catch (error) {
+      console.error('Error caching profile:', error);
+    }
+  }
+
+  private async syncPendingChanges() {
+    const pending = localStorage.getItem(this.PENDING_CHANGES_KEY);
+    if (!pending) return;
+
+    try {
+      const changes = JSON.parse(pending);
+      
+      if (changes.profileUpdate) {
+        await this.httpService.updateUser(this.user.id, changes.profileUpdate).toPromise();
+      }
+      
+      if (changes.passwordChange) {
+        await this.httpService.changePassword(changes.passwordChange).toPromise();
+      }
+
+      localStorage.removeItem(this.PENDING_CHANGES_KEY);
+      this.showToast('Pending changes synced', 'success');
+    } catch (error) {
+      console.error('Error syncing pending changes:', error);
+    }
+  }
+
+  private savePendingChanges(type: 'profile' | 'password', data: any) {
+    try {
+      const pending = localStorage.getItem(this.PENDING_CHANGES_KEY);
+      const pendingChanges = pending ? JSON.parse(pending) : {};
+      
+      if (type === 'profile') {
+        pendingChanges.profileUpdate = data;
+      } else if (type === 'password') {
+        pendingChanges.passwordChange = data;
+      }
+      
+      localStorage.setItem(this.PENDING_CHANGES_KEY, JSON.stringify(pendingChanges));
+      console.log('Pending changes saved:', pendingChanges);
+    } catch (error) {
+      console.error('Error saving pending changes:', error);
+    }
+  }
+
   async loadUserProfile() {
-   
     this.user = this.authService.currentUser();
     
- 
     if (!this.authService.isLoggedIn() || !this.user) {
       this.router.navigate(['/login']);
+      return;
+    }
+
+    // Only try to load from API if online
+    if (!this.isOnline) {
+      this.showToast('Offline - Showing cached profile', 'warning');
       return;
     }
 
     this.isLoading = true;
     
     try {
-     
       const profileData = await this.httpService.getUserById(this.user.id).toPromise();
       
       if (profileData) {
-        
         this.currentUserGroupIds = profileData.userGroupIds || [];
         
-       
         this.profileForm.patchValue({
           name: profileData.name || this.user.name || '',
           email: profileData.email || this.user.email || '',
@@ -160,16 +283,12 @@ export class ProfilePage implements OnInit {
           profileImage: profileData.profileImage || ''
         });
 
-      
         if (profileData.profileImage) {
           this.profileImageSrc = this.httpService.createDataUrlFromBase64(profileData.profileImage);
         } else if (this.user.profileImage) {
           this.profileImageSrc = this.user.profileImage;
-        } else {
-          this.profileImageSrc = 'assets/avatar-default.png';
         }
 
-       
         const updatedUser = {
           ...this.user,
           name: profileData.name || this.user.name,
@@ -178,8 +297,8 @@ export class ProfilePage implements OnInit {
           userGroupIds: this.currentUserGroupIds 
         };
         
-       
         this.saveUpdatedUserToLocalStorage(updatedUser);
+        this.cacheProfileData(updatedUser);
         this.user = updatedUser;
       }
     } catch (error) {
@@ -190,14 +309,12 @@ export class ProfilePage implements OnInit {
     }
   }
 
-
   private saveUpdatedUserToLocalStorage(updatedUser: any) {
     localStorage.setItem('authToken', JSON.stringify(updatedUser));
-    
     this.authService.currentUser.set(updatedUser);
+    this.cacheProfileData(updatedUser);
   }
 
- 
   passwordMatchValidator(group: AbstractControl): ValidationErrors | null {
     const newPassword = group.get('newPassword')?.value;
     const confirmPassword = group.get('confirmPassword')?.value;
@@ -212,7 +329,6 @@ export class ProfilePage implements OnInit {
     return this.passwordForm.hasError('passwordMismatch');
   }
 
- 
   checkPasswordStrength() {
     const password = this.passwordForm.get('newPassword')?.value || '';
     
@@ -223,7 +339,6 @@ export class ProfilePage implements OnInit {
     
     this.showPasswordStrength = true;
     
-   
     this.passwordRequirements = {
       minLength: password.length >= 7,
       hasUppercase: /[A-Z]/.test(password),
@@ -232,7 +347,6 @@ export class ProfilePage implements OnInit {
       hasSpecialChar: /[@$!%*?&]/.test(password)
     };
 
-  
     const metCount = Object.values(this.passwordRequirements).filter(Boolean).length;
     
     if (metCount <= 2) {
@@ -259,7 +373,6 @@ export class ProfilePage implements OnInit {
     }
   }
 
- 
   togglePasswordVisibility(field: 'current' | 'new' | 'confirm') {
     switch (field) {
       case 'current':
@@ -274,7 +387,6 @@ export class ProfilePage implements OnInit {
     }
   }
 
-
   triggerFileInput() {
     this.fileInput.nativeElement.click();
   }
@@ -285,7 +397,6 @@ export class ProfilePage implements OnInit {
 
     const file = input.files[0];
     
-   
     if (file.size > 2 * 1024 * 1024) {
       await this.showAlert('Error', 'Image must be less than 2MB');
       return;
@@ -296,7 +407,6 @@ export class ProfilePage implements OnInit {
       return;
     }
 
- 
     if (!this.user) {
       await this.showAlert('Error', 'You must be logged in to upload an image');
       return;
@@ -305,11 +415,9 @@ export class ProfilePage implements OnInit {
     this.isUpdatingProfile = true;
     
     try {
-      
       const base64Image = await this.fileToBase64(file);
       const pureBase64 = this.extractPureBase64(base64Image);
 
-     
       const updateData: UserDto = {
         name: this.profileForm.value.name || this.user.name || '',
         email: this.profileForm.value.email || this.user.email || '',
@@ -318,21 +426,35 @@ export class ProfilePage implements OnInit {
         userGroupIds: this.currentUserGroupIds 
       };
 
-      await this.httpService.updateUser(this.user.id, updateData).toPromise();
-      
-     
-      this.profileImageSrc = base64Image;
-      this.profileForm.patchValue({ profileImage: pureBase64 });
-      
-     
-      const updatedUser = {
-        ...this.user,
-        profileImage: pureBase64
-      };
-      this.saveUpdatedUserToLocalStorage(updatedUser);
-      this.user = updatedUser;
-      
-      await this.showToast('Profile image updated successfully!', 'success');
+      if (!this.isOnline) {
+        // Save locally when offline
+        this.savePendingChanges('profile', updateData);
+        this.profileImageSrc = base64Image;
+        this.profileForm.patchValue({ profileImage: pureBase64 });
+        
+        const updatedUser = {
+          ...this.user,
+          profileImage: pureBase64
+        };
+        this.saveUpdatedUserToLocalStorage(updatedUser);
+        this.user = updatedUser;
+        
+        await this.showToast('Image saved locally - Will upload when online', 'warning');
+      } else {
+        await this.httpService.updateUser(this.user.id, updateData).toPromise();
+        
+        this.profileImageSrc = base64Image;
+        this.profileForm.patchValue({ profileImage: pureBase64 });
+        
+        const updatedUser = {
+          ...this.user,
+          profileImage: pureBase64
+        };
+        this.saveUpdatedUserToLocalStorage(updatedUser);
+        this.user = updatedUser;
+        
+        await this.showToast('Profile image updated successfully!', 'success');
+      }
     } catch (error) {
       console.error('Error uploading image:', error);
       await this.showAlert('Error', 'Failed to upload image');
@@ -341,7 +463,6 @@ export class ProfilePage implements OnInit {
     }
   }
 
-  
   private fileToBase64(file: File): Promise<string> {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -358,7 +479,6 @@ export class ProfilePage implements OnInit {
     return base64Index !== -1 ? dataUrl.substring(base64Index + base64Marker.length) : '';
   }
 
-
   async updateProfile() {
     if (this.profileForm.invalid || this.isUpdatingProfile || !this.user) return;
 
@@ -373,20 +493,36 @@ export class ProfilePage implements OnInit {
         userGroupIds: this.currentUserGroupIds 
       };
 
-      await this.httpService.updateUser(this.user.id, updateData).toPromise();
-      
-    
-      const updatedUser = {
-        ...this.user,
-        name: updateData.name,
-        email: updateData.email,
-        phone: updateData.phone,
-        profileImage: updateData.profileImage
-      };
-      this.saveUpdatedUserToLocalStorage(updatedUser);
-      this.user = updatedUser;
+      if (!this.isOnline) {
+        // Save locally when offline
+        this.savePendingChanges('profile', updateData);
+        
+        const updatedUser = {
+          ...this.user,
+          name: updateData.name,
+          email: updateData.email,
+          phone: updateData.phone,
+          profileImage: updateData.profileImage
+        };
+        this.saveUpdatedUserToLocalStorage(updatedUser);
+        this.user = updatedUser;
 
-      await this.showToast('Profile updated successfully!', 'success');
+        await this.showToast('Profile saved locally - Will sync when online', 'warning');
+      } else {
+        await this.httpService.updateUser(this.user.id, updateData).toPromise();
+        
+        const updatedUser = {
+          ...this.user,
+          name: updateData.name,
+          email: updateData.email,
+          phone: updateData.phone,
+          profileImage: updateData.profileImage
+        };
+        this.saveUpdatedUserToLocalStorage(updatedUser);
+        this.user = updatedUser;
+
+        await this.showToast('Profile updated successfully!', 'success');
+      }
     } catch (error: any) {
       console.error('Update error:', error);
       const errorMessage = error.error || error.message || 'Failed to update profile';
@@ -395,7 +531,6 @@ export class ProfilePage implements OnInit {
       this.isUpdatingProfile = false;
     }
   }
-
 
   async changePassword() {
     if (this.passwordForm.invalid || this.isChangingPassword || this.passwordMismatch || !this.user) return;
@@ -409,13 +544,18 @@ export class ProfilePage implements OnInit {
         newPassword: this.passwordForm.value.newPassword
       };
 
-      await this.httpService.changePassword(passwordData).toPromise();
-      
-    
-      this.passwordForm.reset();
-      this.showPasswordStrength = false;
-      
-      await this.showToast('Password changed successfully!', 'success');
+      if (!this.isOnline) {
+        // Save locally when offline
+        this.savePendingChanges('password', passwordData);
+        this.passwordForm.reset();
+        this.showPasswordStrength = false;
+        await this.showToast('Password change saved locally - Will sync when online', 'warning');
+      } else {
+        await this.httpService.changePassword(passwordData).toPromise();
+        this.passwordForm.reset();
+        this.showPasswordStrength = false;
+        await this.showToast('Password changed successfully!', 'success');
+      }
     } catch (error: any) {
       console.error('Password change error:', error);
       const errorMessage = error.error?.message || error.message || 'Failed to change password';
@@ -425,11 +565,9 @@ export class ProfilePage implements OnInit {
     }
   }
 
-
   onSegmentChange(event: any) {
     this.selectedSegment = event.detail.value;
   }
-
 
   async logout() {
     const alert = document.createElement('ion-alert');
@@ -451,7 +589,6 @@ export class ProfilePage implements OnInit {
     await alert.present();
   }
 
-
   async showAlert(header: string, message: string) {
     const alert = document.createElement('ion-alert');
     alert.header = header;
@@ -470,7 +607,6 @@ export class ProfilePage implements OnInit {
     document.body.appendChild(toast);
     await toast.present();
   }
-
 
   getProfileFieldError(field: string): string {
     const control = this.profileForm.get(field);
@@ -518,5 +654,13 @@ export class ProfilePage implements OnInit {
   
   returnHome() {
     this.router.navigate(['/home']);
+  }
+
+  getOfflineStatusText(): string {
+    return this.offlineMode ? '📴 Offline Mode - Showing cached profile' : '';
+  }
+
+  hasPendingChanges(): boolean {
+    return !!localStorage.getItem(this.PENDING_CHANGES_KEY);
   }
 }
