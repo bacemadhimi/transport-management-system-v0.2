@@ -91,16 +91,16 @@
     background: rgba(255, 204, 0, 0.1);
   }
   
-  &.loadinginprogress {
-    color: #ff8c00;
-    border-color: #ff8c00;
-    background: rgba(255, 140, 0, 0.1);
+  &.loading {
+    color: #5856d6;
+    border-color: #5856d6;
+    background: rgba(88, 86, 214, 0.1);
   }
   
-  &.deliveryinprogress {
-    color: #ff8c00;
-    border-color: #ff8c00;
-    background: rgba(255, 140, 0, 0.1);
+  &.delivery {
+    color: #ff9500;
+    border-color: #ff9500;
+    background: rgba(255, 149, 0, 0.1);
   }
   
   &.receipt {
@@ -194,7 +194,7 @@
   }
 }
 
-/* Proof Section */
+/* QR Code Delivery Section */
 .proof-section {
   margin-top: 24px;
   padding-top: 24px;
@@ -220,6 +220,178 @@
   }
 }
 
+.qr-delivery-container {
+  background: rgba(0, 0, 0, 0.85);
+  border-radius: 20px;
+  padding: 20px;
+  border: 1px solid rgba(255, 140, 0, 0.3);
+  
+  .qr-info {
+    text-align: center;
+    margin-bottom: 24px;
+    
+    p {
+      color: #cccccc;
+      font-size: 14px;
+      margin: 0;
+    }
+  }
+}
+
+.scanner-section {
+  margin-bottom: 24px;
+  
+  .qr-code-scanner {
+    text-align: center;
+    margin-bottom: 20px;
+    
+    .scanner-frame {
+      position: relative;
+      width: 200px;
+      height: 200px;
+      margin: 0 auto 20px;
+      border: 2px solid #ff8c00;
+      border-radius: 16px;
+      overflow: hidden;
+      background: rgba(0, 0, 0, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      
+      .scanner-animation {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 2px;
+        background: linear-gradient(90deg, transparent, #ff8c00, #ffcc00, transparent);
+        animation: scan 2s linear infinite;
+      }
+      
+      .scanner-success {
+        ion-icon {
+          font-size: 48px;
+          color: #4caf50;
+        }
+      }
+    }
+    
+    .scan-btn {
+      --background: linear-gradient(135deg, #ff8c00, #ffcc00);
+      --color: #000000;
+      --border-radius: 12px;
+      --box-shadow: none;
+      margin: 0 auto;
+      max-width: 200px;
+      font-weight: 700;
+      
+      ion-icon {
+        font-size: 20px;
+      }
+    }
+  }
+  
+  .manual-input {
+    margin: 20px 0;
+    
+    .manual-input-item {
+      --background: rgba(255, 255, 255, 0.1);
+      --border-color: #ff8c00;
+      --border-width: 1px;
+      --border-radius: 12px;
+      --color: #ffffff;
+      
+      ion-label {
+        --color: #ff8c00;
+      }
+    }
+  }
+  
+  .qr-data-preview {
+    margin-top: 20px;
+    background: rgba(76, 175, 80, 0.1);
+    border-radius: 12px;
+    padding: 16px;
+    border-left: 4px solid #4caf50;
+    
+    .data-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 12px;
+      font-weight: 500;
+      color: #4caf50;
+      
+      .success-icon {
+        font-size: 20px;
+      }
+    }
+    
+    .data-content {
+      .data-row {
+        display: flex;
+        align-items: flex-start;
+        gap: 8px;
+        margin-bottom: 10px;
+        font-size: 13px;
+        color: #ffffff;
+        
+        ion-icon {
+          color: #ff8c00;
+          font-size: 16px;
+          margin-top: 2px;
+          flex-shrink: 0;
+        }
+        
+        strong {
+          color: #ff8c00;
+          margin-right: 4px;
+        }
+        
+        code {
+          background: rgba(0, 0, 0, 0.5);
+          padding: 2px 6px;
+          border-radius: 4px;
+          font-family: monospace;
+          word-break: break-all;
+          flex: 1;
+        }
+        
+        span {
+          word-break: break-word;
+        }
+      }
+    }
+  }
+}
+
+.qr-action-buttons {
+  display: flex;
+  gap: 12px;
+  margin-top: 20px;
+  
+  .cancel-btn {
+    --border-color: #ff8c00;
+    --color: #ff8c00;
+    --border-radius: 12px;
+    flex: 1;
+  }
+  
+  .confirm-btn {
+    --background: linear-gradient(135deg, #4caf50, #45a049);
+    --color: #ffffff;
+    --border-radius: 12px;
+    flex: 1;
+    font-weight: 700;
+    
+    &:disabled {
+      --background: #666;
+      opacity: 0.5;
+    }
+  }
+}
+
+/* Proof Card for Completed Trips */
 .proof-card {
   background: rgba(0, 0, 0, 0.85);
   border-radius: 16px;
@@ -238,6 +410,9 @@
   padding: 12px 16px;
   background: rgba(255, 140, 0, 0.1);
   border-bottom: 1px solid rgba(255, 140, 0, 0.3);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .proof-number {
@@ -247,31 +422,49 @@
   text-transform: uppercase;
 }
 
-.proof-img {
-  width: 100%;
-  height: 200px;
-  object-fit: cover;
-  display: block;
+.qr-badge {
+  background: linear-gradient(135deg, #ff8c00, #ffcc00);
+  color: #000000;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  
+  ion-icon {
+    font-size: 12px;
+  }
 }
 
-.proof-footer {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 12px;
-  background: rgba(76, 175, 80, 0.1);
-  border-top: 1px solid rgba(76, 175, 80, 0.3);
+.qr-data-display {
+  padding: 16px;
   
-  .proof-check {
-    color: #4caf50;
-    font-size: 18px;
-  }
-  
-  span {
-    color: #4caf50;
+  .qr-data-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 12px;
     font-size: 13px;
-    font-weight: 500;
+    color: #ffffff;
+    
+    ion-icon {
+      color: #ff8c00;
+      font-size: 18px;
+      min-width: 24px;
+      margin-top: 2px;
+    }
+    
+    strong {
+      color: #ff8c00;
+      min-width: 100px;
+    }
+    
+    .qr-content-text {
+      word-break: break-all;
+      flex: 1;
+    }
   }
 }
 
@@ -350,6 +543,16 @@
   }
 }
 
+/* Animations */
+@keyframes scan {
+  0% {
+    top: 0;
+  }
+  100% {
+    top: 100%;
+  }
+}
+
 /* Responsive */
 @media (max-width: 480px) {
   .info-card-detail {
@@ -369,12 +572,17 @@
     font-size: 14px;
   }
   
-  .proof-img {
-    height: 160px;
-  }
-  
   .status-badge {
     padding: 8px 16px;
     font-size: 14px;
+  }
+  
+  .qr-action-buttons {
+    flex-direction: column;
+  }
+  
+  .scanner-frame {
+    width: 160px !important;
+    height: 160px !important;
   }
 }
