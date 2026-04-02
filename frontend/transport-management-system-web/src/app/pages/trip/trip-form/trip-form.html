@@ -1258,7 +1258,7 @@
             <mat-icon>arrow_back</mat-icon>
             Retour
           </button>   
-          <button type="button" mat-raised-button class="add-more-btn"
+          <button type="button" mat-raised-button class="add-more-btn theme-primary-btn"
                   (click)="goBackToClientSelection()">
             <mat-icon>add</mat-icon>
             Ajouter plus
@@ -2623,16 +2623,17 @@
       <button mat-button type="button" (click)="onCancel()" [disabled]="loading" class="cancel-btn">
         Annuler
       </button>
-      
       <button
         mat-flat-button
         color="primary"
         type="submit"
-        [disabled]="tripForm.invalid || deliveries.length === 0 || loading || (saveAsPredefined && !trajectName.trim())"
+        [disabled]="tripForm.invalid || deliveries.length === 0 || loading || isSubmitting || isSuccess || (saveAsPredefined && !trajectName.trim())"
         class="save-btn"
       >
-        <mat-icon *ngIf="loading" class="loading-icon">hourglass_empty</mat-icon>
-        <span>{{ tripId ? 'Modifier' : 'Créer le voyage' }}</span>
+        <mat-icon *ngIf="loading || isSubmitting" class="loading-icon">hourglass_empty</mat-icon>
+        <mat-icon *ngIf="isSuccess" class="success-icon">check_circle</mat-icon>
+        <span *ngIf="!loading && !isSubmitting && !isSuccess">{{ tripId ? 'Modifier' : 'Créer le voyage' }}</span>
+        <span *ngIf="loading || isSubmitting">Traitement en cours...</span>
       </button>
     </div>
   </form>

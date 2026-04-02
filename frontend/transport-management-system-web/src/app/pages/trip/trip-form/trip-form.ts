@@ -163,11 +163,11 @@ export class TripForm implements OnInit {
   private availabilityCheckTimeout: any;
   geographicalLevels: IGeographicalLevel[] = [];
 
-  // Filtres hiérarchiques pour camions
+
   truckSelectedLevelIds: (number | null)[] = [];
   activeTruckFilterLevel: number = 0;
 
-  // Filtres hiérarchiques pour chauffeurs
+
   driverSelectedLevelIds: (number | null)[] = [];
   activeDriverFilterLevel: number = 0;
   private readonly DRAFT_KEY = 'trip_draft_v1';
@@ -179,6 +179,8 @@ export class TripForm implements OnInit {
   @ViewChild('rightViewport') rightViewport!: CdkVirtualScrollViewport;
   driverTruckMap: Map<number, number> = new Map();
   linkDriverToTruck = false;
+   isSubmitting = false;
+   isSuccess = false;  
 
   private translation = inject(Translation);
   t(key: string): string { return this.translation.t(key); }
@@ -214,8 +216,8 @@ export class TripForm implements OnInit {
   allCustomers: ICustomer[] = [];
   loading = false;
   
-  // Smart address search with suggestions
-  addressSuggestions: Map<number, any[]> = new Map(); // customerId -> suggestions
+  
+  addressSuggestions: Map<number, any[]> = new Map();
   addressSearchSubject: Subject<{customerId: number, query: string}> = new Subject();
   loadingTrucks = false;
   loadingDrivers = false;
@@ -332,13 +334,13 @@ selectedDateStats: any = {
     this.setupSubscriptions();
     this.loadConfiguration();
 
-    // Handle empty customers case gracefully
+
     this.filteredClients = this.allClientsWithPendingOrders || [];
 
     this.setupSubscriptions();
     this.loadConfiguration();
 
-    // Setup smart address search with debounce
+    
     this.setupAddressSearch();
 
     setTimeout(() => {
@@ -741,7 +743,7 @@ private loadAllTrucks(): void {
       this.unavailableTrucks = [];
       this.filteredAvailableTrucks = [...this.availableTrucks];
       
-      // CRITICAL: Build truck -> driver map from truck data
+     
       this.truckDriverMap.clear();
       trucks.forEach(truck => {
         if (truck.driverId) {
@@ -808,11 +810,11 @@ private processTruckResponse(response: any, date: Date): void {
           unit: typeTruckData.unit
         } : null,
         truckGeographicalEntities: apiTruck.geographicalEntities || [],
-        driverId: apiTruck.driverId || null // Add driverId from API response
+        driverId: apiTruck.driverId || null 
       };
     });
     
-    // Build truck -> driver map from available trucks
+  
     this.availableTrucks.forEach(truck => {
       if (truck.driverId) {
         this.truckDriverMap.set(truck.id, truck.driverId);
@@ -839,11 +841,11 @@ private processTruckResponse(response: any, date: Date): void {
         isAvailable: false,
         zoneId: truck.ZoneId || truck.zoneId || null,
         truckGeographicalEntities: truck.geographicalEntities || [],
-        driverId: truck.driverId || null // Add driverId from API response
+        driverId: truck.driverId || null 
       };
     });
     
-    // Also add unavailable trucks to the map
+   
     this.unavailableTrucks.forEach(truck => {
       if (truck.driverId) {
         this.truckDriverMap.set(truck.id, truck.driverId);
@@ -1085,12 +1087,12 @@ private async checkAndDisplayTrajectStatus(trajectId: number): Promise<void> {
           if (!traject.isPredefined) {
             this.saveAsPredefined = false;
             this.showSaveAsPredefinedOption = true;
-            // Hide order selection for non-predefined trajects in edit mode
+         
             this.showTrajectOrderSelection = false;
           } else {
             this.saveAsPredefined = true;
             this.showSaveAsPredefinedOption = false;
-            // Show order selection for predefined trajects
+           
             this.loadTrajectCustomersForOrderSelection(traject);
           }
 
@@ -1303,7 +1305,7 @@ private async checkAndDisplayTrajectStatus(trajectId: number): Promise<void> {
       customerId: [deliveryData?.customerId || '', Validators.required],
       orderId: [deliveryData?.orderId || '', Validators.required],
       deliveryAddress: [deliveryData?.deliveryAddress || ''],
-      geolocation: [deliveryData?.geolocation || null], // Champ pour stocker les coordonnées GPS (format: "lat,lng")
+      geolocation: [deliveryData?.geolocation || null], 
       sequence: [deliveryData?.sequence || sequence, [Validators.required, Validators.min(1)]],
       plannedTime: [plannedTime],
       notes: [deliveryData?.notes || '']
@@ -1398,7 +1400,7 @@ private async checkAndDisplayTrajectStatus(trajectId: number): Promise<void> {
       const newAddress = this.tripForm.get(addressControlName)?.value;
 
       if (newAddress && newAddress.trim().length > 0) {
-        // Géocoder l'adresse et stocker les coordonnées
+        
         this.geocodeDeliveryAddress(customerId, newAddress);
         
         groupControl.patchValue({ deliveryAddress: newAddress }, { emitEvent: false });
@@ -1408,16 +1410,14 @@ private async checkAndDisplayTrajectStatus(trajectId: number): Promise<void> {
     }
   }
 
-  /**
-   * Géocoder l'adresse de livraison et stocker les coordonnées GPS
-   */
+
   private geocodeDeliveryAddress(customerId: number, address: string): void {
     console.log(`Géocodage de l'adresse pour le client ${customerId}: ${address}`);
     
     this.gpsAddressService.validateAndNormalizeAddress(address).subscribe({
       next: (result) => {
         if (result.success && result.lat && result.lng) {
-          // Trouver le groupe de livraison pour ce client
+         
           const deliveriesArray = this.tripForm.get('deliveries') as FormArray;
           const deliveryGroup = deliveriesArray.controls.find(d => {
             const group = d as FormGroup;
@@ -1427,11 +1427,11 @@ private async checkAndDisplayTrajectStatus(trajectId: number): Promise<void> {
           if (deliveryGroup) {
             const groupControl = deliveryGroup as FormGroup;
             
-            // Stocker les coordonnées dans le champ geolocation (format: "lat,lng")
+          
             const geolocationValue = `${result.lat.toFixed(6)},${result.lng.toFixed(6)}`;
             groupControl.patchValue({ 
               geolocation: geolocationValue,
-              deliveryAddress: result.address // Utiliser l'adresse normalisée
+              deliveryAddress: result.address 
             }, { emitEvent: false });
             
             console.log(`✅ Adresse géocodée pour le client ${customerId}: ${result.address} (${geolocationValue})`);
@@ -1467,7 +1467,7 @@ private async checkAndDisplayTrajectStatus(trajectId: number): Promise<void> {
    */
   private setupAddressSearch(): void {
     this.addressSearchSubject.pipe(
-      debounceTime(500), // Wait 500ms after typing stops
+      debounceTime(500), 
       distinctUntilChanged((prev, curr) => prev.query === curr.query),
       switchMap(({ customerId, query }) => {
         if (query.length < 3) {
@@ -1984,9 +1984,17 @@ async confirmAddOrders(): Promise<void> {
     return this.datePipe.transform(dateString, 'dd/MM/yyyy') || '';
   }
 
-  async onSubmit(): Promise<void> {
-    this.submitted = true;
+async onSubmit(): Promise<void> {
 
+  if (this.isSubmitting || this.isSuccess) {
+    console.log('Soumission déjà en cours ou terminée, ignorée');
+    return;
+  }
+
+  this.isSubmitting = true;
+  this.submitted = true;
+
+  try {
     if (this.trajectMode === 'predefined' && this.selectedTraject) {
       if (!this.selectedTraject.startLocationId && !this.tripForm.get('startLocationId')?.value) {
         Swal.fire({
@@ -1995,6 +2003,7 @@ async confirmAddOrders(): Promise<void> {
           text: 'Ce traject prédéfini n\'a pas de lieu de départ. Veuillez en sélectionner un.',
           confirmButtonText: 'OK'
         });
+        this.isSubmitting = false;
         return;
       }
 
@@ -2005,6 +2014,7 @@ async confirmAddOrders(): Promise<void> {
           text: 'Ce traject prédéfini n\'a pas de lieu d\'arrivée. Veuillez en sélectionner un.',
           confirmButtonText: 'OK'
         });
+        this.isSubmitting = false;
         return;
       }
     }
@@ -2022,6 +2032,7 @@ async confirmAddOrders(): Promise<void> {
       });
       this.tripForm.get('startLocationId')?.markAsTouched();
       this.tripForm.get('endLocationId')?.markAsTouched();
+      this.isSubmitting = false;
       return;
     }
 
@@ -2037,47 +2048,29 @@ async confirmAddOrders(): Promise<void> {
           confirmButtonText: 'OK'
         });
       }
+      this.isSubmitting = false;
       return;
     }
-      const orderTypeValidation = this.validateOrderTypes();
-        if (!orderTypeValidation.isValid) {
-          await Swal.fire({
-            icon: 'error',
-            title: 'Erreur de validation',
-            html: orderTypeValidation.message,
-            confirmButtonText: 'Compris',
-            confirmButtonColor: '#ef4444',
-            width: '600px'
-          });
-          return;
-        }
+    
+    const orderTypeValidation = this.validateOrderTypes();
+    if (!orderTypeValidation.isValid) {
+      await Swal.fire({
+        icon: 'error',
+        title: 'Erreur de validation',
+        html: orderTypeValidation.message,
+        confirmButtonText: 'Compris',
+        confirmButtonColor: '#ef4444',
+        width: '600px'
+      });
+      this.isSubmitting = false;
+      return;
+    }
+    
     if (this.trajectMode === 'new' && !this.saveAsPredefined) {
       const result = await Swal.fire({
         icon: 'warning',
         title: 'Trajet non défini comme standard',
-        html: `
-          <div style="text-align: left; padding: 10px;">
-            <div style="display: flex; align-items: center; margin-bottom: 15px;">
-              <mat-icon style="color: #f59e0b; margin-right: 10px; font-size: 24px;">warning</mat-icon>
-              <div>
-                <h4 style="margin: 0; color: #1f2937;">Vous n'avez pas défini ce trajet comme standard</h4>
-              </div>
-            </div>
-
-            <div style="background-color: #fef3c7; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
-              <p style="margin: 0 0 10px 0; color: #92400e; font-weight: 500;">Conséquences :</p>
-              <ul style="margin: 0; padding-left: 20px; color: #92400e;">
-                <li style="margin-bottom: 5px;">Ce trajet ne sera pas enregistré dans la liste des trajets prédéfinis</li>
-                <li style="margin-bottom: 5px;">Vous ne pourrez pas le réutiliser pour d'autres voyages</li>
-                <li>Il sera associé uniquement à ce voyage</li>
-              </ul>
-            </div>
-
-            <p style="color: #4b5563; margin-bottom: 20px; font-size: 14px;">
-              Voulez-vous quand même continuer sans enregistrer ce trajet comme standard ?
-            </p>
-          </div>
-        `,
+        html: `<div>...</div>`,
         showCancelButton: true,
         confirmButtonText: 'Oui, continuer sans enregistrer',
         cancelButtonText: 'Non, définir comme standard',
@@ -2085,23 +2078,14 @@ async confirmAddOrders(): Promise<void> {
         cancelButtonColor: '#3b82f6',
         reverseButtons: true,
         allowOutsideClick: false,
-        allowEscapeKey: false,
-        customClass: {
-          container: 'traject-warning-swal-container',
-          popup: 'traject-warning-swal-popup',
-          title: 'traject-warning-swal-title',
-          confirmButton: 'traject-warning-confirm-btn',
-          cancelButton: 'traject-warning-cancel-btn'
-        }
+        allowEscapeKey: false
       });
 
       if (result.isDismissed) {
         this.saveAsPredefined = true;
-
         if (!this.trajectName || this.trajectName.trim() === '') {
           this.generateDefaultTrajectName();
         }
-
         setTimeout(() => {
           const trajectNameInput = document.querySelector('input[placeholder*="Ex: Paris-Lyon-Marseille"]') as HTMLInputElement;
           if (trajectNameInput) {
@@ -2109,14 +2093,10 @@ async confirmAddOrders(): Promise<void> {
             trajectNameInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
           }
         }, 100);
-
+        this.isSubmitting = false;
         return;
       }
     }
-
-
-
-
 
     if (this.saveAsPredefined && !this.trajectName.trim()) {
       Swal.fire({
@@ -2125,27 +2105,12 @@ async confirmAddOrders(): Promise<void> {
         text: 'Veuillez saisir un nom pour le traject',
         confirmButtonText: 'OK'
       });
+      this.isSubmitting = false;
       return;
     }
 
     const formValue = this.tripForm.value;
     const deliveries = this.prepareDeliveries(formValue.estimatedStartDate);
-
-    try {
-      const trajectId = await this.handleTrajectCreation();
-      if (this.tripId) {
-        this.updateTrip(formValue, deliveries, trajectId);
-      } else {
-        this.createTrip(formValue, deliveries, trajectId);
-      }
-    } catch (error) {
-      console.error('Error handling traject:', error);
-      if (this.tripId) {
-        this.updateTrip(formValue, deliveries, null);
-      } else {
-        this.createTrip(formValue, deliveries, null);
-      }
-    }
 
     const startDate = this.estimatedStartDateControl?.value;
     const endDate = this.estimatedEndDateControl?.value;
@@ -2153,7 +2118,6 @@ async confirmAddOrders(): Promise<void> {
     if (startDate && endDate) {
       const start = new Date(startDate);
       const end = new Date(endDate);
-
       if (end < start) {
         Swal.fire({
           icon: 'error',
@@ -2161,13 +2125,38 @@ async confirmAddOrders(): Promise<void> {
           text: 'La date de fin doit être après la date de début',
           confirmButtonText: 'OK'
         });
+        this.isSubmitting = false;
         return;
       }
     }
+    
     if (!await this.validateCapacityWithSettings()) {
-     return;
-    } 
+      this.isSubmitting = false;
+      return;
+    }
+
+   
+    try {
+      const trajectId = await this.handleTrajectCreation();
+      if (this.tripId) {
+        await this.updateTrip(formValue, deliveries, trajectId);
+      } else {
+        await this.createTrip(formValue, deliveries, trajectId);
+      }
+    } catch (error) {
+      console.error('Error handling traject:', error);
+      if (this.tripId) {
+        await this.updateTrip(formValue, deliveries, null);
+      } else {
+        await this.createTrip(formValue, deliveries, null);
+      }
+    }
+    
+  } catch (error) {
+    console.error('Erreur lors de la soumission:', error);
+    this.isSubmitting = false;
   }
+}
 
   private async handleTrajectCreation(): Promise<number | null> {
     try {
@@ -2705,7 +2694,8 @@ private async checkCapacityBeforeAddingOrders(selectedWeight: number): Promise<b
     }
   }
 
-  private createTrip(formValue: any, deliveries: CreateDeliveryDto[], trajectId: number | null): void {
+private createTrip(formValue: any, deliveries: CreateDeliveryDto[], trajectId: number | null): Promise<void> {
+  return new Promise((resolve, reject) => {
     const createTripData: CreateTripDto = {
       estimatedDistance: parseFloat(formValue.estimatedDistance) || 0,
       estimatedDuration: parseFloat(formValue.estimatedDuration) || 0,
@@ -2718,9 +2708,13 @@ private async checkCapacityBeforeAddingOrders(selectedWeight: number): Promise<b
       trajectId: trajectId
     };
 
+    this.loading = true;
+
     this.http.createTrip(createTripData).subscribe({
       next: (response: any) => {
         this.loading = false;
+        this.isSubmitting = false;
+        this.isSuccess = true;  
         this.clearDraft();
 
         let message = 'Voyage créé avec succès';
@@ -2734,13 +2728,18 @@ private async checkCapacityBeforeAddingOrders(selectedWeight: number): Promise<b
           text: message,
           confirmButtonText: 'OK',
           allowOutsideClick: false,
-        }).then(() => this.success.emit());
+        }).then(() => {
+          this.success.emit();
+          resolve();
+        });
       },
       error: (error) => {
         this.loading = false;
+        this.isSubmitting = false;
+        this.isSuccess = false;  
+        
         if (this.hasDraft()) {
           this.clearDraft();
-          console.log('Draft cleared after successful submission');
         }
         console.error('Create trip error:', error);
 
@@ -2756,12 +2755,16 @@ private async checkCapacityBeforeAddingOrders(selectedWeight: number): Promise<b
           title: 'Erreur',
           text: errorMessage,
           confirmButtonText: 'OK'
+        }).then(() => {
+          reject(error);
         });
       }
     });
-  }
+  });
+}
 
-  private updateTrip(formValue: any, deliveries: CreateDeliveryDto[], trajectId: number | null): void {
+private updateTrip(formValue: any, deliveries: CreateDeliveryDto[], trajectId: number | null): Promise<void> {
+  return new Promise((resolve, reject) => {
     const updateTripData: UpdateTripDto = {
       estimatedDistance: parseFloat(formValue.estimatedDistance) || 0,
       estimatedDuration: parseFloat(formValue.estimatedDuration) || 0,
@@ -2776,73 +2779,37 @@ private async checkCapacityBeforeAddingOrders(selectedWeight: number): Promise<b
     };
 
     this.loading = true;
+    
     this.http.updateTrip(this.tripId!, updateTripData).subscribe({
       next: (response: any) => {
         this.loading = false;
+        this.isSubmitting = false;
+        this.isSuccess = true;  
         this.clearDraft();
-        if (response && (response.message || response.Status === 200)) {
-          const successMessage = response.message || 'Voyage modifié avec succès';
 
-          Swal.fire({
-            icon: 'success',
-            title: 'Succès',
-            text: successMessage,
-            confirmButtonText: 'OK',
-            allowOutsideClick: false,
-            customClass: {
-              popup: 'swal2-popup-custom',
-              title: 'swal2-title-custom',
-              icon: 'swal2-icon-custom',
-              confirmButton: 'swal2-confirm-custom'
-            }
-          }).then(() => this.success.emit());
-        } else {
-          Swal.fire({
-            icon: 'success',
-            title: 'Succès',
-            text: 'Voyage modifié avec succès',
-            confirmButtonText: 'OK',
-            allowOutsideClick: false,
-            customClass: {
-              popup: 'swal2-popup-custom',
-              title: 'swal2-title-custom',
-              icon: 'swal2-icon-custom',
-              confirmButton: 'swal2-confirm-custom'
-            }
-          }).then(() => this.success.emit());
-        }
+        Swal.fire({
+          icon: 'success',
+          title: 'Succès',
+          text: 'Voyage modifié avec succès',
+          confirmButtonText: 'OK',
+          allowOutsideClick: false,
+        }).then(() => {
+          this.success.emit();
+          resolve();
+        });
       },
       error: (error) => {
         this.loading = false;
+        this.isSubmitting = false;
+        this.isSuccess = false;  
+        
         console.error('Update error:', error);
-        console.error('Full error object:', JSON.stringify(error, null, 2));
 
         let errorMessage = 'Erreur lors de la modification du voyage';
-
         if (error?.error?.message) {
           errorMessage = error.error.message;
-        } else if (error?.error?.errors) {
-          const errors = error.error.errors;
-          if (typeof errors === 'object') {
-            const errorList = Object.values(errors).flat();
-            errorMessage = errorList.join(', ');
-          }
-        } else if (error?.error) {
-          if (typeof error.error === 'string') {
-            errorMessage = error.error;
-          } else if (error.error?.error) {
-            errorMessage = error.error.error;
-          }
         } else if (error?.message) {
           errorMessage = error.message;
-        } else if (error?.status === 404) {
-          errorMessage = 'Trajet non trouvé';
-        } else if (error?.status === 400) {
-          errorMessage = 'Données invalides';
-        } else if (error?.status === 403) {
-          errorMessage = 'Vous n\'avez pas les permissions nécessaires';
-        } else if (error?.status === 409) {
-          errorMessage = 'Impossible de modifier un trajet en cours ou terminé';
         }
 
         Swal.fire({
@@ -2850,10 +2817,13 @@ private async checkCapacityBeforeAddingOrders(selectedWeight: number): Promise<b
           title: 'Erreur',
           text: errorMessage,
           confirmButtonText: 'OK'
+        }).then(() => {
+          reject(error);
         });
       }
     });
-  }
+  });
+}
 
   private prepareDeliveries(baseDate: any): any[] {
     return this.deliveryControls.map((group, index) => {
@@ -2867,7 +2837,7 @@ private async checkCapacityBeforeAddingOrders(selectedWeight: number): Promise<b
         customerId: parseInt(delivery.customerId),
         orderId: parseInt(delivery.orderId),
         deliveryAddress: delivery.deliveryAddress,
-        geolocation: delivery.geolocation || null, // Inclure les coordonnées GPS
+        geolocation: delivery.geolocation || null, 
         sequence: parseInt(delivery.sequence) || (index + 1),
         plannedTime: plannedTime,
         notes: delivery.notes || null
@@ -4171,7 +4141,7 @@ private loadLocations(): Promise<void> {
         if (Array.isArray(locations)) {
           this.locations = locations.map(location => ({
             ...location,
-            // Keep geographicalEntities as they come from API
+            
             geographicalEntities: location.geographicalEntities || []
           }));
 
@@ -4241,11 +4211,11 @@ onTrajectSelected(trajectId: number): void {
     this.saveAsPredefined = traject.isPredefined;
   }
 
-  // ONLY show order selection for PREDEFINED trajects
+
   if (traject.isPredefined) {
     this.loadTrajectCustomersForOrderSelection(traject);
   } else {
-    // For non-predefined trajects, hide the order selection
+    
     this.showTrajectOrderSelection = false;
   }
 
@@ -4296,7 +4266,7 @@ private loadTrajectCustomersForOrderSelection(traject: ITraject): void {
 
   this.trajectCustomers = trajectCustomers;
 
-  // Only show order selection for predefined trajects
+ 
   if (traject.isPredefined) {
     this.showTrajectOrderSelection = true;
     
@@ -4424,7 +4394,7 @@ private loadAllDrivers(): Promise<void> {
           return enhancedDriver;
         });
         
-        // CRITICAL: Fill driverTruckMap BEFORE any selection happens
+       
         this.driverTruckMap.clear();
         this.drivers.forEach(driver => {
           if (driver.idCamion) {
@@ -4779,7 +4749,7 @@ hasZone(locationId: number): boolean | undefined {
   
   if (!location) return false;
   
-  // Check if location has any associated geographical entities
+
   return location.geographicalEntities && location.geographicalEntities.length > 0;
 }
 
@@ -4869,7 +4839,7 @@ private getZoneNameForLocation(locationId: number): string | null {
   const location = this.locations.find(l => l.id === locationId);
   if (!location) return null;
 
-  // Get the first associated geographical entity name
+  
   if (location.geographicalEntities && location.geographicalEntities.length > 0) {
     const entityId = location.geographicalEntities[0].geographicalEntityId;
     const entity = this.geographicalEntities.find(e => e.id === entityId);
@@ -4878,7 +4848,7 @@ private getZoneNameForLocation(locationId: number): string | null {
     }
   }
 
-  // Fallback to location name
+
   return location.name;
 }
 
@@ -6710,7 +6680,7 @@ if (!this.allowMixingOrderTypes && this.deliveries.length > 0) {
     const totalWeight = this.calculateTotalWeight();
     const avgPerClient = totalWeight / this.getGroupedDeliveries().length;
 
-    return `${avgPerClient.toFixed(1)} palette/client en moyenne`;
+    return `${avgPerClient.toFixed(1)} ${this.loadingUnit}/client en moyenne`;
   }
 
   getGroupMarkerStyle(group: any): any {
@@ -7675,7 +7645,7 @@ getWeatherWarningMessage(): string {
     }
   }
 
-  // Add warnings based on geographical entities
+
   const startLocationId = this.tripForm.get('startLocationId')?.value;
   const endLocationId = this.tripForm.get('endLocationId')?.value;
   
@@ -7721,7 +7691,7 @@ shouldShowWeatherWarning(): boolean {
     extremeTemperature: { min: -10, max: 35 },
   };
 
-  // Check weather conditions
+ 
   const hasWeatherWarning = weatherConditionsToCheck.some(weather => {
     if (weather.precipitation && weather.precipitation > warningThresholds.heavyRain) {
       return true;
@@ -8282,7 +8252,7 @@ private autoSelectDriverForTruck(truckId: number | null): void {
     return;
   }
 
-  // Ne pas sélectionner automatiquement si le paramètre est désactivé
+  
   if (!this.linkDriverToTruck) {
     console.log('🔗 Link driver to truck is disabled, skipping auto-select');
     return;
@@ -8290,7 +8260,7 @@ private autoSelectDriverForTruck(truckId: number | null): void {
 
   console.log('📊 Current truckDriverMap:', Array.from(this.truckDriverMap.entries()));
   
-  // Trouver le chauffeur associé à ce camion depuis truckDriverMap
+ 
   const associatedDriverId = this.truckDriverMap.get(truckId);
 
   if (!associatedDriverId) {
@@ -8298,7 +8268,7 @@ private autoSelectDriverForTruck(truckId: number | null): void {
     return;
   }
 
-  // Vérifier si le chauffeur est disponible dans la liste des chauffeurs disponibles
+ 
   const driver = this.availableDrivers.find(d => d.id === associatedDriverId);
   if (!driver) {
     console.log(`⚠️ Le chauffeur ${associatedDriverId} n'est pas disponible pour cette date`);
@@ -8312,7 +8282,7 @@ private autoSelectDriverForTruck(truckId: number | null): void {
 
   console.log(`🔄 Sélection auto du chauffeur ${associatedDriverId} (${driver.name}) pour le camion ${truckId}`);
 
-  // Set the driver value WITHOUT triggering the valueChanges subscription to avoid loops
+ 
   this.tripForm.get('driverId')?.setValue(associatedDriverId, { emitEvent: false });
 
   this.snackBar.open(
@@ -8322,7 +8292,7 @@ private autoSelectDriverForTruck(truckId: number | null): void {
   );
 }
 private loadGeographicalEntities(): void {
-  // Charger les niveaux géographiques
+
   this.http.getGeographicalLevels().subscribe({
     next: (levels) => {
       this.geographicalLevels = levels.filter(l => l.isActive);
@@ -8336,7 +8306,7 @@ private loadGeographicalEntities(): void {
     }
   });
 
-  // Charger les entités géographiques
+ 
   this.http.getGeographicalEntities().subscribe({
     next: (response) => {
       let entitiesData: IGeographicalEntity[];
@@ -8369,7 +8339,7 @@ private isEntityDescendantOf(entity: IGeographicalEntity, ancestor: IGeographica
   
   return this.isEntityDescendantOf(parent, ancestor);
 }
-// ==================== MÉTHODES POUR LES FILTRES HIÉRARCHIQUES DES CAMIONS ====================
+
 
 getTruckEntitiesForLevel(levelId: number, parentId: number | null): IGeographicalEntity[] {
   let entities: IGeographicalEntity[] = [];
