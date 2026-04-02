@@ -67,7 +67,7 @@
     </div>
   </div>
 
-  <!-- ==================== NAVIGATION RAPIDE ==================== -->
+  <!-- Navigation Rapide -->
   <div class="quick-actions-section">
     <h2 class="section-title">Navigation Rapide</h2>
     
@@ -91,7 +91,103 @@
       </ion-card>
     </div>
   </div>
-  <!-- ========================================================= -->
+
+  <!-- Modal Scanner QR Code intégré -->
+  <div class="qr-scanner-overlay" *ngIf="showQRScanner" (click)="closeQRScanner()">
+    <div class="qr-scanner-modal" (click)="$event.stopPropagation()">
+      <div class="qr-header">
+        <ion-icon name="qr-code-outline"></ion-icon>
+        <h3>Scanner QR Code</h3>
+        <ion-button fill="clear" class="close-scanner" (click)="closeQRScanner()">
+          <ion-icon name="close-outline"></ion-icon>
+        </ion-button>
+      </div>
+
+      <div class="qr-content">
+        <p class="scanner-info">Scannez le QR Code du client pour valider la livraison</p>
+
+        <!-- Scanner Frame -->
+        <div class="scanner-frame">
+          <div class="scanner-animation" *ngIf="!scannedQRData"></div>
+          <div class="scanner-success" *ngIf="scannedQRData">
+            <ion-icon name="checkmark-circle"></ion-icon>
+            <span>QR Code scanné !</span>
+          </div>
+        </div>
+
+        <!-- Scan Button -->
+        <ion-button 
+          expand="block" 
+          class="scan-btn"
+          (click)="startQRScan()"
+          [disabled]="isScanning">
+          <ion-icon slot="start" [name]="isScanning ? 'sync-outline' : 'scan-outline'"></ion-icon>
+          {{ isScanning ? 'Scan en cours...' : 'Scanner le QR Code' }}
+        </ion-button>
+
+        <!-- Manual Input -->
+        <div class="manual-section">
+          <div class="divider">
+            <span>ou</span>
+          </div>
+          
+          <ion-item lines="none" class="manual-input">
+            <ion-label position="floating">Saisir manuellement le QR Code</ion-label>
+            <ion-input 
+              [(ngModel)]="manualQRCode" 
+              placeholder="Entrez le contenu du QR Code"
+              clearInput>
+            </ion-input>
+          </ion-item>
+        </div>
+
+        <!-- Scanned Data Display -->
+        <div *ngIf="scannedQRData || manualQRCode" class="data-preview">
+          <div class="preview-header">
+            <ion-icon name="checkmark-circle" class="success-icon"></ion-icon>
+            <span>Données du QR Code</span>
+          </div>
+          <div class="preview-content">
+            <div class="data-row">
+              <ion-icon name="document-text-outline"></ion-icon>
+              <span class="label">Contenu:</span>
+              <span class="value">{{ scannedQRData?.content || manualQRCode }}</span>
+            </div>
+            <div class="data-row" *ngIf="scannedQRData?.timestamp">
+              <ion-icon name="time-outline"></ion-icon>
+              <span class="label">Scanné le:</span>
+              <span class="value">{{ scannedQRData?.timestamp | date:'dd/MM/yyyy HH:mm:ss' }}</span>
+            </div>
+          </div>
+          <ion-button 
+            fill="clear" 
+            size="small" 
+            class="clear-btn"
+            (click)="clearQRScan()">
+            <ion-icon name="trash-outline"></ion-icon>
+            Effacer
+          </ion-button>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="action-buttons">
+          <ion-button 
+            fill="outline" 
+            class="cancel-btn"
+            (click)="closeQRScanner()">
+            Annuler
+          </ion-button>
+          <ion-button 
+            class="confirm-btn"
+            (click)="confirmDeliveryWithQR()"
+            [disabled]="!scannedQRData && !manualQRCode">
+            <ion-icon slot="start" name="checkmark-done-outline"></ion-icon>
+            Confirmer Livraison
+          </ion-button>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <!-- Trips Section -->
   <div class="trips-section">
@@ -181,68 +277,68 @@
             </div>
           </div>
 
-<!-- Status Update Section - Version avec Pending et Planned -->
-<div class="status-update-section" *ngIf="trip.tripStatus !== 'Receipt' && trip.tripStatus !== 'Cancelled'">
-  
-  <!-- Accepter - Pour les trajets Pending OU Planned -->
-  <ion-button 
-    expand="block" 
-    class="btn-orange"
-    *ngIf="trip.tripStatus === 'Pending' || trip.tripStatus === 'Planned'" 
-    [disabled]="trip.updating"
-    (click)="$event.stopPropagation(); updateTripStatus(trip, 'Accepted')">
-    <ion-spinner *ngIf="trip.updating" slot="start" name="crescent"></ion-spinner>
-    <ion-icon slot="start" name="checkmark-circle-outline"></ion-icon>
-    ✅ Accepter la Mission
-  </ion-button>
-  
-  <!-- Commencer le Chargement - Pour les trajets acceptés -->
-  <ion-button 
-    expand="block" 
-    class="btn-orange"
-    *ngIf="trip.tripStatus === 'Accepted'" 
-    [disabled]="trip.updating"
-    (click)="$event.stopPropagation(); updateTripStatus(trip, 'LoadingInProgress')">
-    <ion-spinner *ngIf="trip.updating" slot="start" name="crescent"></ion-spinner>
-    <ion-icon slot="start" name="cube-outline"></ion-icon>
-    📦 Commencer le Chargement
-  </ion-button>
-  
-  <!-- Commencer la Livraison - Pour les trajets en chargement -->
-  <ion-button 
-    expand="block" 
-    class="btn-orange"
-    *ngIf="trip.tripStatus === 'LoadingInProgress'  || trip.tripStatus === 'Loading'" 
-    [disabled]="trip.updating"
-    (click)="$event.stopPropagation(); updateTripStatus(trip, 'DeliveryInProgress')">
-    <ion-spinner *ngIf="trip.updating" slot="start" name="crescent"></ion-spinner>
-    <ion-icon slot="start" name="boat-outline"></ion-icon>
-    🚚 Commencer la Livraison
-  </ion-button>
-  
-  <!-- Terminer la Livraison (Réception) -->
-  <ion-button 
-    expand="block" 
-    color="success" 
-    *ngIf="trip.tripStatus === 'DeliveryInProgress' || trip.tripStatus === 'InDelivery'" 
-    [disabled]="trip.updating"
-    (click)="$event.stopPropagation(); updateTripStatus(trip, 'Receipt')">
-    <ion-spinner *ngIf="trip.updating" slot="start" name="crescent"></ion-spinner>
-    <ion-icon slot="start" name="checkmark-done-circle-outline"></ion-icon>
-    🎉 Terminer la Livraison
-  </ion-button>
+          <!-- Status Update Section -->
+          <div class="status-update-section" *ngIf="trip.tripStatus !== 'Receipt' && trip.tripStatus !== 'Cancelled'">
+            
+            <!-- Accepter la Mission -->
+            <ion-button 
+              expand="block" 
+              class="btn-orange"
+              *ngIf="trip.tripStatus === 'Pending' || trip.tripStatus === 'Planned'" 
+              [disabled]="trip.updating"
+              (click)="$event.stopPropagation(); updateTripStatus(trip, 'Accepted')">
+              <ion-spinner *ngIf="trip.updating" slot="start" name="crescent"></ion-spinner>
+              <ion-icon slot="start" name="checkmark-circle-outline"></ion-icon>
+              ✅ Accepter la Mission
+            </ion-button>
+            
+            <!-- Commencer le Chargement -->
+            <ion-button 
+              expand="block" 
+              class="btn-orange"
+              *ngIf="trip.tripStatus === 'Accepted'" 
+              [disabled]="trip.updating"
+              (click)="$event.stopPropagation(); updateTripStatus(trip, 'LoadingInProgress')">
+              <ion-spinner *ngIf="trip.updating" slot="start" name="crescent"></ion-spinner>
+              <ion-icon slot="start" name="cube-outline"></ion-icon>
+              📦 Commencer le Chargement
+            </ion-button>
+            
+            <!-- Commencer la Livraison -->
+            <ion-button 
+              expand="block" 
+              class="btn-orange"
+              *ngIf="trip.tripStatus === 'LoadingInProgress' || trip.tripStatus === 'Loading'" 
+              [disabled]="trip.updating"
+              (click)="$event.stopPropagation(); updateTripStatus(trip, 'DeliveryInProgress')">
+              <ion-spinner *ngIf="trip.updating" slot="start" name="crescent"></ion-spinner>
+              <ion-icon slot="start" name="boat-outline"></ion-icon>
+              🚚 Commencer la Livraison
+            </ion-button>
+            
+            <!-- Scanner QR Code - Terminer la Livraison -->
+            <ion-button 
+              expand="block" 
+              class="qr-scan-btn"
+              *ngIf="trip.tripStatus === 'DeliveryInProgress' || trip.tripStatus === 'InDelivery'" 
+              [disabled]="trip.updating"
+              (click)="$event.stopPropagation(); openQRScannerForTrip(trip)">
+              <ion-spinner *ngIf="trip.updating" slot="start" name="crescent"></ion-spinner>
+              <ion-icon slot="start" name="qr-code-outline"></ion-icon>
+              📱 Scanner QR Code
+            </ion-button>
 
-  <!-- Annuler -->
-  <ion-button 
-    expand="block" 
-    color="danger" 
-    fill="outline"
-    *ngIf="canCancelTrip(trip.tripStatus)"
-    (click)="$event.stopPropagation(); showCancelConfirmation(trip)">
-    <ion-icon slot="start" name="close-circle-outline"></ion-icon>
-    ❌ Annuler la Mission
-  </ion-button>
-</div>
+            <!-- Annuler la Mission -->
+            <ion-button 
+              expand="block" 
+              color="danger" 
+              fill="outline"
+              *ngIf="canCancelTrip(trip.tripStatus)"
+              (click)="$event.stopPropagation(); showCancelConfirmation(trip)">
+              <ion-icon slot="start" name="close-circle-outline"></ion-icon>
+              ❌ Annuler la Mission
+            </ion-button>
+          </div>
         </div>
       </div>
 

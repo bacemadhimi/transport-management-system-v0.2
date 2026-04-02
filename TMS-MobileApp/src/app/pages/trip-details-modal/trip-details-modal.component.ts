@@ -1,6 +1,7 @@
 import { Component, Input, OnInit, OnDestroy, inject } from '@angular/core';
 import { IonicModule, ModalController, ToastController, AlertController } from '@ionic/angular';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { ITrip, TripStatus } from '../../types/trip';
 import { Network } from '@capacitor/network';
 import { BarcodeScannerService, ScannedBarcode } from '../../services/barcode-scanner.service';
@@ -10,7 +11,7 @@ import { BarcodeScannerService, ScannedBarcode } from '../../services/barcode-sc
   templateUrl: './trip-details-modal.component.html',
   styleUrls: ['./trip-details-modal.component.scss'],
   standalone: true,
-  imports: [IonicModule, CommonModule]
+  imports: [IonicModule, CommonModule, FormsModule]
 })
 export class TripDetailsModalComponent implements OnInit, OnDestroy {
   @Input() trip!: ITrip;
@@ -33,6 +34,7 @@ export class TripDetailsModalComponent implements OnInit, OnDestroy {
   
   // QR Code scan result
   scannedQRCode: ScannedBarcode | null = null;
+  manualQRCode: string = '';
 
   async ngOnInit() {
     await this.checkNetworkStatus();
@@ -90,47 +92,23 @@ export class TripDetailsModalComponent implements OnInit, OnDestroy {
 
     if (this.trip.deliveries) {
       this.trip.deliveries.forEach((delivery, index) => {
-        if (delivery.proofOfDelivery) {
-          const cacheKey = `delivery_${this.trip.id}_${index}`;
-          this.cachedImages.set(cacheKey, delivery.proofOfDelivery);
-          this.saveImageToLocalStorage(cacheKey, delivery.proofOfDelivery);
-        }
         if ((delivery as any).qrCodeData) {
           const cacheKey = `qr_${this.trip.id}_${index}`;
           this.saveImageToLocalStorage(cacheKey, (delivery as any).qrCodeData);
         }
       });
     }
-
-    if ((this.trip as any).proofImage) {
-      const cacheKey = `trip_${this.trip.id}_proof`;
-      this.cachedImages.set(cacheKey, (this.trip as any).proofImage);
-      this.saveImageToLocalStorage(cacheKey, (this.trip as any).proofImage);
-    }
   }
 
-  private saveImageToLocalStorage(key: string, base64: string) {
+  private saveImageToLocalStorage(key: string, data: string) {
     try {
       const images = localStorage.getItem('cachedTripImages');
       let imageCache: Record<string, string> = images ? JSON.parse(images) : {};
-      imageCache[key] = base64;
+      imageCache[key] = data;
       localStorage.setItem('cachedTripImages', JSON.stringify(imageCache));
     } catch (error) {
-      console.error('Error saving image to cache:', error);
+      console.error('Error saving to cache:', error);
     }
-  }
-
-  private loadImageFromLocalStorage(key: string): string | null {
-    try {
-      const images = localStorage.getItem('cachedTripImages');
-      if (images) {
-        const imageCache = JSON.parse(images);
-        return imageCache[key] || null;
-      }
-    } catch (error) {
-      console.error('Error loading image from cache:', error);
-    }
-    return null;
   }
 
   private saveTripToCache() {
@@ -160,26 +138,17 @@ export class TripDetailsModalComponent implements OnInit, OnDestroy {
   getDataUrl(base64?: string | null, imageKey?: string): string | null {
     if (!base64) {
       if (imageKey) {
-        const cached = this.loadImageFromLocalStorage(imageKey);
+        const cached = localStorage.getItem('cachedTripImages');
         if (cached) {
-          return this.formatDataUrl(cached);
+          const imageCache = JSON.parse(cached);
+          if (imageCache[imageKey]) {
+            return imageCache[imageKey];
+          }
         }
       }
       return null;
     }
-    return this.formatDataUrl(base64);
-  }
-
-  private formatDataUrl(base64: string): string | null {
-    if (!base64) return null;
-    
-    if (base64.startsWith('data:')) {
-      return base64;
-    }
-    
-    if (base64.startsWith('/9j')) return 'data:image/jpeg;base64,' + base64;
-    if (base64.startsWith('iVBORw0KG')) return 'data:image/png;base64,' + base64;
-    return 'data:image/jpeg;base64,' + base64;
+    return base64;
   }
 
   showOfflineIndicator(): boolean {
@@ -207,7 +176,7 @@ export class TripDetailsModalComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Vérifier si la livraison est en cours
+   * Check if delivery is in progress
    */
   isDeliveryInProgress(): boolean {
     const status = this.trip.tripStatus;
@@ -216,7 +185,7 @@ export class TripDetailsModalComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Vérifier si la livraison est terminée
+   * Check if delivery is completed
    */
   isDeliveryCompleted(): boolean {
     const status = this.trip.tripStatus;
@@ -225,18 +194,25 @@ export class TripDetailsModalComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Vérifier si les boutons d'action doivent être affichés
+   * Check if action buttons should be shown
    */
   shouldShowActionButtons(): boolean {
     const status = this.trip.tripStatus;
     return status !== 'Receipt' && 
            status !== 'Completed' && 
-           status !== 'Cancelled' 
-           
+           status !== 'Cancelled';
   }
 
   /**
-   * Scanner QR Code pour la livraison
+   * Cancel QR scan
+   */
+  cancelQRScan() {
+    this.scannedQRCode = null;
+    this.manualQRCode = '';
+  }
+
+  /**
+   * Scan QR Code for delivery
    */
   async scanQRCodeForDelivery() {
     if (this.isScanning) {
@@ -247,10 +223,11 @@ export class TripDetailsModalComponent implements OnInit, OnDestroy {
     this.isScanning = true;
 
     try {
-      // Vérifier si l'appareil est natif
+      // Check if device is native
       if (!this.barcodeScanner.isNative()) {
+        // Web mode - manual input
         await this.showToast('Mode Web - Saisie manuelle du QR Code', 2000, 'warning');
-        const result = await this.manualQRCodeInput();
+        const result = await this.manualQRCodeInputDialog();
         if (result) {
           this.scannedQRCode = result;
           await this.showToast('✅ QR Code saisi avec succès', 2000, 'success');
@@ -258,11 +235,11 @@ export class TripDetailsModalComponent implements OnInit, OnDestroy {
         return;
       }
 
-      // Scanner le QR Code
+      // Scan QR Code
       const result = await this.barcodeScanner.scanBarcode();
       
       if (result) {
-        // Vérifier que c'est bien un QR Code (2D)
+        // Check if it's a QR Code (2D)
         if (result.formatType === '2D') {
           this.scannedQRCode = result;
           await this.showToast(`✅ QR Code scanné: ${result.content.substring(0, 30)}...`, 2000, 'success');
@@ -281,9 +258,9 @@ export class TripDetailsModalComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Saisie manuelle du QR Code (pour web)
+   * Manual QR Code input dialog (for web)
    */
-  private async manualQRCodeInput(): Promise<ScannedBarcode | null> {
+  private async manualQRCodeInputDialog(): Promise<ScannedBarcode | null> {
     return new Promise((resolve) => {
       const alert = document.createElement('div');
       alert.style.cssText = `
@@ -323,6 +300,7 @@ export class TripDetailsModalComponent implements OnInit, OnDestroy {
             border-radius: 12px;
             margin-bottom: 20px;
             box-sizing: border-box;
+            font-size: 14px;
           "
         >
         <div style="display: flex; gap: 12px;">
@@ -335,6 +313,7 @@ export class TripDetailsModalComponent implements OnInit, OnDestroy {
               border: none;
               border-radius: 12px;
               cursor: pointer;
+              font-size: 14px;
             "
           >Annuler</button>
           <button 
@@ -348,6 +327,7 @@ export class TripDetailsModalComponent implements OnInit, OnDestroy {
               border-radius: 12px;
               cursor: pointer;
               font-weight: 600;
+              font-size: 14px;
             "
           >Valider</button>
         </div>
@@ -393,23 +373,37 @@ export class TripDetailsModalComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Confirmer la livraison avec le QR Code scanné
+   * Confirm delivery with scanned QR Code
    */
   async confirmDeliveryWithQR() {
-    if (!this.scannedQRCode) {
-      await this.showToast('Veuillez d\'abord scanner un QR Code', 2000, 'warning');
+    // Get QR data from either scanned or manual input
+    let qrData = this.scannedQRCode;
+    
+    if (!qrData && this.manualQRCode.trim()) {
+      qrData = {
+        content: this.manualQRCode.trim(),
+        format: 'QR_CODE',
+        formatType: '2D',
+        timestamp: new Date()
+      };
+    }
+    
+    if (!qrData) {
+      await this.showToast('Veuillez scanner ou saisir un QR Code', 2000, 'warning');
       return;
     }
 
-    // Afficher les détails du QR Code pour confirmation
+    // Show confirmation dialog
     const alert = await this.alertCtrl.create({
       header: 'Confirmation de livraison',
       message: `
-        <strong>Contenu du QR Code:</strong><br>
-        ${this.scannedQRCode.content}<br><br>
-        <strong>Format:</strong> ${this.barcodeScanner.getFormatName(this.scannedQRCode.format)}<br>
-        <strong>Date:</strong> ${this.scannedQRCode.timestamp.toLocaleString()}<br><br>
-        Voulez-vous confirmer la livraison ?
+        <div style="text-align: left;">
+          <p><strong>Contenu du QR Code:</strong></p>
+          <p style="background: #f5f5f5; padding: 8px; border-radius: 8px; word-break: break-all;">${qrData.content}</p>
+          <p><strong>Format:</strong> ${this.barcodeScanner.getFormatName(qrData.format)}</p>
+          <p><strong>Date:</strong> ${qrData.timestamp.toLocaleString()}</p>
+          <p style="color: #4caf50; margin-top: 12px;">✓ Voulez-vous confirmer la livraison ?</p>
+        </div>
       `,
       buttons: [
         {
@@ -419,16 +413,28 @@ export class TripDetailsModalComponent implements OnInit, OnDestroy {
         {
           text: 'Confirmer',
           handler: async () => {
-            // Sauvegarder le QR Code dans la livraison
+            // Save QR Code in delivery
             if (this.trip.deliveries && this.trip.deliveries.length > 0) {
               const lastDelivery = this.trip.deliveries[this.trip.deliveries.length - 1];
-              (lastDelivery as any).qrCodeData = this.scannedQRCode!.content;
-              (lastDelivery as any).qrCodeFormat = this.scannedQRCode!.format;
-              (lastDelivery as any).qrCodeTimestamp = this.scannedQRCode!.timestamp;
+              (lastDelivery as any).qrCodeData = qrData!.content;
+              (lastDelivery as any).qrCodeFormat = qrData!.format;
+              (lastDelivery as any).qrCodeTimestamp = qrData!.timestamp;
+            } else if (!this.trip.deliveries) {
+              // Create deliveries array if it doesn't exist
+              this.trip.deliveries = [{
+                sequence: 1,
+                qrCodeData: qrData!.content,
+                qrCodeFormat: qrData!.format,
+                qrCodeTimestamp: qrData!.timestamp
+              } as any];
             }
             
-            // Marquer comme réception
+            // Mark as receipt
             await this.updateStatus('Receipt');
+            
+            // Clear QR data
+            this.scannedQRCode = null;
+            this.manualQRCode = '';
           }
         }
       ]
@@ -440,115 +446,112 @@ export class TripDetailsModalComponent implements OnInit, OnDestroy {
   /**
    * Update trip status
    */
-/**
- * Update trip status
- */
-async updateStatus(newStatus: string) {
-  if (this.isUpdating) {
-    console.log('Update already in progress');
-    return;
-  }
-
-  this.isUpdating = true;
-
-  // Déterminer le statut à envoyer au backend
-  let backendStatus = newStatus;
-  if (newStatus === 'Accepted') {
-    backendStatus = 'Assigned';
-  } else if (newStatus === 'LoadingInProgress') {
-    backendStatus = 'Loading';
-  } else if (newStatus === 'DeliveryInProgress') {
-    backendStatus = 'InDelivery';
-  } else if (newStatus === 'Receipt') {
-    backendStatus = 'Completed';
-  }
-
-  // Convertir le statut frontend en TripStatus enum
-  let frontendStatus: TripStatus;
-  switch (newStatus) {
-    case 'Pending':
-      frontendStatus = TripStatus.Pending;
-      break;
-    case 'Planned':
-      frontendStatus = TripStatus.Planned;
-      break;
-    case 'Accepted':
-      frontendStatus = TripStatus.Accepted;
-      break;
-    case 'LoadingInProgress':
-      frontendStatus = TripStatus.LoadingInProgress;
-      break;
-    case 'DeliveryInProgress':
-      frontendStatus = TripStatus.DeliveryInProgress;
-      break;
-    case 'Receipt':
-      frontendStatus = TripStatus.Receipt;
-      break;
-    case 'Completed':
-      frontendStatus = TripStatus.Completed;
-      break;
-    case 'Cancelled':
-      frontendStatus = TripStatus.Cancelled;
-      break;
-    default:
-      frontendStatus = TripStatus.Planned;
-  }
-
-  try {
-    if (!this.isOnline) {
-      await this.showToast(
-        'Vous êtes hors ligne. Le statut sera mis à jour lorsque la connexion sera rétablie.',
-        3000,
-        'warning'
-      );
-      
-      this.savePendingStatusUpdate(backendStatus);
-      this.trip.tripStatus = frontendStatus;
-      this.saveTripToCache();
-      
-      this.modalCtrl.dismiss({
-        action: 'updateStatus',
-        tripId: this.trip.id,
-        newStatus: newStatus,
-        pendingSync: true
-      });
-      
-      await this.showToast(
-        'Statut mis à jour localement. Synchronisation en attente.',
-        2000,
-        'success'
-      );
-    } else {
-      // Appel API avec le statut backend
-      console.log(`Updating trip ${this.trip.id} status to: ${backendStatus}`);
-      
-      this.trip.tripStatus = frontendStatus;
-      this.saveTripToCache();
-      
-      this.modalCtrl.dismiss({
-        action: 'updateStatus',
-        tripId: this.trip.id,
-        newStatus: newStatus,
-        success: true
-      });
-      
-      await this.showToast(
-        `Statut mis à jour : ${this.getStatusText(newStatus)}`,
-        2000,
-        'success'
-      );
+  async updateStatus(newStatus: string) {
+    if (this.isUpdating) {
+      console.log('Update already in progress');
+      return;
     }
-  } catch (error) {
-    console.error('Error updating status:', error);
-    await this.showToast(
-      'Erreur lors de la mise à jour du statut. Veuillez réessayer.',
-      3000,
-      'danger'
-    );
-  } finally {
-    this.isUpdating = false;
+
+    this.isUpdating = true;
+
+    // Determine backend status
+    let backendStatus = newStatus;
+    if (newStatus === 'Accepted') {
+      backendStatus = 'Assigned';
+    } else if (newStatus === 'LoadingInProgress') {
+      backendStatus = 'Loading';
+    } else if (newStatus === 'DeliveryInProgress') {
+      backendStatus = 'InDelivery';
+    } else if (newStatus === 'Receipt') {
+      backendStatus = 'Completed';
+    }
+
+    // Convert frontend status to TripStatus enum
+    let frontendStatus: TripStatus;
+    switch (newStatus) {
+      case 'Pending':
+        frontendStatus = TripStatus.Pending;
+        break;
+      case 'Planned':
+        frontendStatus = TripStatus.Planned;
+        break;
+      case 'Accepted':
+        frontendStatus = TripStatus.Accepted;
+        break;
+      case 'LoadingInProgress':
+        frontendStatus = TripStatus.LoadingInProgress;
+        break;
+      case 'DeliveryInProgress':
+        frontendStatus = TripStatus.DeliveryInProgress;
+        break;
+      case 'Receipt':
+        frontendStatus = TripStatus.Receipt;
+        break;
+      case 'Completed':
+        frontendStatus = TripStatus.Completed;
+        break;
+      case 'Cancelled':
+        frontendStatus = TripStatus.Cancelled;
+        break;
+      default:
+        frontendStatus = TripStatus.Planned;
+    }
+
+    try {
+      if (!this.isOnline) {
+        await this.showToast(
+          'Vous êtes hors ligne. Le statut sera mis à jour lorsque la connexion sera rétablie.',
+          3000,
+          'warning'
+        );
+        
+        this.savePendingStatusUpdate(backendStatus);
+        this.trip.tripStatus = frontendStatus;
+        this.saveTripToCache();
+        
+        this.modalCtrl.dismiss({
+          action: 'updateStatus',
+          tripId: this.trip.id,
+          newStatus: newStatus,
+          pendingSync: true
+        });
+        
+        await this.showToast(
+          'Statut mis à jour localement. Synchronisation en attente.',
+          2000,
+          'success'
+        );
+      } else {
+        // API call with backend status
+        console.log(`Updating trip ${this.trip.id} status to: ${backendStatus}`);
+        
+        this.trip.tripStatus = frontendStatus;
+        this.saveTripToCache();
+        
+        this.modalCtrl.dismiss({
+          action: 'updateStatus',
+          tripId: this.trip.id,
+          newStatus: newStatus,
+          success: true
+        });
+        
+        await this.showToast(
+          `Statut mis à jour : ${this.getStatusText(newStatus)}`,
+          2000,
+          'success'
+        );
+      }
+    } catch (error) {
+      console.error('Error updating status:', error);
+      await this.showToast(
+        'Erreur lors de la mise à jour du statut. Veuillez réessayer.',
+        3000,
+        'danger'
+      );
+    } finally {
+      this.isUpdating = false;
+    }
   }
-}
 
   private savePendingStatusUpdate(newStatus: string) {
     try {
@@ -567,7 +570,7 @@ async updateStatus(newStatus: string) {
   }
 
   /**
-   * Obtenir le texte d'affichage du statut en français
+   * Get display text for status in French
    */
   getStatusText(status: string): string {
     const statusTextMap: { [key: string]: string } = {
@@ -587,7 +590,7 @@ async updateStatus(newStatus: string) {
   }
 
   /**
-   * Obtenir la classe CSS pour le statut (en minuscules)
+   * Get CSS class for status
    */
   getStatusClass(status: string): string {
     const classMap: { [key: string]: string } = {

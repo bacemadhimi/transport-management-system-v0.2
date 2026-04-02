@@ -15,13 +15,14 @@ import { SignalRService, TripNotification } from '../../services/signalr.service
 import { SignalRChatService } from 'src/app/services/signalr-chat.service';
 import { Network } from '@capacitor/network';
 import { Capacitor } from '@capacitor/core';
+import { FormsModule } from '@angular/forms';
 
 @Component({
   selector: 'app-home',
   templateUrl: './home.page.html',
   styleUrls: ['./home.page.scss'],
   standalone: true,
-  imports: [IonicModule, CommonModule, RouterModule]
+  imports: [IonicModule, CommonModule, RouterModule,FormsModule]
 })
 export class HomePage implements OnInit, OnDestroy {
   authService = inject(AuthService);
@@ -742,5 +743,194 @@ private getTripDestination(trip: ITrip): string {
 navigateToAllTrips() {
   console.log('Navigating to All Trips');
   this.router.navigate(['/trips']);
+}
+// Ajoutez ces variables dans la classe
+showQRScanner: boolean = false;
+isScanning: boolean = false;
+scannedQRData: any = null;
+manualQRCode: string = '';
+currentTripForQR: ITrip | null = null;
+
+// Ajoutez ces méthodes
+openQRScannerForTrip(trip: ITrip) {
+  this.currentTripForQR = trip;
+  this.showQRScanner = true;
+  this.scannedQRData = null;
+  this.manualQRCode = '';
+}
+
+closeQRScanner() {
+  this.showQRScanner = false;
+  this.currentTripForQR = null;
+  this.scannedQRData = null;
+  this.manualQRCode = '';
+  this.isScanning = false;
+}
+
+clearQRScan() {
+  this.scannedQRData = null;
+  this.manualQRCode = '';
+}
+
+async startQRScan() {
+  if (this.isScanning) return;
+  
+  this.isScanning = true;
+  
+  try {
+    // Simuler un scan QR (à remplacer par votre vrai scanner)
+    // Pour le moment, on utilise une saisie manuelle
+    const result = await this.manualQRCodeInput();
+    if (result) {
+      this.scannedQRData = result;
+      this.showToast('✅ QR Code scanné avec succès', 2000, 'success');
+    }
+  } catch (error) {
+    console.error('Erreur scan:', error);
+    this.showToast('❌ Erreur lors du scan', 2000, 'danger');
+  } finally {
+    this.isScanning = false;
+  }
+}
+
+private async manualQRCodeInput(): Promise<any> {
+  return new Promise((resolve) => {
+    const alertDiv = document.createElement('div');
+    alertDiv.style.cssText = `
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.8);
+      z-index: 10001;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    `;
+    
+    const dialog = document.createElement('div');
+    dialog.style.cssText = `
+      background: white;
+      border-radius: 20px;
+      padding: 24px;
+      width: 90%;
+      max-width: 350px;
+      text-align: center;
+    `;
+    
+    dialog.innerHTML = `
+      <ion-icon name="qr-code-outline" style="font-size: 48px; color: #ff8c00; margin-bottom: 16px;"></ion-icon>
+      <h3 style="margin: 0 0 10px; color: #ff8c00;">Saisie QR Code</h3>
+      <p style="margin: 0 0 20px; color: #666;">Entrez le contenu du QR Code</p>
+      <input 
+        id="qrInput" 
+        type="text" 
+        placeholder="Contenu du QR Code..." 
+        style="
+          width: 100%;
+          padding: 12px;
+          border: 2px solid #ff8c00;
+          border-radius: 12px;
+          margin-bottom: 20px;
+          box-sizing: border-box;
+          font-size: 14px;
+        "
+      >
+      <div style="display: flex; gap: 12px;">
+        <button 
+          id="cancelBtn" 
+          style="
+            flex: 1;
+            padding: 12px;
+            background: #e0e0e0;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 14px;
+          "
+        >Annuler</button>
+        <button 
+          id="confirmBtn" 
+          style="
+            flex: 1;
+            padding: 12px;
+            background: linear-gradient(135deg, #ff8c00, #ffcc00);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+          "
+        >Valider</button>
+      </div>
+    `;
+    
+    alertDiv.appendChild(dialog);
+    document.body.appendChild(alertDiv);
+    
+    const input = dialog.querySelector('#qrInput') as HTMLInputElement;
+    const confirmBtn = dialog.querySelector('#confirmBtn');
+    const cancelBtn = dialog.querySelector('#cancelBtn');
+    
+    const cleanup = () => alertDiv.remove();
+    
+    const handleConfirm = () => {
+      const value = input.value.trim();
+      if (value) {
+        resolve({
+          content: value,
+          format: 'QR_CODE',
+          formatType: '2D',
+          timestamp: new Date()
+        });
+      } else {
+        resolve(null);
+      }
+      cleanup();
+    };
+    
+    const handleCancel = () => {
+      resolve(null);
+      cleanup();
+    };
+    
+    confirmBtn?.addEventListener('click', handleConfirm);
+    cancelBtn?.addEventListener('click', handleCancel);
+    input.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') handleConfirm();
+    });
+    
+    input.focus();
+  });
+}
+
+async confirmDeliveryWithQR() {
+  const qrData = this.scannedQRData || (this.manualQRCode ? {
+    content: this.manualQRCode,
+    format: 'QR_CODE',
+    formatType: '2D',
+    timestamp: new Date()
+  } : null);
+  
+  if (!qrData || !this.currentTripForQR) {
+    this.showToast('Veuillez scanner ou saisir un QR Code', 2000, 'warning');
+    return;
+  }
+  
+  // Sauvegarder les données QR
+  if (this.currentTripForQR.deliveries && this.currentTripForQR.deliveries.length > 0) {
+    const lastDelivery = this.currentTripForQR.deliveries[this.currentTripForQR.deliveries.length - 1];
+    (lastDelivery as any).qrCodeData = qrData.content;
+    (lastDelivery as any).qrCodeFormat = qrData.format;
+    (lastDelivery as any).qrCodeTimestamp = qrData.timestamp;
+  }
+  
+  // Fermer le scanner
+  this.closeQRScanner();
+  
+  // Mettre à jour le statut
+  await this.updateTripStatus(this.currentTripForQR, 'Receipt');
 }
 }
