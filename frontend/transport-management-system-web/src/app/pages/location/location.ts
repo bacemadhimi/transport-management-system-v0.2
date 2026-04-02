@@ -19,7 +19,7 @@ import autoTable from 'jspdf-autotable';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { CommonModule } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
-import { LocationFormComponent } from './location-form/location-form';
+import { LocationForm } from './location-form/location-form';
 import { Auth } from '../../services/auth';
 import { Translation } from '../../services/Translation';
 
@@ -173,7 +173,7 @@ export class LocationComponent implements OnInit {
   }
 
   edit(location: ILocation) {
-    const ref = this.dialog.open(LocationFormComponent, {
+    const ref = this.dialog.open(LocationForm, {
       width: '500px',
       maxWidth: '95vw',
       maxHeight: '90vh',
@@ -222,7 +222,7 @@ export class LocationComponent implements OnInit {
 
 
   openDialog(): void {
-    const ref = this.dialog.open(LocationFormComponent, {
+    const ref = this.dialog.open(LocationForm, {
       width: '500px',
       maxWidth: '95vw',
       maxHeight: '90vh',

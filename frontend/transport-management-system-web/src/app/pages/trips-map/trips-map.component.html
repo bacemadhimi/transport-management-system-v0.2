@@ -1,45 +1,66 @@
 <div class="trips-stats-container">
-  <!-- Filters Bar -->
-  <div class="filters-bar">
-    <div class="filters-left">
-      <div class="filter-group">
-        <label>Statut:</label>
-        <select [(ngModel)]="statusFilter" (change)="applyFilters()" class="filter-select">
-          <option value="all">Tous les statuts</option>
-          <option *ngFor="let status of tripStatusOptions" [value]="status.value">{{ status.label }}</option>
-        </select>
-      </div>
-      
-      <div class="filter-group">
-        <label>Entité:</label>
-        <select [(ngModel)]="entityFilter" (change)="applyFilters()" class="filter-select">
-          <option value="all">Toutes les entités</option>
-          <option *ngFor="let stat of entityDeliveryStats" [value]="stat.entityName">{{ stat.entityName }}</option>
-        </select>
-      </div>
-      
-      <div class="filter-group date-range">
-        <label>Période:</label>
-        <div class="date-inputs">
-          <input type="date" [(ngModel)]="startDateFilter" (change)="applyFilters()" class="filter-input">
-          <span class="date-separator">→</span>
-          <input type="date" [(ngModel)]="endDateFilter" (change)="applyFilters()" class="filter-input">
+  
+  <!-- ========== EN-TÊTE DE LA PAGE ========== -->
+  <div class="page-header">
+    <h1 class="page-title">
+      <i class="fas fa-route"></i>
+      Cartes des Tournées
+    </h1>
+    <p class="page-subtitle">Visualisation des tournées par entités géographiques</p>
+  </div>
+
+  <!-- ========== MESSAGES ========== -->
+  <div *ngIf="errorMessage" class="alert alert-error" role="alert">
+    <i class="fas fa-exclamation-circle"></i>
+    {{ errorMessage }}
+    <button type="button" class="btn-close" (click)="clearError()">
+      <i class="fas fa-times"></i>
+    </button>
+  </div>
+  
+  <div *ngIf="successMessage" class="alert alert-success" role="alert">
+    <i class="fas fa-check-circle"></i>
+    {{ successMessage }}
+    <button type="button" class="btn-close" (click)="clearSuccess()">
+      <i class="fas fa-times"></i>
+    </button>
+  </div>
+
+  <!-- ========== FILTRES ========== -->
+  <div class="filters-section">
+    <div class="filters-bar">
+      <div class="filters-left">
+        <div class="filter-group">
+          <label>Statut:</label>
+          <select [(ngModel)]="statusFilter" (change)="applyFilters()" class="filter-select">
+            <option value="all">Tous les statuts</option>
+            <option *ngFor="let status of tripStatusOptions" [value]="status.value">{{ status.label }}</option>
+          </select>
+        </div>
+        
+        <div class="filter-group date-range">
+          <label>Période:</label>
+          <div class="date-inputs">
+            <input type="date" [(ngModel)]="startDateFilter" (change)="applyFilters()" class="filter-input">
+            <span class="date-separator">→</span>
+            <input type="date" [(ngModel)]="endDateFilter" (change)="applyFilters()" class="filter-input">
+          </div>
+        </div>
+
+        <div class="current-month-indicator" *ngIf="!startDateFilter && !endDateFilter">
+          <span>📅 Mois courant: {{ currentMonthLabel }}</span>
         </div>
       </div>
-
-      <div class="current-month-indicator" *ngIf="!startDateFilter && !endDateFilter">
-        <span>📅 Mois courant: {{ currentMonthLabel }}</span>
+      
+      <div class="filters-right">
+        <button class="btn-outline" (click)="resetToCurrentMonth()">📅 Mois courant</button>
+        <button class="btn-outline" (click)="resetFilters()">↺ Réinitialiser</button>
+        <button class="btn-primary" (click)="refreshData()">⟳ Actualiser</button>
       </div>
-    </div>
-    
-    <div class="filters-right">
-      <button class="btn-outline" (click)="resetToCurrentMonth()">📅 Mois courant</button>
-      <button class="btn-outline" (click)="resetFilters()">↺ Réinitialiser</button>
-      <button class="btn-primary" (click)="refreshData()">⟳ Actualiser</button>
     </div>
   </div>
 
-  <!-- Stats Cards -->
+  <!-- ========== STATS CARDS ========== -->
   <div class="stats-cards">
     <div class="stat-card">
       <div class="stat-icon">📦</div>
@@ -78,122 +99,215 @@
     </div>
   </div>
 
-  <!-- Charts Section -->
-  <div class="charts-section">
-    <div class="charts-grid">
-      <div class="chart-card">
-        <div class="chart-header">
-          <h3>📊 Distribution par Statut</h3>
+  <!-- ========== SECTION CARTE ========== -->
+  <div class="map-section">
+    <div class="card map-card">
+      <div class="card-header">
+        <div class="header-left">
+          <h3>
+            <i class="fas fa-route"></i>
+            Carte des Tournées - Entités Géographiques
+          </h3>
+          <div class="map-status-badge">
+            <span class="live-indicator"></span>
+            <span class="live-text">Temps réel</span>
+          </div>
         </div>
-        <div class="chart-body">
-          <canvas id="statusBarChart"></canvas>
+        <div class="map-actions">
+          <button class="btn btn-icon" (click)="centerMap()" title="Centrer Tunisie">
+            <i class="fas fa-crosshairs"></i>
+          </button>
+          <button class="btn btn-icon" (click)="refreshMap()" title="Actualiser">
+            <i class="fas fa-sync-alt"></i>
+          </button>
+          <button class="btn btn-icon" (click)="toggleTripLines()" title="Afficher/Masquer les lignes" [class.active]="showTripLines">
+            <i class="fas fa-chart-line"></i>
+          </button>
         </div>
       </div>
-      <div class="chart-card">
-        <div class="chart-header">
-          <h3>🥧 Taux de Complétion</h3>
-        </div>
-        <div class="chart-body">
-          <canvas id="completionPieChart"></canvas>
+      
+      <div class="card-body">
+        <div class="map-container-wrapper">
+          
+          <!-- FILTRES RAPIDES PAR NIVEAU -->
+          <div class="map-region-filters" *ngIf="geographicalLevels.length > 0">
+            <button class="region-filter-btn" 
+                    [class.active]="activeRegionFilter === 'all'"
+                    (click)="centerMap()">
+              <i class="fas fa-map"></i> Tous les niveaux
+            </button>
+            <ng-container *ngFor="let level of geographicalLevels">
+              <button *ngIf="level.isMappable" 
+                      class="region-filter-btn" 
+                      [class.active]="activeRegionFilter === level.name"
+                      (click)="focusOnRegion(level.name)">
+                <i class="fas fa-map-marker-alt"></i> {{ level.name }}
+              </button>
+            </ng-container>
+          </div>
+          
+          <!-- Carte Leaflet -->
+          <div id="tripsMap" class="transport-map" 
+               [class.map-loading]="mapsLoading"
+               [class.map-error]="mapsError"></div>
+          
+          <!-- Overlay de chargement -->
+          <div *ngIf="mapsLoading" class="map-loading-overlay">
+            <div class="loading-content">
+              <div class="spinner-small"></div>
+              <span>Chargement des tournées...</span>
+            </div>
+          </div>
+          
+          <!-- Message d'erreur -->
+          <div *ngIf="mapsError && !mapsLoading" class="map-error-overlay">
+            <div class="error-content">
+              <i class="fas fa-exclamation-triangle"></i>
+              <span>Erreur de chargement de la carte</span>
+              <button class="btn btn-sm btn-primary" (click)="refreshMap()">
+                <i class="fas fa-redo"></i> Réessayer
+              </button>
+            </div>
+          </div>
+          
+          <!-- Légende -->
+          <div class="map-legend">
+            <h4><i class="fas fa-route"></i> Légende Tournées</h4>
+            <div class="legend-grid">
+              <div class="legend-section">
+                <h5>Entités</h5>
+                <div class="legend-item">
+                  <span class="legend-dot" style="background: #1cc88a;"></span>
+                  <span class="legend-label">Très active (>10 tournées)</span>
+                </div>
+                <div class="legend-item">
+                  <span class="legend-dot" style="background: #4e73df;"></span>
+                  <span class="legend-label">Active (5-10 tournées)</span>
+                </div>
+                <div class="legend-item">
+                  <span class="legend-dot" style="background: #f6c23e;"></span>
+                  <span class="legend-label">Peu active (1-5 tournées)</span>
+                </div>
+                <div class="legend-item">
+                  <span class="legend-dot" style="background: #e74a3b;"></span>
+                  <span class="legend-label">Inactive</span>
+                </div>
+              </div>
+              
+              <div class="legend-section">
+                <h5>Tournées</h5>
+                <div class="legend-item">
+                  <i class="fas fa-circle" style="color: #1cc88a;"></i>
+                  <span class="legend-label">Terminée</span>
+                </div>
+                <div class="legend-item">
+                  <i class="fas fa-circle" style="color: #4e73df;"></i>
+                  <span class="legend-label">En cours</span>
+                </div>
+                <div class="legend-item">
+                  <i class="fas fa-circle" style="color: #f6c23e;"></i>
+                  <span class="legend-label">Planifiée</span>
+                </div>
+                <div class="legend-item">
+                  <i class="fas fa-circle" style="color: #e74a3b;"></i>
+                  <span class="legend-label">Annulée</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Statistiques rapides -->
+          <div class="map-stats">
+            <div class="stats-row">
+              <div class="stat-item">
+                <span class="stat-value">{{ filteredTrips.length }}</span>
+                <span class="stat-label">Tournées</span>
+              </div>
+              <div class="stat-item">
+                <span class="stat-value">{{ activeEntitiesCount }}/{{ mappableEntities.length }}</span>
+                <span class="stat-label">Entités actives</span>
+              </div>
+              <div class="stat-item">
+                <span class="stat-value">{{ tripStats.inProgress }}</span>
+                <span class="stat-label">En cours</span>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Entity Statistics Table -->
-  <div class="entity-stats-section">
-    <h3>🏢 Statistiques par Entité</h3>
-    <div class="table-wrapper">
-      <table class="entity-table">
-        <thead>
-          <tr>
-            <th>Entité</th>
-            <th>Total</th>
-            <th>En attente</th>
-            <th>En cours</th>
-            <th>Livrées</th>
-            <th>Progression</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let stat of entityDeliveryStats" (click)="focusOnEntity(stat.entityName)">
-            <td><strong>{{ stat.entityName }}</strong></td>
-            <td>{{ stat.total }}</td>
-            <td class="pending">{{ stat.pending }}</td>
-            <td class="in-progress">{{ stat.inProgress }}</td>
-            <td class="delivered">{{ stat.delivered }}</td>
-            <td>
-              <div class="progress-mini">
-                <div class="progress-bar-mini" [style.width.%]="getEntityCompletionPercentage(stat)"></div>
-                <span>{{ getEntityCompletionPercentage(stat) }}%</span>
-              </div>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+<!-- Dans le tableau des entités, assurez-vous que entityName est correct -->
+<div class="entity-stats-section">
+  <h3>🏢 Statistiques par Entité</h3>
+  <div class="table-wrapper">
+    <table class="entity-table">
+      <thead>
+         <tr>
+          <th>Entité</th>
+          <th>Total</th>
+          <th>En attente</th>
+          <th>En cours</th>
+          <th>Livrées</th>
+          <th>Progression</th>
+         </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let stat of entityDeliveryStats" (click)="focusOnEntity(stat.entityName)">
+          <td><strong>{{ stat.entityName }}</strong></td>
+          <td>{{ stat.total }}</td>
+          <td class="pending">{{ stat.pending }}</td>
+          <td class="in-progress">{{ stat.inProgress }}</td>
+          <td class="delivered">{{ stat.delivered }}</td>
+          <td>
+            <div class="progress-mini">
+              <div class="progress-bar-mini" [style.width.%]="getEntityCompletionPercentage(stat)"></div>
+              <span>{{ getEntityCompletionPercentage(stat) }}%</span>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+  <!-- ========== SECTION AIDE ========== -->
+  <div class="help-section">
+    <div class="help-toggle" (click)="toggleHelp()">
+      <i class="fas fa-question-circle"></i>
+      <span>Besoin d'Aide ?</span>
+    </div>
+    
+    <div *ngIf="showHelp" class="help-content">
+      <h4><i class="fas fa-info-circle"></i> Comment Utiliser la Carte des Tournées</h4>
+      <ul>
+        <li><strong>Entités colorées :</strong> Chaque entité est représentée par un cercle coloré selon son activité</li>
+        <li><strong>Lignes de tournée :</strong> Cliquez sur le bouton lignes pour afficher/masquer les trajets</li>
+        <li><strong>Marqueurs de tournées :</strong> Cliquez sur un marqueur pour voir les détails de la tournée</li>
+        <li><strong>Filtres par niveau :</strong> Cliquez sur les boutons pour zoomer sur un niveau spécifique</li>
+        <li><strong>Tableau des entités :</strong> Cliquez sur une entité pour centrer la carte</li>
+      </ul>
     </div>
   </div>
 
-  <!-- Trip Details Modal -->
-  <div class="modal" *ngIf="showTripModal" (click)="closeModal()">
-    <div class="modal-content" (click)="$event.stopPropagation()">
-      <div class="modal-header">
-        <h3>📋 Détails de la Tournée</h3>
-        <button class="btn-close" (click)="closeModal()">✕</button>
-      </div>
-      <div class="modal-body" *ngIf="selectedTrip">
-        <div class="trip-summary">
-          <div class="summary-item">
-            <span class="label">Référence:</span>
-            <span class="value">{{ selectedTrip.tripReference || 'N/A' }}</span>
-          </div>
-          <div class="summary-item">
-            <span class="label">Statut:</span>
-            <span class="value status-badge" [style.background]="selectedTrip.statusColor + '20'" [style.color]="selectedTrip.statusColor">
-              {{ selectedTrip.statusLabel || selectedTrip.tripStatus }}
-            </span>
-          </div>
-          <div class="summary-item">
-            <span class="label">Camion:</span>
-            <span class="value">{{ selectedTrip.truck?.immatriculation }}</span>
-          </div>
-          <div class="summary-item">
-            <span class="label">Chauffeur:</span>
-            <span class="value">{{ selectedTrip.driver?.name }}</span>
-          </div>
-          <div class="summary-item">
-            <span class="label">Distance:</span>
-            <span class="value">{{ selectedTrip.estimatedDistance }} km</span>
-          </div>
-        </div>
-        <h4>📍 Livraisons ({{ selectedTrip.deliveries?.length }})</h4>
-        <div class="deliveries-list">
-          <div class="delivery-item" *ngFor="let delivery of selectedTrip.deliveries">
-            <div class="delivery-marker" [style.background]="delivery.statusColor">
-              {{ delivery.sequence }}
-            </div>
-            <div class="delivery-content">
-              <div class="delivery-header">
-                <h5>{{ delivery.customer?.name || 'Client' }}</h5>
-                <span class="delivery-status" [style.background]="delivery.statusColor + '20'" [style.color]="delivery.statusColor">
-                  {{ delivery.statusLabel || delivery.status }}
-                </span>
-              </div>
-              <div class="delivery-details">
-                <div class="detail">
-                  <span>📍</span> {{ delivery.deliveryAddress }}
-                </div>
-                <div class="detail" *ngIf="delivery.plannedTime">
-                  <span>🕒</span> Prévu: {{ delivery.plannedTime | date:'HH:mm' }}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button class="btn-secondary" (click)="closeModal()">Fermer</button>
-      </div>
+  <!-- ========== PIED DE PAGE ========== -->
+  <div class="page-footer">
+    <div class="footer-content">
+      <span class="footer-text">
+        <i class="fas fa-database"></i>
+        Source : Système de Gestion de Transport
+      </span>
+      <span class="footer-separator">•</span>
+      <span class="footer-text">
+        <i class="fas fa-clock"></i>
+        Mise à Jour : {{ lastUpdateTime }}
+      </span>
+      <span class="footer-separator">•</span>
+      <span class="footer-text">
+        <i class="fas fa-shield-alt"></i>
+        Visualisation par entités géographiques
+      </span>
     </div>
   </div>
 </div>

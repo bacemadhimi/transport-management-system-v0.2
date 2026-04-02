@@ -39,7 +39,7 @@ import { TruncatePipe } from '../../../../truncate.pipe';
 import { CdkVirtualScrollViewport, ScrollingModule } from '@angular/cdk/scrolling';
 import { Translation } from '../../../services/Translation';
 import { SettingsService } from '../../../services/settings.service';
-import { ITripSettings } from '../../../types/general-settings';
+import { IGeographicalLevel, ITripSettings } from '../../../types/general-settings';
 import { IGeographicalEntity } from '../../../types/general-settings';
 import { GpsAddressService } from '../../../services/gps-address.service';
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
@@ -116,6 +116,8 @@ export class TripForm implements OnInit {
   availableTrucks: ITruck[] = [];
   unavailableTrucks: any[] = [];
   loadingAvailableTrucks = false;
+  customerSelectedLevelIds: (number | null)[] = [];
+  activeCustomerFilterLevel: number = 0;
   private lastLoadedDriverDate: Date | null = null;
   customers: ICustomer[] = [];
   allOrders: IOrder[] = [];
@@ -159,6 +161,15 @@ export class TripForm implements OnInit {
   isEditMode = false;
   today = new Date();
   private availabilityCheckTimeout: any;
+  geographicalLevels: IGeographicalLevel[] = [];
+
+  // Filtres hiérarchiques pour camions
+  truckSelectedLevelIds: (number | null)[] = [];
+  activeTruckFilterLevel: number = 0;
+
+  // Filtres hiérarchiques pour chauffeurs
+  driverSelectedLevelIds: (number | null)[] = [];
+  activeDriverFilterLevel: number = 0;
   private readonly DRAFT_KEY = 'trip_draft_v1';
   tripSettings: ITripSettings | null = null;
   private settingsSubscription: Subscription = new Subscription();
@@ -572,26 +583,6 @@ private loadConfiguration(): void {
     } else {
       this.isEditMode = false;
       this.loadTrajects();
-    }
-  });
-}
-private loadGeographicalEntities(): void {
-  this.http.getGeographicalEntities().subscribe({
-    next: (response) => {
-      let entitiesData: IGeographicalEntity[];
-
-      if (response && typeof response === 'object' && 'data' in response) {
-        entitiesData = (response as any).data;
-      } else if (Array.isArray(response)) {
-        entitiesData = response;
-      } else {
-        entitiesData = [];
-      }
-
-      this.geographicalEntities = entitiesData;
-    },
-    error: (error) => {
-      console.error('Error loading geographical entities:', error);
     }
   });
 }
@@ -4170,34 +4161,34 @@ private async checkCapacityBeforeAddingOrders(selectedWeight: number): Promise<b
     });
   }
 
-  private loadLocations(): Promise<void> {
-    return new Promise((resolve, reject) => {
-      this.loadingLocations = true;
-      this.http.getLocations().subscribe({
-        next: (response: any) => {
-          const locations = response.data || response.locations || response;
+private loadLocations(): Promise<void> {
+  return new Promise((resolve, reject) => {
+    this.loadingLocations = true;
+    this.http.getLocations().subscribe({
+      next: (response: any) => {
+        const locations = response.data || response.locations || response;
 
-          if (Array.isArray(locations)) {
-            this.locations = locations.map(location => ({
-              ...location,
-              zoneId: location.zoneId || location.zone?.id || null,
-              zoneName: location.zoneName || location.zone?.name || ''
-            }));
+        if (Array.isArray(locations)) {
+          this.locations = locations.map(location => ({
+            ...location,
+            // Keep geographicalEntities as they come from API
+            geographicalEntities: location.geographicalEntities || []
+          }));
 
-            this.activeLocations = this.locations.filter(loc => loc.isActive);
-          }
-
-          this.loadingLocations = false;
-          resolve();
-        },
-        error: (error) => {
-          console.error('Error loading locations:', error);
-          this.loadingLocations = false;
-          reject(error);
+          this.activeLocations = this.locations.filter(loc => loc.isActive);
         }
-      });
+
+        this.loadingLocations = false;
+        resolve();
+      },
+      error: (error) => {
+        console.error('Error loading locations:', error);
+        this.loadingLocations = false;
+        reject(error);
+      }
     });
-  }
+  });
+}
 
   getStartLocationId(): number | null {
     if (this.selectedTraject?.startLocationId) {
@@ -4782,11 +4773,15 @@ getSelectedEndLocationInfo(): string {
     return this.getZoneNameForLocation(locationId);
   }
 
-  hasZone(locationId: number): boolean {
-    if (!locationId) return false;
-    const location = this.locations.find(l => l.id === locationId);
-    return !!(location && location.zoneName);
-  }
+hasZone(locationId: number): boolean | undefined {
+  if (!locationId) return false;
+  const location = this.locations.find(l => l.id === locationId);
+  
+  if (!location) return false;
+  
+  // Check if location has any associated geographical entities
+  return location.geographicalEntities && location.geographicalEntities.length > 0;
+}
 
   getStartWeatherInfo(): string {
     if (!this.startLocationWeather) return 'Aucune donnée météo';
@@ -4868,18 +4863,24 @@ getSelectedEndLocationInfo(): string {
     return this.datePipe.transform(new Date(), 'HH:mm') || '';
   }
 
-  private getZoneNameForLocation(locationId: number): string | null {
-    if (!locationId) return null;
+private getZoneNameForLocation(locationId: number): string | null {
+  if (!locationId) return null;
 
-    const location = this.locations.find(l => l.id === locationId);
-    if (!location) return null;
+  const location = this.locations.find(l => l.id === locationId);
+  if (!location) return null;
 
-    if (location.zoneName) {
-      return location.zoneName;
+  // Get the first associated geographical entity name
+  if (location.geographicalEntities && location.geographicalEntities.length > 0) {
+    const entityId = location.geographicalEntities[0].geographicalEntityId;
+    const entity = this.geographicalEntities.find(e => e.id === entityId);
+    if (entity) {
+      return entity.name;
     }
-
-    return location.name;
   }
+
+  // Fallback to location name
+  return location.name;
+}
 
   private refreshDriversByDate(): void {
     if (this.locations.length === 0) {
@@ -4902,6 +4903,8 @@ loadAvailableDrivers(date: Date | null): void {
     this.availableDrivers = [...this.drivers];
     this.unavailableDrivers = [];
     this.filteredAvailableDrivers = [...this.availableDrivers];
+    this.filterDriversByHierarchy(); 
+    this.loadingAvailableDrivers = false;
     return;
   }
 
@@ -7672,6 +7675,24 @@ getWeatherWarningMessage(): string {
     }
   }
 
+  // Add warnings based on geographical entities
+  const startLocationId = this.tripForm.get('startLocationId')?.value;
+  const endLocationId = this.tripForm.get('endLocationId')?.value;
+  
+  if (startLocationId && this.hasZone(startLocationId)) {
+    const zoneName = this.getZoneNameForLocation(startLocationId);
+    if (zoneName) {
+      warnings.push(`zone ${zoneName} au départ`);
+    }
+  }
+  
+  if (endLocationId && this.hasZone(endLocationId)) {
+    const zoneName = this.getZoneNameForLocation(endLocationId);
+    if (zoneName) {
+      warnings.push(`zone ${zoneName} à l'arrivée`);
+    }
+  }
+
   if (warnings.length === 0) {
     return 'Conditions favorables pour le trajet';
   }
@@ -7700,7 +7721,8 @@ shouldShowWeatherWarning(): boolean {
     extremeTemperature: { min: -10, max: 35 },
   };
 
-  return weatherConditionsToCheck.some(weather => {
+  // Check weather conditions
+  const hasWeatherWarning = weatherConditionsToCheck.some(weather => {
     if (weather.precipitation && weather.precipitation > warningThresholds.heavyRain) {
       return true;
     }
@@ -7725,12 +7747,12 @@ shouldShowWeatherWarning(): boolean {
       'brouillard', 'fog'
     ];
 
-    const hasSevereCondition = severeKeywords.some(keyword =>
+    return severeKeywords.some(keyword =>
       weather.description.toLowerCase().includes(keyword.toLowerCase())
     );
-
-    return hasSevereCondition;
   });
+
+  return hasWeatherWarning;
 }
 
 
@@ -7919,6 +7941,7 @@ filterTrucksByEntity(): void {
   
   if (!entityId) {
     this.filteredAvailableTrucks = [...this.availableTrucks];
+    this.filterTrucksByHierarchy();
     return;
   }
   
@@ -8297,5 +8320,377 @@ private autoSelectDriverForTruck(truckId: number | null): void {
     'Fermer',
     { duration: 2000 }
   );
+}
+private loadGeographicalEntities(): void {
+  // Charger les niveaux géographiques
+  this.http.getGeographicalLevels().subscribe({
+    next: (levels) => {
+      this.geographicalLevels = levels.filter(l => l.isActive);
+      this.truckSelectedLevelIds = new Array(this.geographicalLevels.length).fill(null);
+      this.driverSelectedLevelIds = new Array(this.geographicalLevels.length).fill(null);
+      
+      console.log('✅ Geographical levels loaded:', this.geographicalLevels.length);
+    },
+    error: (error) => {
+      console.error('Error loading geographical levels:', error);
+    }
+  });
+
+  // Charger les entités géographiques
+  this.http.getGeographicalEntities().subscribe({
+    next: (response) => {
+      let entitiesData: IGeographicalEntity[];
+
+      if (response && typeof response === 'object' && 'data' in response) {
+        entitiesData = (response as any).data;
+      } else if (Array.isArray(response)) {
+        entitiesData = response;
+      } else {
+        entitiesData = [];
+      }
+
+      this.geographicalEntities = entitiesData.filter(e => e.isActive);
+      console.log('✅ Geographical entities loaded:', this.geographicalEntities.length);
+    },
+    error: (error) => {
+      console.error('Error loading geographical entities:', error);
+    }
+  });
+}
+private isEntityDescendantOf(entity: IGeographicalEntity, ancestor: IGeographicalEntity): boolean {
+  if (entity.id === ancestor.id) return true;
+  
+  if (!entity.parentId) return false;
+  
+  const parent = this.geographicalEntities.find(e => e.id === entity.parentId);
+  if (!parent) return false;
+  
+  if (parent.id === ancestor.id) return true;
+  
+  return this.isEntityDescendantOf(parent, ancestor);
+}
+// ==================== MÉTHODES POUR LES FILTRES HIÉRARCHIQUES DES CAMIONS ====================
+
+getTruckEntitiesForLevel(levelId: number, parentId: number | null): IGeographicalEntity[] {
+  let entities: IGeographicalEntity[] = [];
+  
+  if (parentId === null) {
+    entities = this.geographicalEntities.filter(e => 
+      e.levelId === levelId && 
+      (!e.parentId || e.parentId === 0)
+    );
+  } else {
+    entities = this.geographicalEntities.filter(e => 
+      e.levelId === levelId && 
+      e.parentId === parentId
+    );
+  }
+  
+  return entities.sort((a, b) => a.name.localeCompare(b.name));
+}
+
+onTruckLevelChange(levelIndex: number, event: any): void {
+  const selectedId = event.target.value === 'null' ? null : Number(event.target.value);
+  this.truckSelectedLevelIds[levelIndex] = selectedId;
+  
+  for (let i = levelIndex + 1; i < this.truckSelectedLevelIds.length; i++) {
+    this.truckSelectedLevelIds[i] = null;
+  }
+  
+  this.filterTrucksByHierarchy();
+  this.activeTruckFilterLevel = levelIndex;
+  
+  if (selectedId !== null && levelIndex + 1 < this.geographicalLevels.length) {
+    setTimeout(() => {
+      const nextSelect = document.querySelector(`.truck-hierarchy-select-${levelIndex + 1}`) as HTMLElement;
+      if (nextSelect) {
+        nextSelect.click();
+      }
+    }, 100);
+  }
+}
+
+clearTruckFilters(): void {
+  this.truckSelectedLevelIds = this.truckSelectedLevelIds.map(() => null);
+  this.activeTruckFilterLevel = 0;
+  this.filterTrucksByHierarchy();
+}
+
+hasTruckActiveFilters(): boolean {
+  return this.truckSelectedLevelIds.some(id => id !== null && id !== undefined);
+}
+
+getTruckActiveFiltersSummary(): string {
+  const filters: string[] = [];
+  this.truckSelectedLevelIds.forEach((entityId, index) => {
+    if (entityId !== null) {
+      const level = this.geographicalLevels[index];
+      const entity = this.geographicalEntities.find(e => e.id === entityId);
+      if (level && entity) {
+        filters.push(`${level.name}: ${entity.name}`);
+      }
+    }
+  });
+  return filters.length > 0 ? filters.join(' > ') : 'Aucun filtre';
+}
+
+private filterTrucksByHierarchy(): void {
+  if (!this.hasTruckActiveFilters()) {
+    this.filteredAvailableTrucks = [...this.availableTrucks];
+    return;
+  }
+  
+  let lastSelectedEntityId: number | null = null;
+  for (let i = this.truckSelectedLevelIds.length - 1; i >= 0; i--) {
+    if (this.truckSelectedLevelIds[i] !== null) {
+      lastSelectedEntityId = this.truckSelectedLevelIds[i];
+      break;
+    }
+  }
+  
+  if (!lastSelectedEntityId) {
+    this.filteredAvailableTrucks = [...this.availableTrucks];
+    return;
+  }
+  
+  const selectedEntity = this.geographicalEntities.find(e => e.id === lastSelectedEntityId);
+  if (!selectedEntity) {
+    this.filteredAvailableTrucks = [...this.availableTrucks];
+    return;
+  }
+  
+  this.filteredAvailableTrucks = this.availableTrucks.filter(truck => {
+    const truckEntities = truck.truckGeographicalEntities || [];
+    if (truckEntities.length === 0) return false;
+    
+    return truckEntities.some(te => {
+      const entity = this.geographicalEntities.find(e => e.id === te.geographicalEntityId);
+      if (!entity) return false;
+      return this.isEntityDescendantOf(entity, selectedEntity);
+    });
+  });
+}
+
+getTruckCountForEntity(entityId: number): number {
+  return this.availableTrucks.filter(truck => {
+    const truckEntities = truck.truckGeographicalEntities || [];
+    return truckEntities.some(te => te.geographicalEntityId === entityId);
+  }).length;
+}
+// ==================== MÉTHODES POUR LES FILTRES HIÉRARCHIQUES DES CHAUFFEURS ====================
+
+getDriverEntitiesForLevel(levelId: number, parentId: number | null): IGeographicalEntity[] {
+  let entities: IGeographicalEntity[] = [];
+  
+  if (parentId === null) {
+    entities = this.geographicalEntities.filter(e => 
+      e.levelId === levelId && 
+      (!e.parentId || e.parentId === 0)
+    );
+  } else {
+    entities = this.geographicalEntities.filter(e => 
+      e.levelId === levelId && 
+      e.parentId === parentId
+    );
+  }
+  
+  return entities.sort((a, b) => a.name.localeCompare(b.name));
+}
+
+onDriverLevelChange(levelIndex: number, event: any): void {
+  const selectedId = event.target.value === 'null' ? null : Number(event.target.value);
+  this.driverSelectedLevelIds[levelIndex] = selectedId;
+  
+  for (let i = levelIndex + 1; i < this.driverSelectedLevelIds.length; i++) {
+    this.driverSelectedLevelIds[i] = null;
+  }
+  
+  this.filterDriversByHierarchy();
+  this.activeDriverFilterLevel = levelIndex;
+  
+  if (selectedId !== null && levelIndex + 1 < this.geographicalLevels.length) {
+    setTimeout(() => {
+      const nextSelect = document.querySelector(`.driver-hierarchy-select-${levelIndex + 1}`) as HTMLElement;
+      if (nextSelect) {
+        nextSelect.click();
+      }
+    }, 100);
+  }
+}
+
+clearDriverFilters(): void {
+  this.driverSelectedLevelIds = this.driverSelectedLevelIds.map(() => null);
+  this.activeDriverFilterLevel = 0;
+  this.filterDriversByHierarchy();
+}
+
+hasDriverActiveFilters(): boolean {
+  return this.driverSelectedLevelIds.some(id => id !== null && id !== undefined);
+}
+
+getDriverActiveFiltersSummary(): string {
+  const filters: string[] = [];
+  this.driverSelectedLevelIds.forEach((entityId, index) => {
+    if (entityId !== null) {
+      const level = this.geographicalLevels[index];
+      const entity = this.geographicalEntities.find(e => e.id === entityId);
+      if (level && entity) {
+        filters.push(`${level.name}: ${entity.name}`);
+      }
+    }
+  });
+  return filters.length > 0 ? filters.join(' > ') : 'Aucun filtre';
+}
+
+private filterDriversByHierarchy(): void {
+  if (!this.hasDriverActiveFilters()) {
+    this.filteredAvailableDrivers = [...this.availableDrivers];
+    return;
+  }
+  
+  let lastSelectedEntityId: number | null = null;
+  for (let i = this.driverSelectedLevelIds.length - 1; i >= 0; i--) {
+    if (this.driverSelectedLevelIds[i] !== null) {
+      lastSelectedEntityId = this.driverSelectedLevelIds[i];
+      break;
+    }
+  }
+  
+  if (!lastSelectedEntityId) {
+    this.filteredAvailableDrivers = [...this.availableDrivers];
+    return;
+  }
+  
+  const selectedEntity = this.geographicalEntities.find(e => e.id === lastSelectedEntityId);
+  if (!selectedEntity) {
+    this.filteredAvailableDrivers = [...this.availableDrivers];
+    return;
+  }
+  
+  this.filteredAvailableDrivers = this.availableDrivers.filter(driver => {
+    const driverEntities = driver.driverGeographicalEntities || [];
+    if (driverEntities.length === 0) return false;
+    
+    return driverEntities.some(de => {
+      const entity = this.geographicalEntities.find(e => e.id === de.geographicalEntityId);
+      if (!entity) return false;
+      return this.isEntityDescendantOf(entity, selectedEntity);
+    });
+  });
+}
+
+getDriverCountForEntity(entityId: number): number {
+  return this.availableDrivers.filter(driver => {
+    const driverEntities = driver.driverGeographicalEntities || [];
+    return driverEntities.some(de => de.geographicalEntityId === entityId);
+  }).length;
+}
+// ==================== MÉTHODES POUR LES FILTRES HIÉRARCHIQUES DES CLIENTS ====================
+
+getCustomerEntitiesForLevel(levelId: number, parentId: number | null): IGeographicalEntity[] {
+  let entities: IGeographicalEntity[] = [];
+  
+  if (parentId === null) {
+    entities = this.geographicalEntities.filter(e => 
+      e.levelId === levelId && 
+      (!e.parentId || e.parentId === 0)
+    );
+  } else {
+    entities = this.geographicalEntities.filter(e => 
+      e.levelId === levelId && 
+      e.parentId === parentId
+    );
+  }
+  
+  return entities.sort((a, b) => a.name.localeCompare(b.name));
+}
+
+onCustomerLevelChange(levelIndex: number, event: any): void {
+  const selectedId = event.target.value === 'null' ? null : Number(event.target.value);
+  this.customerSelectedLevelIds[levelIndex] = selectedId;
+  
+  for (let i = levelIndex + 1; i < this.customerSelectedLevelIds.length; i++) {
+    this.customerSelectedLevelIds[i] = null;
+  }
+  
+  this.filterCustomersByHierarchy();
+  this.activeCustomerFilterLevel = levelIndex;
+  
+  if (selectedId !== null && levelIndex + 1 < this.geographicalLevels.length) {
+    setTimeout(() => {
+      const nextSelect = document.querySelector(`.customer-hierarchy-select-${levelIndex + 1}`) as HTMLElement;
+      if (nextSelect) {
+        nextSelect.click();
+      }
+    }, 100);
+  }
+}
+
+clearCustomerFilters(): void {
+  this.customerSelectedLevelIds = this.customerSelectedLevelIds.map(() => null);
+  this.activeCustomerFilterLevel = 0;
+  this.filterCustomersByHierarchy();
+}
+
+hasCustomerActiveFilters(): boolean {
+  return this.customerSelectedLevelIds.some(id => id !== null && id !== undefined);
+}
+
+getCustomerActiveFiltersSummary(): string {
+  const filters: string[] = [];
+  this.customerSelectedLevelIds.forEach((entityId, index) => {
+    if (entityId !== null) {
+      const level = this.geographicalLevels[index];
+      const entity = this.geographicalEntities.find(e => e.id === entityId);
+      if (level && entity) {
+        filters.push(`${level.name}: ${entity.name}`);
+      }
+    }
+  });
+  return filters.length > 0 ? filters.join(' > ') : 'Aucun filtre';
+}
+
+private filterCustomersByHierarchy(): void {
+  if (!this.hasCustomerActiveFilters()) {
+    this.filteredClients = [...this.allClientsWithPendingOrders];
+    return;
+  }
+  
+  let lastSelectedEntityId: number | null = null;
+  for (let i = this.customerSelectedLevelIds.length - 1; i >= 0; i--) {
+    if (this.customerSelectedLevelIds[i] !== null) {
+      lastSelectedEntityId = this.customerSelectedLevelIds[i];
+      break;
+    }
+  }
+  
+  if (!lastSelectedEntityId) {
+    this.filteredClients = [...this.allClientsWithPendingOrders];
+    return;
+  }
+  
+  const selectedEntity = this.geographicalEntities.find(e => e.id === lastSelectedEntityId);
+  if (!selectedEntity) {
+    this.filteredClients = [...this.allClientsWithPendingOrders];
+    return;
+  }
+  
+  this.filteredClients = this.allClientsWithPendingOrders.filter(client => {
+    const clientEntities = client.geographicalEntities || [];
+    if (clientEntities.length === 0) return false;
+    
+    return clientEntities.some(ce => {
+      const entity = this.geographicalEntities.find(e => e.id === ce.geographicalEntityId);
+      if (!entity) return false;
+      return this.isEntityDescendantOf(entity, selectedEntity);
+    });
+  });
+}
+
+getCustomerCountForEntity(entityId: number): number {
+  return this.allClientsWithPendingOrders.filter(client => {
+    const clientEntities = client.geographicalEntities || [];
+    return clientEntities.some(ce => ce.geographicalEntityId === entityId);
+  }).length;
 }
 }
