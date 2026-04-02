@@ -94,6 +94,9 @@ builder.Services.AddHttpClient("Nominatim");
 // Notification Hub Service
 builder.Services.AddSingleton<NotificationHubService>();
 
+// Chatbot Service
+builder.Services.AddScoped<IChatbotService, ChatbotService>();
+
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {

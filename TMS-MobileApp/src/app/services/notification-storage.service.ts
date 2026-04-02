@@ -198,7 +198,7 @@ export class NotificationStorageService {
   private updateUnreadCount(notifications: TripNotification[]): void {
     const unreadCount = notifications.filter(n => !n.isRead).length;
     this.unreadCountSubject.next(unreadCount);
-    
+
     // Update browser badge (if supported)
     if ('setAppBadge' in navigator) {
       if (unreadCount > 0) {
@@ -207,12 +207,85 @@ export class NotificationStorageService {
         navigator.clearAppBadge();
       }
     }
-    
+
     // Update document title
     if (unreadCount > 0) {
       document.title = `(${unreadCount}) TMS Mobile`;
     } else {
       document.title = 'TMS Mobile';
+    }
+  }
+
+  /**
+   * Sync notifications from server (for offline drivers)
+   */
+  async syncNotificationsFromServer(): Promise<void> {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        console.log('⚠️ No token, cannot sync notifications - user not logged in?');
+        return;
+      }
+
+      console.log('🔄 Syncing notifications from server...');
+      console.log('📝 Token length:', token.length);
+
+      // Get user info from token to verify UserId
+      const user = JSON.parse(atob(token.split('.')[1]));
+      const userId = user['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier'];
+      console.log('👤 Current UserId from token:', userId);
+
+      // Fetch unread notifications from server
+      const response = await fetch('http://localhost:5191/api/Notifications?pageIndex=0&pageSize=50', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      console.log('📡 Response status:', response.status);
+
+      if (response.ok) {
+        const result = await response.json();
+        console.log('📦 Server notifications received:', result.data);
+
+        if (result.data && result.data.notifications) {
+          console.log('📋 Notifications count:', result.data.notifications.length);
+          console.log('📋 Unread count:', result.data.unreadCount);
+          
+          // Add each notification to local storage
+          result.data.notifications.forEach((serverNotif: any) => {
+            this.addNotification({
+              type: serverNotif.notification.type as any,
+              title: serverNotif.notification.title,
+              message: serverNotif.notification.message,
+              tripId: serverNotif.notification.tripId,
+              tripReference: serverNotif.notification.tripReference,
+              driverName: serverNotif.notification.driverName,
+              truckImmatriculation: serverNotif.notification.truckImmatriculation,
+              destination: serverNotif.notification.additionalData?.destination,
+              customerName: serverNotif.notification.additionalData?.customerName,
+              deliveriesCount: serverNotif.notification.additionalData?.deliveriesCount,
+              estimatedDistance: serverNotif.notification.additionalData?.estimatedDistance,
+              estimatedDuration: serverNotif.notification.additionalData?.estimatedDuration,
+              timestamp: serverNotif.notification.timestamp
+              // isRead is managed automatically by addNotification()
+            });
+          });
+
+          console.log('✅ Notifications synced from server:', result.data.notifications.length);
+        } else {
+          console.warn('⚠️ No notifications in response data');
+        }
+      } else if (response.status === 401) {
+        console.error('❌ 401 Unauthorized - Token may be invalid or expired');
+        console.error('📝 Token:', token.substring(0, 50) + '...');
+      } else {
+        console.error('❌ Failed to sync notifications:', response.status, await response.text());
+      }
+    } catch (error) {
+      console.error('❌ Error syncing notifications:', error);
     }
   }
 }

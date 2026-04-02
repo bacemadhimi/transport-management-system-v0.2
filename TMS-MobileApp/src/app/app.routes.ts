@@ -33,8 +33,8 @@ export const routes: Routes = [
     loadComponent: () => import('./profile/profile.page').then( m => m.ProfilePage)
   },
 {
-    path: 'chat',
-    loadComponent: () => import('./pages/chat/chat.component').then( m => m.ChatComponent),
+    path: 'chatbot',
+    loadComponent: () => import('./pages/chatbot/chatbot.page').then( m => m.ChatbotPage),
     canActivate: [authGuard]
   },
   {

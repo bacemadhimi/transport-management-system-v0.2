@@ -8,7 +8,7 @@ namespace TransportManagementSystem.Services;
 /// </summary>
 public interface INotificationHubService
 {
-    Task SendTripAssignment(int driverId, object tripData);
+    Task SendTripAssignment(int userId, object tripData, int driverId);
     Task SendStatusUpdate(int tripId, string status);
     Task SendToConnection(string connectionId, object data);
 }
@@ -56,21 +56,29 @@ public class NotificationHubService : INotificationHubService
     /// <summary>
     /// Send trip assignment notification to SPECIFIC driver ONLY
     /// </summary>
-    public async Task SendTripAssignment(int driverId, object tripData)
+    public async Task SendTripAssignment(int userId, object tripData, int driverId)
     {
         try
         {
-            _logger.LogInformation($"🎯 Sending trip assignment to SPECIFIC Driver ID: {driverId}");
+            _logger.LogInformation($"🎯 Sending trip assignment to User ID: {userId}, Driver ID: {driverId}");
 
-            // Send to SPECIFIC USER via NotificationHub (PRIMARY)
-            await _notificationHub.Clients.User(driverId.ToString()).SendAsync("NewTripAssigned", tripData);
-            _logger.LogInformation($"✅ Sent via NotificationHub to User {driverId}");
+            // Send to SPECIFIC USER via NotificationHub (PRIMARY) - using UserId from JWT token
+            await _notificationHub.Clients.User(userId.ToString()).SendAsync("NewTripAssigned", tripData);
+            _logger.LogInformation($"✅ Sent via NotificationHub to User {userId}");
 
-            // Send to SPECIFIC driver group via GPSHub
+            // Send to SPECIFIC driver group via GPSHub - using driver-{driverId}
             await _gpsHub.Clients.Group($"driver-{driverId}").SendAsync("NewTripAssigned", tripData);
             _logger.LogInformation($"✅ Sent via GPSHub to group driver-{driverId}");
 
-            _logger.LogInformation($"🔒 Notification sent ONLY to driver {driverId}");
+            // ALSO send to driver_{driverId} group in NotificationHub (alternative naming used by mobile)
+            await _notificationHub.Clients.Group($"driver_{driverId}").SendAsync("NewTripAssigned", tripData);
+            _logger.LogInformation($"✅ Sent via NotificationHub to group driver_{driverId}");
+
+            // BROADCAST to all clients as fallback (for testing/debugging)
+            await _notificationHub.Clients.All.SendAsync("NewTripAssigned", tripData);
+            _logger.LogInformation($"✅ Broadcast to ALL clients (fallback)");
+
+            _logger.LogInformation($"🔒 Notification sent to driver {driverId} via multiple channels");
         }
         catch (Exception ex)
         {
