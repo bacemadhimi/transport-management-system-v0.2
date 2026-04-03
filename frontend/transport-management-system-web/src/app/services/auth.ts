@@ -6,6 +6,7 @@ import { Router } from '@angular/router';
 import { IUser } from '../types/user';
 import { Observable, tap } from 'rxjs';
 import { JwtHelperService } from '@auth0/angular-jwt';
+import { LogoService } from './logo.service';
 
 @Injectable({ providedIn: 'root' })
 export class Auth {
@@ -14,7 +15,7 @@ export class Auth {
   router = inject(Router);
   private ngZone = inject(NgZone);
   private jwtHelper = new JwtHelperService();
-
+ private logoService = inject(LogoService);
 
   private logoutTimer: any;
   private tokenCheckInterval: any;
@@ -27,6 +28,8 @@ export class Auth {
           this.saveToken(authToken);
           this.setLogoutTimer(authToken.token);
           this.startTokenCheck();
+          this.logoService.refresh();
+          this.loadLoggedInUser(); 
         })
       );
   }
