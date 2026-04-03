@@ -1,8 +1,8 @@
 import { Component, inject, OnInit, OnDestroy } from '@angular/core';
-import { ModalController } from '@ionic/angular';
+import { ModalController, ToastController, AlertController } from '@ionic/angular';
 import { TripDetailsModalComponent } from '../trip-details-modal/trip-details-modal.component';
 import { CommonModule } from '@angular/common';
-import { IonicModule, ToastController, AlertController } from '@ionic/angular';
+import { IonicModule } from '@ionic/angular';
 import { RouterModule } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { Router } from '@angular/router';
@@ -70,7 +70,7 @@ export class HomePage implements OnInit, OnDestroy {
     this.setupNetworkListener();
     await this.loadTrips();
     this.setupSignalR();
-    
+
     // ===== ADDED: Connect to GPS Hub for real-time notifications =====
     const user = this.authService.currentUser();
     if (user && user.role === 'Driver') {
@@ -78,6 +78,9 @@ export class HomePage implements OnInit, OnDestroy {
       this.gpsService.connect(user.id).catch(err => {
         console.error('❌ Error connecting to GPS Hub:', err);
       });
+
+      // ✅ Sync notifications from server on login (persistent like Facebook)
+      this.notificationStorageService.syncNotificationsFromServer();
     } else if (user) {
       console.log('ℹ️ User is not a driver, skipping GPS Hub connection');
     }
@@ -738,6 +741,14 @@ export class HomePage implements OnInit, OnDestroy {
       return;
     }
     this.router.navigate(['/chat']);
+  }
+
+  navigateToChatbot() {
+    console.log('🤖 Navigating to AI Chatbot');
+    if (!this.isOnline) {
+      this.showToast('Mode hors ligne - Le chatbot utilise un fallback intelligent', 2000, 'warning');
+    }
+    this.router.navigate(['/chatbot']);
   }
 
   private async showToast(message: string, duration: number, color: string) {

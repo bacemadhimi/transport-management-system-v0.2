@@ -23,15 +23,19 @@ public class TripsController : ControllerBase
     private readonly ApplicationDbContext context;
     private readonly INotificationService _notificationService;
     private readonly IHubContext<GPSHub> _gpsHub;
+    private readonly IHubContext<TripHub> _tripHub;
+    private readonly IHubContext<NotificationHub> _notificationHub;
     private readonly NotificationHubService _notificationHubService;
     private readonly ILogger<TripsController> _logger;
-    
+
     public TripsController(
         IRepository<Trip> tripRepository,
         IRepository<Delivery> deliveryRepository,
         ApplicationDbContext context,
         INotificationService notificationService,
         IHubContext<GPSHub> gpsHub,
+        IHubContext<TripHub> tripHub,
+        IHubContext<NotificationHub> notificationHub,
         NotificationHubService notificationHubService,
         ILogger<TripsController> logger)
     {
@@ -39,6 +43,8 @@ public class TripsController : ControllerBase
         this.deliveryRepository = deliveryRepository;
         this.context = context;
         this._gpsHub = gpsHub;
+        this._tripHub = tripHub;
+        this._notificationHub = notificationHub;
         this._notificationService = notificationService;
         this._notificationHubService = notificationHubService;
         this._logger = logger;
@@ -455,71 +461,141 @@ public class TripsController : ControllerBase
 
         var createdTrip = await GetTripByIdInternal(trip.Id);
 
-        _logger.LogInformation($"📢 START creating notification for trip {trip.TripReference} to driver {model.DriverId}");
+        _logger.LogInformation($"📢 ========== START NOTIFICATION PROCESS ==========");
+        _logger.LogInformation($"📢 TripReference: {trip.TripReference}, DriverId: {model.DriverId}");
 
-        // Send real-time notification via SignalR using NotificationHubService (same as sauvegarde-gps branch)
+        // ==========================================
+        // PERSISTENT NOTIFICATION (like Facebook)
+        // ==========================================
         if (model.DriverId > 0)
         {
             try
             {
-                // Get destination from model (web form address search) or from trip coordinates
                 var destination = model.DestinationAddress;
-                
-                // If no destination address from model, try to get from last delivery
                 if (string.IsNullOrEmpty(destination))
                 {
                     var lastDelivery = trip.Deliveries?.LastOrDefault();
                     destination = lastDelivery?.DeliveryAddress ?? "Non définie";
                 }
 
-                // Now that we have driver.user_id properly set, use it for notifications
-                // For drivers, UserId = DriverId (they share the same ID)
-                var userIdForNotification = model.DriverId;
+                _logger.LogInformation($"🔔 Step 1: Preparing notification for driver {model.DriverId}...");
 
-                var notification = new
+                // 1️⃣ SAVE TO DATABASE (persistent - works even if driver offline)
+                var notification = new Notification
                 {
+                    Type = "NEW_TRIP_ASSIGNMENT",
+                    Title = "🚛 Nouvelle Mission",
+                    Message = $"Nouveau voyage assigné: {trip.TripReference}",
+                    Timestamp = DateTime.UtcNow,
+                    TripId = trip.Id,
+                    TripReference = trip.TripReference,
+                    DriverName = trip.Driver?.Name,
+                    TruckImmatriculation = trip.Truck?.Immatriculation,
+                    AdditionalData = System.Text.Json.JsonSerializer.Serialize(new
+                    {
+                        driverId = model.DriverId,
+                        destination = destination,
+                        destinationLatitude = model.DestinationLatitude,
+                        destinationLongitude = model.DestinationLongitude,
+                        estimatedStartDate = trip.EstimatedStartDate,
+                        estimatedEndDate = trip.EstimatedEndDate
+                    }),
+                    CreatedAt = DateTime.UtcNow
+                };
+
+                await context.Notifications.AddAsync(notification);
+                await context.SaveChangesAsync();
+                _logger.LogInformation($"💾 Step 2: Notification saved to DB with ID: {notification.Id}");
+
+                // 2️⃣ CREATE UserNotification entry for THIS specific driver
+                // ⚠️ IMPORTANT: model.DriverId is the Employee/Driver ID, we need to find the associated User ID
+                // For drivers, the User ID is usually the same as the Driver ID if they share the Users table
+                // Let's try to find the user associated with this driver
+                int userIdForNotification = model.DriverId;
+                
+                // Try to find if there's a User with this ID (drivers might be in Employees table with EmployeeCategory='DRIVER')
+                var driverEmployee = await context.Employees
+                    .FirstOrDefaultAsync(e => e.Id == model.DriverId);
+                
+                if (driverEmployee != null)
+                {
+                    // The driver exists in Employees table
+                    // Check if there's a User with the same ID or linked via Email/Phone
+                    var associatedUser = await context.Users
+                        .FirstOrDefaultAsync(u => 
+                            u.Id == model.DriverId || 
+                            u.Email == driverEmployee.Email || 
+                            (driverEmployee.PhoneNumber != null && u.Phone == driverEmployee.PhoneNumber));
+                    
+                    if (associatedUser != null)
+                    {
+                        userIdForNotification = associatedUser.Id;
+                        _logger.LogInformation($"👤 Found associated user ID: {userIdForNotification} for driver {model.DriverId}");
+                    }
+                    else
+                    {
+                        _logger.LogWarning($"⚠️ No associated user found for driver {model.DriverId}. Using driver ID as user ID.");
+                    }
+                }
+
+                // Only create UserNotification if the user exists
+                var userExists = await context.Users.AnyAsync(u => u.Id == userIdForNotification);
+                if (userExists)
+                {
+                    var userNotification = new UserNotification
+                    {
+                        NotificationId = notification.Id,
+                        UserId = userIdForNotification,
+                        IsRead = false
+                    };
+                    await context.UserNotifications.AddAsync(userNotification);
+                    await context.SaveChangesAsync();
+                    _logger.LogInformation($"👤 Step 3: UserNotification created for userId {userIdForNotification} (driver {model.DriverId})");
+                }
+                else
+                {
+                    _logger.LogWarning($"⚠️ User ID {userIdForNotification} does not exist in Users table. Skipping UserNotification creation.");
+                }
+
+                // 3️⃣ SEND REAL-TIME via SignalR (always try, even if DB save fails)
+                var signalrNotification = new
+                {
+                    id = notification.Id,
                     type = "NEW_TRIP_ASSIGNMENT",
                     tripId = trip.Id,
                     tripReference = trip.TripReference,
-                    title = "Nouvelle Mission",
+                    title = "🚛 Nouvelle Mission",
                     message = $"Nouveau voyage assigné: {trip.TripReference}",
                     driverId = model.DriverId,
+                    userId = userIdForNotification,
                     truckImmatriculation = trip.Truck?.Immatriculation,
                     destination = destination,
                     destinationLatitude = model.DestinationLatitude,
                     destinationLongitude = model.DestinationLongitude,
                     estimatedStartDate = trip.EstimatedStartDate,
                     estimatedEndDate = trip.EstimatedEndDate,
-                    timestamp = DateTime.UtcNow
+                    timestamp = DateTime.UtcNow,
+                    isRead = false
                 };
 
-                _logger.LogInformation($"📨 Sending notification via NotificationHubService...");
+                _logger.LogInformation($"📡 Step 4: Broadcasting via SignalR to driver {model.DriverId}...");
 
-                // This sends via multiple channels:
-                // 1. NotificationHub.Clients.User(userId)
-                // 2. GPSHub.Clients.Group($"driver-{driverId}")
-                // 3. NotificationHub.Clients.Group($"driver_{driverId}")
-                // 4. NotificationHub.Clients.All (fallback)
-                await _notificationHubService.SendTripAssignment(userIdForNotification, notification, model.DriverId);
-
-                // ALSO broadcast to ALL clients for web admin real-time updates
-                await _gpsHub.Clients.All.SendAsync("ReceiveNotification", new
+                try
                 {
-                    type = "NEW_TRIP_ASSIGNMENT",
-                    tripId = trip.Id,
-                    tripReference = trip.TripReference,
-                    title = "Nouvelle Mission",
-                    message = $"Nouveau voyage assigné: {trip.TripReference}",
-                    driverId = model.DriverId,
-                    timestamp = DateTime.UtcNow
-                });
-
-                _logger.LogInformation($"✅ Notification sent successfully to driver {model.DriverId}");
+                    // Broadcast via GPSHub
+                    await _gpsHub.Clients.All.SendAsync("ReceiveNotification", signalrNotification);
+                    _logger.LogInformation($"✅ Step 5: Sent via GPSHub");
+                    _logger.LogInformation($"✅✅✅ NOTIFICATION SENT SUCCESSFULLY for trip {trip.TripReference} to driver {model.DriverId}");
+                }
+                catch (Exception signalrEx)
+                {
+                    _logger.LogError(signalrEx, $"❌ Error sending SignalR notification for trip {trip.TripReference}");
+                }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, $"❌ Error sending notification for trip {trip.TripReference}");
-                // Continue even if notification fails - don't block trip creation
+                _logger.LogError(ex, $"❌❌❌ CRITICAL ERROR in notification process for trip {trip.TripReference}: {ex.Message}");
+                _logger.LogError($"❌ Stack trace: {ex.StackTrace}");
             }
         }
         else

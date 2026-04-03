@@ -20,6 +20,27 @@ export class SignalrGpsService implements OnDestroy {
 
   constructor(private notificationStorage: NotificationStorageService) {}
 
+  /**
+   * Get current driver ID from localStorage
+   */
+  private getCurrentDriverId(): number | null {
+    try {
+      const userStr = localStorage.getItem('user');
+      if (userStr) {
+        const user = JSON.parse(userStr);
+        return user.driverId || user.id || null;
+      }
+      const token = localStorage.getItem('token');
+      if (token) {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        return payload.driverId || payload.sub || null;
+      }
+    } catch (e) {
+      console.warn('⚠️ Could not get current driverId:', e);
+    }
+    return null;
+  }
+
   async connect(driverId?: number): Promise<void> {
     if (this.hubConnection?.state === signalR.HubConnectionState.Connected) {
       // If already connected and driverId provided, join the driver group
@@ -43,9 +64,17 @@ export class SignalrGpsService implements OnDestroy {
       this.positionSubject.next(payload);
     });
 
-    // Listen for new trip assignments
+    // Listen for new trip assignments - FILTER by driverId
     this.hubConnection.on('NewTripAssigned', (tripData: any) => {
       console.log('🔔 NewTripAssigned received:', tripData);
+
+      // ✅ FILTER: Only process if notification is for THIS driver
+      const currentDriverId = this.getCurrentDriverId();
+      if (tripData.driverId && currentDriverId && tripData.driverId !== currentDriverId) {
+        console.log(`🚫 Ignoring NewTripAssigned for driver ${tripData.driverId} (current: ${currentDriverId})`);
+        return;
+      }
+
       this.newTripSubject.next(tripData);
 
       // Save notification to local storage

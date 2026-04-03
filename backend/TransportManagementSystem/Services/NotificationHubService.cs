@@ -60,25 +60,38 @@ public class NotificationHubService : INotificationHubService
     {
         try
         {
-            _logger.LogInformation($"🎯 Sending trip assignment to User ID: {userId}, Driver ID: {driverId}");
+            _logger.LogInformation($"🎯 ========== START SendTripAssignment ==========");
+            _logger.LogInformation($"🎯 UserId: {userId}, DriverId: {driverId}");
+            _logger.LogInformation($"🎯 Active connections: {_activeConnections.Count}");
+            foreach (var kvp in _activeConnections)
+            {
+                _logger.LogInformation($"   - Driver {kvp.Key} -> Connection {kvp.Value}");
+            }
 
-            // Send to SPECIFIC USER via NotificationHub (PRIMARY) - using UserId from JWT token
-            await _notificationHub.Clients.User(userId.ToString()).SendAsync("NewTripAssigned", tripData);
-            _logger.LogInformation($"✅ Sent via NotificationHub to User {userId}");
-
-            // Send to SPECIFIC driver group via GPSHub - using driver-{driverId}
-            await _gpsHub.Clients.Group($"driver-{driverId}").SendAsync("NewTripAssigned", tripData);
-            _logger.LogInformation($"✅ Sent via GPSHub to group driver-{driverId}");
-
-            // ALSO send to driver_{driverId} group in NotificationHub (alternative naming used by mobile)
+            // 1️⃣ Send to driver_{driverId} group in NotificationHub (mobile joins this group on connect)
             await _notificationHub.Clients.Group($"driver_{driverId}").SendAsync("NewTripAssigned", tripData);
-            _logger.LogInformation($"✅ Sent via NotificationHub to group driver_{driverId}");
+            _logger.LogInformation($"✅ Sent via NotificationHub group driver_{driverId}");
 
-            // BROADCAST to all clients as fallback (for testing/debugging)
-            await _notificationHub.Clients.All.SendAsync("NewTripAssigned", tripData);
-            _logger.LogInformation($"✅ Broadcast to ALL clients (fallback)");
+            // 2️⃣ Send to driver-{driverId} group via GPSHub (mobile joins this group on connect)
+            await _gpsHub.Clients.Group($"driver-{driverId}").SendAsync("NewTripAssigned", tripData);
+            _logger.LogInformation($"✅ Sent via GPSHub group driver-{driverId}");
 
-            _logger.LogInformation($"🔒 Notification sent to driver {driverId} via multiple channels");
+            // 3️⃣ Send directly to registered connection if available
+            if (_activeConnections.TryGetValue(driverId, out var connectionId))
+            {
+                await _gpsHub.Clients.Client(connectionId).SendAsync("NewTripAssigned", tripData);
+                _logger.LogInformation($"✅ Sent directly to driver {driverId} connection {connectionId}");
+            }
+            else
+            {
+                _logger.LogWarning($"⚠️ No active connection found for driver {driverId} in _activeConnections");
+            }
+
+            // 4️⃣ Also send via User (uses NameIdentifier claim from JWT)
+            await _notificationHub.Clients.User(userId.ToString()).SendAsync("NewTripAssigned", tripData);
+            _logger.LogInformation($"✅ Sent via NotificationHub.Clients.User({userId})");
+
+            _logger.LogInformation($"🔒 ========== END: Notification sent to driver {driverId} ONLY ==========");
         }
         catch (Exception ex)
         {

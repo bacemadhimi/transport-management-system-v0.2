@@ -41,6 +41,28 @@ export class GPSTrackingService {
   constructor(private notificationStorage: NotificationStorageService) {}
 
   /**
+   * Get current driver ID from localStorage
+   */
+  private getCurrentDriverId(): number | null {
+    try {
+      const userStr = localStorage.getItem('user');
+      if (userStr) {
+        const user = JSON.parse(userStr);
+        return user.driverId || user.id || null;
+      }
+      // Fallback: try to get from token
+      const token = localStorage.getItem('token');
+      if (token) {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        return payload.driverId || payload.sub || null;
+      }
+    } catch (e) {
+      console.warn('⚠️ Could not get current driverId:', e);
+    }
+    return null;
+  }
+
+  /**
    * Connecter au GPS Hub et écouter les notifications
    */
   public async connect(driverId?: number, truckId?: number): Promise<void> {
@@ -66,12 +88,24 @@ export class GPSTrackingService {
       // Also connect to NotificationHub for better notification handling
       await this.connectToNotificationHub(driverId);
 
+      // ===================================================================
+      // 🚨 REGISTER HANDLERS BEFORE STARTING CONNECTION
+      // ===================================================================
+      console.log('📝 Registering GPS Hub handlers...');
+
       // Écouter les notifications de nouveau trip - GPSHub (PRIMARY - only show native alert from here)
       this.hubConnection.on('NewTripAssigned', (data: any) => {
         console.log('🔔🔔🔔=================================');
         console.log('🔔 NEW TRIP ASSIGNED via GPSHub!');
         console.log('🔔 Data:', JSON.stringify(data, null, 2));
         console.log('🔔🔔🔔=================================');
+
+        // ✅ FILTER: Only process if notification is for THIS driver
+        const currentDriverId = this.getCurrentDriverId();
+        if (data.driverId && currentDriverId && String(data.driverId) !== String(currentDriverId)) {
+          console.log(`🚫 Ignoring NewTripAssigned for driver ${data.driverId} (current driver: ${currentDriverId})`);
+          return; // Skip - not for this driver
+        }
 
         // Store notification (allow duplicates for now - better to show twice than miss one)
         const stored = this.notificationStorage.addNotification({
@@ -109,13 +143,56 @@ export class GPSTrackingService {
 
         this.notificationSubject.next(data);
       });
+      console.log('✅ Handler registered: NewTripAssigned');
 
-      // Écouter les notifications générales
+      // Écouter les notifications générales - FILTER by userId/driverId
       this.hubConnection.on('ReceiveNotification', (notification: any) => {
-        console.log('🔔 Notification via GPSHub:', notification);
+        console.log('🔔🔔🔔 =========================================');
+        console.log('🔔🔔🔔 ReceiveNotification received on GPSHub!');
+        console.log('🔔🔔🔔 Full data:', JSON.stringify(notification, null, 2));
+        console.log('🔔🔔🔔 =========================================');
+
+        // ✅ FILTER: Check BOTH userId and driverId for matching
+        const currentDriverId = this.getCurrentDriverId();
+        const notifDriverId = notification.driverId;
+        const notifUserId = notification.userId;
+        
+        console.log(`🔍 Comparing: notif.driverId=${notifDriverId}, notif.userId=${notifUserId} vs currentDriverId=${currentDriverId}`);
+        
+        // Match if userId matches OR driverId matches (handles Employee ID vs User ID mismatch)
+        const isForMe = (notifUserId && String(notifUserId) === String(currentDriverId)) ||
+                        (notifDriverId && String(notifDriverId) === String(currentDriverId));
+        
+        if (!isForMe) {
+          console.log(`🚫 Ignoring notification - not for me (my ID: ${currentDriverId})`);
+          return;
+        }
+
+        console.log('✅✅✅ Processing notification for current driver');
+
+        // ✅ SAVE to NotificationStorageService (this updates the badge!)
+        const saved = this.notificationStorage.addNotification({
+          type: notification.type || 'NEW_TRIP_ASSIGNMENT',
+          title: notification.title || '🚛 Nouvelle Mission',
+          message: notification.message || 'Vous avez une nouvelle mission',
+          tripId: notification.tripId || 0,
+          tripReference: notification.tripReference || '',
+          driverId: notification.driverId,
+          driverName: notification.driverName,
+          truckImmatriculation: notification.truckImmatriculation,
+          destination: notification.destination,
+          timestamp: notification.timestamp || new Date().toISOString(),
+          additionalData: notification
+        });
+
+        if (saved) {
+          console.log('✅✅✅ Notification saved to storage - badge updated!');
+        }
+
         this.showNativeNotification(notification.title, notification.message);
         this.notificationSubject.next(notification);
       });
+      console.log('✅ Handler registered: ReceiveNotification');
 
       // Écouter les mises à jour de statut
       this.hubConnection.on('StatusUpdated', (update: any) => {
@@ -128,6 +205,8 @@ export class GPSTrackingService {
         console.log('📍 Position received:', position);
         this.positionSubject.next(position);
       });
+
+      console.log('🚀 Starting GPS Hub connection...');
 
       this.hubConnection.onreconnecting(() => {
         console.log('🔄 Reconnecting...');
@@ -147,6 +226,18 @@ export class GPSTrackingService {
       await this.hubConnection.start();
       this.connectionStatus.next(true);
       console.log('✅ GPS Hub connected successfully');
+
+      // 🧪 TEST: Send a test notification to verify handler works
+      console.log('🧪 Testing notification handler with test message...');
+      this.notificationSubject.next({
+        id: 0,
+        type: 'TEST',
+        title: '🔔 Test Notification',
+        message: 'GPS Hub connected - handler is working!',
+        driverId: driverId,
+        timestamp: new Date().toISOString(),
+        isRead: false
+      });
 
       // Join driver group si driverId fourni
       if (driverId) {
@@ -192,6 +283,13 @@ export class GPSTrackingService {
         console.log('🔔 Data:', JSON.stringify(data, null, 2));
         console.log('🔔🔔🔔=================================');
 
+        // ✅ FILTER: Only process if notification is for THIS driver
+        const currentDriverId = this.getCurrentDriverId();
+        if (data.driverId && currentDriverId && data.driverId !== currentDriverId) {
+          console.log(`🚫 Ignoring NewTripAssigned via NotificationHub for driver ${data.driverId} (current: ${currentDriverId})`);
+          return;
+        }
+
         // Store notification (no native alert from NotificationHub)
         const notification: Omit<TripNotification, 'id' | 'isRead'> = {
           type: 'NEW_TRIP_ASSIGNMENT',
@@ -219,6 +317,14 @@ export class GPSTrackingService {
 
       this.notificationHubConnection.on('ReceiveNotification', (notification: any) => {
         console.log('🔔 Notification via NotificationHub:', notification);
+
+        // ✅ FILTER: Only process if notification is for THIS driver
+        const currentDriverId = this.getCurrentDriverId();
+        if (notification.driverId && currentDriverId && notification.driverId !== currentDriverId) {
+          console.log(`🚫 Ignoring ReceiveNotification via NotificationHub for driver ${notification.driverId} (current: ${currentDriverId})`);
+          return;
+        }
+
         this.notificationSubject.next(notification);
       });
 

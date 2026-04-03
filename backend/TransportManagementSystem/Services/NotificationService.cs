@@ -32,7 +32,7 @@ public class NotificationService : INotificationService
     {
         try
         {
-            // Create notification entity (no user association)
+            // Create notification entity
             var notification = new Notification
             {
                 Type = "STATUS_CHANGE",
@@ -53,9 +53,20 @@ public class NotificationService : INotificationService
                 CreatedAt = DateTime.UtcNow
             };
 
-            // Save to database (uncomment if you want to save status changes)
-            // await _notificationRepository.AddAsync(notification);
-            // await _notificationRepository.SaveChangesAsync();
+            // Save to database
+            await _notificationRepository.AddAsync(notification);
+            await _notificationRepository.SaveChangesAsync();
+
+            // ✅ ONLY create UserNotification for the SPECIFIC driver
+            var userNotification = new UserNotification
+            {
+                NotificationId = notification.Id,
+                UserId = userId,
+                IsRead = false
+            };
+
+            await _context.UserNotifications.AddAsync(userNotification);
+            await _context.SaveChangesAsync();
 
             // Create DTO for SignalR
             var notificationDto = new TripNotificationDto
@@ -71,12 +82,13 @@ public class NotificationService : INotificationService
                 NewStatus = notification.NewStatus,
                 DriverName = notification.DriverName,
                 TruckImmatriculation = notification.TruckImmatriculation,
-                IsRead = false // Default for broadcast
+                IsRead = false,
+                DriverId = userId
             };
 
-            // Send to ALL connected clients
-            await _hubContext.Clients.All.SendAsync("ReceiveNotification", notificationDto);
-            _logger.LogInformation($"✅ Sent status change to ALL clients for trip {statusChange.TripReference}");
+            // Send ONLY to the specific driver via SignalR
+            await _hubContext.Clients.User(userId.ToString()).SendAsync("ReceiveNotification", notificationDto);
+            _logger.LogInformation($"✅ Sent status change ONLY to driver {userId} for trip {statusChange.TripReference}");
         }
         catch (Exception ex)
         {
@@ -88,7 +100,7 @@ public class NotificationService : INotificationService
     {
         try
         {
-            // Create notification (no user association)
+            // Create notification
             var notification = new Notification
             {
                 Type = "TRIP_CANCELLED",
@@ -110,21 +122,15 @@ public class NotificationService : INotificationService
             await _notificationRepository.AddAsync(notification);
             await _notificationRepository.SaveChangesAsync();
 
-            // Get all active users
-            var allUserIds = await _context.Users
-                // Assuming you have an IsActive field
-                .Select(u => u.Id)
-                .ToListAsync();
-
-            // Create UserNotification entries for each user (unread by default)
-            var userNotifications = allUserIds.Select(uid => new UserNotification
+            // ✅ ONLY create UserNotification for the SPECIFIC driver (not all users)
+            var userNotification = new UserNotification
             {
                 NotificationId = notification.Id,
-                UserId = uid,
+                UserId = userId,
                 IsRead = false
-            }).ToList();
+            };
 
-            await _context.UserNotifications.AddRangeAsync(userNotifications);
+            await _context.UserNotifications.AddAsync(userNotification);
             await _context.SaveChangesAsync();
 
             // Create DTO for SignalR
@@ -139,14 +145,14 @@ public class NotificationService : INotificationService
                 TripReference = notification.TripReference,
                 DriverName = notification.DriverName,
                 TruckImmatriculation = notification.TruckImmatriculation,
-                IsRead = false // Default for broadcast
+                IsRead = false,
+                DriverId = userId
             };
 
-            // Broadcast to ALL clients
-            await _hubContext.Clients.All.SendAsync("ReceiveNotification", notificationDto);
-            await _hubContext.Clients.Group($"trip-{tripId}").SendAsync("ReceiveNotification", notificationDto);
+            // Send ONLY to the specific driver via SignalR
+            await _hubContext.Clients.User(userId.ToString()).SendAsync("ReceiveNotification", notificationDto);
 
-            _logger.LogInformation($"✅ Sent cancellation notification for trip {tripReference} to ALL clients");
+            _logger.LogInformation($"✅ Sent cancellation notification for trip {tripReference} ONLY to driver {userId}");
         }
         catch (Exception ex)
         {
@@ -158,7 +164,7 @@ public class NotificationService : INotificationService
     {
         try
         {
-            // Create notification (no user association)
+            // Create notification
             var notification = new Notification
             {
                 Type = "NEW_TRIP",
@@ -173,21 +179,15 @@ public class NotificationService : INotificationService
             await _notificationRepository.AddAsync(notification);
             await _notificationRepository.SaveChangesAsync();
 
-            // Get all active users
-            var allUserIds = await _context.Users
-               
-                .Select(u => u.Id)
-                .ToListAsync();
-
-            // Create UserNotification entries for each user
-            var userNotifications = allUserIds.Select(uid => new UserNotification
+            // ✅ ONLY create UserNotification for the SPECIFIC driver
+            var userNotification = new UserNotification
             {
                 NotificationId = notification.Id,
-                UserId = uid,
+                UserId = userId,
                 IsRead = false
-            }).ToList();
+            };
 
-            await _context.UserNotifications.AddRangeAsync(userNotifications);
+            await _context.UserNotifications.AddAsync(userNotification);
             await _context.SaveChangesAsync();
 
             // Create DTO for SignalR
@@ -200,13 +200,14 @@ public class NotificationService : INotificationService
                 Timestamp = notification.Timestamp,
                 TripId = notification.TripId,
                 TripReference = notification.TripReference,
-                IsRead = false
+                IsRead = false,
+                DriverId = userId
             };
 
-            // Broadcast to ALL clients
-            await _hubContext.Clients.All.SendAsync("ReceiveNotification", notificationDto);
+            // Send ONLY to the specific driver via SignalR
+            await _hubContext.Clients.User(userId.ToString()).SendAsync("ReceiveNotification", notificationDto);
 
-            _logger.LogInformation($"✅ Sent new trip notification for trip {tripReference} to ALL clients");
+            _logger.LogInformation($"✅ Sent new trip notification for trip {tripReference} ONLY to driver {userId}");
         }
         catch (Exception ex)
         {

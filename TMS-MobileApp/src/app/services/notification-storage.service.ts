@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
+import { environment } from '../../environments/environment';
 
 export interface TripNotification {
   id: number;
@@ -257,15 +258,9 @@ export class NotificationStorageService {
       }
 
       console.log('🔄 Syncing notifications from server...');
-      console.log('📝 Token length:', token.length);
-
-      // Get user info from token to verify UserId
-      const user = JSON.parse(atob(token.split('.')[1]));
-      const userId = user['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier'];
-      console.log('👤 Current UserId from token:', userId);
 
       // Fetch unread notifications from server
-      const response = await fetch('http://localhost:5191/api/Notifications?pageIndex=0&pageSize=50', {
+      const response = await fetch(`${environment.apiUrl}/api/Notifications?pageIndex=0&pageSize=10`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -277,41 +272,52 @@ export class NotificationStorageService {
 
       if (response.ok) {
         const result = await response.json();
-        console.log('📦 Server notifications received:', result.data);
+        console.log('📦 Server notifications response:', JSON.stringify(result, null, 2));
 
+        // Structure: { data: { notifications: [...], unreadCount: N, totalCount: N } }
         if (result.data && result.data.notifications) {
-          console.log('📋 Notifications count:', result.data.notifications.length);
-          console.log('📋 Unread count:', result.data.unreadCount);
-          
+          const notifications = result.data.notifications;
+          console.log('📋 Notifications count:', notifications.length);
+
           // Add each notification to local storage
-          result.data.notifications.forEach((serverNotif: any) => {
-            this.addNotification({
-              type: serverNotif.notification.type as any,
-              title: serverNotif.notification.title,
-              message: serverNotif.notification.message,
-              tripId: serverNotif.notification.tripId,
-              tripReference: serverNotif.notification.tripReference,
-              driverName: serverNotif.notification.driverName,
-              truckImmatriculation: serverNotif.notification.truckImmatriculation,
-              destination: serverNotif.notification.additionalData?.destination,
-              customerName: serverNotif.notification.additionalData?.customerName,
-              deliveriesCount: serverNotif.notification.additionalData?.deliveriesCount,
-              estimatedDistance: serverNotif.notification.additionalData?.estimatedDistance,
-              estimatedDuration: serverNotif.notification.additionalData?.estimatedDuration,
-              timestamp: serverNotif.notification.timestamp
-              // isRead is managed automatically by addNotification()
-            });
+          notifications.forEach((serverNotif: any) => {
+            try {
+              // Handle both nested and flat structures
+              const notif = serverNotif.notification || serverNotif;
+              
+              if (!notif.type) {
+                console.warn('⚠️ Skipping notification without type:', serverNotif);
+                return;
+              }
+
+              this.addNotification({
+                type: notif.type as any,
+                title: notif.title,
+                message: notif.message,
+                tripId: notif.tripId || 0,
+                tripReference: notif.tripReference || '',
+                driverName: notif.driverName,
+                truckImmatriculation: notif.truckImmatriculation,
+                destination: notif.additionalData?.destination,
+                customerName: notif.additionalData?.customerName,
+                deliveriesCount: notif.additionalData?.deliveriesCount,
+                estimatedDistance: notif.additionalData?.estimatedDistance,
+                estimatedDuration: notif.additionalData?.estimatedDuration,
+                timestamp: notif.timestamp || new Date().toISOString()
+              });
+            } catch (e) {
+              console.error('❌ Error processing notification:', e, serverNotif);
+            }
           });
 
-          console.log('✅ Notifications synced from server:', result.data.notifications.length);
+          console.log('✅ Notifications synced from server:', notifications.length);
         } else {
           console.warn('⚠️ No notifications in response data');
         }
       } else if (response.status === 401) {
         console.error('❌ 401 Unauthorized - Token may be invalid or expired');
-        console.error('📝 Token:', token.substring(0, 50) + '...');
       } else {
-        console.error('❌ Failed to sync notifications:', response.status, await response.text());
+        console.error('❌ Failed to sync notifications:', response.status);
       }
     } catch (error) {
       console.error('❌ Error syncing notifications:', error);
