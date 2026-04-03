@@ -6,7 +6,6 @@
 
   <form [formGroup]="tripForm" (ngSubmit)="onSubmit()">
     <div class="main-layout">
-  
 <!-- Left Section with Virtual Scroll - Market Style -->
 <div class="left-section">
   <div class="loading-overlay" *ngIf="loading">
@@ -2623,18 +2622,18 @@
       <button mat-button type="button" (click)="onCancel()" [disabled]="loading" class="cancel-btn">
         Annuler
       </button>
-      <button
-        mat-flat-button
-        color="primary"
-        type="submit"
-        [disabled]="tripForm.invalid || deliveries.length === 0 || loading || isSubmitting || isSuccess || (saveAsPredefined && !trajectName.trim())"
-        class="save-btn"
-      >
-        <mat-icon *ngIf="loading || isSubmitting" class="loading-icon">hourglass_empty</mat-icon>
-        <mat-icon *ngIf="isSuccess" class="success-icon">check_circle</mat-icon>
-        <span *ngIf="!loading && !isSubmitting && !isSuccess">{{ tripId ? 'Modifier' : 'Créer le voyage' }}</span>
-        <span *ngIf="loading || isSubmitting">Traitement en cours...</span>
-      </button>
+   <button
+  mat-flat-button
+  color="primary"
+  type="submit"
+  [disabled]="tripForm.invalid || deliveries.length === 0 || loading || isSubmitting || isSuccess || (saveAsPredefined && !trajectName.trim() && !tripId)"
+  class="save-btn"
+>
+  <mat-icon *ngIf="loading || isSubmitting" class="loading-icon">hourglass_empty</mat-icon>
+  <mat-icon *ngIf="isSuccess" class="success-icon">check_circle</mat-icon>
+  <span *ngIf="!loading && !isSubmitting && !isSuccess">{{ tripId ? 'Modifier' : 'Créer le voyage' }}</span>
+  <span *ngIf="loading || isSubmitting">Traitement en cours...</span>
+</button>
     </div>
   </form>
 

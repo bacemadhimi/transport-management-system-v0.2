@@ -2097,16 +2097,19 @@ async onSubmit(): Promise<void> {
         return;
       }
     }
-
     if (this.saveAsPredefined && !this.trajectName.trim()) {
-      Swal.fire({
-        icon: 'warning',
-        title: 'Attention',
-        text: 'Veuillez saisir un nom pour le traject',
-        confirmButtonText: 'OK'
-      });
-      this.isSubmitting = false;
-      return;
+
+      if (!this.isEditMode) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'Attention',
+          text: 'Veuillez saisir un nom pour le traject',
+          confirmButtonText: 'OK'
+        });
+        this.isSubmitting = false;
+        return;
+      }
+    
     }
 
     const formValue = this.tripForm.value;
