@@ -23,18 +23,25 @@ public class TripsController : ControllerBase
     private readonly ApplicationDbContext context;
     private readonly INotificationService _notificationService;
     private readonly IHubContext<GPSHub> _gpsHub;
+    private readonly NotificationHubService _notificationHubService;
+    private readonly ILogger<TripsController> _logger;
+    
     public TripsController(
         IRepository<Trip> tripRepository,
         IRepository<Delivery> deliveryRepository,
         ApplicationDbContext context,
         INotificationService notificationService,
-        IHubContext<GPSHub> gpsHub)
+        IHubContext<GPSHub> gpsHub,
+        NotificationHubService notificationHubService,
+        ILogger<TripsController> logger)
     {
         this.tripRepository = tripRepository;
         this.deliveryRepository = deliveryRepository;
-        this.context = context; 
+        this.context = context;
         this._gpsHub = gpsHub;
         this._notificationService = notificationService;
+        this._notificationHubService = notificationHubService;
+        this._logger = logger;
     }
 
     [HttpGet("PaginationAndSearch")]
@@ -444,7 +451,58 @@ public class TripsController : ControllerBase
         await context.SaveChangesAsync();
 
         var createdTrip = await GetTripByIdInternal(trip.Id);
-        //await _notificationService.NotifyNewTripCreated(trip.Id, trip.TripReference ?? trip.BookingId, userId);
+
+        _logger.LogInformation($"📢 START creating notification for trip {trip.TripReference} to driver {model.DriverId}");
+
+        // Send real-time notification via SignalR using NotificationHubService (same as sauvegarde-gps branch)
+        if (model.DriverId > 0)
+        {
+            try
+            {
+                // Get delivery details for notification
+                var lastDelivery = trip.Deliveries?.LastOrDefault();
+                var destination = lastDelivery?.DeliveryAddress ?? "Non définie";
+
+                // Now that we have driver.user_id properly set, use it for notifications
+                // For drivers, UserId = DriverId (they share the same ID)
+                var userIdForNotification = model.DriverId;
+
+                var notification = new
+                {
+                    type = "NEW_TRIP_ASSIGNMENT",
+                    tripId = trip.Id,
+                    tripReference = trip.TripReference,
+                    title = "Nouvelle Mission",
+                    message = $"Nouveau voyage assigné: {trip.TripReference}",
+                    driverId = model.DriverId,
+                    truckImmatriculation = trip.Truck?.Immatriculation,
+                    destination = destination,
+                    estimatedStartDate = trip.EstimatedStartDate,
+                    estimatedEndDate = trip.EstimatedEndDate,
+                    timestamp = DateTime.UtcNow
+                };
+
+                _logger.LogInformation($"📨 Sending notification via NotificationHubService...");
+
+                // This sends via multiple channels:
+                // 1. NotificationHub.Clients.User(userId)
+                // 2. GPSHub.Clients.Group($"driver-{driverId}")
+                // 3. NotificationHub.Clients.Group($"driver_{driverId}")
+                // 4. NotificationHub.Clients.All (fallback)
+                await _notificationHubService.SendTripAssignment(userIdForNotification, notification, model.DriverId);
+
+                _logger.LogInformation($"✅ Notification sent successfully to driver {model.DriverId}");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"❌ Error sending notification for trip {trip.TripReference}");
+                // Continue even if notification fails - don't block trip creation
+            }
+        }
+        else
+        {
+            _logger.LogWarning($"⚠️ DriverId is null or <= 0: {model.DriverId}");
+        }
 
         return CreatedAtAction(nameof(GetTripById),
             new { id = trip.Id },
@@ -980,6 +1038,11 @@ public class TripsController : ControllerBase
             CreatedBy = trip.CreatedById,
             UpdatedAt = trip.UpdatedAt,
             UpdatedBy = trip.UpdatedById,
+            
+            // Destination coordinates for GPS tracking
+            DestinationLatitude = trip.EndLatitude,
+            DestinationLongitude = trip.EndLongitude,
+            Destination = null, // Will be populated from last delivery address in frontend
 
             Truck = trip.Truck != null ? new TruckDto
             {

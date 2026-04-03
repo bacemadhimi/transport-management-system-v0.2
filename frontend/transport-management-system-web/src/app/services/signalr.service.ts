@@ -131,6 +131,7 @@ export class SignalRService {
         console.log('SignalR connection established');
         this.connectionStatusSubject.next(true);
         this.joinAllTripsGroup();
+        this.joinAdminGroup(); // Join admins group for real-time notifications
       })
       .catch(err => {
         console.error('Error establishing SignalR connection: ', err);
@@ -148,6 +149,7 @@ export class SignalRService {
       console.log('SignalR reconnected');
       this.connectionStatusSubject.next(true);
       this.joinAllTripsGroup();
+      this.joinAdminGroup(); // Rejoin admins group
       this.loadInitialNotifications();
     });
 
@@ -257,6 +259,14 @@ private addNotification(notification: TripNotification, pageSize: number = 20) {
     if (this.hubConnection.state === signalR.HubConnectionState.Connected) {
       this.hubConnection.invoke('JoinAllTripsGroup')
         .catch(err => console.error('Error joining all trips group:', err));
+    }
+  }
+
+  joinAdminGroup() {
+    if (this.hubConnection.state === signalR.HubConnectionState.Connected) {
+      this.hubConnection.invoke('JoinAdminGroup')
+        .then(() => console.log('✅ Joined admins group'))
+        .catch(err => console.error('Error joining admins group:', err));
     }
   }
 

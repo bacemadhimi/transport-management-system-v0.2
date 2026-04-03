@@ -1,10 +1,16 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Net.Http;
+using System.Net.Http.Json;
 using System.Text.Json;
+using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using TransportManagementSystem.Data;
 using TransportManagementSystem.Entity;
 using TransportManagementSystem.Models;
 
-namespace TransportManagementSystem.Services
+namespace TransportManagementSystem.Service
 {
     public interface IOptimisationService
     {
@@ -91,7 +97,7 @@ namespace TransportManagementSystem.Services
         public async Task<double> CalculateEstimatedTimeAsync(double distanceKm)
         {
             const double averageSpeedKmh = 60d;
-            var timeMinutes = distanceKm / averageSpeedKmh * 60;
+            var timeMinutes = (distanceKm / averageSpeedKmh) * 60;
             return await Task.FromResult(timeMinutes);
         }
 
@@ -154,8 +160,8 @@ namespace TransportManagementSystem.Services
                 {
                     for (int j = i + 1; j < n - 1; j++)
                     {
-                        var a = table.Distances?[order[i - 1]][order[i]] ?? 0 + table.Distances?[order[j]][order[j + 1]] ?? 0;
-                        var b = table.Distances?[order[i - 1]][order[j]] ?? 0 + table.Distances?[order[i]][order[j + 1]] ?? 0;
+                        var a = table.Distances[order[i - 1]][order[i]] + table.Distances[order[j]][order[j + 1]];
+                        var b = table.Distances[order[i - 1]][order[j]] + table.Distances[order[i]][order[j + 1]];
                         if (b + 1e-6 < a)
                         {
                             order.Reverse(i, j - i + 1);
@@ -196,7 +202,7 @@ namespace TransportManagementSystem.Services
                 {
                     var a = allPoints.IndexOf(route[i]);
                     var b = allPoints.IndexOf(route[i + 1]);
-                    if (a >= 0 && b >= 0 && table.Distances != null)
+                    if (a >= 0 && b >= 0)
                     {
                         total += table.Distances[a][b] / 1000d;
                     }

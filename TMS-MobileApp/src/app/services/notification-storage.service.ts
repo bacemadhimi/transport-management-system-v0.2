@@ -8,6 +8,7 @@ export interface TripNotification {
   message: string;
   tripId: number;
   tripReference: string;
+  driverId?: number;
   driverName?: string;
   truckImmatriculation?: string;
   destination?: string;
@@ -147,6 +148,27 @@ export class NotificationStorageService {
   }
 
   /**
+   * Mark all notifications as unread (for testing)
+   */
+  markAllAsUnread(): void {
+    const notifications = this.getAll();
+    let hasChanges = false;
+
+    notifications.forEach(n => {
+      if (n.isRead) {
+        n.isRead = false;
+        hasChanges = true;
+      }
+    });
+
+    if (hasChanges) {
+      this.saveToStorage(notifications);
+      this.updateSubjects(notifications);
+      console.log('✅ All notifications marked as UNREAD');
+    }
+  }
+
+  /**
    * Delete specific notification
    */
   delete(notificationId: number): void {
@@ -167,6 +189,12 @@ export class NotificationStorageService {
         this.notificationsSubject.next(notifications);
         this.updateUnreadCount(notifications);
         console.log('📥 Loaded', notifications.length, 'notifications from storage');
+        
+        // Count unread notifications
+        const unreadCount = notifications.filter(n => !n.isRead).length;
+        console.log('📥 Unread notifications on load:', unreadCount);
+      } else {
+        console.log('📥 No notifications in storage');
       }
     } catch (error) {
       console.error('❌ Error loading notifications from storage:', error);

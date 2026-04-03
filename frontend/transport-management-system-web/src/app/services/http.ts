@@ -676,6 +676,9 @@ updateTrip(tripId: number, data: UpdateTripDto): Observable<any> {
   return this.http.put(`${environment.apiUrl}/api/Trips/${tripId}`, data);
 }
 
+updateTripDestination(tripId: number, destination: {latitude: number, longitude: number, address: string}): Observable<boolean> {
+  return this.http.put<boolean>(`${environment.apiUrl}/api/GPS/trip-destination/${tripId}`, destination);
+}
 
 createTrip(trip: CreateTripDto) {
   return this.http.post<ITrip>(environment.apiUrl + '/api/Trips', trip);
@@ -1445,6 +1448,13 @@ getWeatherByLocation(locationId: number): Observable<any> {
   return this.http.get(`${environment.apiUrl}/api/Weather/location/${locationId}`);
 }
 
+getWeatherByCity(cityName: string): Observable<any> {
+  return this.http.get(`${environment.apiUrl}/api/Weather/city?cityName=${encodeURIComponent(cityName)}`);
+}
+
+getActiveZones(): Observable<any> {
+  return this.http.get(`${environment.apiUrl}/api/GeographicalEntities/active-zones`);
+}
 
 getWeatherForecastByLocation(locationId: number): Observable<any> {
   return this.http.get(`${environment.apiUrl}/api/Weather/location/${locationId}/forecast`);

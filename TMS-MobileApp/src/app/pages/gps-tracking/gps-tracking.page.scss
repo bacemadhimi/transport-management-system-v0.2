@@ -1,115 +1,290 @@
 .gps-tracking-content {
-  --background: #0a0a0a;
-  position: relative;
-  overflow-x: hidden;
+  --background: #f8fafc;
 
-  // Connection Status Badge
-  .connection-status {
-    position: fixed;
-    top: 80px;
-    right: 16px;
-    background: rgba(0, 0, 0, 0.85);
-    backdrop-filter: blur(10px);
-    padding: 8px 16px;
-    border-radius: 30px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-    font-size: 12px;
-    font-weight: 600;
-    z-index: 1000;
-    border: 1px solid rgba(255, 140, 0, 0.3);
-    color: #cccccc;
+  // Header toolbar styling - VISIBLE
+  ion-header {
+    ion-toolbar {
+      --background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      --border-width: 0;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+      min-height: 56px;
 
-    ion-icon {
-      font-size: 12px;
-      color: #ff8c00;
-    }
+      ion-buttons {
+        display: flex;
+        align-items: center;
+        
+        ion-button {
+          --color: white;
+          opacity: 1;
+          margin: 0 4px;
+          min-width: 44px;
+          min-height: 44px;
+          
+          ion-icon {
+            font-size: 24px;
+            color: white !important;
+            pointer-events: none;
+          }
+        }
+      }
 
-    &.connected {
-      color: #ff8c00;
-      border-color: #ff8c00;
-      box-shadow: 0 0 10px rgba(255, 140, 0, 0.3);
-
-      ion-icon {
-        color: #ff8c00;
-        animation: pulse 1.5s infinite;
+      ion-title {
+        font-weight: 600;
+        font-size: 18px;
+        letter-spacing: 0.3px;
+        text-align: center;
       }
     }
   }
 
-  // Map Wrapper
+  .connection-status {
+    position: fixed;
+    top: 100px;
+    right: 16px;
+    background: white;
+    padding: 8px 16px;
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+    font-size: 13px;
+    font-weight: 600;
+    z-index: 1000;
+
+    ion-icon {
+      font-size: 16px;
+      color: #cbd5e1;
+    }
+
+    &.connected {
+      color: #10b981;
+
+      ion-icon {
+        color: #10b981;
+        animation: pulse 2s infinite;
+      }
+    }
+  }
+
+  .admin-info-card {
+    --background: rgba(255, 255, 255, 0.98);
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+    border-radius: 16px;
+    box-shadow: 0 4px 20px rgba(102, 126, 234, 0.2);
+    margin: 0;
+    border: 2px solid rgba(102, 126, 234, 0.1);
+
+    .admin-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+
+      ion-icon {
+        font-size: 28px;
+      }
+
+      h3 {
+        margin: 0;
+        font-size: 18px;
+        font-weight: 700;
+        color: #1e293b;
+      }
+    }
+
+    .admin-stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-bottom: 12px;
+
+      .stat-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 12px;
+        background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
+        border-radius: 12px;
+
+        .stat-value {
+          font-size: 24px;
+          font-weight: 800;
+          color: #667eea;
+          line-height: 1;
+        }
+
+        .stat-label {
+          font-size: 11px;
+          color: #64748b;
+          margin-top: 4px;
+          text-align: center;
+        }
+      }
+    }
+
+    ion-note {
+      display: block;
+      text-align: center;
+      font-size: 12px;
+      color: #94a3b8;
+    }
+  }
+
+  .active-trips-section {
+    margin: 16px;
+
+    ion-card {
+      --background: white;
+      border-radius: 16px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+
+      ion-card-header {
+        padding-bottom: 12px;
+
+        ion-card-title {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          font-size: 18px;
+          font-weight: 700;
+          color: #1e293b;
+
+          ion-icon {
+            font-size: 22px;
+            color: #667eea;
+          }
+        }
+      }
+
+      ion-list {
+        background: transparent;
+      }
+
+      ion-item {
+        --background: transparent;
+        --padding-top: 12px;
+        --padding-bottom: 12px;
+        --border-width: 0 0 1px 0;
+        --border-color: #f1f5f9;
+        border-radius: 8px;
+        margin-bottom: 8px;
+
+        &:last-child {
+          --border-width: 0;
+        }
+
+        ion-icon[slot="start"] {
+          font-size: 24px;
+          margin-right: 12px;
+        }
+
+        h2 {
+          font-size: 16px;
+          font-weight: 700;
+          color: #1e293b;
+          margin-bottom: 4px;
+        }
+
+        p {
+          font-size: 13px;
+          color: #64748b;
+          margin: 2px 0;
+        }
+      }
+
+      .empty-state {
+        text-align: center;
+        padding: 40px 20px;
+
+        .empty-icon {
+          font-size: 64px;
+          color: #cbd5e1;
+          margin-bottom: 16px;
+        }
+
+        p {
+          font-size: 16px;
+          color: #64748b;
+          margin-bottom: 8px;
+        }
+
+        ion-note {
+          font-size: 13px;
+          color: #94a3b8;
+        }
+      }
+    }
+  }
+
   .map-wrapper {
     position: relative;
-    height: 45vh;
-    min-height: 350px;
+    height: 500px;
     width: calc(100% - 32px);
-    margin: 16px auto;
-    border-radius: 24px;
+    margin: 16px;
+    border-radius: 16px;
     overflow: hidden;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
-    border: 1px solid rgba(255, 140, 0, 0.3);
-    background: #1a1a1a;
+    box-shadow: 0 4px 20px rgba(102, 126, 234, 0.2);
+    border: 2px solid rgba(102, 126, 234, 0.1);
+    background: #e5e7eb;
+    display: block;
+    visibility: visible;
+    opacity: 1;
 
     #map {
       width: 100%;
       height: 100%;
-      background: #2a2a2a;
       z-index: 1;
-
-      &.leaflet-container {
-        background: #2a2a2a;
-      }
+      display: block;
+      visibility: visible;
+      opacity: 1;
+      background: #e5e7eb;
     }
 
-    // Overlay Info Card
     .map-overlay {
       position: absolute;
       top: 12px;
       left: 12px;
       right: 12px;
-      z-index: 100;
+      z-index: 1000;
 
       .info-card {
-        --background: rgba(0, 0, 0, 0.85);
-        backdrop-filter: blur(12px);
-        border-radius: 20px;
-        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        --background: rgba(255, 255, 255, 0.98);
+        -webkit-backdrop-filter: blur(10px);
+        backdrop-filter: blur(10px);
+        border-radius: 12px;
+        box-shadow: 0 4px 16px rgba(102, 126, 234, 0.2);
         margin: 0;
-        border: 1px solid rgba(255, 140, 0, 0.3);
+        border: 1px solid rgba(102, 126, 234, 0.1);
 
         ion-card-content {
-          padding: 16px;
+          padding: 12px;
 
           .info-header {
             display: flex;
             justify-content: space-around;
-            margin-bottom: 12px;
+            margin-bottom: 8px;
 
             .info-item {
               display: flex;
               align-items: center;
-              gap: 12px;
+              gap: 8px;
 
               ion-icon {
-                font-size: 28px;
-                color: #ff8c00;
+                font-size: 24px;
               }
 
               .info-label {
                 font-size: 11px;
-                color: #ff8c00;
-                font-weight: 600;
-                text-transform: uppercase;
-                letter-spacing: 0.5px;
-                margin-bottom: 4px;
+                color: #718096;
+                margin-bottom: 2px;
               }
 
               .info-value {
-                font-size: 20px;
+                font-size: 16px;
                 font-weight: 700;
-                color: #ffffff;
+                color: #2d3748;
               }
             }
           }
@@ -118,26 +293,23 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 8px;
-            padding: 10px;
-            background: rgba(255, 140, 0, 0.1);
-            border-radius: 12px;
-            margin-bottom: 8px;
-            border: 1px solid rgba(255, 140, 0, 0.2);
+            gap: 6px;
+            padding: 8px;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
+            border-radius: 8px;
+            margin-bottom: 0;
+            font-size: 13px;
+            color: #4a5568;
 
             ion-icon {
-              font-size: 18px;
-              color: #ff8c00;
+              font-size: 16px;
+              color: #667eea;
             }
 
-            span {
-              font-size: 13px;
-              color: #cccccc;
-
-              strong {
-                color: #ff8c00;
-                font-weight: 700;
-              }
+            strong {
+              font-size: 14px;
+              font-weight: 700;
+              color: #2d3748;
             }
           }
 
@@ -145,13 +317,14 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 6px;
+            gap: 4px;
             font-size: 11px;
-            color: #888888;
+            color: #718096;
+            margin-top: 6px;
 
             ion-icon {
               font-size: 12px;
-              color: #ff8c00;
+              color: #48bb78;
             }
           }
         }
@@ -159,195 +332,28 @@
     }
   }
 
-  // Mission Status Section
-  .mission-status-section {
-    margin: 16px;
-
-    ion-card {
-      --background: rgba(0, 0, 0, 0.85);
-      border-radius: 20px;
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-      border: 1px solid rgba(255, 140, 0, 0.3);
-      margin: 0;
-
-      ion-card-header {
-        padding-bottom: 8px;
-
-        ion-card-title {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          font-size: 18px;
-          font-weight: 700;
-          color: #ff8c00;
-
-          ion-icon {
-            font-size: 22px;
-            color: #ff8c00;
-          }
-        }
-
-        ion-card-subtitle {
-          color: #cccccc;
-          font-size: 14px;
-          font-weight: 500;
-          margin-top: 6px;
-          padding-left: 32px;
-        }
-      }
-
-      ion-card-content {
-        padding-top: 8px;
-
-        .status-indicator {
-          display: flex;
-          align-items: center;
-          gap: 16px;
-          padding: 16px;
-          border-radius: 16px;
-          margin-bottom: 20px;
-
-          &.status-pending {
-            background: rgba(255, 140, 0, 0.15);
-            border: 1px solid rgba(255, 140, 0, 0.3);
-          }
-
-          &.status-accepted {
-            background: rgba(255, 140, 0, 0.15);
-            border: 1px solid rgba(255, 140, 0, 0.3);
-          }
-
-          &.status-loading {
-            background: rgba(255, 140, 0, 0.15);
-            border: 1px solid rgba(255, 140, 0, 0.3);
-          }
-
-          &.status-delivery {
-            background: rgba(255, 140, 0, 0.15);
-            border: 1px solid rgba(255, 140, 0, 0.3);
-          }
-
-          &.status-completed {
-            background: rgba(76, 175, 80, 0.15);
-            border: 1px solid rgba(76, 175, 80, 0.3);
-          }
-
-          .status-icon {
-            font-size: 40px;
-            color: #ff8c00;
-          }
-
-          .status-text {
-            font-size: 16px;
-            font-weight: 600;
-            color: #ffffff;
-          }
-        }
-
-        .status-actions {
-          display: flex;
-          flex-direction: column;
-          gap: 12px;
-
-          .btn-orange {
-            --background: linear-gradient(135deg, #ff8c00, #ffcc00);
-            --background-hover: linear-gradient(135deg, #ff7c00, #ffbc00);
-            --color: #000000;
-            --border-radius: 14px;
-            --padding-top: 14px;
-            --padding-bottom: 14px;
-            font-weight: 700;
-            font-size: 16px;
-            text-transform: none;
-            margin: 0;
-            box-shadow: 0 4px 15px rgba(255, 140, 0, 0.3);
-          }
-
-          .btn-outline-orange {
-            --border-color: #ff8c00;
-            --color: #ff8c00;
-            --border-radius: 14px;
-            --padding-top: 14px;
-            --padding-bottom: 14px;
-            font-weight: 600;
-            font-size: 16px;
-            text-transform: none;
-            margin: 0;
-          }
-
-          .btn-green {
-            --background: linear-gradient(135deg, #4caf50, #45a049);
-            --color: white;
-            --border-radius: 14px;
-            --padding-top: 14px;
-            --padding-bottom: 14px;
-            font-weight: 600;
-            font-size: 16px;
-            text-transform: none;
-            margin: 0;
-            box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
-          }
-
-          .completed-card {
-            --background: linear-gradient(135deg, rgba(76, 175, 80, 0.2), rgba(76, 175, 80, 0.1));
-            border: 1px solid rgba(76, 175, 80, 0.5);
-            border-radius: 20px;
-            margin-top: 8px;
-
-            ion-card-content {
-              text-align: center;
-              padding: 24px;
-
-              .icon-success {
-                font-size: 56px;
-                color: #4caf50;
-                margin-bottom: 12px;
-              }
-
-              h3 {
-                margin: 0;
-                font-size: 20px;
-                font-weight: 700;
-                color: #4caf50;
-              }
-
-              p {
-                margin: 8px 0 0;
-                color: #cccccc;
-                font-size: 14px;
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-
-  // Destination Info Section
   .destination-info {
     margin: 0 16px 16px;
 
     ion-card {
-      --background: rgba(0, 0, 0, 0.85);
-      border-radius: 20px;
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-      border: 1px solid rgba(255, 140, 0, 0.3);
+      --border-radius: 12px;
+      box-shadow: 0 2px 12px rgba(102, 126, 234, 0.1);
       margin: 0;
 
       ion-card-header {
-        padding-bottom: 8px;
+        padding-bottom: 12px;
 
         ion-card-title {
           display: flex;
           align-items: center;
-          gap: 10px;
+          gap: 8px;
           font-size: 16px;
           font-weight: 600;
-          color: #ff8c00;
+          color: #2d3748;
 
           ion-icon {
+            color: #667eea;
             font-size: 20px;
-            color: #ff8c00;
           }
         }
       }
@@ -358,263 +364,141 @@
             display: flex;
             align-items: center;
             gap: 12px;
-            padding: 10px 0;
+            padding: 8px 0;
             font-size: 14px;
-            color: #cccccc;
-            border-bottom: 1px solid rgba(255, 140, 0, 0.2);
-
-            &:last-child {
-              border-bottom: none;
-            }
+            color: #4a5568;
 
             &:first-child {
               font-weight: 600;
-              color: #ffffff;
+              color: #2d3748;
             }
 
             ion-icon {
               font-size: 18px;
-              color: #ff8c00;
-              width: 24px;
-            }
-
-            span {
-              flex: 1;
-              word-break: break-word;
+              color: #667eea;
+              width: 20px;
             }
           }
         }
       }
     }
   }
-}
 
-// ==================== IONIC TOOLBAR OVERRIDE (pour enlever le bleu) ====================
+  .actions-section {
+    padding: 0 16px 32px;
 
-ion-header {
-  ion-toolbar {
-    --background: linear-gradient(135deg, #ff8c00, #ffcc00);
-    --color: #000000;
-    
-    ion-back-button {
-      --color: #000000;
-    }
-    
-    ion-title {
-      --color: #000000;
+    .action-btn {
+      --border-radius: 12px;
+      --padding-top: 14px;
+      --padding-bottom: 14px;
+      font-size: 15px;
       font-weight: 600;
+      margin-bottom: 12px;
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
+
+      ion-icon {
+        margin-right: 8px;
+        font-size: 20px;
+      }
     }
-    
-    ion-button {
-      --color: #000000;
+
+    .completed-card {
+      --background: linear-gradient(135deg, #4CAF50, #45a049);
+      --color: white;
+      margin-top: 16px;
+      border-radius: 16px;
+      box-shadow: 0 4px 20px rgba(76, 175, 80, 0.3);
+      animation: celebrate 0.5s ease-in-out;
     }
   }
 }
 
-// ==================== ANIMATIONS ====================
+// ==================== WHITE TRUCK STYLES ====================
 
-@keyframes pulse {
+// Voice navigation button animations - MODERN PROFESSIONAL
+@keyframes wave-expand {
   0% {
+    width: 100%;
+    height: 100%;
     opacity: 1;
-    transform: scale(1);
-  }
-  50% {
-    opacity: 0.7;
-    transform: scale(1.1);
   }
   100% {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-
-@keyframes fadeIn {
-  from {
+    width: 180%;
+    height: 180%;
     opacity: 0;
-    transform: translateY(20px);
   }
-  to {
-    opacity: 1;
+}
+
+@keyframes dot-bounce {
+  0%, 100% {
     transform: translateY(0);
+    opacity: 1;
+  }
+  50% {
+    transform: translateY(-4px);
+    opacity: 0.6;
   }
 }
 
-// ==================== CUSTOM MARKER STYLES ====================
-
-:host ::ng-deep {
-  .truck-marker {
-    div {
-      animation: pulse 2s infinite;
-      transition: all 0.3s ease;
-      
-      &:hover {
-        transform: scale(1.1);
-      }
-    }
+// GPS indicator pulse animation
+@keyframes gps-pulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+    box-shadow: 0 2px 10px rgba(34, 197, 94, 0.8);
   }
-
-  .destination-marker {
-    div {
-      transition: all 0.3s ease;
-      
-      &:hover {
-        transform: scale(1.1);
-      }
-    }
-  }
-
-  // Leaflet Popup Customization
-  .leaflet-popup-content-wrapper {
-    background: rgba(0, 0, 0, 0.9);
-    border-radius: 12px;
-    border: 1px solid rgba(255, 140, 0, 0.5);
-    color: #ffffff;
-  }
-
-  .leaflet-popup-tip {
-    background: rgba(0, 0, 0, 0.9);
-    border-top: 1px solid rgba(255, 140, 0, 0.5);
-  }
-
-  .leaflet-popup-content {
-    margin: 8px 12px;
-    font-size: 12px;
-    
-    b {
-      color: #ff8c00;
-    }
-  }
-
-  // Leaflet Controls (zoom buttons)
-  .leaflet-control-zoom {
-    border: none;
-    border-radius: 12px;
-    overflow: hidden;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-    
-    a {
-      background: rgba(0, 0, 0, 0.85);
-      color: #ff8c00;
-      border: 1px solid rgba(255, 140, 0, 0.3);
-      
-      &:hover {
-        background: rgba(255, 140, 0, 0.2);
-      }
-    }
-  }
-
-  .leaflet-control-attribution {
-    background: rgba(0, 0, 0, 0.7);
-    color: #888;
-    font-size: 9px;
-    border-radius: 8px;
-    
-    a {
-      color: #ff8c00;
-    }
+  50% {
+    transform: scale(1.2);
+    opacity: 0.4;
+    box-shadow: 0 3px 15px rgba(34, 197, 94, 1);
   }
 }
 
-// ==================== RESPONSIVE ====================
+// White/Gray truck marker
+.truck-marker-white {
+  transition: all 0.2s ease-out;
 
-@media (max-width: 480px) {
-  .gps-tracking-content {
-    .map-wrapper {
-      height: 40vh;
-      min-height: 280px;
-      width: calc(100% - 24px);
-      margin: 12px auto;
+  .truck-marker-container {
+    will-change: transform;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+  }
 
-      .map-overlay {
-        .info-card {
-          ion-card-content {
-            padding: 12px;
-
-            .info-header {
-              .info-item {
-                gap: 8px;
-
-                ion-icon {
-                  font-size: 22px;
-                }
-
-                .info-value {
-                  font-size: 16px;
-                }
-              }
-            }
-
-            .info-footer {
-              padding: 8px;
-              
-              span {
-                font-size: 11px;
-              }
-            }
-          }
-        }
-      }
-    }
-
-    .mission-status-section {
-      margin: 12px;
-
-      ion-card {
-        ion-card-header {
-          ion-card-title {
-            font-size: 16px;
-          }
-        }
-
-        ion-card-content {
-          .status-indicator {
-            padding: 12px;
-            
-            .status-icon {
-              font-size: 32px;
-            }
-            
-            .status-text {
-              font-size: 14px;
-            }
-          }
-        }
-      }
-    }
-
-    .destination-info {
-      margin: 0 12px 12px;
-    }
+  &:hover {
+    filter: drop-shadow(0 5px 12px rgba(0,0,0,0.4)) !important;
+    transform: scale(1.15);
   }
 }
 
-// ==================== SAFE AREA ====================
-
-@supports (padding-bottom: env(safe-area-inset-bottom)) {
-  .gps-tracking-content {
-    padding-bottom: env(safe-area-inset-bottom);
-  }
-}
-.gps-tracking-content {
-  --background: #0a0a0a;
+// Map container - CRITICAL for visibility
+#map {
+  background: #e5e7eb;
+  width: 100%;
   height: 100%;
+  z-index: 1;
+  position: relative;
+}
 
-  .map-wrapper {
-    position: relative;
-    height: 55vh;  // Utiliser vh au lieu de px
-    min-height: 400px;
-    width: 100%;
-    margin: 0;
-    border-radius: 0;
-    overflow: hidden;
-    background: #1a1a1a;
-    border-bottom: 1px solid rgba(255, 140, 0, 0.3);
-    
-    #map {
-      width: 100%;
-      height: 100%;
-      display: block;
-      background: #2a2a2a;
-    }
+// Destination marker
+.destination-marker-pro {
+  transition: transform 0.2s ease;
+
+  &:hover {
+    transform: scale(1.1);
+  }
+}
+
+// Celebration animation
+@keyframes celebrate {
+  0% {
+    transform: scale(0.8);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
   }
 }

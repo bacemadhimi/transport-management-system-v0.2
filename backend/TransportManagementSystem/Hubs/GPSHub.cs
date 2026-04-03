@@ -283,35 +283,37 @@ public class GPSHub : Hub
                 Timestamp = DateTime.UtcNow
             };
 
-            // Send via SignalR to Admins group (GPSHub) - USE TripStatusChanged event!
-            _logger.LogInformation($"🔔 [AcceptTrip] Sending TripStatusChanged to Admins group (GPSHub)...");
-            await Clients.Group("Admins").SendAsync("TripStatusChanged", new
+            // Send via SignalR to Admins group (GPSHub) - USE ReceiveNotification event!
+            _logger.LogInformation($"🔔 [AcceptTrip] Sending ReceiveNotification to Admins group (GPSHub)...");
+            await Clients.Group("admins").SendAsync("ReceiveNotification", new
             {
-                TripId = tripId,
-                TripReference = trip.TripReference,
-                DriverId = trip.DriverId,
-                DriverName = trip.Driver?.Name,
-                TruckImmatriculation = trip.Truck?.Immatriculation,
-                NewStatus = "Accepted",
-                PreviousStatus = "Assigned",
-                Timestamp = DateTime.UtcNow
+                type = "TRIP_UPDATE",
+                tripId = tripId,
+                tripReference = trip.TripReference,
+                driverId = trip.DriverId,
+                driverName = trip.Driver?.Name,
+                title = "Voyage Accepté",
+                message = $"Le chauffeur {trip.Driver?.Name} a accepté le voyage {trip.TripReference}",
+                status = "Accepted",
+                timestamp = DateTime.UtcNow
             });
-            _logger.LogInformation($"✅ [AcceptTrip] TripStatusChanged sent to Admins group (GPSHub)!");
-            
-            // ALSO send via NotificationHub for web admin - USE TripStatusChanged event!
-            _logger.LogInformation($"🔔 [AcceptTrip] Sending TripStatusChanged via NotificationHub...");
-            await Clients.All.SendAsync("TripStatusChanged", new
+            _logger.LogInformation($"✅ [AcceptTrip] ReceiveNotification sent to Admins group (GPSHub)!");
+
+            // ALSO send via NotificationHub for web admin - USE ReceiveNotification event!
+            _logger.LogInformation($"🔔 [AcceptTrip] Sending ReceiveNotification via NotificationHub...");
+            await Clients.All.SendAsync("ReceiveNotification", new
             {
-                TripId = tripId,
-                TripReference = trip.TripReference,
-                DriverId = trip.DriverId,
-                DriverName = trip.Driver?.Name,
-                TruckImmatriculation = trip.Truck?.Immatriculation,
-                NewStatus = "Accepted",
-                PreviousStatus = "Assigned",
-                Timestamp = DateTime.UtcNow
+                type = "TRIP_UPDATE",
+                tripId = tripId,
+                tripReference = trip.TripReference,
+                driverId = trip.DriverId,
+                driverName = trip.Driver?.Name,
+                title = "Voyage Accepté",
+                message = $"Le chauffeur {trip.Driver?.Name} a accepté le voyage {trip.TripReference}",
+                status = "Accepted",
+                timestamp = DateTime.UtcNow
             });
-            _logger.LogInformation($"✅ [AcceptTrip] TripStatusChanged sent via NotificationHub!");
+            _logger.LogInformation($"✅ [AcceptTrip] ReceiveNotification sent via NotificationHub!");
 
             // Also save to database
             var dbNotification = new Notification

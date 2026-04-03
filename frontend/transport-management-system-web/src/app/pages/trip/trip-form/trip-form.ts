@@ -163,6 +163,13 @@ export class TripForm implements OnInit {
   private availabilityCheckTimeout: any;
   geographicalLevels: IGeographicalLevel[] = [];
 
+  // ===== ADDED: Smart Address Search for Final Destination =====
+  globalDestinationAddress = new FormControl('');
+  globalAddressSuggestions: any[] = [];
+  selectedDestinationCoords: {lat: number, lng: number, address: string} | null = null;
+  globalAddressSearchSubject: Subject<string> = new Subject();
+  hoveredSuggestion: any = null;
+
   // Filtres hiérarchiques pour camions
   truckSelectedLevelIds: (number | null)[] = [];
   activeTruckFilterLevel: number = 0;
@@ -340,6 +347,9 @@ selectedDateStats: any = {
 
     // Setup smart address search with debounce
     this.setupAddressSearch();
+    
+    // ===== ADDED: Setup global destination address search (Google Maps style) =====
+    this.setupGlobalAddressSearch();
 
     setTimeout(() => {
       this.captureInitialState();
@@ -771,6 +781,9 @@ private processTruckResponse(response: any, date: Date): void {
   this.availableTrucks = [];
   this.unavailableTrucks = [];
   this.trucks = [];
+
+  // Clear and rebuild truck -> driver map
+  this.truckDriverMap.clear();
 
   if (!response || !response.data) {
     console.warn('❌ No data in response');
@@ -2727,6 +2740,33 @@ private async checkCapacityBeforeAddingOrders(selectedWeight: number): Promise<b
         if (trajectId) {
           message += ' et traject enregistré';
         }
+
+        // ===== ADDED: Save destination coordinates if selected =====
+        if (this.selectedDestinationCoords && response?.data?.id) {
+          const tripId = response.data.id;
+          console.log('📍 Saving destination coordinates for trip:', tripId);
+          
+          this.http.updateTripDestination(tripId, {
+            latitude: this.selectedDestinationCoords.lat,
+            longitude: this.selectedDestinationCoords.lng,
+            address: this.selectedDestinationCoords.address
+          }).subscribe({
+            next: (success: boolean) => {
+              if (success) {
+                console.log('✅ Destination coordinates saved successfully');
+                this.snackBar.open(`✅ Destination enregistrée: ${this.selectedDestinationCoords?.address}`, 'Fermer', {
+                  duration: 3000,
+                  horizontalPosition: 'right',
+                  verticalPosition: 'top'
+                });
+              }
+            },
+            error: (error) => {
+              console.error('❌ Error saving destination coordinates:', error);
+            }
+          });
+        }
+        // ===========================================================
 
         Swal.fire({
           icon: 'success',
@@ -7469,7 +7509,6 @@ private loadMarques(): void {
 
 
 getMarqueName(marqueId?: number): string {
-  console.log(marqueId)
   if (!marqueId) return 'N/A';
   return this.marqueMap.get(marqueId) || 'N/A';
 }
@@ -7957,7 +7996,7 @@ filterTrucksByEntity(): void {
 
 hasMultipleOrderTypes(): boolean {
   const types = new Set<string>();
-  
+
   this.deliveryControls.forEach(group => {
     const orderId = group.get('orderId')?.value;
     if (orderId && orderId !== '') {
@@ -7965,11 +8004,9 @@ hasMultipleOrderTypes(): boolean {
 
       const orderType = order?.type || 'Standard';
       types.add(orderType);
-      console.log(`Order ${orderId} type: "${orderType}" (original: ${order?.type || 'undefined'})`);
     }
   });
-  
-  console.log('Types détectés (avec fallback):', Array.from(types));
+
   return types.size > 1;
 }
 getDistinctOrderTypes(): string[] {
@@ -8692,5 +8729,68 @@ getCustomerCountForEntity(entityId: number): number {
     const clientEntities = client.geographicalEntities || [];
     return clientEntities.some(ce => ce.geographicalEntityId === entityId);
   }).length;
+}
+
+// ===== ADDED: Smart Address Search Methods for Final Destination =====
+
+/**
+ * Setup global destination address search (Google Maps style)
+ */
+private setupGlobalAddressSearch(): void {
+  this.globalAddressSearchSubject.pipe(
+    debounceTime(500), // Wait 500ms after typing stops
+    distinctUntilChanged(),
+    switchMap((query) => {
+      if (query.length < 3) {
+        return of([]);
+      }
+      return this.gpsAddressService.getAddressSuggestions(query);
+    })
+  ).subscribe({
+    next: (suggestions) => {
+      this.globalAddressSuggestions = suggestions;
+    },
+    error: (error) => {
+      console.error('Error fetching global address suggestions:', error);
+      this.globalAddressSuggestions = [];
+    }
+  });
+
+  // Listen to global destination address changes
+  this.globalDestinationAddress.valueChanges.subscribe((value) => {
+    if (value && value.length >= 3) {
+      this.globalAddressSearchSubject.next(value);
+    } else {
+      this.globalAddressSuggestions = [];
+    }
+  });
+}
+
+/**
+ * Select global destination address
+ */
+onGlobalAddressSelected(suggestion: any): void {
+  this.selectedDestinationCoords = {
+    lat: parseFloat(suggestion.lat),
+    lng: parseFloat(suggestion.lon),
+    address: suggestion.display_name || suggestion.address
+  };
+  this.globalDestinationAddress.setValue(suggestion.display_name || suggestion.address);
+  this.globalAddressSuggestions = [];
+  
+  this.snackBar.open(`✅ Destination définie: ${this.selectedDestinationCoords.address}`, 'Fermer', {
+    duration: 3000,
+    horizontalPosition: 'right',
+    verticalPosition: 'top'
+  });
+}
+
+/**
+ * Clear global destination
+ */
+clearGlobalDestination(): void {
+  this.globalDestinationAddress.setValue('');
+  this.selectedDestinationCoords = null;
+  this.globalAddressSuggestions = [];
 }
 }

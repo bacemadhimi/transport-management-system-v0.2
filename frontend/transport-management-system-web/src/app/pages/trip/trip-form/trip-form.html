@@ -1,4 +1,4 @@
-<div class="trip-form-wrapper">
+﻿<div class="trip-form-wrapper">
   <div class="loading-overlay" *ngIf="loading">
     <mat-spinner diameter="50"></mat-spinner>
     <span>Chargement...</span>
@@ -186,7 +186,7 @@
                 <mat-option *ngFor="let location of activeLocations" [value]="location.id">
                   <div class="location-option">
                     <span class="location-name">{{ location.name }}</span>
-                    
+
                   </div>
                 </mat-option>
               </mat-select>
@@ -194,6 +194,62 @@
                 {{ t('ARRIVAL_LOCATION_REQUIRED') }}
               </mat-error>
             </mat-form-field>
+          </div>
+
+          <!-- ===== ADDED: Smart Address Search for Final Destination ===== -->
+          <div class="destination-address-section" style="margin-top: 16px; padding: 16px; background: #f5f5f5; border-radius: 8px;">
+            <div class="destination-header" style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+              <mat-icon style="color: #667eea;">location_on</mat-icon>
+              <h4 style="margin: 0; font-size: 14px; color: #2d3748;">Adresse de destination finale</h4>
+            </div>
+            
+            <mat-form-field appearance="outline" style="width: 100%;" subscriptSizing="dynamic">
+              <mat-label>Rechercher une adresse (géocodage intelligent)</mat-label>
+              <input 
+                matInput 
+                [formControl]="globalDestinationAddress"
+                placeholder="Ex: 123 Avenue Habib Bourguiba, Tunis"
+                autocomplete="off"
+              >
+              <mat-icon matSuffix *ngIf="globalDestinationAddress.value" style="cursor: pointer;" (click)="clearGlobalDestination()">clear</mat-icon>
+              <mat-hint>Recherche intelligente avec suggestions</mat-hint>
+            </mat-form-field>
+
+            <!-- Address Suggestions -->
+            <div *ngIf="globalAddressSuggestions.length > 0" class="address-suggestions" style="border: 1px solid #e0e0e0; border-radius: 8px; max-height: 200px; overflow-y: auto; background: white;">
+              <div 
+                *ngFor="let suggestion of globalAddressSuggestions" 
+                class="suggestion-item"
+                (click)="onGlobalAddressSelected(suggestion)"
+                style="padding: 12px; cursor: pointer; border-bottom: 1px solid #f0f0f0;"
+                [ngStyle]="{'background': hoveredSuggestion === suggestion ? '#f5f5f5' : 'white'}"
+                (mouseenter)="hoveredSuggestion = suggestion"
+                (mouseleave)="hoveredSuggestion = null"
+              >
+                <div style="display: flex; align-items: start; gap: 8px;">
+                  <mat-icon style="font-size: 18px; color: #667eea;">location_on</mat-icon>
+                  <div>
+                    <div style="font-weight: 500; color: #2d3748; font-size: 13px;">{{ suggestion.display_name || suggestion.address }}</div>
+                    <div style="font-size: 11px; color: #718096; margin-top: 4px;">Lat: {{ suggestion.lat }}, Lng: {{ suggestion.lon }}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Selected Destination Display -->
+            <div *ngIf="selectedDestinationCoords" class="selected-destination-info" style="margin-top: 12px; padding: 12px; background: #ecfdf5; border-radius: 8px; border-left: 4px solid #10b981;">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <mat-icon style="color: #10b981;">check_circle</mat-icon>
+                <div>
+                  <div style="font-weight: 600; color: #065f46; font-size: 13px;">Destination définie</div>
+                  <div style="font-size: 12px; color: #047857; margin-top: 4px;">{{ selectedDestinationCoords.address }}</div>
+                  <div style="font-size: 11px; color: #059669; margin-top: 2px;">Lat: {{ selectedDestinationCoords.lat }}, Lng: {{ selectedDestinationCoords.lng }}</div>
+                </div>
+                <button mat-icon-button (click)="clearGlobalDestination()" style="margin-left: auto; color: #dc2626;">
+                  <mat-icon>delete</mat-icon>
+                </button>
+              </div>
+            </div>
           </div>
 
         </div>

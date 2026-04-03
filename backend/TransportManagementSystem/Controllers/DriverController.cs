@@ -89,8 +89,8 @@ public class DriversController : ControllerBase
                     GeographicalEntityName = dg.GeographicalEntity.Name,
                     LevelName = dg.GeographicalEntity.Level?.Name,
                     LevelNumber = dg.GeographicalEntity.Level?.LevelNumber ?? 0,
-                    Latitude = dg.GeographicalEntity.Latitude,
-                    Longitude = dg.GeographicalEntity.Longitude
+                    Latitude = dg.GeographicalEntity.Latitude.HasValue ? (double?)dg.GeographicalEntity.Latitude.Value : null,
+                    Longitude = dg.GeographicalEntity.Longitude.HasValue ? (double?)dg.GeographicalEntity.Longitude.Value : null
                 }).ToList() ?? new List<DriverGeographicalEntityDto>()
         }).ToList();
 
@@ -153,8 +153,8 @@ public class DriversController : ControllerBase
                     GeographicalEntityName = dg.GeographicalEntity.Name,
                     LevelName = dg.GeographicalEntity.Level?.Name,
                     LevelNumber = dg.GeographicalEntity.Level?.LevelNumber ?? 0,
-                    Latitude = dg.GeographicalEntity.Latitude,
-                    Longitude = dg.GeographicalEntity.Longitude
+                    Latitude = dg.GeographicalEntity.Latitude.HasValue ? (double?)dg.GeographicalEntity.Latitude.Value : null,
+                    Longitude = dg.GeographicalEntity.Longitude.HasValue ? (double?)dg.GeographicalEntity.Longitude.Value : null
                 }).ToList() ?? new List<DriverGeographicalEntityDto>()
         };
 
@@ -262,8 +262,8 @@ public class DriversController : ControllerBase
                     GeographicalEntityName = dg.GeographicalEntity.Name,
                     LevelName = dg.GeographicalEntity.Level?.Name,
                     LevelNumber = dg.GeographicalEntity.Level?.LevelNumber ?? 0,
-                    Latitude = dg.GeographicalEntity.Latitude,
-                    Longitude = dg.GeographicalEntity.Longitude
+                    Latitude = dg.GeographicalEntity.Latitude.HasValue ? (double?)dg.GeographicalEntity.Latitude.Value : null,
+                    Longitude = dg.GeographicalEntity.Longitude.HasValue ? (double?)dg.GeographicalEntity.Longitude.Value : null
                 }).ToList() ?? new List<DriverGeographicalEntityDto>()
         };
 
@@ -378,8 +378,8 @@ public class DriversController : ControllerBase
                     GeographicalEntityName = dg.GeographicalEntity.Name,
                     LevelName = dg.GeographicalEntity.Level?.Name,
                     LevelNumber = dg.GeographicalEntity.Level?.LevelNumber ?? 0,
-                    Latitude = dg.GeographicalEntity.Latitude,
-                    Longitude = dg.GeographicalEntity.Longitude
+                    Latitude = dg.GeographicalEntity.Latitude.HasValue ? (double?)dg.GeographicalEntity.Latitude.Value : null,
+                    Longitude = dg.GeographicalEntity.Longitude.HasValue ? (double?)dg.GeographicalEntity.Longitude.Value : null
                 }).ToList() ?? new List<DriverGeographicalEntityDto>()
         };
 
@@ -461,8 +461,8 @@ public class DriversController : ControllerBase
                     GeographicalEntityName = dg.GeographicalEntity.Name,
                     LevelName = dg.GeographicalEntity.Level?.Name,
                     LevelNumber = dg.GeographicalEntity.Level?.LevelNumber ?? 0,
-                    Latitude = dg.GeographicalEntity.Latitude,
-                    Longitude = dg.GeographicalEntity.Longitude
+                    Latitude = dg.GeographicalEntity.Latitude.HasValue ? (double?)dg.GeographicalEntity.Latitude.Value : null,
+                    Longitude = dg.GeographicalEntity.Longitude.HasValue ? (double?)dg.GeographicalEntity.Longitude.Value : null
                 }).ToList() ?? new List<DriverGeographicalEntityDto>()
         }).ToList();
 

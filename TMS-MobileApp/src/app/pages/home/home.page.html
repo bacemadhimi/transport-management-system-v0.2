@@ -32,8 +32,8 @@
         <ion-button fill="clear" class="notification-btn" (click)="openNotifications()">
           <ion-icon name="notifications-outline"></ion-icon>
         </ion-button>
-        <span *ngIf="cancelledTripsCount > 0" class="notification-badge">
-          {{ cancelledTripsCount > 99 ? '99+' : cancelledTripsCount }}
+        <span *ngIf="notificationBadgeCount > 0 || cancelledTripsCount > 0" class="notification-badge">
+          {{ (notificationBadgeCount + cancelledTripsCount) > 99 ? '99+' : (notificationBadgeCount + cancelledTripsCount) }}
         </span>
       </div>
       <ion-button fill="clear" (click)="logout()" class="logout-btn">

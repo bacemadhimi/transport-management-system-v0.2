@@ -90,6 +90,10 @@ builder.Services.AddScoped<INotificationRepository, NotificationRepository>();
 
 // GPS & Geocoding services
 builder.Services.AddScoped<IGeocodingService, GeocodingService>();
+// GPSService disabled - requires PositionGPS repository
+// builder.Services.AddScoped<IGPSService, GPSService>();
+// OptimisationService disabled - requires ResultatOptimisation repository
+// builder.Services.AddScoped<IOptimisationService, OptimisationService>();
 builder.Services.AddHttpClient("Nominatim");
 
 // Notification Hub Service

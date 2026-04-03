@@ -2,6 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { inject, Injectable, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { IAuthToken, ILoginRequest } from '../types/auth';
+import { SignalrGpsService } from './signalr-gps.service';
 
 @Injectable({
   providedIn: 'root'
@@ -9,13 +10,14 @@ import { IAuthToken, ILoginRequest } from '../types/auth';
 export class AuthService {
   http = inject(HttpClient);
   router = inject(Router);
+  private signalrGpsService = inject(SignalrGpsService);
 
- 
+
   isLoggedInSignal = signal<boolean>(false);
   currentUser = signal<IAuthToken | null>(null);
 
   constructor() {
-   
+
     this.checkAuthStatus();
   }
 
@@ -23,10 +25,10 @@ export class AuthService {
     return this.isLoggedInSignal();
   }
 
-  login(credentials: ILoginRequest) {
+  async login(credentials: ILoginRequest): Promise<IAuthToken> {
 
     return new Promise<IAuthToken>((resolve, reject) => {
-      setTimeout(() => {
+      setTimeout(async () => {
         if (credentials.email && credentials.password) {
           const mockToken: IAuthToken = {
             id: 1,
@@ -34,7 +36,7 @@ export class AuthService {
             token: 'mock-jwt-token',
             role: 'driver'
           };
-          this.saveToken(mockToken);
+          await this.saveToken(mockToken);
           resolve(mockToken);
         } else {
           reject({ message: 'Invalid credentials' });
@@ -43,11 +45,23 @@ export class AuthService {
     });
   }
 
-  saveToken(authToken: IAuthToken) {
+  async saveToken(authToken: IAuthToken) {
     localStorage.setItem('authToken', JSON.stringify(authToken));
     localStorage.setItem('token', authToken.token);
     this.currentUser.set(authToken);
     this.isLoggedInSignal.set(true);
+
+    // Connect to SignalR GPS hub if user is a driver
+    if (authToken.role === 'driver' || authToken.role === 'Driver') {
+      console.log('🔌 Driver logged in, connecting to GPS SignalR hub...');
+      try {
+        // Pass driver ID (for drivers, UserId = DriverId)
+        await this.signalrGpsService.connect(authToken.id);
+        console.log('✅ Connected to GPS SignalR hub and joined driver group');
+      } catch (error) {
+        console.error('❌ Error connecting to GPS SignalR hub:', error);
+      }
+    }
   }
 
   logout() {

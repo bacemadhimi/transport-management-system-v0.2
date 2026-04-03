@@ -2,9 +2,8 @@ import { Injectable } from '@angular/core';
 import { HubConnection, HubConnectionBuilder, HubConnectionState } from '@microsoft/signalr';
 import { BehaviorSubject, Observable, Subject } from 'rxjs';
 import { NotificationStorageService, TripNotification } from './notification-storage.service';
-import { environment } from 'src/environments/environment';
 
-const API_URL = environment.apiUrl;
+const API_URL = 'http://localhost:5191';
 
 export interface GPSPosition {
   driverId?: number;
@@ -73,21 +72,15 @@ export class GPSTrackingService {
         console.log('🔔 NEW TRIP ASSIGNED via GPSHub!');
         console.log('🔔 Data:', JSON.stringify(data, null, 2));
         console.log('🔔🔔🔔=================================');
-        
-        // Avoid processing same trip twice
-        if (this.processedTripIds.has(data.tripId)) {
-          console.log('⚠️ Trip already processed:', data.tripId);
-          return;
-        }
-        this.processedTripIds.add(data.tripId);
-        
-        // Store notification
+
+        // Store notification (allow duplicates for now - better to show twice than miss one)
         const stored = this.notificationStorage.addNotification({
           type: 'NEW_TRIP_ASSIGNMENT',
           title: data.title || 'Nouvelle Mission',
           message: data.message || `Trip ${data.tripReference} assigné`,
           tripId: data.tripId,
           tripReference: data.tripReference,
+          driverId: data.driverId,
           driverName: data.driverName,
           truckImmatriculation: data.truckImmatriculation,
           destination: data.destination,
@@ -99,15 +92,20 @@ export class GPSTrackingService {
           estimatedEndDate: data.estimatedEndDate,
           timestamp: data.timestamp || new Date().toISOString()
         });
-        
+
+        console.log('💾 Notification storage result:', stored ? 'SAVED' : 'DUPLICATE');
+
         // Only show native notification if successfully stored (not duplicate)
         if (stored) {
+          console.log('🔔 Showing native notification...');
           this.showNativeNotification(
             '🚛 Nouvelle Mission!',
             `Trip ${data.tripReference} assigné!\nDestination: ${data.destination || 'Non définie'}`
           );
+        } else {
+          console.log('ℹ️ Notification already exists, not showing duplicate alert');
         }
-        
+
         this.notificationSubject.next(data);
       });
 
@@ -192,14 +190,7 @@ export class GPSTrackingService {
         console.log('🔔 NEW TRIP ASSIGNED via NotificationHub!');
         console.log('🔔 Data:', JSON.stringify(data, null, 2));
         console.log('🔔🔔🔔=================================');
-        
-        // Avoid processing same trip twice
-        if (this.processedTripIds.has(data.tripId)) {
-          console.log('⚠️ Trip already processed via NotificationHub:', data.tripId);
-          return;
-        }
-        this.processedTripIds.add(data.tripId);
-        
+
         // Store notification (no native alert from NotificationHub)
         const notification: Omit<TripNotification, 'id' | 'isRead'> = {
           type: 'NEW_TRIP_ASSIGNMENT',
@@ -207,6 +198,7 @@ export class GPSTrackingService {
           message: data.message || `Trip ${data.tripReference} assigné`,
           tripId: data.tripId,
           tripReference: data.tripReference,
+          driverId: data.driverId,
           driverName: data.driverName,
           truckImmatriculation: data.truckImmatriculation,
           destination: data.destination,
@@ -218,7 +210,7 @@ export class GPSTrackingService {
           estimatedEndDate: data.estimatedEndDate,
           timestamp: data.timestamp || new Date().toISOString()
         };
-        
+
         this.notificationStorage.addNotification(notification);
         // No native notification from NotificationHub - only from GPSHub
       });
@@ -382,14 +374,62 @@ export class GPSTrackingService {
    * Accepter un trip
    */
   public async acceptTrip(tripId: number): Promise<void> {
-    if (!this.hubConnection) return;
+    console.log('📢📢📢 acceptTrip called with tripId:', tripId);
+    console.log('📢 HubConnection state:', this.hubConnection?.state);
+    
+    if (!this.hubConnection) {
+      console.error('❌❌❌ hubConnection is NULL!');
+      return;
+    }
+    
+    if (this.hubConnection.state !== HubConnectionState.Connected) {
+      console.error('❌❌❌ hubConnection is NOT connected! State:', this.hubConnection.state);
+      return;
+    }
 
     try {
+      console.log('✅ Invoking AcceptTrip on server via SignalR...');
       await this.hubConnection.invoke('AcceptTrip', tripId);
-      console.log(`✅ Trip ${tripId} accepted`);
+      console.log(`✅✅✅ Trip ${tripId} accepted - SignalR call completed!`);
+      
+      // FALLBACK: Also save directly to database via HTTP to guarantee admin receives notification
+      console.log('🔄 Saving notification to database via HTTP fallback...');
+      await this.saveAcceptanceToDatabase(tripId);
+      
     } catch (error) {
-      console.error('Error accepting trip:', error);
+      console.error('❌❌❌ Error accepting trip:', error);
       throw error;
+    }
+  }
+
+  /**
+   * Fallback: Save acceptance directly to database
+   */
+  private async saveAcceptanceToDatabase(tripId: number): Promise<void> {
+    try {
+      const token = localStorage.getItem('token');
+      console.log('🔄 HTTP Fallback - Calling POST /api/Trips/' + tripId + '/accept');
+      console.log('🔄 Token length:', token ? token.length : 0);
+      
+      const response = await fetch(`http://localhost:5191/api/Trips/${tripId}/accept`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      console.log('🔄 HTTP Fallback - Response status:', response.status);
+      
+      if (response.ok) {
+        const result = await response.json();
+        console.log(`✅✅✅ Fallback: Acceptance saved to database for trip ${tripId}`, result);
+      } else {
+        const errorText = await response.text();
+        console.warn('⚠️ Fallback: Failed to save acceptance to database - Status:', response.status, 'Body:', errorText);
+      }
+    } catch (error) {
+      console.error('❌ Fallback: Error saving acceptance:', error);
     }
   }
 
@@ -397,14 +437,55 @@ export class GPSTrackingService {
    * Refuser un trip
    */
   public async rejectTrip(tripId: number, reason: string, reasonCode: string): Promise<void> {
-    if (!this.hubConnection) return;
+    console.log('📢📢📢 rejectTrip called with tripId:', tripId, 'reason:', reason, 'reasonCode:', reasonCode);
+    console.log('📢 HubConnection state:', this.hubConnection?.state);
+    
+    if (!this.hubConnection) {
+      console.error('❌❌❌ hubConnection is NULL!');
+      return;
+    }
+    
+    if (this.hubConnection.state !== HubConnectionState.Connected) {
+      console.error('❌❌❌ hubConnection is NOT connected! State:', this.hubConnection.state);
+      return;
+    }
 
     try {
+      console.log('✅ Invoking RejectTrip on server via SignalR...');
       await this.hubConnection.invoke('RejectTrip', tripId, reason, reasonCode);
-      console.log(`❌ Trip ${tripId} rejected: ${reason}`);
+      console.log(`✅✅✅ Trip ${tripId} rejected - SignalR call completed!`);
+      
+      // FALLBACK: Also save directly to database via HTTP to guarantee admin receives notification
+      console.log('🔄 Saving rejection to database via HTTP fallback...');
+      await this.saveRejectionToDatabase(tripId, reason, reasonCode);
+      
     } catch (error) {
-      console.error('Error rejecting trip:', error);
+      console.error('❌❌❌ Error rejecting trip:', error);
       throw error;
+    }
+  }
+
+  /**
+   * Fallback: Save rejection directly to database
+   */
+  private async saveRejectionToDatabase(tripId: number, reason: string, reasonCode: string): Promise<void> {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`http://localhost:5191/api/Trips/${tripId}/reject?reason=${encodeURIComponent(reason)}&reasonCode=${encodeURIComponent(reasonCode)}`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (response.ok) {
+        console.log(`✅✅✅ Fallback: Rejection saved to database for trip ${tripId}`);
+      } else {
+        console.warn('⚠️ Fallback: Failed to save rejection to database');
+      }
+    } catch (error) {
+      console.error('❌ Fallback: Error saving rejection:', error);
     }
   }
 

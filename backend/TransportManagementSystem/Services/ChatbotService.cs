@@ -287,12 +287,8 @@ RÉPONSE (en français, professionnel, utile, avec emojis si pertinent) :";
             .Distinct()
             .ToList();
 
-        var knowledge = await _context.KnowledgeBases
-            .Where(k => keywords.Any(kw => k.Content.ToLower().Contains(kw) || 
-                                          k.Keywords.Any(k => k.ToLower().Contains(kw))))
-            .OrderByDescending(k => keywords.Count(kw => k.Content.ToLower().Contains(kw)))
-            .Take(5)
-            .ToListAsync();
+        // Knowledge base search disabled - table doesn't exist
+        var knowledge = new List<Models.KnowledgeBase>();
 
         _logger.LogInformation($"📚 Retrieved {knowledge.Count} knowledge items for query: {query}");
 
@@ -301,7 +297,9 @@ RÉPONSE (en français, professionnel, utile, avec emojis si pertinent) :";
 
     private async Task<DriverInfo> GetDriverInfoAsync(int driverId)
     {
-        var driver = await _context.Drivers.FirstOrDefaultAsync(d => d.Id == driverId);
+        var driver = await _context.Employees
+            .OfType<Driver>()
+            .FirstOrDefaultAsync(d => d.Id == driverId);
 
         if (driver == null)
         {
@@ -312,7 +310,7 @@ RÉPONSE (en français, professionnel, utile, avec emojis si pertinent) :";
         var currentTrip = await _context.Trips
             .Where(t => t.DriverId == driverId)
             .OrderByDescending(t => t.CreatedAt)
-            .FirstOrDefaultAsync(t => t.TripStatus == TripStatus.DeliveryInProgress || 
+            .FirstOrDefaultAsync(t => t.TripStatus == TripStatus.DeliveryInProgress ||
                                       t.TripStatus == TripStatus.LoadingInProgress ||
                                       t.TripStatus == TripStatus.Accepted);
 

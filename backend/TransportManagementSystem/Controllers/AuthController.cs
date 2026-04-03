@@ -95,6 +95,15 @@ namespace TransportManagementSystem.Controllers
         new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
     };
 
+            // Add driverId claim for drivers (UserId = DriverId for drivers)
+            // Check if any role contains "Driver" (case-insensitive)
+            bool isDriver = roles.Any(r => r.Equals("Driver", StringComparison.OrdinalIgnoreCase));
+            if (isDriver)
+            {
+                claims.Add(new Claim("driverId", userId.ToString()));
+                claims.Add(new Claim("userId", userId.ToString()));
+                Console.WriteLine($"✅ Added driverId claim for user {userId}");
+            }
 
             foreach (var role in roles)
             {
