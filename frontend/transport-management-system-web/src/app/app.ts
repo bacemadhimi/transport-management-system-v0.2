@@ -19,6 +19,7 @@ import { Translation } from './services/Translation';
 import { environment } from '../environments/environment';
 import { IGeneralSettings } from './types/general-settings';
 import { LogoService } from './services/logo.service';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-root',
@@ -51,6 +52,7 @@ export class App implements OnInit, OnDestroy {
   signalRService = inject(SignalRService);
   private http = inject(HttpClient);
   private translation = inject(Translation);
+  private router = inject(Router);
   currentPage = 0;
   pageSize = 20;
   totalNotifications = 0;
@@ -146,30 +148,47 @@ export class App implements OnInit, OnDestroy {
     return this.notifications;
   }
 
+// app.ts - Modifiez ngOnInit
+
 ngOnInit() {
+  // 1. D'abord, charger les traductions (accessible sans auth)
   this.httpService.getTranslations(this.currentLanguage).subscribe({
     next: data => this.translation.setTranslations(data),
     error: err => console.error('Error loading translations', err)
   });
 
-  // Vérifier d'abord si le token est valide
-  if (this.authService.isLoggedIn && this.authService.isTokenValid()) {
-    this.authService.loadLoggedInUser();
-    this.initializeSignalR();
-    this.loadCompanyLogo(); 
-    this.loadNotificationsFromDatabase(0, this.pageSize);
-  } else if (this.authService.isLoggedIn) {
-    // Token expiré, déconnecter
-    console.warn('Token expiré au chargement, déconnexion');
+  // 2. Vérifier si l'utilisateur est sur la page de login
+  const currentUrl = this.router?.url || window.location.pathname;
+  const isLoginPage = currentUrl.includes('/login');
+  
+  console.log('📍 Page actuelle:', currentUrl);
+  console.log('🔐 isLoggedIn:', this.authService.isLoggedIn);
+  console.log('🔐 Token valide:', this.authService.isTokenValid?.());
+  
+  // 3. NE RIEN charger si on est sur la page de login ou si non authentifié
+  if (isLoginPage) {
+    console.log('📄 Page de login - aucun chargement de données authentifiées');
+    return;
+  }
+  
+  // 4. Si on n'est pas sur login mais pas authentifié, rediriger
+  if (!this.authService.isLoggedIn || !this.authService.isTokenValid?.()) {
+    console.warn('🔒 Non authentifié et pas sur login, redirection');
     this.authService.logout();
     return;
   }
-
+  
+  // 5. Ici, on est authentifié ET pas sur la page de login
+  console.log('✅ Utilisateur authentifié, chargement des données');
+  this.authService.loadLoggedInUser();
+  this.initializeSignalR();
+  this.loadCompanyLogo(); 
+  this.loadNotificationsFromDatabase(0, this.pageSize);
   this.loadCancelledTrips();
 
+  // 6. Intervalle de rafraîchissement (seulement si authentifié)
   this.refreshNotificationInterval = setInterval(() => {
-    // Vérifier que le token est toujours valide avant de rafraîchir
-    if (this.authService.isLoggedIn && this.authService.isTokenValid()) {
+    if (this.authService.isLoggedIn && this.authService.isTokenValid?.()) {
       if (!this.signalRService['connectionStatusSubject']?.value) {
         this.loadCancelledTrips();
         this.refreshNotifications();
@@ -178,25 +197,31 @@ ngOnInit() {
   }, 30000);
 }
 
-  loadCompanyLogo() {
-    this.httpService.getAllSettingsByType('COMPANY').subscribe({
-      next: (settings: IGeneralSettings[]) => {
-        const companyRecord = settings.find(s => 
-          s.parameterCode === 'COMPANY_LOGO'
-        );
-        
-        if (companyRecord?.logoBase64) {
-          this.companyLogo = companyRecord.logoBase64;
-        } else {
-          this.companyLogo = null;
-        }
-      },
-      error: (error) => {
-        console.error('Error loading company logo:', error);
+loadCompanyLogo() {
+  // Ne pas charger si non authentifié
+  if (!this.authService.isLoggedIn || !this.authService.isTokenValid?.()) {
+    console.log('⏭️ Skip company logo loading - not authenticated');
+    return;
+  }
+  
+  this.httpService.getAllSettingsByType('COMPANY').subscribe({
+    next: (settings: IGeneralSettings[]) => {
+      const companyRecord = settings.find(s => 
+        s.parameterCode === 'COMPANY_LOGO'
+      );
+      
+      if (companyRecord?.logoBase64) {
+        this.companyLogo = companyRecord.logoBase64;
+      } else {
         this.companyLogo = null;
       }
-    });
-  }
+    },
+    error: (error) => {
+      console.error('Error loading company logo:', error);
+      this.companyLogo = null;
+    }
+  });
+}
 
 loadNotificationsFromDatabase(pageIndex: number = 0, pageSize: number = 20) {
   // Vérifier d'abord si l'utilisateur est authentifié avec token valide

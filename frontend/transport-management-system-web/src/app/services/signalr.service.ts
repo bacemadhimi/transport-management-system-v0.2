@@ -69,10 +69,14 @@ export class SignalRService {
     filter((position): position is GPSPosition => position !== null)
   );
 
-  constructor() {
+constructor() {
+  if (this.authService.isLoggedIn && this.authService.isTokenValid?.()) {
     this.initializeConnections();
     this.loadInitialNotifications();
+  } else {
+    console.log('⏭️ SignalR: Not authenticated, skipping connection initialization');
   }
+}
 
   private async loadInitialNotifications() {
     try {
