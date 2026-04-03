@@ -246,4 +246,24 @@ export class Auth {
    getToken(): string | null {
     return localStorage.getItem('token');
   }
+  isTokenValid(): boolean {
+  const token = this.getToken();
+  if (!token) return false;
+  
+  try {
+    return !this.jwtHelper.isTokenExpired(token);
+  } catch {
+    return false;
+  }
+}
+
+
+ensureAuthentication(): boolean {
+  if (!this.isLoggedIn || !this.isTokenValid()) {
+    console.warn('Token invalide ou expiré, redirection vers login');
+    this.logout();
+    return false;
+  }
+  return true;
+}
 }

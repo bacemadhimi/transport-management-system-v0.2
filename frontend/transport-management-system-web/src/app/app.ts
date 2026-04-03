@@ -146,28 +146,37 @@ export class App implements OnInit, OnDestroy {
     return this.notifications;
   }
 
-  ngOnInit() {
-    this.httpService.getTranslations(this.currentLanguage).subscribe({
-      next: data => this.translation.setTranslations(data),
-      error: err => console.error('Error loading translations', err)
-    });
+ngOnInit() {
+  this.httpService.getTranslations(this.currentLanguage).subscribe({
+    next: data => this.translation.setTranslations(data),
+    error: err => console.error('Error loading translations', err)
+  });
 
-    if (this.authService.isLoggedIn) {
-      this.authService.loadLoggedInUser();
-      this.initializeSignalR();
-      this.loadCompanyLogo(); 
-      this.loadNotificationsFromDatabase(0, this.pageSize);
-    }
+  // Vérifier d'abord si le token est valide
+  if (this.authService.isLoggedIn && this.authService.isTokenValid()) {
+    this.authService.loadLoggedInUser();
+    this.initializeSignalR();
+    this.loadCompanyLogo(); 
+    this.loadNotificationsFromDatabase(0, this.pageSize);
+  } else if (this.authService.isLoggedIn) {
+    // Token expiré, déconnecter
+    console.warn('Token expiré au chargement, déconnexion');
+    this.authService.logout();
+    return;
+  }
 
-    this.loadCancelledTrips();
+  this.loadCancelledTrips();
 
-    this.refreshNotificationInterval = setInterval(() => {
-      if (!this.signalRService['connectionStatusSubject'].value) {
+  this.refreshNotificationInterval = setInterval(() => {
+    // Vérifier que le token est toujours valide avant de rafraîchir
+    if (this.authService.isLoggedIn && this.authService.isTokenValid()) {
+      if (!this.signalRService['connectionStatusSubject']?.value) {
         this.loadCancelledTrips();
         this.refreshNotifications();
       }
-    }, 30000);
-  }
+    }
+  }, 30000);
+}
 
   loadCompanyLogo() {
     this.httpService.getAllSettingsByType('COMPANY').subscribe({
@@ -189,50 +198,67 @@ export class App implements OnInit, OnDestroy {
     });
   }
 
-  loadNotificationsFromDatabase(pageIndex: number = 0, pageSize: number = 20) {
-    this.http.get(`${environment.apiUrl}/api/notifications?pageIndex=${pageIndex}&pageSize=${pageSize}`).subscribe({
-      next: (response: any) => {
-        if (response.success) {
-          const allDbNotifications = (response.data.notifications as any[]).map((n: any) => ({
-            ...n,
-            isRead: n.isRead === true || n.isRead === 1 || n.isRead === 'true',
-            timestamp: new Date(n.timestamp)
-          })) as TripNotification[];
+loadNotificationsFromDatabase(pageIndex: number = 0, pageSize: number = 20) {
+  // Vérifier d'abord si l'utilisateur est authentifié avec token valide
+  if (!this.authService.isLoggedIn || !this.authService.isTokenValid()) {
+    console.warn('⚠️ Token invalide ou expiré, impossible de charger les notifications');
+    this.notifications = [];
+    this.allNotifications = [];
+    this.unreadNotificationsCount = 0;
+    return;
+  }
 
-          this.allNotifications = allDbNotifications;
-          const cancelledNotifications = allDbNotifications.filter((n: TripNotification) =>
-            n.type === 'TRIP_CANCELLED'
-          );
+  const token = this.authService.getToken();
+  const headers = { 'Authorization': `Bearer ${token}` };
+  
+  this.http.get(`${environment.apiUrl}/api/notifications?pageIndex=${pageIndex}&pageSize=${pageSize}`, { headers }).subscribe({
+    next: (response: any) => {
+      if (response?.success) {
+        const allDbNotifications = (response.data.notifications as any[]).map((n: any) => ({
+          ...n,
+          isRead: n.isRead === true || n.isRead === 1 || n.isRead === 'true',
+          timestamp: new Date(n.timestamp)
+        })) as TripNotification[];
 
-          if (pageIndex === 0) {
-            this.notifications = cancelledNotifications;
-          } else {
-            const existingIds = new Set(this.notifications.map((n: TripNotification) => n.id));
-            const uniqueNewCancelled = cancelledNotifications.filter((n: TripNotification) => !existingIds.has(n.id));
-            this.notifications = [...this.notifications, ...uniqueNewCancelled];
-          }
+        this.allNotifications = allDbNotifications;
+        const cancelledNotifications = allDbNotifications.filter((n: TripNotification) =>
+          n.type === 'TRIP_CANCELLED'
+        );
 
-          this.unreadNotificationsCount = this.notifications.filter((n: TripNotification) => !n.isRead).length;
-          this.totalNotifications = response.data.totalCount;
-          this.hasMoreNotifications = this.notifications.length < this.totalNotifications;
-
-          console.log('📚 DB Load - Cancelled only:', this.notifications.length);
-          console.log('📚 Unread count:', this.unreadNotificationsCount);
+        if (pageIndex === 0) {
+          this.notifications = cancelledNotifications;
         } else {
-          console.warn('⚠️ Invalid notification response:', response);
-          this.notifications = [];
-          this.allNotifications = [];
-          this.unreadNotificationsCount = 0;
+          const existingIds = new Set(this.notifications.map((n: TripNotification) => n.id));
+          const uniqueNewCancelled = cancelledNotifications.filter((n: TripNotification) => !existingIds.has(n.id));
+          this.notifications = [...this.notifications, ...uniqueNewCancelled];
         }
-      },
-      error: (err) => {
+
+        this.unreadNotificationsCount = this.notifications.filter((n: TripNotification) => !n.isRead).length;
+        this.totalNotifications = response.data.totalCount;
+        this.hasMoreNotifications = this.notifications.length < this.totalNotifications;
+
+        console.log('📚 DB Load - Cancelled only:', this.notifications.length);
+        console.log('📚 Unread count:', this.unreadNotificationsCount);
+      } else {
+        console.warn('⚠️ Invalid notification response:', response);
+        this.notifications = [];
+        this.allNotifications = [];
+        this.unreadNotificationsCount = 0;
+      }
+    },
+    error: (err) => {
+      if (err.status === 401) {
+        console.error('❌ Session expirée, veuillez vous reconnecter');
+        this.authService.logout();
+      } else {
         console.error('❌ Error loading notifications from database:', err);
         this.notifications = [];
         this.allNotifications = [];
         this.unreadNotificationsCount = 0;
       }
-    });
-  }
+    }
+  });
+}
 
   loadMoreNotifications() {
     this.currentPage++;
@@ -276,12 +302,12 @@ export class App implements OnInit, OnDestroy {
   }
 
   loadCancelledTrips() {
-    if (!this.authService.isLoggedIn) {
-      this.cancelledTripsCount = 0;
-      this.cancelledTrips = [];
-      return;
-    }
-
+     if (!this.authService.isLoggedIn || !this.authService.isTokenValid()) {
+    this.cancelledTripsCount = 0;
+    this.cancelledTrips = [];
+    return;
+  }
+  
     this.httpService.getTripsList({ pageIndex: 0, pageSize: 1000 }).subscribe({
       next: (res: any) => {
         const tripsData = res?.data?.data || res?.data || res || [];
