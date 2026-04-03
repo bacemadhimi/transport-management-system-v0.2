@@ -88,7 +88,10 @@ export class NotificationsPage implements OnInit, OnDestroy {
         tripId: notification.tripId,
         tripReference: notification.tripReference,
         destination: notification.destination || '',
-        customerName: notification.customerName || ''
+        customerName: notification.customerName || '',
+        // Pass destination coordinates if available
+        destinationLat: notification.additionalData?.destinationLatitude || '',
+        destinationLng: notification.additionalData?.destinationLongitude || ''
       }
     });
   }

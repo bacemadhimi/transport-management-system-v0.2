@@ -128,44 +128,240 @@ export class SignalRService {
     this.hubConnection
       .start()
       .then(() => {
-        console.log('SignalR connection established');
+        console.log('✅✅✅=================================');
+        console.log('✅ SignalR connection established');
+        console.log('✅ Hub URL:', `${environment.apiUrl}/gpshub`);
+        console.log('✅ Connection ID:', this.hubConnection.connectionId);
+        console.log('✅✅✅=================================');
+
         this.connectionStatusSubject.next(true);
+
+        // Join Admins group explicitly for real-time notifications
+        this.joinAdminGroup();
+
         this.joinAllTripsGroup();
-        this.joinAdminGroup(); // Join admins group for real-time notifications
+
+        // CRITICAL: Load notifications AFTER connection is established
+        setTimeout(() => {
+          console.log('🔄 Loading notifications after SignalR connection...');
+          this.loadInitialNotifications();
+          // Start polling as fallback
+          this.startNotificationPolling();
+        }, 1000);
       })
       .catch(err => {
-        console.error('Error establishing SignalR connection: ', err);
+        console.error('❌❌❌=================================');
+        console.error('❌ Error establishing SignalR connection: ', err);
+        console.error('❌ Hub URL:', `${environment.apiUrl}/gpshub`);
+        console.error('❌❌❌=================================');
         this.connectionStatusSubject.next(false);
 
         setTimeout(() => this.startConnection(), 5000);
       });
 
     this.hubConnection.onreconnecting(() => {
-      console.log('SignalR reconnecting...');
+      console.log('🔄 SignalR reconnecting...');
       this.connectionStatusSubject.next(false);
     });
 
     this.hubConnection.onreconnected(() => {
-      console.log('SignalR reconnected');
+      console.log('✅ SignalR reconnected');
       this.connectionStatusSubject.next(true);
+      this.joinAdminGroup();
       this.joinAllTripsGroup();
-      this.joinAdminGroup(); // Rejoin admins group
       this.loadInitialNotifications();
     });
 
     this.hubConnection.onclose(() => {
-      console.log('SignalR connection closed');
+      console.log('❌ SignalR connection closed');
       this.connectionStatusSubject.next(false);
     });
   }
 
   private registerHandlers() {
 
-    this.hubConnection.on('ReceiveNotification', (notification: TripNotification) => {
-    console.log('🔔 Received new notification:', notification);
+    // Handler for New Trip Assignment - REAL TIME NOTIFICATION TO DRIVER
+    this.hubConnection.on('NewTripAssigned', (data: any) => {
+      console.log('🚛🚛🚛=================================');
+      console.log('🚛 NEW TRIP ASSIGNED - REAL TIME SIGNALR!');
+      console.log('🚛 Data:', JSON.stringify(data, null, 2));
+      console.log('🚛🚛🚛=================================');
 
-    this.addNotification(notification, 20);
-  });
+      const notification: TripNotification = {
+        id: Date.now(),
+        type: 'NEW_TRIP_ASSIGNMENT',
+        title: '🚛 Nouvelle Mission Assignée',
+        message: `Trip ${data.tripReference || ''} assigné - Destination: ${data.destination || 'Non définie'}`,
+        timestamp: new Date(data.timestamp) || new Date(),
+        tripId: data.tripId,
+        tripReference: data.tripReference,
+        driverName: data.driverName,
+        truckImmatriculation: data.truckImmatriculation,
+        newStatus: 'Planifié',
+        isRead: false,
+        additionalData: data
+      };
+
+      this.addNotification(notification, 20);
+      this.showBrowserNotification(notification);
+
+      // Reload notifications from DB to ensure sync
+      setTimeout(() => this.loadInitialNotifications(), 500);
+    });
+
+    this.hubConnection.on('ReceiveNotification', (notification: TripNotification) => {
+      console.log('🔔 Received new notification:', notification);
+      this.addNotification(notification, 20);
+    });
+
+    // Handler for Trip Status Changed (Accepted/Refused) - REAL TIME
+    this.hubConnection.on('TripStatusChanged', (data: any) => {
+      console.log('🔄🔄🔄=================================');
+      console.log('🔄 Trip Status Changed - REAL TIME SIGNALR!');
+      console.log('🔄 Data:', JSON.stringify(data, null, 2));
+      console.log('🔄🔄🔄=================================');
+
+      // Determine notification type based on new status
+      let type, title, message, newStatus;
+
+      if (data.NewStatus === 'Accepted' || data.status === 'Accepted') {
+        type = 'TRIP_ACCEPTED';
+        title = '✅ Mission Acceptée';
+        message = `Le chauffeur ${data.DriverName || 'inconnu'} a accepté la mission ${data.TripReference || ''}`;
+        newStatus = 'Acceptée';
+      } else if (data.NewStatus === 'Refused' || data.status === 'Refused') {
+        type = 'TRIP_REJECTED';
+        title = '❌ Mission Refusée';
+        message = `Le chauffeur ${data.DriverName || 'inconnu'} a refusé la mission ${data.TripReference || ''}. Raison: ${data.Reason || 'Non spécifiée'}`;
+        newStatus = 'Refusée';
+      } else if (data.NewStatus === 'Completed' || data.status === 'Completed') {
+        type = 'STATUS_CHANGE';
+        title = '✅ Mission Terminée';
+        message = `Mission ${data.TripReference || ''} terminée`;
+        newStatus = 'Terminée';
+      } else if (data.NewStatus === 'InDelivery' || data.status === 'InDelivery') {
+        type = 'STATUS_CHANGE';
+        title = '🚚 En livraison';
+        message = `Mission ${data.TripReference || ''} en cours de livraison`;
+        newStatus = 'En livraison';
+      } else if (data.NewStatus === 'Loading' || data.status === 'Loading') {
+        type = 'STATUS_CHANGE';
+        title = '📦 Chargement';
+        message = `Mission ${data.TripReference || ''} en chargement`;
+        newStatus = 'Chargement';
+      } else {
+        type = 'TRIP_STATUS_CHANGED';
+        title = '🔄 Status changé';
+        message = `Mission ${data.TripReference || ''} - Nouveau status: ${data.NewStatus || data.status}`;
+        newStatus = data.NewStatus || data.status;
+      }
+
+      const notification: TripNotification = {
+        id: Date.now() + Math.random(), // ✅ Unique ID
+        type: type as any,
+        title: title,
+        message: message,
+        timestamp: new Date(),
+        tripId: data.TripId || data.tripId,
+        tripReference: data.TripReference || data.tripReference,
+        driverName: data.DriverName || data.driverName,
+        truckImmatriculation: data.TruckImmatriculation || data.truckImmatriculation,
+        newStatus: newStatus,
+        isRead: false,
+        additionalData: data
+      };
+
+      console.log('📬 Created notification:', notification);
+      this.addNotification(notification, 20);
+      this.showBrowserNotification(notification);
+    });
+
+    // Handler for Trip Accepted by driver - REAL TIME
+    this.hubConnection.on('TripAccepted', (data: any) => {
+      console.log('✅✅✅=================================');
+      console.log('✅ Trip Accepted by driver - REAL TIME SIGNALR!');
+      console.log('✅ Data:', JSON.stringify(data, null, 2));
+      console.log('✅✅✅=================================');
+
+      const notification: TripNotification = {
+        id: Date.now(),
+        type: 'TRIP_ACCEPTED',
+        title: '✅ Mission Acceptée',
+        message: `Le chauffeur ${data.DriverName || 'inconnu'} a accepté la mission ${data.TripReference || ''}`,
+        timestamp: new Date(),
+        tripId: data.TripId,
+        tripReference: data.TripReference,
+        driverName: data.DriverName,
+        truckImmatriculation: data.TruckImmatriculation,
+        newStatus: 'Acceptée',
+        isRead: false,
+        additionalData: data
+      };
+
+      this.addNotification(notification, 20);
+      this.showBrowserNotification(notification);
+
+      // Reload notifications from DB to ensure sync
+      setTimeout(() => this.loadInitialNotifications(), 500);
+    });
+
+    // Handler for Trip Rejected by driver - REAL TIME
+    this.hubConnection.on('TripRejected', (data: any) => {
+      console.log('❌❌❌=================================');
+      console.log('❌ Trip Rejected by driver - REAL TIME SIGNALR!');
+      console.log('❌ Data:', JSON.stringify(data, null, 2));
+      console.log('❌❌❌=================================');
+
+      const notification: TripNotification = {
+        id: Date.now(),
+        type: 'TRIP_REJECTED',
+        title: '❌ Mission Refusée',
+        message: `Le chauffeur ${data.DriverName || 'inconnu'} a refusé la mission ${data.TripReference || ''}. Raison: ${data.Reason || 'Non spécifiée'}`,
+        timestamp: new Date(),
+        tripId: data.TripId,
+        tripReference: data.TripReference,
+        driverName: data.DriverName,
+        truckImmatriculation: data.TruckImmatriculation,
+        newStatus: 'Refusée',
+        isRead: false,
+        additionalData: data
+      };
+
+      this.addNotification(notification, 20);
+      this.showBrowserNotification(notification);
+
+      // Reload notifications from DB to ensure sync
+      setTimeout(() => this.loadInitialNotifications(), 500);
+    });
+
+    // Handler for Trip Cancelled (alternative event name for compatibility)
+    this.hubConnection.on('TripCancelled', (data: any) => {
+      console.log('❌❌❌=================================');
+      console.log('❌ Trip Cancelled received - REAL TIME SIGNALR!');
+      console.log('❌ Data:', JSON.stringify(data, null, 2));
+      console.log('❌❌❌=================================');
+
+      const notification: TripNotification = {
+        id: Date.now(),
+        type: 'TRIP_CANCELLED',
+        title: '❌ Mission Annulée/Refusée',
+        message: `Le chauffeur ${data.DriverName || 'inconnu'} a annulé/refusé la mission ${data.TripReference || ''}`,
+        timestamp: new Date(),
+        tripId: data.TripId,
+        tripReference: data.TripReference,
+        driverName: data.DriverName,
+        truckImmatriculation: data.TruckImmatriculation,
+        newStatus: 'Annulée',
+        isRead: false,
+        additionalData: data
+      };
+
+      this.addNotification(notification, 20);
+      this.showBrowserNotification(notification);
+
+      // Reload notifications from DB to ensure sync
+      setTimeout(() => this.loadInitialNotifications(), 500);
+    });
 
 
     this.hubConnection.on('UpdateUnreadCount', (count: number) => {
@@ -187,6 +383,8 @@ export class SignalRService {
       console.log('📍 Received GPS position:', position);
       this.positionSubject.next(position);
     });
+
+    console.log('✅ All SignalR handlers registered successfully');
   }
 
 
@@ -345,6 +543,35 @@ private addNotification(notification: TripNotification, pageSize: number = 20) {
 
   getUnreadCount(): number {
     return this.unreadCountSubject.value;
+  }
+
+  /**
+   * Polling de secours - Vérifie les nouvelles notifications toutes les 5 secondes
+   */
+  private notificationPollingInterval: any = null;
+
+  public startNotificationPolling(): void {
+    if (this.notificationPollingInterval) {
+      clearInterval(this.notificationPollingInterval);
+    }
+
+    console.log('🔄 Starting notification polling (every 5 seconds)...');
+
+    // Poll immediately
+    this.loadInitialNotifications();
+
+    // Then poll every 5 seconds
+    this.notificationPollingInterval = setInterval(() => {
+      this.loadInitialNotifications();
+    }, 5000);
+  }
+
+  public stopNotificationPolling(): void {
+    if (this.notificationPollingInterval) {
+      clearInterval(this.notificationPollingInterval);
+      this.notificationPollingInterval = null;
+      console.log('⏸️ Notification polling stopped');
+    }
   }
 
 

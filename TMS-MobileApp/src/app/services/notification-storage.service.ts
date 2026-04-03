@@ -20,6 +20,7 @@ export interface TripNotification {
   estimatedEndDate?: string;
   timestamp: string;
   isRead: boolean;
+  additionalData?: any;
 }
 
 @Injectable({

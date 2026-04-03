@@ -68,12 +68,35 @@ export class GPSTrackingPage implements OnInit, OnDestroy {
     this.tripReference = this.route.snapshot.queryParamMap.get('tripReference') || '';
     this.destinationAddress = this.route.snapshot.queryParamMap.get('destination') || '';
 
+    // Read destination coordinates from query params (if available)
+    const destLat = this.route.snapshot.queryParamMap.get('destinationLat');
+    const destLng = this.route.snapshot.queryParamMap.get('destinationLng');
+
     console.log('🗺️ GPS Tracking - Trip ID:', this.tripId);
     console.log('🏁 Destination from params:', this.destinationAddress);
+    console.log('📍 Destination coords from params:', destLat, destLng);
 
-    // If destination is empty, try to fetch it from the trip details
-    if (!this.destinationAddress || this.destinationAddress.trim() === '') {
-      console.log('⚠️ No destination in params, will fetch from trip details');
+    // If destination coordinates are provided, use them directly
+    if (destLat && destLng) {
+      const lat = parseFloat(destLat);
+      const lng = parseFloat(destLng);
+      if (!isNaN(lat) && !isNaN(lng)) {
+        console.log('✅ Using destination coordinates from notification:', lat, lng);
+        this.destination = {
+          lat: lat,
+          lng: lng,
+          address: this.destinationAddress || 'Destination'
+        };
+      }
+    }
+    // If we have destination address but no coordinates, geocode it immediately
+    else if (this.destinationAddress && this.destinationAddress.trim() !== '' && this.destinationAddress !== 'Non définie') {
+      console.log('📍 Geocoding destination from address:', this.destinationAddress);
+      this.geocodeAddress(this.destinationAddress);
+    }
+    // If destination is still empty, try to fetch it from the trip details
+    else {
+      console.log('⚠️ No destination coords in params, will fetch from trip details');
       this.fetchTripDetails();
     }
 

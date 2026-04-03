@@ -2728,7 +2728,11 @@ private async checkCapacityBeforeAddingOrders(selectedWeight: number): Promise<b
       driverId: parseInt(formValue.driverId),
       convoyeurId: formValue.convoyeurId ? parseInt(formValue.convoyeurId) : null,
       deliveries: deliveries,
-      trajectId: trajectId
+      trajectId: trajectId,
+      // Send destination coordinates from web form address search
+      destinationLatitude: this.selectedDestinationCoords?.lat || null,
+      destinationLongitude: this.selectedDestinationCoords?.lng || null,
+      destinationAddress: this.selectedDestinationCoords?.address || null
     };
 
     this.http.createTrip(createTripData).subscribe({
@@ -2741,30 +2745,41 @@ private async checkCapacityBeforeAddingOrders(selectedWeight: number): Promise<b
           message += ' et traject enregistré';
         }
 
-        // ===== ADDED: Save destination coordinates if selected =====
-        if (this.selectedDestinationCoords && response?.data?.id) {
+        // ===== ADDED: Save destination coordinates =====
+        if (response?.data?.id) {
           const tripId = response.data.id;
-          console.log('📍 Saving destination coordinates for trip:', tripId);
           
-          this.http.updateTripDestination(tripId, {
-            latitude: this.selectedDestinationCoords.lat,
-            longitude: this.selectedDestinationCoords.lng,
-            address: this.selectedDestinationCoords.address
-          }).subscribe({
-            next: (success: boolean) => {
-              if (success) {
-                console.log('✅ Destination coordinates saved successfully');
-                this.snackBar.open(`✅ Destination enregistrée: ${this.selectedDestinationCoords?.address}`, 'Fermer', {
-                  duration: 3000,
-                  horizontalPosition: 'right',
-                  verticalPosition: 'top'
-                });
+          // Priority 1: Use manually selected destination coords (from map click)
+          if (this.selectedDestinationCoords) {
+            console.log('📍 Saving manually selected destination coordinates for trip:', tripId);
+            this.saveDestinationCoordinates(tripId, this.selectedDestinationCoords);
+          } 
+          // Priority 2: Use end location from dropdown
+          else {
+            const endLocationId = this.tripForm.get('endLocationId')?.value;
+            if (endLocationId) {
+              const endLocation = this.locations.find(l => l.id === endLocationId);
+              if (endLocation) {
+                console.log('📍 Getting destination from end location dropdown:', endLocation.name);
+                
+                // If location has coordinates, use them
+                if (endLocation.latitude && endLocation.longitude) {
+                  const coords = {
+                    lat: endLocation.latitude,
+                    lng: endLocation.longitude,
+                    address: endLocation.address || endLocation.name
+                  };
+                  console.log('✅ Using location coordinates:', coords);
+                  this.saveDestinationCoordinates(tripId, coords);
+                } 
+                // Otherwise geocode the location name
+                else if (endLocation.name) {
+                  console.log('🔍 Geocoding location:', endLocation.name);
+                  this.geocodeAndSaveDestination(tripId, endLocation.name);
+                }
               }
-            },
-            error: (error) => {
-              console.error('❌ Error saving destination coordinates:', error);
             }
-          });
+          }
         }
         // ===========================================================
 
@@ -8792,5 +8807,59 @@ clearGlobalDestination(): void {
   this.globalDestinationAddress.setValue('');
   this.selectedDestinationCoords = null;
   this.globalAddressSuggestions = [];
+}
+
+/**
+ * Save destination coordinates to the trip
+ */
+private saveDestinationCoordinates(tripId: number, coords: {lat: number, lng: number, address: string}): void {
+  console.log('📍 Saving destination coordinates for trip:', tripId, coords);
+  
+  this.http.updateTripDestination(tripId, {
+    latitude: coords.lat,
+    longitude: coords.lng,
+    address: coords.address
+  }).subscribe({
+    next: (success: boolean) => {
+      if (success) {
+        console.log('✅ Destination coordinates saved successfully');
+        this.snackBar.open(`✅ Destination enregistrée: ${coords.address}`, 'Fermer', {
+          duration: 3000,
+          horizontalPosition: 'right',
+          verticalPosition: 'top'
+        });
+      }
+    },
+    error: (error) => {
+      console.error('❌ Error saving destination coordinates:', error);
+    }
+  });
+}
+
+/**
+ * Geocode address and save as destination
+ */
+private geocodeAndSaveDestination(tripId: number, address: string): void {
+  console.log('🔍 Geocoding address:', address);
+  
+  // Use Nominatim for geocoding
+  fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address + ', Tunisia')}&limit=1`)
+    .then(response => response.json())
+    .then(results => {
+      if (results && results.length > 0) {
+        const coords = {
+          lat: parseFloat(results[0].lat),
+          lng: parseFloat(results[0].lon),
+          address: results[0].display_name || address
+        };
+        console.log('✅ Geocoding result:', coords);
+        this.saveDestinationCoordinates(tripId, coords);
+      } else {
+        console.warn('⚠️ No geocoding results for:', address);
+      }
+    })
+    .catch(error => {
+      console.error('❌ Error geocoding address:', error);
+    });
 }
 }

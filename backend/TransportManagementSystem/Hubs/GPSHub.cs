@@ -299,6 +299,19 @@ public class GPSHub : Hub
             });
             _logger.LogInformation($"✅ [AcceptTrip] ReceiveNotification sent to Admins group (GPSHub)!");
 
+            // ALSO send TripAccepted event for web compatibility (like sauvegarde-gps branch)
+            await Clients.All.SendAsync("TripAccepted", new
+            {
+                TripId = tripId,
+                TripReference = trip.TripReference,
+                DriverId = trip.DriverId,
+                DriverName = trip.Driver?.Name,
+                TruckImmatriculation = trip.Truck?.Immatriculation,
+                Status = "Accepted",
+                Timestamp = DateTime.UtcNow
+            });
+            _logger.LogInformation($"✅ [AcceptTrip] TripAccepted sent to all clients!");
+
             // ALSO send via NotificationHub for web admin - USE ReceiveNotification event!
             _logger.LogInformation($"🔔 [AcceptTrip] Sending ReceiveNotification via NotificationHub...");
             await Clients.All.SendAsync("ReceiveNotification", new
@@ -418,7 +431,22 @@ public class GPSHub : Hub
                 Timestamp = DateTime.UtcNow
             });
             _logger.LogInformation($"✅ [RejectTrip] TripStatusChanged sent to Admins group (GPSHub)!");
-            
+
+            // ALSO send TripRejected event for web compatibility (like sauvegarde-gps branch)
+            await Clients.All.SendAsync("TripRejected", new
+            {
+                TripId = tripId,
+                TripReference = trip.TripReference,
+                DriverId = trip.DriverId,
+                DriverName = trip.Driver?.Name,
+                TruckImmatriculation = trip.Truck?.Immatriculation,
+                Reason = reason,
+                ReasonCode = reasonCode,
+                Status = "Refused",
+                Timestamp = DateTime.UtcNow
+            });
+            _logger.LogInformation($"✅ [RejectTrip] TripRejected sent to all clients!");
+
             // ALSO send via NotificationHub for web admin - USE TripStatusChanged event!
             _logger.LogInformation($"🔔 [RejectTrip] Sending TripStatusChanged via NotificationHub...");
             await Clients.All.SendAsync("TripStatusChanged", new

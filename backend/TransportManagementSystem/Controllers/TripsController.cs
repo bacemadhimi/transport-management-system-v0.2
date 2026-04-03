@@ -409,6 +409,9 @@ public class TripsController : ControllerBase
             EstimatedStartDate = model.EstimatedStartDate,
             EstimatedEndDate = model.EstimatedEndDate,
             TrajectId = model.TrajectId,
+            // Save destination coordinates for GPS tracking (from web form address search)
+            EndLatitude = model.DestinationLatitude,
+            EndLongitude = model.DestinationLongitude,
         };
 
         await tripRepository.AddAsync(trip);
@@ -459,9 +462,15 @@ public class TripsController : ControllerBase
         {
             try
             {
-                // Get delivery details for notification
-                var lastDelivery = trip.Deliveries?.LastOrDefault();
-                var destination = lastDelivery?.DeliveryAddress ?? "Non définie";
+                // Get destination from model (web form address search) or from trip coordinates
+                var destination = model.DestinationAddress;
+                
+                // If no destination address from model, try to get from last delivery
+                if (string.IsNullOrEmpty(destination))
+                {
+                    var lastDelivery = trip.Deliveries?.LastOrDefault();
+                    destination = lastDelivery?.DeliveryAddress ?? "Non définie";
+                }
 
                 // Now that we have driver.user_id properly set, use it for notifications
                 // For drivers, UserId = DriverId (they share the same ID)
@@ -477,6 +486,8 @@ public class TripsController : ControllerBase
                     driverId = model.DriverId,
                     truckImmatriculation = trip.Truck?.Immatriculation,
                     destination = destination,
+                    destinationLatitude = model.DestinationLatitude,
+                    destinationLongitude = model.DestinationLongitude,
                     estimatedStartDate = trip.EstimatedStartDate,
                     estimatedEndDate = trip.EstimatedEndDate,
                     timestamp = DateTime.UtcNow
@@ -490,6 +501,18 @@ public class TripsController : ControllerBase
                 // 3. NotificationHub.Clients.Group($"driver_{driverId}")
                 // 4. NotificationHub.Clients.All (fallback)
                 await _notificationHubService.SendTripAssignment(userIdForNotification, notification, model.DriverId);
+
+                // ALSO broadcast to ALL clients for web admin real-time updates
+                await _gpsHub.Clients.All.SendAsync("ReceiveNotification", new
+                {
+                    type = "NEW_TRIP_ASSIGNMENT",
+                    tripId = trip.Id,
+                    tripReference = trip.TripReference,
+                    title = "Nouvelle Mission",
+                    message = $"Nouveau voyage assigné: {trip.TripReference}",
+                    driverId = model.DriverId,
+                    timestamp = DateTime.UtcNow
+                });
 
                 _logger.LogInformation($"✅ Notification sent successfully to driver {model.DriverId}");
             }
@@ -1042,7 +1065,7 @@ public class TripsController : ControllerBase
             // Destination coordinates for GPS tracking
             DestinationLatitude = trip.EndLatitude,
             DestinationLongitude = trip.EndLongitude,
-            Destination = null, // Will be populated from last delivery address in frontend
+            Destination = trip.Deliveries?.LastOrDefault()?.DeliveryAddress ?? "Non définie",
 
             Truck = trip.Truck != null ? new TruckDto
             {

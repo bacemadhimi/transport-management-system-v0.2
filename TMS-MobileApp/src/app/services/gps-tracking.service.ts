@@ -90,7 +90,8 @@ export class GPSTrackingService {
           estimatedDuration: data.estimatedDuration,
           estimatedStartDate: data.estimatedStartDate,
           estimatedEndDate: data.estimatedEndDate,
-          timestamp: data.timestamp || new Date().toISOString()
+          timestamp: data.timestamp || new Date().toISOString(),
+          additionalData: data  // Store full data including destination coordinates
         });
 
         console.log('💾 Notification storage result:', stored ? 'SAVED' : 'DUPLICATE');
@@ -208,7 +209,8 @@ export class GPSTrackingService {
           estimatedDuration: data.estimatedDuration,
           estimatedStartDate: data.estimatedStartDate,
           estimatedEndDate: data.estimatedEndDate,
-          timestamp: data.timestamp || new Date().toISOString()
+          timestamp: data.timestamp || new Date().toISOString(),
+          additionalData: data  // Store full data including destination coordinates
         };
 
         this.notificationStorage.addNotification(notification);
