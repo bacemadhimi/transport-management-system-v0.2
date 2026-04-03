@@ -2,14 +2,9 @@
   <!-- Hero Section avec image de fond camion -->
   <section class="hero-section">
     <div class="hero-overlay"></div>
-    
-    <!-- Image de fond camion gris -->
     <div class="truck-bg-image" aria-hidden="true"></div>
-    
-    <!-- Overlay pour lisibilité -->
     <div class="bg-gradient-overlay"></div>
 
-    <!-- Animation de camion supplémentaire -->
     <div class="truck-animation" aria-hidden="true">
       <div class="road">
         <div class="road-line"></div>
@@ -17,7 +12,6 @@
         <div class="road-line"></div>
         <div class="road-line"></div>
       </div>
-      
       <div class="truck-container">
         <div class="truck">
           <div class="truck-cab">
@@ -47,34 +41,13 @@
             <circle cx="17" cy="18" r="2" stroke="white" stroke-width="1.5"/>
           </svg>
         </div>
-        <span class="brand-name">TMS</span>
+        <span class="brand-name">TMS LOGISTICS</span>
       </div>
 
       <h1 class="hero-title">
         <span class="title-accent">Système de Gestion</span>
         <span class="title-main">de Transport</span>
       </h1>
-
-      <div class="hero-features">
-        <div class="feature-item">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-            <path d="M5 13l4 4L19 7" stroke="white" stroke-width="2" stroke-linecap="round"/>
-          </svg>
-          <span>Gestion de flotte en temps réel</span>
-        </div>
-        <div class="feature-item">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-            <path d="M5 13l4 4L19 7" stroke="white" stroke-width="2" stroke-linecap="round"/>
-          </svg>
-          <span>Optimisation des tournées</span>
-        </div>
-        <div class="feature-item">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-            <path d="M5 13l4 4L19 7" stroke="white" stroke-width="2" stroke-linecap="round"/>
-          </svg>
-          <span>Suivi GPS en direct</span>
-        </div>
-      </div>
 
       <div class="stats-grid">
         <div class="stat-item">
@@ -93,29 +66,29 @@
     </div>
   </section>
 
-  <!-- Login Section -->
+  <!-- Login Section - Version Améliorée -->
   <section class="login-section">
     <div class="login-card">
-      <div class="mobile-brand">
-        <div class="mobile-brand-icon">
-          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white">
-            <path d="M3 15H21M3 15V18H21V15M3 15L5 9H19L21 15M3 15H5M21 15H19M8 9L7 15M16 9L17 15M12 9V15" stroke-width="1.5" stroke-linecap="round"/>
-            <circle cx="7" cy="18" r="2" stroke-width="1.5"/>
-            <circle cx="17" cy="18" r="2" stroke-width="1.5"/>
-          </svg>
-        </div>
-        <span class="mobile-brand-name">TMS Transport</span>
-      </div>
-
+      <!-- En-tête -->
       <div class="login-header">
+        <div class="welcome-badge">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+            <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            <path d="M2 17L12 22L22 17" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            <path d="M2 12L12 17L22 12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+          <span>Plateforme sécurisée</span>
+        </div>
         <h2 class="login-title">Connexion</h2>
         <p class="login-subtitle">Accédez à votre espace professionnel</p>
       </div>
 
       <form [formGroup]="loginForm" (ngSubmit)="onLogin()" novalidate>
+        <!-- Champ Email -->
         <div class="form-group">
-          <label for="email" [class.active]="emailFocused || loginForm.get('email')?.value">
+          <label for="email">
             Email professionnel
+            <span class="required">*</span>
           </label>
           <div class="input-wrapper" [class.error]="showEmailError || loginError">
             <input
@@ -124,7 +97,7 @@
               formControlName="email"
               (focus)="emailFocused = true"
               (blur)="emailFocused = false"
-              placeholder="nom@transporteur.com"
+              placeholder="superAdmin@gmail.com"
               autocomplete="email"
             />
             <span class="input-icon">
@@ -135,14 +108,20 @@
           </div>
           @if (showEmailError) {
             <div class="field-error">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.5"/>
+                <path d="M12 8V12M12 16H12.01" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+              </svg>
               <span>Email valide requis</span>
             </div>
           }
         </div>
 
+        <!-- Champ Mot de passe -->
         <div class="form-group">
-          <label for="password" [class.active]="passwordFocused || loginForm.get('password')?.value">
+          <label for="password">
             Mot de passe
+            <span class="required">*</span>
           </label>
           <div class="input-wrapper" [class.error]="loginError">
             <input
@@ -151,7 +130,7 @@
               formControlName="password"
               (focus)="passwordFocused = true; loginError = null"
               (blur)="passwordFocused = false"
-              placeholder="**********"
+              placeholder="Entrez votre mot de passe"
               autocomplete="current-password"
             />
             <span class="input-icon">
@@ -179,6 +158,7 @@
           </div>
         </div>
 
+        <!-- Actions du formulaire -->
         <div class="form-actions">
           <label class="checkbox-container">
             <input type="checkbox" formControlName="rememberMe" class="checkbox">
@@ -190,6 +170,7 @@
           </button>
         </div>
 
+        <!-- Message d'erreur -->
         @if (loginError) {
           <div class="login-error">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
@@ -200,6 +181,7 @@
           </div>
         }
 
+        <!-- Bouton de connexion -->
         <button 
           type="submit" 
           class="signin-button"
@@ -216,10 +198,12 @@
           }
         </button>
 
+        <!-- Séparateur -->
         <div class="divider">
           <span>Ou continuer avec</span>
         </div>
 
+        <!-- Bouton Google -->
         <button type="button" class="google-button" (click)="onGoogleLogin()">
           <svg width="20" height="20" viewBox="0 0 24 24">
             <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
@@ -230,19 +214,25 @@
           <span>Google</span>
         </button>
 
-        <div class="signup-prompt">
-          <span>Nouveau sur TMS ?</span>
-          <a routerLink="/signup" class="signup-link">Demander un accès →</a>
-        </div>
-
-        <div class="support-link">
-          <a href="#" class="support-link-text">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-              <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.5"/>
-              <path d="M12 16V12M12 8H12.01" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        <!-- Pied de page -->
+        <div class="login-footer">
+          <div class="signup-prompt">
+            <span>Nouveau sur TMS ?</span>
+            <a routerLink="/signup" class="signup-link">Demander un accès</a>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+              <path d="M5 12H19M19 12L15 8M19 12L15 16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
             </svg>
-            <span>Support technique 24/7</span>
-          </a>
+          </div>
+
+          <div class="support-link">
+            <a href="#" class="support-link-text">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.5"/>
+                <path d="M12 16V12M12 8H12.01" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+              </svg>
+              <span>Support technique 24/7</span>
+            </a>
+          </div>
         </div>
       </form>
     </div>
