@@ -8810,6 +8810,24 @@ clearGlobalDestination(): void {
 }
 
 /**
+ * Trigger global address search manually
+ */
+searchGlobalAddress(): void {
+  const currentValue = this.globalDestinationAddress.value;
+  if (currentValue && currentValue.length >= 3) {
+    this.gpsAddressService.getAddressSuggestions(currentValue).subscribe({
+      next: (suggestions) => {
+        this.globalAddressSuggestions = suggestions;
+      },
+      error: (error) => {
+        console.error('Error fetching global address suggestions:', error);
+        this.globalAddressSuggestions = [];
+      }
+    });
+  }
+}
+
+/**
  * Save destination coordinates to the trip
  */
 private saveDestinationCoordinates(tripId: number, coords: {lat: number, lng: number, address: string}): void {
