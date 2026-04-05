@@ -424,8 +424,10 @@ export class GPSTrackingService {
     }
   }
 
+  private gpsWatchId?: number;
+
   /**
-   * Démarrer le tracking GPS
+   * Démarrer le tracking GPS avec watchPosition pour position réelle continue
    */
   public startTracking(driverId: number, truckId?: number, tripId?: number): void {
     if (this.isTracking) {
@@ -434,46 +436,101 @@ export class GPSTrackingService {
     }
 
     this.isTracking = true;
-    console.log('🚀 Starting GPS tracking...');
+    console.log('🚀 Starting GPS tracking with watchPosition...');
 
-    this.gpsTrackingInterval = setInterval(async () => {
-      if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-          async (position) => {
-            const gpsPosition: GPSPosition = {
-              driverId,
-              truckId,
-              tripId,
-              latitude: position.coords.latitude,
-              longitude: position.coords.longitude,
-              accuracy: position.coords.accuracy,
-              timestamp: new Date()
-            };
+    // Clear any existing interval (fallback safety)
+    if (this.gpsTrackingInterval) {
+      clearInterval(this.gpsTrackingInterval);
+      this.gpsTrackingInterval = undefined;
+    }
 
-            await this.sendPosition(gpsPosition);
-            this.positionSubject.next(gpsPosition);
-          },
-          (error) => {
-            console.error('❌ Geolocation error:', error);
-          },
-          {
-            enableHighAccuracy: true,
-            timeout: 10000,
-            maximumAge: 3000
-          }
-        );
-      }
-    }, this.gpsUpdateInterval);
+    // Stop any existing watch
+    if (this.gpsWatchId !== undefined) {
+      navigator.geolocation.clearWatch(this.gpsWatchId);
+      this.gpsWatchId = undefined;
+    }
+
+    if (navigator.geolocation) {
+      // Utiliser watchPosition pour un suivi continu et précis
+      this.gpsWatchId = navigator.geolocation.watchPosition(
+        async (position) => {
+          const gpsPosition: GPSPosition = {
+            driverId,
+            truckId,
+            tripId,
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude,
+            accuracy: position.coords.accuracy,
+            timestamp: new Date()
+          };
+
+          console.log('📍 watchPosition:', gpsPosition.latitude.toFixed(6), gpsPosition.longitude.toFixed(6), '±' + gpsPosition.accuracy + 'm');
+
+          await this.sendPosition(gpsPosition);
+          this.positionSubject.next(gpsPosition);
+        },
+        (error) => {
+          console.error('❌ watchPosition error:', error);
+        },
+        {
+          enableHighAccuracy: true,  // GPS hardware uniquement
+          timeout: 15000,
+          maximumAge: 0              // JAMAIS de cache
+        }
+      );
+
+      console.log('✅ watchPosition started, watchId:', this.gpsWatchId);
+    } else {
+      // Fallback: interval avec getCurrentPosition
+      console.warn('⚠️ watchPosition not supported, using fallback');
+      this.gpsTrackingInterval = setInterval(async () => {
+        if (navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition(
+            async (position) => {
+              const gpsPosition: GPSPosition = {
+                driverId,
+                truckId,
+                tripId,
+                latitude: position.coords.latitude,
+                longitude: position.coords.longitude,
+                accuracy: position.coords.accuracy,
+                timestamp: new Date()
+              };
+
+              await this.sendPosition(gpsPosition);
+              this.positionSubject.next(gpsPosition);
+            },
+            (error) => {
+              console.error('❌ Geolocation error:', error);
+            },
+            {
+              enableHighAccuracy: true,
+              timeout: 10000,
+              maximumAge: 0
+            }
+          );
+        }
+      }, this.gpsUpdateInterval);
+    }
   }
 
   /**
    * Arrêter le tracking
    */
   public stopTracking(): void {
+    // Clear watchPosition
+    if (this.gpsWatchId !== undefined) {
+      navigator.geolocation.clearWatch(this.gpsWatchId);
+      this.gpsWatchId = undefined;
+      console.log('⏹️ watchPosition stopped');
+    }
+
+    // Clear interval (fallback)
     if (this.gpsTrackingInterval) {
       clearInterval(this.gpsTrackingInterval);
       this.gpsTrackingInterval = undefined;
     }
+
     this.isTracking = false;
     console.log('⏹️ GPS tracking stopped');
   }

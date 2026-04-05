@@ -272,6 +272,72 @@
                 </button>
               </div>
             </div>
+
+            <!-- ===== ADDED: Optional Map Adjustment Feature ===== -->
+            <div *ngIf="selectedDestinationCoords" class="map-adjustment-section" style="margin-top: 20px;">
+              <!-- Toggle Button -->
+              <button 
+                mat-stroked-button 
+                (click)="toggleMapAdjustment()" 
+                [color]="showMapAdjustment ? 'warn' : 'primary'"
+                style="width: 100%; padding: 14px; font-size: 15px; font-weight: 500; display: flex; align-items: center; justify-content: center; gap: 10px;">
+                <mat-icon style="font-size: 22px; width: 22px; height: 22px;">
+                  {{ showMapAdjustment ? 'close' : 'map' }}
+                </mat-icon>
+                {{ showMapAdjustment ? 'Fermer l\'ajustement de position' : 'Ajuster la position sur la carte (optionnel)' }}
+              </button>
+
+              <!-- Map Container (shown when toggled) -->
+              <div *ngIf="showMapAdjustment" class="map-container-wrapper" style="margin-top: 16px;">
+                <!-- Info Banner -->
+                <div style="padding: 12px 16px; background: linear-gradient(135deg, #dbeafe, #bfdbfe); border-radius: 8px; border-left: 4px solid #3b82f6; margin-bottom: 12px; display: flex; align-items: center; gap: 10px;">
+                  <mat-icon style="color: #1d4ed8; font-size: 20px;">info</mat-icon>
+                  <div style="flex: 1; font-size: 13px; color: #1e40af;">
+                    <strong>💡 Comment utiliser:</strong> Déplacez le marqueur ou recherchez un lieu pour ajuster la position GPS
+                  </div>
+                </div>
+
+                <!-- Map Container -->
+                <div id="map-adjustment-container" class="adjustment-map" style="height: 450px; border-radius: 12px; border: 2px solid #e2e8f0; box-shadow: 0 4px 12px rgba(0,0,0,0.1);"></div>
+
+                <!-- Action Buttons -->
+                <div style="margin-top: 16px; display: flex; gap: 12px; flex-wrap: wrap;">
+                  <button 
+                    mat-raised-button 
+                    (click)="applyCustomPosition()" 
+                    *ngIf="customDestinationCoords"
+                    style="flex: 1; background: linear-gradient(135deg, #10b981, #059669); color: white; font-weight: 600; padding: 12px;">
+                    <mat-icon style="margin-right: 6px;">check_circle</mat-icon>
+                    Utiliser cette position
+                  </button>
+                  <button 
+                    mat-stroked-button 
+                    (click)="closeMapAdjustment()"
+                    style="flex: 0 0 auto; padding: 12px 24px;">
+                    <mat-icon style="margin-right: 6px;">close</mat-icon>
+                    Fermer
+                  </button>
+                </div>
+
+                <!-- Custom Position Info (if adjusted) -->
+                <div *ngIf="customDestinationCoords" style="margin-top: 16px; padding: 14px; background: linear-gradient(135deg, #fef3c7, #fde68a); border-radius: 10px; border-left: 4px solid #f59e0b;">
+                  <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+                    <mat-icon style="color: #d97706; font-size: 20px;">flag</mat-icon>
+                    <div style="font-weight: 600; color: #92400e; font-size: 14px;">Position ajustée</div>
+                  </div>
+                  <div style="font-size: 13px; color: #78350f; line-height: 1.5; margin-bottom: 6px;">
+                    {{ customDestinationCoords.address }}
+                  </div>
+                  <div style="font-size: 12px; color: #92400e; font-family: monospace; background: rgba(255,255,255,0.5); padding: 6px 10px; border-radius: 6px; display: inline-block;">
+                    📍 Lat: {{ customDestinationCoords.lat.toFixed(6) }}, Lng: {{ customDestinationCoords.lng.toFixed(6) }}
+                    <span style="margin-left: 10px; padding-left: 10px; border-left: 1px solid #d97706;">
+                      ✓ isCustomLocation: {{ customDestinationCoords.isCustomLocation }}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <!-- ===== END: Optional Map Adjustment Feature ===== -->
           </div>
           <!-- ===== END: Smart Address Search ===== -->
 
@@ -2108,8 +2174,8 @@
               </div>
             </div>
           </div>
-          
-          <!-- Delivery Details - MOVED OUTSIDE client-orders-details -->
+
+          <!-- Delivery Details -->
           <div class="delivery-details" *ngIf="isCapacityGroupExpanded(group.customerId)">
             <div class="detail-item full-width">
               <mat-icon class="detail-icon">location_on</mat-icon>
@@ -2171,10 +2237,10 @@
             </div>
           </div>
           <!-- End of Delivery Details -->
-          
+
         </div>
       </cdk-virtual-scroll-viewport>
-      
+
       <div class="virtual-scroll-info">
         <div class="scroll-info-item">
           <mat-icon class="info-icon">pie_chart</mat-icon>
@@ -2183,7 +2249,7 @@
             <small class="info-subtext">Répartition par client</small>
           </div>
         </div>
-        
+
         <div class="scroll-info-item" *ngIf="getVisibleCapacityRange()">
           <mat-icon class="info-icon">visibility</mat-icon>
           <div class="info-content">
@@ -2191,24 +2257,18 @@
             <small class="info-subtext">Clients visibles</small>
           </div>
         </div>
-        
+
         <div class="scroll-actions">
-          <button mat-icon-button 
-                  type="button" 
-                  (click)="scrollCapacityToTop()"
-                  matTooltip="Premier client">
+          <button mat-icon-button type="button" (click)="scrollCapacityToTop()" matTooltip="Premier client">
             <mat-icon>keyboard_arrow_up</mat-icon>
           </button>
-          <button mat-icon-button 
-                  type="button" 
-                  (click)="scrollCapacityToBottom()"
-                  matTooltip="Dernier client">
+          <button mat-icon-button type="button" (click)="scrollCapacityToBottom()" matTooltip="Dernier client">
             <mat-icon>keyboard_arrow_down</mat-icon>
           </button>
         </div>
       </div>
     </div>
-    
+
     <div class="capacity-total-summary">
       <div class="total-row">
         <div class="total-label">
@@ -2707,7 +2767,7 @@
         mat-flat-button
         color="primary"
         type="submit"
-        [disabled]="tripForm.invalid || deliveries.length === 0 || loading || (saveAsPredefined && !trajectName.trim())"
+        [disabled]="tripForm.invalid || loading || (saveAsPredefined && !trajectName.trim())"
         class="save-btn"
       >
         <mat-icon *ngIf="loading" class="loading-icon">hourglass_empty</mat-icon>

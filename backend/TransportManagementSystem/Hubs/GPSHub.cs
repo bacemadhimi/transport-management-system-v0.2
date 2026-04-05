@@ -76,17 +76,75 @@ public class GPSHub : Hub
                     trip.CurrentLatitude = data.Latitude.ToString();
                     trip.CurrentLongitude = data.Longitude.ToString();
                     trip.LastPositionUpdate = DateTime.UtcNow;
-                    
-                    // Broadcast à tous les admins
+
+                    // Broadcast à tous les admins avec tripId explicite
                     await Clients.Group("Admins").SendAsync("ReceivePosition", new
                     {
                         tripId = trip.Id,
                         tripReference = trip.TripReference,
                         driverId = trip.DriverId,
+                        truckId = trip.TruckId,
                         latitude = data.Latitude,
                         longitude = data.Longitude,
                         timestamp = DateTime.UtcNow,
                         status = trip.TripStatus.ToString()
+                    });
+                    
+                    // Aussi broadcast au groupe AllTrips pour le tracking
+                    await Clients.Group("AllTrips").SendAsync("ReceivePosition", new
+                    {
+                        tripId = trip.Id,
+                        tripReference = trip.TripReference,
+                        driverId = trip.DriverId,
+                        truckId = trip.TruckId,
+                        latitude = data.Latitude,
+                        longitude = data.Longitude,
+                        timestamp = DateTime.UtcNow,
+                        status = trip.TripStatus.ToString()
+                    });
+                }
+            }
+            else if (data.DriverId.HasValue || data.TruckId.HasValue)
+            {
+                // Si pas de tripId mais driverId/truckId, trouver le trip actif
+                var activeTrip = await _context.Trips
+                    .Where(t => (t.DriverId == data.DriverId || t.TruckId == data.TruckId) && 
+                               (t.TripStatus == TripStatus.InDelivery || 
+                                t.TripStatus == TripStatus.Loading || 
+                                t.TripStatus == TripStatus.Arrived ||
+                                t.TripStatus == TripStatus.Accepted))
+                    .FirstOrDefaultAsync();
+                
+                if (activeTrip != null)
+                {
+                    activeTrip.CurrentLatitude = data.Latitude.ToString();
+                    activeTrip.CurrentLongitude = data.Longitude.ToString();
+                    activeTrip.LastPositionUpdate = DateTime.UtcNow;
+                    await _context.SaveChangesAsync();
+
+                    // Broadcast avec le tripId trouvé
+                    await Clients.Group("Admins").SendAsync("ReceivePosition", new
+                    {
+                        tripId = activeTrip.Id,
+                        tripReference = activeTrip.TripReference,
+                        driverId = activeTrip.DriverId,
+                        truckId = activeTrip.TruckId,
+                        latitude = data.Latitude,
+                        longitude = data.Longitude,
+                        timestamp = DateTime.UtcNow,
+                        status = activeTrip.TripStatus.ToString()
+                    });
+                    
+                    await Clients.Group("AllTrips").SendAsync("ReceivePosition", new
+                    {
+                        tripId = activeTrip.Id,
+                        tripReference = activeTrip.TripReference,
+                        driverId = activeTrip.DriverId,
+                        truckId = activeTrip.TruckId,
+                        latitude = data.Latitude,
+                        longitude = data.Longitude,
+                        timestamp = DateTime.UtcNow,
+                        status = activeTrip.TripStatus.ToString()
                     });
                 }
             }
@@ -158,7 +216,7 @@ public class GPSHub : Hub
     public async Task GetActiveTrips()
     {
         var activeTrips = await _context.Trips
-            .Where(t => t.TripStatus == TripStatus.InDelivery || 
+            .Where(t => t.TripStatus == TripStatus.InDelivery ||
                        t.TripStatus == TripStatus.Loading ||
                        t.TripStatus == TripStatus.Arrived ||
                        t.TripStatus == TripStatus.Accepted)
@@ -171,13 +229,21 @@ public class GPSHub : Hub
                 t.TripReference,
                 Status = t.TripStatus.ToString(),
                 DriverName = t.Driver != null ? t.Driver.Name : null,
+                DriverPhone = t.Driver != null ? t.Driver.PhoneNumber : null,
                 TruckImmatriculation = t.Truck != null ? t.Truck.Immatriculation : null,
                 CurrentLatitude = t.CurrentLatitude != null ? double.Parse(t.CurrentLatitude) : (double?)null,
                 CurrentLongitude = t.CurrentLongitude != null ? double.Parse(t.CurrentLongitude) : (double?)null,
                 LastPositionUpdate = t.LastPositionUpdate,
                 DeliveriesCount = t.Deliveries.Count,
                 EstimatedDistance = t.EstimatedDistance,
-                EstimatedDuration = t.EstimatedDuration
+                EstimatedDuration = t.EstimatedDuration,
+                // Destination coordinates
+                DestinationLat = t.EndLatitude,
+                DestinationLng = t.EndLongitude,
+                // Get destination address from last delivery if available
+                Destination = t.Deliveries.OrderByDescending(d => d.Id).FirstOrDefault() != null 
+                    ? t.Deliveries.OrderByDescending(d => d.Id).FirstOrDefault().DeliveryAddress 
+                    : null
             })
             .ToListAsync();
 
@@ -226,13 +292,42 @@ public class GPSHub : Hub
                     Notes = notes
                 });
 
-                // Broadcast à tous les admins
+                // Broadcast à tous les admins avec détails complets
                 await Clients.Group("Admins").SendAsync("TripStatusChanged", new
                 {
                     TripId = tripId,
                     TripReference = trip.TripReference,
-                    Status = newStatus.ToString(),
-                    Timestamp = DateTime.UtcNow
+                    DriverId = trip.DriverId,
+                    DriverName = trip.Driver?.Name,
+                    TruckId = trip.TruckId,
+                    TruckImmatriculation = trip.Truck?.Immatriculation,
+                    OldStatus = oldStatus.ToString(),
+                    NewStatus = newStatus.ToString(),
+                    CurrentLatitude = trip.CurrentLatitude != null ? double.Parse(trip.CurrentLatitude) : (double?)null,
+                    CurrentLongitude = trip.CurrentLongitude != null ? double.Parse(trip.CurrentLongitude) : (double?)null,
+                    DestinationLat = trip.EndLatitude,
+                    DestinationLng = trip.EndLongitude,
+                    Timestamp = DateTime.UtcNow,
+                    Notes = notes
+                });
+                
+                // Aussi broadcast au groupe AllTrips
+                await Clients.Group("AllTrips").SendAsync("TripStatusChanged", new
+                {
+                    TripId = tripId,
+                    TripReference = trip.TripReference,
+                    DriverId = trip.DriverId,
+                    DriverName = trip.Driver?.Name,
+                    TruckId = trip.TruckId,
+                    TruckImmatriculation = trip.Truck?.Immatriculation,
+                    OldStatus = oldStatus.ToString(),
+                    NewStatus = newStatus.ToString(),
+                    CurrentLatitude = trip.CurrentLatitude != null ? double.Parse(trip.CurrentLatitude) : (double?)null,
+                    CurrentLongitude = trip.CurrentLongitude != null ? double.Parse(trip.CurrentLongitude) : (double?)null,
+                    DestinationLat = trip.EndLatitude,
+                    DestinationLng = trip.EndLongitude,
+                    Timestamp = DateTime.UtcNow,
+                    Notes = notes
                 });
             }
         }

@@ -415,6 +415,9 @@ public class TripsController : ControllerBase
             EstimatedStartDate = model.EstimatedStartDate,
             EstimatedEndDate = model.EstimatedEndDate,
             TrajectId = model.TrajectId,
+            // IMPORTANT: Save destination coordinates for GPS tracking on mobile
+            EndLatitude = model.DestinationLatitude,
+            EndLongitude = model.DestinationLongitude,
         };
 
         await tripRepository.AddAsync(trip);

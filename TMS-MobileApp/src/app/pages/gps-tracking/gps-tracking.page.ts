@@ -21,7 +21,7 @@ export class GPSTrackingPage implements OnInit, OnDestroy {
   truckMarker!: L.Marker;
   truckIcon!: L.DivIcon;
   destinationMarker!: L.Marker;
-  routePolyline!: L.Polyline;
+  routePolyline?: L.Polyline;
 
   currentLocation: { lat: number, lng: number } | null = null;
   destination: { lat: number, lng: number, address: string } | null = null;
@@ -346,7 +346,7 @@ export class GPSTrackingPage implements OnInit, OnDestroy {
       if (this.map) {
         this.map.invalidateSize();
         console.log('✅ Map initialized and size invalidated');
-        
+
         // Check if destination was already loaded (geocoded before map was ready)
         if (this.destination) {
           console.log('✅ Destination already loaded, adding marker now...');
@@ -355,10 +355,9 @@ export class GPSTrackingPage implements OnInit, OnDestroy {
       }
     }, 500);
 
-    // Créer le marker du camion
-    const truckIcon = this.createTruckIcon();
-    this.truckMarker = L.marker([36.8, 10.1], { icon: truckIcon }).addTo(this.map);
-    this.truckMarker.bindPopup(`<b>Votre Camion</b><br>Position actuelle`);
+    // Le marker du camion sera créé UNIQUEMENT quand la position GPS réelle est obtenue
+    // PAS de position par défaut
+    this.truckMarker = L.marker([0, 0], { icon: this.createTruckIcon(), opacity: 0 }).addTo(this.map);
 
     // Géocoder la destination si fournie
     if (this.destinationAddress) {
@@ -370,34 +369,71 @@ export class GPSTrackingPage implements OnInit, OnDestroy {
   }
 
   /**
-   * Géocoder une adresse avec Nominatim - CORRECTION COMPLETE
+   * Géocoder une adresse avec Nominatim + fallback base locale
    */
   private async geocodeAddress(address: string) {
     try {
       console.log('🔍 Geocoding address:', address);
-      
+
       if (!address || address.trim().length === 0) {
         console.error('❌ Empty address provided!');
         await this.showToast('Adresse vide', 'danger');
         return;
       }
 
-      // Add Tunisia to improve geocoding
-      const searchAddress = address.includes('Tunisia') || address.includes('Tunisie') 
-        ? address 
-        : address + ', Tunisia';
-      
-      console.log('🔍 Searching for:', searchAddress);
-      
-      const response = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchAddress)}&limit=5&addressdetails=1`,
-        {
-          headers: {
-            'User-Agent': 'TMS-MobileApp/1.0',
-            'Accept-Language': 'fr'
+      // ESSAI 1 : Chercher dans la base locale d'abord
+      const localResult = this.searchLocalPOIDatabase(address);
+      if (localResult) {
+        console.log('✅ Found in local database:', localResult);
+        this.destination = {
+          lat: localResult.lat,
+          lng: localResult.lng,
+          address: localResult.address
+        };
+
+        if (this.map) {
+          const destIcon = this.createDestinationIcon();
+          this.destinationMarker = L.marker(
+            [localResult.lat, localResult.lng],
+            { icon: destIcon }
+          ).addTo(this.map);
+
+          this.destinationMarker.bindPopup(`
+            <div style="text-align: center;">
+              <b>🏁 Destination</b><br>
+              <span style="color: #666; font-size: 12px;">${this.destination.address}</span>
+            </div>
+          `);
+
+          await this.updateRoute();
+
+          if (this.currentLocation) {
+            const group = L.featureGroup([this.truckMarker, this.destinationMarker]);
+            this.map.fitBounds(group.getBounds(), { padding: [50, 50] });
           }
+
+          await this.showToast('✅ Destination trouvée', 'success');
         }
-      );
+        return;
+      }
+
+      // ESSAI 2 : Nominatim via proxy CORS
+      const searchAddress = address.includes('Tunisia') || address.includes('Tunisie')
+        ? address
+        : address + ', Tunisia';
+
+      console.log('🔍 Searching Nominatim for:', searchAddress);
+
+      const proxyUrl = 'https://corsproxy.io/?';
+      const nominatimUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchAddress)}&limit=5&addressdetails=1&accept-language=fr`;
+      const fullUrl = proxyUrl + encodeURIComponent(nominatimUrl);
+
+      const response = await fetch(fullUrl, {
+        headers: {
+          'User-Agent': 'TMS-MobileApp/1.0',
+          'Accept-Language': 'fr'
+        }
+      });
 
       if (!response.ok) {
         throw new Error(`HTTP error: ${response.status} ${response.statusText}`);
@@ -419,7 +455,6 @@ export class GPSTrackingPage implements OnInit, OnDestroy {
 
         console.log('✅ Destination géocodée:', this.destination);
 
-        // WAIT for map to be ready before adding marker
         if (this.map) {
           console.log('✅ Map is ready, adding destination marker...');
           const destIcon = this.createDestinationIcon();
@@ -435,10 +470,8 @@ export class GPSTrackingPage implements OnInit, OnDestroy {
             </div>
           `);
 
-          // Mettre à jour la route IMMÉDIATEMENT
           await this.updateRoute();
 
-          // Ajuster la vue pour voir les deux markers
           if (this.currentLocation) {
             const group = L.featureGroup([this.truckMarker, this.destinationMarker]);
             this.map.fitBounds(group.getBounds(), { padding: [50, 50] });
@@ -447,30 +480,190 @@ export class GPSTrackingPage implements OnInit, OnDestroy {
           await this.showToast('✅ Destination trouvée', 'success');
         } else {
           console.log('⏳ Map not ready yet, will add marker when map initializes...');
-          // Map will add marker when it's ready via initMap
         }
       } else {
         console.warn('⚠️ Adresse non trouvée:', searchAddress);
-        await this.showToast('Adresse non trouvée. Essayez une autre adresse.', 'warning');
+
+        // ESSAI 3 : Fallback centre de la ville
+        const cityOnly = address.split(',')[0].trim();
+        const citySearch = `${cityOnly}, Tunisia`;
+        const cityUrl = proxyUrl + encodeURIComponent(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(citySearch)}&limit=1&addressdetails=1&accept-language=fr`);
         
-        // Fallback to Tunis center
-        this.destination = {
-          lat: 36.8065,
-          lng: 10.1815,
-          address: 'Tunis, Tunisia'
-        };
+        const cityResponse = await fetch(cityUrl);
+        const cityData = await cityResponse.json();
         
-        if (this.map) {
-          this.addDestinationMarker();
-          setTimeout(() => {
-            this.updateRoute();
-          }, 500);
+        if (cityData && cityData.length > 0) {
+          const cityResult = cityData[0];
+          this.destination = {
+            lat: parseFloat(cityResult.lat),
+            lng: parseFloat(cityResult.lon),
+            address: cityResult.display_name || cityOnly
+          };
+
+          if (this.map) {
+            const destIcon = this.createDestinationIcon();
+            this.destinationMarker = L.marker(
+              [this.destination.lat, this.destination.lng],
+              { icon: destIcon }
+            ).addTo(this.map);
+
+            this.destinationMarker.bindPopup(`
+              <div style="text-align: center;">
+                <b>🏁 Destination</b><br>
+                <span style="color: #666; font-size: 12px;">${this.destination.address}</span>
+              </div>
+            `);
+
+            await this.updateRoute();
+
+            if (this.currentLocation) {
+              const group = L.featureGroup([this.truckMarker, this.destinationMarker]);
+              this.map.fitBounds(group.getBounds(), { padding: [50, 50] });
+            }
+
+            await this.showToast('✅ Ville trouvée', 'success');
+          }
+        } else {
+          // DERNIER RECOURS : Tunis
+          this.destination = {
+            lat: 36.8065,
+            lng: 10.1815,
+            address: 'Tunis, Tunisia'
+          };
+
+          if (this.map) {
+            this.addDestinationMarker();
+            setTimeout(() => {
+              this.updateRoute();
+            }, 500);
+          }
+          
+          await this.showToast('⚠️ Utilisation Tunis par défaut', 'warning');
         }
       }
     } catch (error) {
       console.error('❌ Erreur de géocodage:', error);
       await this.showToast('Erreur de géocodage: ' + (error as Error).message, 'danger');
     }
+  }
+
+  /**
+   * Chercher dans la base locale de POI tunisiens
+   */
+  private searchLocalPOIDatabase(address: string): { lat: number, lng: number, address: string } | null {
+    const addressLower = address.toLowerCase();
+    
+    const LOCAL_POI = [
+      // Tajerouine
+      { name: 'aziza tajerouine', lat: 35.5140, lng: 8.6550, address: 'Aziza Tajerouine Centre, Avenue Habib Bourguiba, Tajerouine' },
+      { name: 'magasin general tajerouine', lat: 35.5140, lng: 8.6550, address: 'Magasin General Tajerouine, Avenue Habib Bourguiba, Tajerouine' },
+      { name: 'tajerouine', lat: 35.5140, lng: 8.6550, address: 'Avenue Habib Bourguiba, Tajerouine' },
+      { name: 'hôpital tajerouine', lat: 35.5155, lng: 8.6545, address: 'Hôpital Régional Tajerouine' },
+      { name: 'école tajerouine', lat: 35.5145, lng: 8.6555, address: 'École Primaire Tajerouine' },
+      { name: 'pharmacie tajerouine', lat: 35.5142, lng: 8.6552, address: 'Pharmacie Centrale Tajerouine' },
+      
+      // Grand Tunis
+      { name: 'aziza la marsa', lat: 36.8790, lng: 10.3250, address: 'Aziza La Marsa Centre, Avenue Habib Bourguiba, La Marsa' },
+      { name: 'magasin general la marsa', lat: 36.8785, lng: 10.3245, address: 'Magasin General La Marsa, Avenue Habib Bourguiba' },
+      { name: 'aziza ariana', lat: 36.8625, lng: 10.1955, address: 'Aziza Ariana Centre, Avenue de la République, Ariana' },
+      { name: 'magasin general ariana', lat: 36.8620, lng: 10.1950, address: 'Magasin General Ariana, Avenue de la République' },
+      { name: 'carrefour lac', lat: 36.8380, lng: 10.2440, address: 'Carrefour Market Lac 1, Les Berges du Lac, Tunis' },
+      { name: 'monoprix tunis', lat: 36.8050, lng: 10.1800, address: 'Monoprix Tunis Lafayette, Avenue de Paris' },
+      
+      // Sousse
+      { name: 'aziza sousse', lat: 35.8295, lng: 10.6385, address: 'Aziza Sousse Centre, Avenue Habib Bourguiba' },
+      { name: 'magasin general sousse', lat: 35.8290, lng: 10.6380, address: 'Magasin General Sousse, Avenue Habib Bourguiba' },
+      
+      // Sfax
+      { name: 'aziza sfax', lat: 34.7405, lng: 10.7605, address: 'Aziza Sfax Centre, Rue Habib Maazoun' },
+      { name: 'magasin general sfax', lat: 34.7400, lng: 10.7600, address: 'Magasin General Sfax, Route de Tunis' },
+      
+      // Bizerte
+      { name: 'aziza bizerte', lat: 37.2745, lng: 9.8745, address: 'Aziza Bizerte Centre, Rue de la République' },
+      { name: 'magasin general bizerte', lat: 37.2740, lng: 9.8740, address: 'Magasin General Bizerte, Rue de la République' },
+      
+      // Nabeul
+      { name: 'aziza nabeul', lat: 36.4565, lng: 10.7375, address: 'Aziza Nabeul Centre, Avenue Habib Bourguiba' },
+      { name: 'magasin general nabeul', lat: 36.4560, lng: 10.7370, address: 'Magasin General Nabeul, Avenue Habib Bourguiba' },
+      
+      // Gabes
+      { name: 'aziza gabes', lat: 33.8875, lng: 10.0985, address: 'Aziza Gabes Centre, Avenue Habib Bourguiba' },
+      { name: 'magasin general gabes', lat: 33.8870, lng: 10.0980, address: 'Magasin General Gabes, Avenue Habib Bourguiba' },
+      
+      // Kairouan
+      { name: 'aziza kairouan', lat: 35.6785, lng: 10.0965, address: 'Aziza Kairouan Centre, Avenue de la République' },
+      { name: 'magasin general kairouan', lat: 35.6780, lng: 10.0960, address: 'Magasin General Kairouan, Avenue de la République' },
+      
+      // Béja
+      { name: 'aziza beja', lat: 36.7265, lng: 9.1845, address: 'Aziza Béja Centre, Avenue Habib Bourguiba' },
+      { name: 'magasin general beja', lat: 36.7260, lng: 9.1840, address: 'Magasin General Béja, Avenue Habib Bourguiba' },
+      
+      // Jendouba
+      { name: 'aziza jendouba', lat: 36.5065, lng: 8.7815, address: 'Aziza Jendouba Centre, Avenue Habib Bourguiba' },
+      { name: 'magasin general jendouba', lat: 36.5060, lng: 8.7810, address: 'Magasin General Jendouba, Avenue Habib Bourguiba' },
+      
+      // Le Kef
+      { name: 'aziza kef', lat: 36.1745, lng: 8.7055, address: 'Aziza El Kef Centre, Avenue Habib Bourguiba' },
+      { name: 'magasin general kef', lat: 36.1740, lng: 8.7050, address: 'Magasin General Le Kef, Avenue Habib Bourguiba' },
+      
+      // Siliana
+      { name: 'aziza siliana', lat: 36.0855, lng: 9.3705, address: 'Aziza Siliana Centre, Avenue Habib Bourguiba' },
+      { name: 'magasin general siliana', lat: 36.0850, lng: 9.3700, address: 'Magasin General Siliana, Avenue Habib Bourguiba' },
+      
+      // Kasserine
+      { name: 'aziza kasserine', lat: 35.1675, lng: 8.8365, address: 'Aziza Kasserine Centre, Avenue de la République' },
+      { name: 'magasin general kasserine', lat: 35.1670, lng: 8.8360, address: 'Magasin General Kasserine, Avenue de la République' },
+      
+      // Sidi Bouzid
+      { name: 'aziza sidi bouzid', lat: 35.0385, lng: 9.4855, address: 'Aziza Sidi Bouzid Centre, Avenue Habib Bourguiba' },
+      { name: 'magasin general sidi bouzid', lat: 35.0380, lng: 9.4850, address: 'Magasin General Sidi Bouzid, Avenue Habib Bourguiba' },
+      
+      // Gafsa
+      { name: 'aziza gafsa', lat: 34.4255, lng: 8.7845, address: 'Aziza Gafsa Centre, Avenue Habib Bourguiba' },
+      { name: 'magasin general gafsa', lat: 34.4250, lng: 8.7840, address: 'Magasin General Gafsa, Avenue Habib Bourguiba' },
+      
+      // Tozeur
+      { name: 'aziza tozeur', lat: 33.9195, lng: 8.1335, address: 'Aziza Tozeur Centre, Avenue Habib Bourguiba' },
+      { name: 'magasin general tozeur', lat: 33.9190, lng: 8.1330, address: 'Magasin General Tozeur, Avenue Habib Bourguiba' },
+      
+      // Médenine
+      { name: 'aziza medenine', lat: 33.3555, lng: 10.5055, address: 'Aziza Médenine Centre, Avenue Habib Bourguiba' },
+      { name: 'magasin general medenine', lat: 33.3550, lng: 10.5050, address: 'Magasin General Médenine, Avenue Habib Bourguiba' },
+      
+      // Tataouine
+      { name: 'aziza tataouine', lat: 32.9295, lng: 10.4515, address: 'Aziza Tataouine, Avenue de la République' },
+      { name: 'magasin general tataouine', lat: 32.9290, lng: 10.4510, address: 'Magasin General Tataouine, Avenue de la République' },
+      
+      // Monastir
+      { name: 'aziza monastir', lat: 35.7775, lng: 10.8265, address: 'Aziza Monastir Centre, Avenue de l\'Indépendance' },
+      { name: 'magasin general monastir', lat: 35.7770, lng: 10.8260, address: 'Magasin General Monastir, Avenue de l\'Indépendance' },
+      
+      // Mahdia
+      { name: 'aziza mahdia', lat: 35.5045, lng: 11.0625, address: 'Aziza Mahdia Centre, Avenue Habib Bourguiba' },
+      { name: 'magasin general mahdia', lat: 35.5040, lng: 11.0620, address: 'Magasin General Mahdia, Avenue Habib Bourguiba' },
+      
+      // Zaghouan
+      { name: 'aziza zaghouan', lat: 36.4035, lng: 10.1435, address: 'Aziza Zaghouan Centre, Avenue Habib Bourguiba' },
+      { name: 'magasin general zaghouan', lat: 36.4030, lng: 10.1430, address: 'Magasin General Zaghouan, Avenue Habib Bourguiba' },
+      
+      // Ben Arous
+      { name: 'aziza ben arous', lat: 36.7475, lng: 10.2185, address: 'Aziza Ben Arous, Avenue Habib Bourguiba' },
+      { name: 'magasin general ben arous', lat: 36.7470, lng: 10.2180, address: 'Magasin General Ben Arous, Avenue Habib Bourguiba' },
+      
+      // Manouba
+      { name: 'aziza manouba', lat: 36.8085, lng: 10.0985, address: 'Aziza Manouba, Avenue Habib Bourguiba' },
+      { name: 'magasin general manouba', lat: 36.8080, lng: 10.0980, address: 'Magasin General Manouba, Centre-ville' },
+    ];
+
+    // Chercher un match
+    for (const poi of LOCAL_POI) {
+      if (addressLower.includes(poi.name)) {
+        console.log(`📍 Found local POI: ${poi.name} -> ${poi.address}`);
+        return { lat: poi.lat, lng: poi.lng, address: poi.address };
+      }
+    }
+
+    return null;
   }
 
   /**
@@ -659,106 +852,89 @@ export class GPSTrackingPage implements OnInit, OnDestroy {
   private async updateRoute() {
     if (!this.currentLocation || !this.destination) {
       console.log('⚠️ Missing location or destination for route');
-      console.log('Current location:', this.currentLocation);
-      console.log('Destination:', this.destination);
       return;
     }
 
     try {
-      // Fetch route from OSRM with full geometry
+      // Fetch route from OSRM - TOUJOURS chemin optimisé et optimal
       const osrmUrl = `https://router.project-osrm.org/route/v1/driving/${this.currentLocation.lng},${this.currentLocation.lat};${this.destination.lng},${this.destination.lat}?overview=full&geometries=geojson`;
 
-      console.log('🗺️ Fetching route from OSRM:', osrmUrl);
+      console.log('🗺️ Fetching OPTIMIZED route from OSRM:', osrmUrl);
 
       const response = await fetch(osrmUrl);
       const data = await response.json();
-
-      console.log('📡 OSRM Response:', data);
 
       if (data.code === 'Ok' && data.routes && data.routes.length > 0) {
         const route = data.routes[0];
         const coordinates = route.geometry.coordinates.map((coord: number[]) => [coord[1], coord[0]] as [number, number]);
 
-        console.log(`✅ Route fetched: ${route.distance}m, ${route.duration}s`);
-        console.log('Route coordinates count:', coordinates.length);
+        const distanceKm = (route.distance / 1000).toFixed(1);
+        const durationMin = Math.round(route.duration / 60);
+        console.log(`✅ Route optimisée: ${distanceKm} km, ${durationMin} min`);
 
-        // Remove existing route layers
-        if (this.map) {
-          this.map.eachLayer((layer) => {
-            if (layer instanceof L.Polyline) {
-              this.map.removeLayer(layer);
-            }
-          });
+        // Remove ONLY the old route polyline (NOT destination marker)
+        if (this.routePolyline && this.map) {
+          this.map.removeLayer(this.routePolyline);
+          this.routePolyline = undefined;
         }
 
-        // PROFESSIONAL BLUE ROUTE - Single clean line
+        // CHEMIN OPTIMISÉ BLEU - Route réelle OSRM
         this.routePolyline = L.polyline(coordinates, {
-          color: '#1a73e8', // Google Maps blue
-          weight: 5,
+          color: '#1a73e8',
+          weight: 6,
           opacity: 0.9,
           lineCap: 'round',
-          lineJoin: 'round'
+          lineJoin: 'round',
+          className: 'optimized-route'
         }).addTo(this.map);
 
-        // Adjust map bounds to show the COMPLETE route
+        // Ajuster les bornes pour montrer tout le chemin
         const bounds = L.latLngBounds(coordinates);
-        const distanceKm = route.distance / 1000;
 
-        console.log('📏 Distance:', distanceKm, 'km');
-
-        // Dynamic padding based on distance
-        let padding = [60, 60];
+        // Padding dynamique selon la distance
+        let padding: [number, number] = [60, 60];
         let maxZoom = 15;
 
-        if (distanceKm > 100) {
+        if (route.distance > 100000) {
           padding = [80, 80];
           maxZoom = 11;
-        } else if (distanceKm > 50) {
+        } else if (route.distance > 50000) {
           padding = [70, 70];
           maxZoom = 12;
-        } else if (distanceKm > 20) {
+        } else if (route.distance > 20000) {
           padding = [65, 65];
           maxZoom = 13;
         }
 
-        // Fit bounds to show entire route
         this.map.fitBounds(bounds, {
-          padding: padding as [number, number],
-          maxZoom: maxZoom,
-          animate: true
+          padding,
+          maxZoom,
+          animate: true,
+          duration: 0.5
         });
 
         // Ensure destination marker exists
         if (!this.destinationMarker && this.destination) {
-          console.log('🏁 Adding destination marker...');
           this.addDestinationMarker();
         }
 
-        // Store route info
+        // Update route info
         this.routeInfo = {
           distance: route.distance,
           duration: route.duration
         };
 
-        // Force map refresh
-        setTimeout(() => {
-          if (this.map) {
-            this.map.invalidateSize();
-            this.map.fitBounds(bounds, {
-              padding: padding as [number, number],
-              maxZoom: maxZoom,
-              animate: false
-            });
-          }
-        }, 100);
+        // Marquer le timestamp du dernier calcul de route
+        this.lastRouteUpdate = Date.now();
 
       } else {
-        console.warn('⚠️ No route found from OSRM, using fallback');
-        this.drawFallbackRoute();
+        console.warn('⚠️ OSRM ne peut pas calculer le chemin optimisé');
+        this.routeInfo = this.routeInfo || { distance: 0, duration: 0 };
       }
     } catch (error) {
       console.error('❌ Error fetching route:', error);
-      this.drawFallbackRoute();
+      // PAS de ligne droite - afficher info uniquement
+      this.routeInfo = this.routeInfo || { distance: 0, duration: 0 };
     }
   }
 
@@ -766,31 +942,7 @@ export class GPSTrackingPage implements OnInit, OnDestroy {
   private routeInfo: { distance: number; duration: number } | null = null;
 
   /**
-   * Draw fallback straight line route if OSRM fails
-   */
-  private drawFallbackRoute() {
-    if (!this.currentLocation || !this.destination) return;
-
-    const latlngs: [number, number][] = [
-      [this.currentLocation.lat, this.currentLocation.lng],
-      [this.destination.lat, this.destination.lng]
-    ];
-
-    if (this.routePolyline) {
-      this.routePolyline.setLatLngs(latlngs);
-    } else {
-      this.routePolyline = L.polyline(latlngs, {
-        color: '#667eea',
-        weight: 4,
-        opacity: 0.7,
-        dashArray: '10, 10',
-        lineCap: 'round'
-      }).addTo(this.map);
-    }
-  }
-
-  /**
-   * Démarrer le tracking GPS
+   * Démarrer le tracking GPS - TOUJOURS position réelle de l'appareil
    */
   private startGPSTracking() {
     const user = this.authService.currentUser();
@@ -799,31 +951,25 @@ export class GPSTrackingPage implements OnInit, OnDestroy {
     // Connect to SignalR
     this.gpsService.connect((user as any).driverId);
 
-    // Obtenir la position actuelle
+    // Obtenir la position actuelle AVEC watchPosition pour un suivi continu réel
     if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
+      navigator.geolocation.watchPosition(
         (position) => {
           const lat = position.coords.latitude;
           const lng = position.coords.longitude;
 
+          // TOUJOURS utiliser la position réelle de l'appareil
           this.currentLocation = { lat, lng };
           this.speed = position.coords.speed ? position.coords.speed * 3.6 : 0;
           this.accuracy = position.coords.accuracy;
           this.lastUpdate = new Date();
 
-          console.log('📍 GPS Position obtained:', this.currentLocation);
+          console.log('📍 GPS Position (réelle appareil):', this.currentLocation, 'Accuracy:', this.accuracy, 'm');
 
+          // Mettre à jour le camion IMMÉDIATEMENT sur la carte
           this.updateTruckPosition(lat, lng);
-          
-          // Update route if destination is already loaded
-          if (this.destination) {
-            console.log('✅ Destination already loaded, updating route...');
-            this.updateRoute();
-          } else {
-            console.log('⏳ Waiting for destination to be loaded...');
-          }
 
-          // Démarrer le tracking continu (toutes les 5 secondes)
+          // Démarrer le tracking continu SignalR (toutes les 5 secondes)
           this.gpsService.startTracking(
             (user as any).driverId,
             undefined,
@@ -831,79 +977,90 @@ export class GPSTrackingPage implements OnInit, OnDestroy {
           );
 
           this.isTracking = true;
-          console.log('GPS Tracking started');
+          console.log('✅ GPS Tracking started with watchPosition');
         },
         (error) => {
-          console.error('Erreur GPS:', error);
-          // Position par défaut si GPS non disponible
-          this.currentLocation = { lat: 36.8, lng: 10.1 };
-          this.updateTruckPosition(36.8, 10.1);
-          
-          // Try to update route anyway
-          if (this.destination) {
-            this.updateRoute();
+          console.error('❌ Erreur GPS:', error);
+          // NE JAMAIS utiliser de position par défaut si GPS non disponible
+          if (error.code === error.PERMISSION_DENIED) {
+            this.showToast('⚠️ Autorisez la localisation GPS pour le suivi', 'danger');
+          } else if (error.code === error.POSITION_UNAVAILABLE) {
+            this.showToast('⚠️ GPS non disponible, vérifiez vos paramètres', 'danger');
+          } else if (error.code === error.TIMEOUT) {
+            this.showToast('⏱️ Timeout GPS, réessayez en extérieur', 'warning');
           }
-          
-          this.isTracking = true;
         },
         {
-          enableHighAccuracy: true,
-          timeout: 15000,
-          maximumAge: 3000
+          enableHighAccuracy: true,  // GPS réel, pas WiFi/cellules
+          timeout: 20000,            // 20s max pour obtenir une position
+          maximumAge: 0              // JAMAIS de cache - TOUJOURS position actuelle
         }
       );
     } else {
-      this.currentLocation = { lat: 36.8, lng: 10.1 };
-      this.updateTruckPosition(36.8, 10.1);
-      this.isTracking = true;
+      this.showToast('⚠️ Géolocalisation non supportée sur cet appareil', 'danger');
     }
   }
 
-  // Store previous position for calculating direction
   private previousPosition: { lat: number, lng: number } | null = null;
+  private lastRouteUpdate: number = 0;
+  private readonly ROUTE_UPDATE_INTERVAL = 15000; // Route recalculée toutes les 15s
 
   /**
-   * Mettre à jour la position du camion avec rotation et animations
+   * Mettre à jour la position du camion EN TEMPS RÉEL - même petites distances
    */
   private updateTruckPosition(lat: number, lng: number) {
-    if (this.truckMarker && this.map) {
-      const newPosition: [number, number] = [lat, lng];
+    if (!this.truckMarker || !this.map) return;
 
-      // Calculate rotation angle based on movement direction
-      if (this.previousPosition) {
-        const angle = this.calculateRotationAngle(
-          this.previousPosition.lat,
-          this.previousPosition.lng,
-          lat,
-          lng
-        );
-
-        // Apply rotation to truck marker with smooth transition
-        const truckElement = document.querySelector('.truck-marker-container') as HTMLElement;
-        if (truckElement) {
-          truckElement.style.transform = `rotate(${angle - 90}deg)`;
-        }
-      }
-
-      // Update wheel animation speed based on current speed
-      this.updateWheelAnimationSpeed();
-
-      // Update speed badge
-      this.updateSpeedBadge();
-
-      // Set marker position
-      this.truckMarker.setLatLng(newPosition);
-
-      // Store position for next rotation calculation
-      this.previousPosition = { lat, lng };
-
-      // Pan smoothly to new position
-      this.map.panTo(newPosition, {
-        animate: true,
-        duration: 0.5,
-        noMoveStart: true
-      });
+    // Première position GPS réelle → rendre le marker visible
+    if (this.truckMarker.options.opacity === 0) {
+      this.truckMarker.setOpacity(1);
+      this.truckMarker.setLatLng([lat, lng]);
+      this.truckMarker.bindPopup(`<b>Votre Camion</b><br>Position actuelle<br><small>Précision: ${this.accuracy.toFixed(0)}m</small>`);
+      // Centrer la carte sur la position réelle
+      this.map.setView([lat, lng], 17);
+      console.log('📍 Première position GPS obtenue → marqueur affiché');
     }
+
+    const newPosition: [number, number] = [lat, lng];
+
+    // Calculate rotation angle based on movement direction
+    if (this.previousPosition) {
+      const angle = this.calculateRotationAngle(
+        this.previousPosition.lat,
+        this.previousPosition.lng,
+        lat,
+        lng
+      );
+
+      const truckElement = document.querySelector('.truck-marker-container') as HTMLElement;
+      if (truckElement) {
+        truckElement.style.transform = `rotate(${angle - 90}deg)`;
+      }
+    }
+
+    // Update speed badge
+    this.updateSpeedBadge();
+
+    // Update marker position IMMÉDIATEMENT (sans animation brusque)
+    this.truckMarker.setLatLng(newPosition);
+
+    // Pan map SANS zoom excessif pour les petites distances
+    this.map.panTo(newPosition, {
+      animate: true,
+      duration: 0.8,
+      noMoveStart: true
+    });
+
+    // Recalculer la route SEULEMENT toutes les 15 secondes (économie API)
+    const now = Date.now();
+    if (this.destination && (now - this.lastRouteUpdate > this.ROUTE_UPDATE_INTERVAL)) {
+      console.log('🗺️ Recalcul route optimisée...');
+      this.updateRoute();
+      this.lastRouteUpdate = now;
+    }
+
+    // Stocker position pour prochain calcul de direction
+    this.previousPosition = { lat, lng };
   }
 
   /**

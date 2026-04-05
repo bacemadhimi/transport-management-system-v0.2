@@ -569,6 +569,23 @@
   background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
 }
 
+/* Destination marker style */
+.destination-marker {
+  background: transparent !important;
+  border: none !important;
+}
+
+/* Truck marker animations */
+@keyframes truckPulse {
+  0%, 100% { transform: scale(1); box-shadow: 0 6px 20px rgba(0,0,0,0.3); }
+  50% { transform: scale(1.05); box-shadow: 0 8px 30px rgba(0,0,0,0.4); }
+}
+
+@keyframes destinationPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+}
+
 /* Responsive */
 @media (max-width: 1200px) {
   .main-content {

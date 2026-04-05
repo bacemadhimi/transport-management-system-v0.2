@@ -1,0 +1,17 @@
+{
+  "metadata": {
+    "collectedAt": "2026-04-05T22:17:44.011Z",
+    "source": "Overpass API (OpenStreetMap) - ENRICHED",
+    "bounds": {
+      "minLat": 30,
+      "maxLat": 37.5,
+      "minLon": 7.5,
+      "maxLon": 12
+    },
+    "totalPOI": 0,
+    "categories": 0,
+    "version": "2.0-enriched"
+  },
+  "statistics": {},
+  "poi": []
+}

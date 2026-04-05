@@ -43,6 +43,7 @@ import { IGeographicalLevel, ITripSettings } from '../../../types/general-settin
 import { IGeographicalEntity } from '../../../types/general-settings';
 import { GpsAddressService } from '../../../services/gps-address.service';
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
+import * as L from 'leaflet';
 
 interface DialogData {
   tripId?: number;
@@ -169,6 +170,15 @@ export class TripForm implements OnInit {
   selectedDestinationCoords: {lat: number, lng: number, address: string} | null = null;
   globalAddressSearchSubject: Subject<string> = new Subject();
   hoveredSuggestion: any = null;
+
+  // ===== ADDED: Interactive Map for GPS Position Adjustment =====
+  showMapAdjustment = false;
+  map: any = null;
+  marker: any = null;
+  customDestinationCoords: {lat: number, lng: number, address: string, isCustomLocation: boolean} | null = null;
+  mapSearchControl: any = null;
+  mapReady = false;
+  searchMarkers: any[] = []; // Array to store search result markers
 
   // Filtres hiérarchiques pour camions
   truckSelectedLevelIds: (number | null)[] = [];
@@ -1423,10 +1433,11 @@ private async checkAndDisplayTrajectStatus(trajectId: number): Promise<void> {
 
   /**
    * Géocoder l'adresse de livraison et stocker les coordonnées GPS
+   * Toutes les sources (Nominatim, Photon, Local) sont géocodées et affichées correctement
    */
   private geocodeDeliveryAddress(customerId: number, address: string): void {
     console.log(`Géocodage de l'adresse pour le client ${customerId}: ${address}`);
-    
+
     this.gpsAddressService.validateAndNormalizeAddress(address).subscribe({
       next: (result) => {
         if (result.success && result.lat && result.lng) {
@@ -1439,16 +1450,25 @@ private async checkAndDisplayTrajectStatus(trajectId: number): Promise<void> {
 
           if (deliveryGroup) {
             const groupControl = deliveryGroup as FormGroup;
-            
+
             // Stocker les coordonnées dans le champ geolocation (format: "lat,lng")
             const geolocationValue = `${result.lat.toFixed(6)},${result.lng.toFixed(6)}`;
-            groupControl.patchValue({ 
+            groupControl.patchValue({
               geolocation: geolocationValue,
               deliveryAddress: result.address // Utiliser l'adresse normalisée
             }, { emitEvent: false });
-            
+
+            // IMPORTANT: Sauvegarder les coords pour la création du voyage
+            // (Toutes les sources: Nominatim, Photon, Base locale)
+            this.selectedDestinationCoords = {
+              lat: result.lat,
+              lng: result.lng,
+              address: result.address || address
+            };
+
             console.log(`✅ Adresse géocodée pour le client ${customerId}: ${result.address} (${geolocationValue})`);
-            
+            console.log(`📍 Destination coords sauvegardées pour le voyage:`, this.selectedDestinationCoords);
+
             this.snackBar.open(`✅ Adresse géocodée avec succès`, 'Fermer', {
               duration: 3000,
               horizontalPosition: 'right',
@@ -1544,7 +1564,7 @@ private async checkAndDisplayTrajectStatus(trajectId: number): Promise<void> {
 
   onAddressSelected(event: any, customerId: number): void {
     const suggestion = event.option.value;
-    
+
     // Find delivery group for this customer
     const deliveriesArray = this.tripForm.get('deliveries') as FormArray;
     const deliveryGroup = deliveriesArray.controls.find(d => {
@@ -1555,14 +1575,22 @@ private async checkAndDisplayTrajectStatus(trajectId: number): Promise<void> {
     if (deliveryGroup) {
       const groupControl = deliveryGroup as FormGroup;
       const geolocationValue = `${suggestion.lat.toFixed(6)},${suggestion.lng.toFixed(6)}`;
-      
+
       groupControl.patchValue({
         deliveryAddress: suggestion.address,
         geolocation: geolocationValue
       }, { emitEvent: false });
 
-      console.log(`✅ Address selected for client ${customerId}: ${suggestion.address} (${geolocationValue})`);
-      
+      // IMPORTANT: Update destination coords for trip creation (ALL sources: Nominatim, Photon, Local)
+      this.selectedDestinationCoords = {
+        lat: suggestion.lat,
+        lng: suggestion.lng,
+        address: suggestion.address
+      };
+
+      console.log(`✅ Address selected for client ${customerId}: ${suggestion.address} (${geolocationValue}) - Source: ${suggestion.source || 'unknown'}`);
+      console.log(`📍 Destination coords saved for trip creation:`, this.selectedDestinationCoords);
+
       this.snackBar.open(`✅ Adresse sélectionnée: ${suggestion.address}`, 'Fermer', {
         duration: 3000
       });
@@ -2038,18 +2066,9 @@ async confirmAddOrders(): Promise<void> {
       return;
     }
 
-    if (this.tripForm.invalid || this.deliveries.length === 0) {
+    if (this.tripForm.invalid) {
       this.markFormGroupTouched(this.tripForm);
       this.deliveryControls.forEach(group => this.markFormGroupTouched(group));
-
-      if (this.deliveries.length === 0) {
-        Swal.fire({
-          icon: 'warning',
-          title: 'Attention',
-          text: 'Ajoutez au moins une livraison',
-          confirmButtonText: 'OK'
-        });
-      }
       return;
     }
       const orderTypeValidation = this.validateOrderTypes();
@@ -2735,6 +2754,15 @@ private async checkCapacityBeforeAddingOrders(selectedWeight: number): Promise<b
       destinationAddress: this.selectedDestinationCoords?.address || null
     };
 
+    console.log('🚀 Creating trip with coordinates:', {
+      lat: createTripData.destinationLatitude,
+      lng: createTripData.destinationLongitude,
+      address: createTripData.destinationAddress,
+      isCustom: !!this.customDestinationCoords,
+      selectedDestinationCoords: this.selectedDestinationCoords,
+      customDestinationCoords: this.customDestinationCoords
+    });
+
     this.http.createTrip(createTripData).subscribe({
       next: (response: any) => {
         this.loading = false;
@@ -2748,12 +2776,16 @@ private async checkCapacityBeforeAddingOrders(selectedWeight: number): Promise<b
         // ===== ADDED: Save destination coordinates =====
         if (response?.data?.id) {
           const tripId = response.data.id;
-          
-          // Priority 1: Use manually selected destination coords (from map click)
+
+          // Priority 1: Use manually selected destination coords (from map click or adjusted position)
           if (this.selectedDestinationCoords) {
-            console.log('📍 Saving manually selected destination coordinates for trip:', tripId);
+            console.log('📍 TRIP CREATED - Saving destination coordinates (may be adjusted) for trip:', tripId);
+            console.log('📍 SELECTED coords:', this.selectedDestinationCoords);
+            console.log('📍 CUSTOM coords (if adjusted):', this.customDestinationCoords);
+            console.log('📍 Final position being saved:', this.selectedDestinationCoords);
+            
             this.saveDestinationCoordinates(tripId, this.selectedDestinationCoords);
-          } 
+          }
           // Priority 2: Use end location from dropdown
           else {
             const endLocationId = this.tripForm.get('endLocationId')?.value;
@@ -8785,13 +8817,37 @@ private setupGlobalAddressSearch(): void {
  * Select global destination address
  */
 onGlobalAddressSelected(suggestion: any): void {
+  console.log('🔍 Full suggestion object:', JSON.stringify(suggestion, null, 2));
+  console.log('🔍 suggestion.lat:', suggestion.lat);
+  console.log('🔍 suggestion.lon:', suggestion.lon);
+  console.log('🔍 suggestion.lng:', suggestion.lng);
+  
+  // Try different property names (Nominatim returns 'lat' and 'lon')
+  const lat = parseFloat(suggestion.lat || suggestion.latitude || suggestion.lat);
+  const lng = parseFloat(suggestion.lon || suggestion.lng || suggestion.longitude || suggestion.lon);
+  
+  console.log('🔍 Parsed values - lat:', lat, 'lng:', lng);
+  
+  // Validate coordinates
+  if (isNaN(lat) || isNaN(lng)) {
+    console.error('❌ Invalid coordinates from suggestion:', suggestion);
+    this.snackBar.open('❌ Coordonnées invalides pour cette adresse', 'Fermer', {
+      duration: 3000,
+      horizontalPosition: 'right',
+      verticalPosition: 'top'
+    });
+    return;
+  }
+  
   this.selectedDestinationCoords = {
-    lat: parseFloat(suggestion.lat),
-    lng: parseFloat(suggestion.lon),
+    lat: lat,
+    lng: lng,
     address: suggestion.display_name || suggestion.address
   };
   this.globalDestinationAddress.setValue(suggestion.display_name || suggestion.address);
   this.globalAddressSuggestions = [];
+
+  console.log('✅ Destination selected with valid coordinates:', this.selectedDestinationCoords);
   
   this.snackBar.open(`✅ Destination définie: ${this.selectedDestinationCoords.address}`, 'Fermer', {
     duration: 3000,
@@ -8828,11 +8884,710 @@ searchGlobalAddress(): void {
 }
 
 /**
+ * Toggle map adjustment feature
+ */
+toggleMapAdjustment(): void {
+  this.showMapAdjustment = !this.showMapAdjustment;
+  
+  if (this.showMapAdjustment && this.selectedDestinationCoords) {
+    // Validate coordinates before initializing map
+    const coords = this.selectedDestinationCoords;
+    if (isNaN(coords.lat) || isNaN(coords.lng)) {
+      console.error('❌ Invalid coordinates:', coords);
+      this.snackBar.open('❌ Coordonnées invalides', 'Fermer', {
+        duration: 3000,
+        horizontalPosition: 'right',
+        verticalPosition: 'top'
+      });
+      this.showMapAdjustment = false;
+      return;
+    }
+    
+    console.log('🗺️ Opening map adjustment with coordinates:', coords);
+    
+    // Initialize map after view update
+    setTimeout(() => {
+      this.initializeMap();
+    }, 200);
+  } else if (!this.selectedDestinationCoords) {
+    this.snackBar.open('⚠️ Veuillez d\'abord sélectionner une adresse', 'Fermer', {
+      duration: 3000,
+      horizontalPosition: 'right',
+      verticalPosition: 'top'
+    });
+  }
+}
+
+/**
+ * Initialize Leaflet map for position adjustment
+ */
+private initializeMap(): void {
+  if (!this.selectedDestinationCoords || this.map) {
+    return;
+  }
+
+  try {
+    const lat = this.selectedDestinationCoords.lat;
+    const lng = this.selectedDestinationCoords.lng;
+    
+    // Final validation before creating map
+    if (isNaN(lat) || isNaN(lng)) {
+      throw new Error(`Invalid coordinates: lat=${lat}, lng=${lng}`);
+    }
+    
+    console.log('🗺️ Initializing map at:', { lat, lng });
+    
+    // Create map centered on selected address
+    this.map = L.map('map-adjustment-container').setView(
+      [lat, lng],
+      16
+    );
+
+    // Add OpenStreetMap tiles
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap contributors',
+      maxZoom: 19
+    }).addTo(this.map);
+
+    // Create custom red pin icon (Google Maps style)
+    const redIcon = L.icon({
+      iconUrl: 'data:image/svg+xml;base64,' + btoa(`
+        <svg xmlns="http://www.w3.org/2000/svg" width="40" height="60" viewBox="0 0 40 60">
+          <defs>
+            <filter id="shadow" x="-20%" y="-10%" width="140%" height="140%">
+              <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="#000" flood-opacity="0.3"/>
+            </filter>
+          </defs>
+          <path d="M20 0 C9 0 0 9 0 20 C0 35 20 60 20 60 C20 60 40 35 40 20 C40 9 31 0 20 0 Z" 
+                fill="#DC2626" 
+                filter="url(#shadow)"/>
+          <circle cx="20" cy="18" r="8" fill="white"/>
+          <circle cx="20" cy="18" r="4" fill="#DC2626"/>
+        </svg>
+      `),
+      iconSize: [40, 60],
+      iconAnchor: [20, 60],
+      popupAnchor: [0, -60]
+    });
+
+    // Create draggable marker with red icon
+    this.marker = L.marker(
+      [lat, lng],
+      { 
+        draggable: true,
+        icon: redIcon
+      }
+    ).addTo(this.map);
+
+    // Add popup to show coordinates
+    this.marker.bindPopup(`
+      <div style="text-align: center; padding: 8px; min-width: 200px;">
+        <strong style="font-size: 14px;">📍 Position actuelle</strong><br/>
+        <hr style="margin: 8px 0; border: none; border-top: 1px solid #eee;"/>
+        <span style="font-family: monospace; font-size: 12px; color: #666;">
+          Lat: ${lat.toFixed(6)}<br/>
+          Lng: ${lng.toFixed(6)}
+        </span>
+      </div>
+    `).openPopup();
+
+    // Add search control (custom implementation)
+    this.addMapSearchControl();
+
+    // Handle marker drag events
+    this.marker.on('dragend', (event: any) => {
+      const position = event.target.getLatLng();
+      console.log('📍 Marker dragged to:', position);
+      this.updateCustomPosition(position.lat, position.lng);
+      
+      // Update popup with new position
+      this.marker.setPopupContent(`
+        <div style="text-align: center; padding: 8px; min-width: 200px;">
+          <strong style="font-size: 14px;">📍 Position ajustée</strong><br/>
+          <hr style="margin: 8px 0; border: none; border-top: 1px solid #eee;"/>
+          <span style="font-family: monospace; font-size: 12px; color: #666;">
+            Lat: ${position.lat.toFixed(6)}<br/>
+            Lng: ${position.lng.toFixed(6)}
+          </span>
+        </div>
+      `);
+    });
+
+    this.mapReady = true;
+    
+    // Invalidate size to ensure proper rendering
+    setTimeout(() => {
+      if (this.map) {
+        this.map.invalidateSize();
+      }
+    }, 300);
+
+  } catch (error) {
+    console.error('❌ Error initializing map:', error);
+    this.snackBar.open('❌ Erreur lors de l\'initialisation de la carte', 'Fermer', {
+      duration: 3000,
+      horizontalPosition: 'right',
+      verticalPosition: 'top'
+    });
+  }
+}
+
+/**
+ * Add custom search control to the map
+ */
+private addMapSearchControl(): void {
+  // Create a custom search control
+  const searchControl = (L as any).control({ position: 'topright' });
+  
+  searchControl.onAdd = () => {
+    const container = L.DomUtil.create('div', 'map-search-wrapper');
+    container.style.position = 'relative';
+    
+    // Search bar container
+    const searchBar = L.DomUtil.create('div', 'map-search-bar');
+    searchBar.style.background = 'white';
+    searchBar.style.padding = '8px';
+    searchBar.style.borderRadius = '8px';
+    searchBar.style.boxShadow = '0 2px 8px rgba(0,0,0,0.15)';
+    searchBar.style.display = 'flex';
+    searchBar.style.gap = '6px';
+    searchBar.style.alignItems = 'center';
+    searchBar.style.position = 'relative';
+    searchBar.style.zIndex = '1000';
+    
+    const input = L.DomUtil.create('input', 'map-search-input');
+    input.type = 'text';
+    input.placeholder = 'Rechercher...';
+    input.style.width = '200px';
+    input.style.padding = '8px 10px';
+    input.style.border = '1px solid #ddd';
+    input.style.borderRadius = '6px';
+    input.style.fontSize = '13px';
+    input.style.outline = 'none';
+    input.style.transition = 'all 0.2s';
+    
+    // Add focus effect
+    input.addEventListener('focus', () => {
+      input.style.borderColor = '#667eea';
+      input.style.boxShadow = '0 0 0 3px rgba(102, 126, 234, 0.1)';
+      input.style.width = '220px';
+    });
+    
+    input.addEventListener('blur', () => {
+      input.style.borderColor = '#ddd';
+      input.style.boxShadow = 'none';
+      input.style.width = '200px';
+    });
+    
+    // Prevent map interactions when typing
+    L.DomEvent.disableClickPropagation(input);
+    L.DomEvent.disableScrollPropagation(input);
+    
+    // Add search functionality on Enter
+    input.addEventListener('keypress', (e: KeyboardEvent) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        this.searchOnMap(input.value);
+      }
+    });
+    
+    // Create search button
+    const searchButton = L.DomUtil.create('button', 'map-search-btn');
+    searchButton.innerHTML = '🔍';
+    searchButton.style.width = '36px';
+    searchButton.style.height = '36px';
+    searchButton.style.border = 'none';
+    searchButton.style.borderRadius = '6px';
+    searchButton.style.background = 'linear-gradient(135deg, #667eea, #764ba2)';
+    searchButton.style.color = 'white';
+    searchButton.style.cursor = 'pointer';
+    searchButton.style.fontSize = '18px';
+    searchButton.style.display = 'flex';
+    searchButton.style.alignItems = 'center';
+    searchButton.style.justifyContent = 'center';
+    searchButton.style.transition = 'all 0.2s';
+    searchButton.style.boxShadow = '0 2px 6px rgba(102, 126, 234, 0.3)';
+    searchButton.title = 'Rechercher sur la carte';
+    
+    // Hover effect
+    searchButton.addEventListener('mouseenter', () => {
+      searchButton.style.transform = 'scale(1.05)';
+      searchButton.style.boxShadow = '0 4px 12px rgba(102, 126, 234, 0.4)';
+    });
+    
+    searchButton.addEventListener('mouseleave', () => {
+      searchButton.style.transform = 'scale(1)';
+      searchButton.style.boxShadow = '0 2px 6px rgba(102, 126, 234, 0.3)';
+    });
+    
+    // Search on button click
+    searchButton.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      console.log('🔍 Search button clicked, query:', input.value);
+      if (input.value && input.value.length >= 2) {
+        this.searchOnMap(input.value);
+      } else {
+        this.snackBar.open('⚠️ Entrez au moins 2 caractères', 'Fermer', {
+          duration: 2000,
+          horizontalPosition: 'right',
+          verticalPosition: 'top'
+        });
+      }
+    });
+    
+    searchBar.appendChild(input);
+    searchBar.appendChild(searchButton);
+    container.appendChild(searchBar);
+    
+    // Results dropdown
+    const resultsDropdown = L.DomUtil.create('div', 'map-search-results');
+    resultsDropdown.style.display = 'none';
+    resultsDropdown.style.position = 'absolute';
+    resultsDropdown.style.top = '100%';
+    resultsDropdown.style.left = '0';
+    resultsDropdown.style.right = '0';
+    resultsDropdown.style.marginTop = '4px';
+    resultsDropdown.style.background = 'white';
+    resultsDropdown.style.borderRadius = '8px';
+    resultsDropdown.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
+    resultsDropdown.style.maxHeight = '300px';
+    resultsDropdown.style.overflowY = 'auto';
+    resultsDropdown.style.zIndex = '1001';
+    container.appendChild(resultsDropdown);
+    
+    return container;
+  };
+  
+  searchControl.addTo(this.map);
+  this.mapSearchControl = searchControl;
+}
+
+/**
+ * Search for locations in Tunisia using Nominatim (free, with CORS proxy)
+ */
+private searchOnMap(query: string): void {
+  if (!query || query.length < 2) {
+    return;
+  }
+
+  console.log('🔍 Searching for:', query);
+
+  // Show loading state
+  const resultsDropdown = this.map?.getContainer()?.querySelector('.map-search-results');
+  if (resultsDropdown) {
+    resultsDropdown.innerHTML = '<div style="padding: 12px; text-align: center; color: #999;">Recherche en cours...</div>';
+    resultsDropdown.style.display = 'block';
+  }
+
+  // Clear previous search markers
+  if (this.searchMarkers) {
+    this.searchMarkers.forEach(m => this.map.removeLayer(m));
+    this.searchMarkers = [];
+  }
+
+  const proxyUrl = 'https://corsproxy.io/?';
+  const searchQuery = `${query}, Tunisia`;
+  const nominatimUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery)}&limit=20&addressdetails=1&accept-language=fr`;
+  const fullUrl = proxyUrl + encodeURIComponent(nominatimUrl);
+
+  console.log('🗺️ Nominatim search:', searchQuery);
+
+  fetch(fullUrl)
+    .then(response => response.json())
+    .then(results => {
+      if (results && results.length > 0) {
+        console.log(`✅ Found ${results.length} results`);
+        
+        const tunisiaResults = results.filter((r: any) => {
+          const lat = parseFloat(r.lat);
+          const lon = parseFloat(r.lon);
+          return lat >= 30 && lat <= 37.5 && lon >= 7.5 && lon <= 12;
+        });
+
+        if (tunisiaResults.length > 0) {
+          console.log(`📍 ${tunisiaResults.length} results in Tunisia`);
+          this.displaySearchResults(tunisiaResults);
+        } else {
+          console.log('⚠️ No Tunisia results');
+          this.showNoResultsMessage(resultsDropdown);
+        }
+      } else {
+        console.log('⚠️ No results found');
+        this.showNoResultsMessage(resultsDropdown);
+      }
+    })
+    .catch(error => {
+      console.error('❌ Error searching:', error);
+      this.showErrorMessage(resultsDropdown);
+    });
+}
+
+/**
+ * Search for a specific store in a specific city
+ * Example: "aziza" in "tajerouine"
+ */
+private searchStoreInCity(storeName: string, cityName: string, resultsDropdown: Element | null): void {
+  console.log(`🏪 Searching for ${storeName} in ${cityName}`);
+
+  const proxyUrl = 'https://corsproxy.io/?';
+  
+  // Map store to category
+  const category = 'shop=supermarket';
+  const [key, value] = category.split('=');
+
+  // Search all supermarkets in Tunisia
+  const nominatimUrl = `https://nominatim.openstreetmap.org/search?format=json&country=tn&${key}=${value}&limit=100&addressdetails=1&accept-language=fr`;
+  const fullUrl = proxyUrl + encodeURIComponent(nominatimUrl);
+
+  fetch(fullUrl)
+    .then(response => response.json())
+    .then(results => {
+      if (results && results.length > 0) {
+        console.log(`✅ Found ${results.length} ${value} in Tunisia`);
+        
+        // Filter to only show those in the requested city
+        const filteredResults = results.filter((r: any) => {
+          const displayName = r.display_name.toLowerCase();
+          const address = r.address || {};
+          
+          // Check multiple fields for city name
+          const cityFields = [
+            displayName,
+            address.city || '',
+            address.town || '',
+            address.village || '',
+            address.suburb || '',
+            address.county || '',
+            address.state || ''
+          ].join(' ').toLowerCase();
+          
+          return cityFields.includes(cityName);
+        });
+
+        if (filteredResults.length > 0) {
+          console.log(`📍 Found ${filteredResults.length} ${storeName} in ${cityName}`);
+          this.displaySearchResults(filteredResults.slice(0, 20));
+        } else {
+          console.log(`⚠️ No ${storeName} found in ${cityName}, showing all ${value} in Tunisia`);
+          this.displaySearchResults(results.slice(0, 20));
+        }
+      } else {
+        this.showNoResultsMessage(resultsDropdown);
+      }
+    })
+    .catch(error => {
+      console.error('Error searching store in city:', error);
+      this.showErrorMessage(resultsDropdown);
+    });
+}
+
+/**
+ * Search by category (shops, pharmacies, schools, etc.)
+ * Uses CORS proxy to avoid browser restrictions
+ */
+private searchByCategory(query: string, resultsDropdown: Element | null): void {
+  console.log('🔍 Trying category-based search for:', query);
+
+  // Map query to Nominatim categories
+  const categoryMap: { [key: string]: string } = {
+    'aziza': 'shop=supermarket',
+    'monoprix': 'shop=supermarket',
+    'magasin': 'shop=supermarket',
+    'carrefour': 'shop=supermarket',
+    'pharmacie': 'amenity=pharmacy',
+    'pharmacy': 'amenity=pharmacy',
+    'école': 'amenity=school',
+    'ecole': 'amenity=school',
+    'lycée': 'amenity=school',
+    'college': 'amenity=school',
+    'université': 'amenity=university',
+    'universite': 'amenity=university',
+    'restaurant': 'amenity=restaurant',
+    'café': 'amenity=cafe',
+    'cafe': 'amenity=cafe',
+    'banque': 'amenity=bank',
+    'bank': 'amenity=bank',
+    'hôpital': 'amenity=hospital',
+    'hopital': 'amenity=hospital',
+    'clinique': 'amenity=clinic',
+    'mosquée': 'amenity=place_of_worship',
+    'mosquee': 'amenity=place_of_worship',
+  };
+
+  const lowerQuery = query.toLowerCase();
+  
+  // Extract potential category from query
+  const categoryKeys = Object.keys(categoryMap);
+  const matchedCategory = categoryKeys.find(key => lowerQuery.includes(key));
+
+  if (!matchedCategory) {
+    console.log('⚠️ No category mapping for:', lowerQuery);
+    this.showNoResultsMessage(resultsDropdown);
+    return;
+  }
+
+  const [key, value] = categoryMap[matchedCategory].split('=');
+
+  // Check if query contains a city name
+  const cities = ['tunis', 'sfax', 'sousse', 'ariana', 'benarous', 'manouba', 'nabeul', 'bizerte', 'gafsa', 'gabes', 'tataouine', 'medenine', 'kef', 'kasserine', 'beja', 'jendouba', 'siliana', 'zaghouan', 'mahdia', 'monastir', 'tozeur', 'kebili', 'sidibouzid', 'tajerouine', 'kairouan', 'sidi bouzid'];
+  
+  const queryParts = lowerQuery.split(' ');
+  const cityInQuery = cities.find(c => queryParts.some(p => p.includes(c) || c.includes(p)));
+
+  // Use CORS proxy
+  const proxyUrl = 'https://corsproxy.io/?';
+  const nominatimUrl = `https://nominatim.openstreetmap.org/search?format=json&country=tn&${key}=${value}&limit=50&addressdetails=1&accept-language=fr`;
+  const fullUrl = proxyUrl + encodeURIComponent(nominatimUrl);
+
+  console.log(`🗺️ Category search: ${key}=${value}`);
+
+  fetch(fullUrl)
+    .then(response => response.json())
+    .then(results => {
+      if (results && results.length > 0) {
+        console.log(`✅ Category search found ${results.length} results`);
+        
+        // Filter by city if present in query
+        let filteredResults = results;
+        
+        if (cityInQuery) {
+          console.log(`📍 Filtering results for city: ${cityInQuery}`);
+          filteredResults = results.filter((r: any) => 
+            r.display_name.toLowerCase().includes(cityInQuery)
+          );
+        }
+
+        if (filteredResults.length > 0) {
+          console.log(`📍 Showing ${filteredResults.length} category results`);
+          this.displaySearchResults(filteredResults.slice(0, 20));
+        } else {
+          console.log('⚠️ No results after filtering, showing all');
+          this.displaySearchResults(results.slice(0, 20));
+        }
+      } else {
+        this.showNoResultsMessage(resultsDropdown);
+      }
+    })
+    .catch(error => {
+      console.error('Error in category search:', error);
+      this.showErrorMessage(resultsDropdown);
+    });
+}
+
+/**
+ * Show no results message
+ */
+private showNoResultsMessage(resultsDropdown: Element | null): void {
+  this.snackBar.open('⚠️ Aucun lieu trouvé', 'Fermer', {
+    duration: 3000,
+    horizontalPosition: 'right',
+    verticalPosition: 'top'
+  });
+  if (resultsDropdown) {
+    resultsDropdown.innerHTML = '<div style="padding: 12px; text-align: center; color: #999;">Aucun résultat trouvé</div>';
+  }
+}
+
+/**
+ * Show error message
+ */
+private showErrorMessage(resultsDropdown: Element | null): void {
+  this.snackBar.open('❌ Erreur lors de la recherche', 'Fermer', {
+    duration: 3000,
+    horizontalPosition: 'right',
+    verticalPosition: 'top'
+  });
+  if (resultsDropdown) {
+    resultsDropdown.innerHTML = '<div style="padding: 12px; text-align: center; color: #f44336;">Erreur de recherche</div>';
+  }
+}
+
+/**
+ * Display search results in dropdown
+ */
+private displaySearchResults(results: any[]): void {
+  const resultsDropdown = this.map?.getContainer()?.querySelector('.map-search-results');
+  if (!resultsDropdown) return;
+
+  resultsDropdown.innerHTML = '';
+  resultsDropdown.style.display = 'block';
+
+  results.forEach((result, index) => {
+    const item = document.createElement('div');
+    item.className = 'search-result-item';
+    item.style.padding = '12px';
+    item.style.borderBottom = index < results.length - 1 ? '1px solid #f0f0f0' : 'none';
+    item.style.cursor = 'pointer';
+    item.style.transition = 'background 0.2s';
+    item.style.fontSize = '13px';
+    item.style.lineHeight = '1.4';
+    
+    // Address text
+    const addressText = result.display_name || 'Adresse inconnue';
+    const shortAddress = addressText.length > 80 ? addressText.substring(0, 80) + '...' : addressText;
+    
+    item.innerHTML = `
+      <div style="font-weight: 500; color: #333; margin-bottom: 4px;">${shortAddress}</div>
+      <div style="font-size: 11px; color: #999; font-family: monospace;">
+        📍 ${parseFloat(result.lat).toFixed(6)}, ${parseFloat(result.lon).toFixed(6)}
+      </div>
+    `;
+    
+    // Hover effect
+    item.addEventListener('mouseenter', () => {
+      item.style.background = '#f0f9ff';
+    });
+    item.addEventListener('mouseleave', () => {
+      item.style.background = 'white';
+    });
+    
+    // Click to select
+    item.addEventListener('click', () => {
+      const lat = parseFloat(result.lat);
+      const lng = parseFloat(result.lon);
+      
+      console.log(`📍 Selected result #${index + 1}:`, { lat, lng });
+      
+      // Move main marker to this location
+      this.marker.setLatLng([lat, lng]);
+      this.map.setView([lat, lng], 16);
+      
+      // Update custom position
+      this.updateCustomPosition(lat, lng);
+      
+      // Update popup
+      this.marker.setPopupContent(`
+        <div style="text-align: center; padding: 8px; min-width: 200px;">
+          <strong style="font-size: 14px;">📍 Résultat de recherche</strong><br/>
+          <hr style="margin: 8px 0; border: none; border-top: 1px solid #eee;"/>
+          <div style="font-size: 11px; color: #666; margin-bottom: 6px; max-width: 180px; word-wrap: break-word;">
+            ${shortAddress}
+          </div>
+          <span style="font-family: monospace; font-size: 12px; color: #666;">
+            Lat: ${lat.toFixed(6)}<br/>
+            Lng: ${lng.toFixed(6)}
+          </span>
+        </div>
+      `).openPopup();
+      
+      // Close dropdown
+      resultsDropdown.style.display = 'none';
+      resultsDropdown.innerHTML = '';
+    });
+    
+    resultsDropdown.appendChild(item);
+  });
+
+  // Close dropdown when clicking outside
+  setTimeout(() => {
+    const closeHandler = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target.closest('.map-search-wrapper')) {
+        resultsDropdown.style.display = 'none';
+        document.removeEventListener('click', closeHandler);
+      }
+    };
+    document.addEventListener('click', closeHandler);
+  }, 100);
+}
+
+/**
+ * Update custom position coordinates
+ */
+private updateCustomPosition(lat: number, lng: number): void {
+  // Reverse geocode to get address
+  fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`)
+    .then(response => response.json())
+    .then(result => {
+      this.customDestinationCoords = {
+        lat: lat,
+        lng: lng,
+        address: result.display_name || 'Position personnalisée',
+        isCustomLocation: true
+      };
+      
+      this.snackBar.open(`📍 Position ajustée: ${lat.toFixed(6)}, ${lng.toFixed(6)}`, 'Fermer', {
+        duration: 2000,
+        horizontalPosition: 'right',
+        verticalPosition: 'top'
+      });
+    })
+    .catch(error => {
+      console.error('Error reverse geocoding:', error);
+      // Still save the coordinates even if reverse geocoding fails
+      this.customDestinationCoords = {
+        lat: lat,
+        lng: lng,
+        address: 'Position personnalisée',
+        isCustomLocation: true
+      };
+    });
+}
+
+/**
+ * Apply custom position from map adjustment
+ */
+applyCustomPosition(): void {
+  if (this.customDestinationCoords) {
+    this.selectedDestinationCoords = {
+      lat: this.customDestinationCoords.lat,
+      lng: this.customDestinationCoords.lng,
+      address: this.customDestinationCoords.address
+    };
+    
+    this.globalDestinationAddress.setValue(this.customDestinationCoords.address);
+    
+    this.snackBar.open('✅ Position personnalisée appliquée', 'Fermer', {
+      duration: 3000,
+      horizontalPosition: 'right',
+      verticalPosition: 'top'
+    });
+    
+    // Optionally close the map
+    // this.closeMapAdjustment();
+  }
+}
+
+/**
+ * Close map adjustment
+ */
+closeMapAdjustment(): void {
+  if (this.map) {
+    this.map.remove();
+    this.map = null;
+    this.marker = null;
+    this.mapSearchControl = null;
+    this.mapReady = false;
+  }
+  this.showMapAdjustment = false;
+}
+
+/**
+ * Use original geocoded position
+ */
+useOriginalPosition(): void {
+  if (this.selectedDestinationCoords && !this.customDestinationCoords) {
+    this.snackBar.open('ℹ️ Utilisation de la position d\'origine', 'Fermer', {
+      duration: 2000,
+      horizontalPosition: 'right',
+      verticalPosition: 'top'
+    });
+  }
+}
+
+/**
  * Save destination coordinates to the trip
+ * IMPORTANT: This method receives the FINAL coordinates to save:
+ * - If admin adjusted position via map → coords contains adjusted values
+ * - If admin didn't adjust → coords contains original geocoding values
+ * The mobile app will display EXACTLY these coordinates.
  */
 private saveDestinationCoordinates(tripId: number, coords: {lat: number, lng: number, address: string}): void {
-  console.log('📍 Saving destination coordinates for trip:', tripId, coords);
-  
+  console.log('📍 Saving FINAL destination coordinates for trip:', tripId, coords);
+  console.log('📱 Mobile app will display these exact coordinates');
+
+  // Save the coordinates as-is (already contains final position, whether original or adjusted)
   this.http.updateTripDestination(tripId, {
     latitude: coords.lat,
     longitude: coords.lng,
@@ -8840,7 +9595,7 @@ private saveDestinationCoordinates(tripId: number, coords: {lat: number, lng: nu
   }).subscribe({
     next: (success: boolean) => {
       if (success) {
-        console.log('✅ Destination coordinates saved successfully');
+        console.log('✅ Destination coordinates saved successfully to backend', coords);
         this.snackBar.open(`✅ Destination enregistrée: ${coords.address}`, 'Fermer', {
           duration: 3000,
           horizontalPosition: 'right',
