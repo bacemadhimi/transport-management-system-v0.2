@@ -7,6 +7,7 @@ using TransportManagementSystem.Data;
 using TransportManagementSystem.Entity;
 using TransportManagementSystem.Hubs;
 using TransportManagementSystem.Interfaces;
+using TransportManagementSystem.Models;
 using TransportManagementSystem.Repositories;
 using TransportManagementSystem.Services;
 
@@ -89,10 +90,17 @@ builder.Services.AddScoped<INotificationRepository, NotificationRepository>();
 
 // GPS & Geocoding services
 builder.Services.AddScoped<IGeocodingService, GeocodingService>();
+// GPSService disabled - requires PositionGPS repository
+// builder.Services.AddScoped<IGPSService, GPSService>();
+// OptimisationService disabled - requires ResultatOptimisation repository
+// builder.Services.AddScoped<IOptimisationService, OptimisationService>();
 builder.Services.AddHttpClient("Nominatim");
 
 // Notification Hub Service
 builder.Services.AddSingleton<NotificationHubService>();
+
+// Chatbot Service
+builder.Services.AddScoped<IChatbotService, ChatbotService>();
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>

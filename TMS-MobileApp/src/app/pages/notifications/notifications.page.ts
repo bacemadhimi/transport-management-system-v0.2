@@ -1,11 +1,13 @@
 import { Component, OnInit, OnDestroy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { IonicModule, ToastController } from '@ionic/angular';
+import { IonicModule, ToastController, AlertController } from '@ionic/angular';
 import { RouterModule } from '@angular/router';
 import { TripService } from '../../services/trip.service';
 import { ITrip, TripStatus } from '../../types/trip';
 import { Subscription } from 'rxjs';
 import { Network } from '@capacitor/network';
+import { NotificationStorageService, TripNotification } from '../../services/notification-storage.service';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-notifications',
@@ -17,13 +19,18 @@ import { Network } from '@capacitor/network';
 export class NotificationsPage implements OnInit, OnDestroy {
   tripService = inject(TripService);
   toastController = inject(ToastController);
+  alertController = inject(AlertController);
+  notificationStorage = inject(NotificationStorageService);
+  router = inject(Router);
 
+  notifications: TripNotification[] = [];
   allNotifications: (ITrip & { notificationType?: 'cancelled' | 'new' })[] = [];
   cancelledTrips: (ITrip & { notificationType?: 'cancelled' })[] = [];
   newTrips: (ITrip & { notificationType?: 'new' })[] = [];
 
   private _sub: Subscription | null = null;
   private networkListener: any;
+  private notificationSub: Subscription | null = null;
   
   // Offline mode flags
   isOnline: boolean = true;
@@ -34,10 +41,19 @@ export class NotificationsPage implements OnInit, OnDestroy {
   async ngOnInit() {
     await this.checkNetworkStatus();
     this.setupNetworkListener();
+
+    // Load notifications from storage
+    this.loadStoredNotifications();
     
+    // Listen for new notifications
+    this.notificationSub = this.notificationStorage.notifications$.subscribe(notifications => {
+      this.notifications = notifications;
+      console.log('📬 Notifications updated:', notifications.length);
+    });
+
     // Always load from cache first for offline viewing
     this.loadFromCache();
-    
+
     // Then try to load fresh data if online
     if (this.isOnline) {
       this.loadNotifications();
@@ -46,9 +62,38 @@ export class NotificationsPage implements OnInit, OnDestroy {
 
   ngOnDestroy() {
     this._sub?.unsubscribe();
+    this.notificationSub?.unsubscribe();
     if (this.networkListener) {
       this.networkListener.remove();
     }
+  }
+
+  loadStoredNotifications(): void {
+    this.notifications = this.notificationStorage.getAll();
+    console.log('📬 Loaded stored notifications:', this.notifications.length);
+  }
+
+  /**
+   * Navigate to GPS tracking page when clicking on notification
+   */
+  async onNotificationClick(notification: TripNotification): Promise<void> {
+    console.log('🔔 Notification clicked:', notification);
+
+    // Mark as read
+    this.notificationStorage.markAsRead(notification.id);
+
+    // Navigate to GPS tracking page with trip data
+    await this.router.navigate(['/trip/' + notification.tripId + '/gps'], {
+      queryParams: {
+        tripId: notification.tripId,
+        tripReference: notification.tripReference,
+        destination: notification.destination || '',
+        customerName: notification.customerName || '',
+        // Pass destination coordinates if available
+        destinationLat: notification.additionalData?.destinationLatitude || '',
+        destinationLng: notification.additionalData?.destinationLongitude || ''
+      }
+    });
   }
 
   private async checkNetworkStatus() {
@@ -226,5 +271,22 @@ export class NotificationsPage implements OnInit, OnDestroy {
     } catch (error) {
       console.error('Error clearing cache:', error);
     }
+  }
+
+  /**
+   * Clear all notifications from storage (for testing)
+   */
+  clearAllNotifications(): void {
+    this.notificationStorage.clearAll();
+    this.notifications = [];
+    this.showToast('All notifications cleared', 'success');
+  }
+
+  /**
+   * Mark all notifications as unread (for testing)
+   */
+  markAllAsUnread(): void {
+    this.notificationStorage.markAllAsUnread();
+    this.showToast('All notifications marked as unread', 'success');
   }
 }

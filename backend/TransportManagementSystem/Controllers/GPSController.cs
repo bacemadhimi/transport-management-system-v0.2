@@ -3,7 +3,8 @@ using TransportManagementSystem.Models;
 using TransportManagementSystem.Data;
 using TransportManagementSystem.Entity;
 using Microsoft.EntityFrameworkCore;
-using TransportManagementSystem.Services;
+using Microsoft.AspNetCore.SignalR;
+using TransportManagementSystem.Hubs;
 
 namespace TransportManagementSystem.Controllers
 {
@@ -11,21 +12,21 @@ namespace TransportManagementSystem.Controllers
     [Route("api/[controller]")]
     public class GPSController : ControllerBase
     {
-        private readonly IGPSService _gpsService;
-        private readonly IOptimisationService _optimisationService;
         private readonly ILogger<GPSController> _logger;
         private readonly ApplicationDbContext _context;
+        private readonly IHubContext<GPSHub> _gpsHub;
+        private readonly IHubContext<NotificationHub> _notificationHub;
 
         public GPSController(
-            IGPSService gpsService,
-            IOptimisationService optimisationService,
             ILogger<GPSController> logger,
-            ApplicationDbContext context)
+            ApplicationDbContext context,
+            IHubContext<GPSHub> gpsHub,
+            IHubContext<NotificationHub> notificationHub)
         {
-            _gpsService = gpsService;
-            _optimisationService = optimisationService;
             _logger = logger;
             _context = context;
+            _gpsHub = gpsHub;
+            _notificationHub = notificationHub;
         }
 
         /// <summary>
@@ -39,7 +40,7 @@ namespace TransportManagementSystem.Controllers
                 if (dto.Latitude < -90 || dto.Latitude > 90 || dto.Longitude < -180 || dto.Longitude > 180)
                     return BadRequest(new { message = "Coordonnées GPS invalides" });
 
-                var position = await _gpsService.SavePositionAsync(
+                var position = await SavePositionAsync(
                     dto.DriverId,
                     dto.TruckId,
                     dto.Latitude,
@@ -79,7 +80,7 @@ namespace TransportManagementSystem.Controllers
 
                 foreach (var p in dto.Positions)
                 {
-                    await _gpsService.SavePositionAsync(
+                    await SavePositionAsync(
                         p.DriverId,
                         p.TruckId,
                         p.Latitude,
@@ -112,7 +113,10 @@ namespace TransportManagementSystem.Controllers
                 if (limit <= 0) limit = 50;
                 if (limit > 500) limit = 500;
 
-                var positions = await _gpsService.GetLatestPositionsAsync(limit);
+                var positions = await _context.PositionsGPS
+                    .OrderByDescending(p => p.Timestamp)
+                    .Take(limit)
+                    .ToListAsync();
 
                 var result = positions.Select(p => new
                 {
@@ -142,7 +146,16 @@ namespace TransportManagementSystem.Controllers
         {
             try
             {
-                var positions = await _gpsService.GetPositionsAsync(driverId, null, startDate, endDate);
+                var query = _context.PositionsGPS.Where(p => p.DriverId == driverId);
+                
+                if (startDate.HasValue)
+                    query = query.Where(p => p.Timestamp >= startDate.Value);
+                
+                if (endDate.HasValue)
+                    query = query.Where(p => p.Timestamp <= endDate.Value);
+                
+                var positions = await query.OrderByDescending(p => p.Timestamp).ToListAsync();
+                
                 var result = positions.Select(p => new
                 {
                     p.Id,
@@ -170,7 +183,16 @@ namespace TransportManagementSystem.Controllers
         {
             try
             {
-                var positions = await _gpsService.GetPositionsAsync(null, truckId, startDate, endDate);
+                var query = _context.PositionsGPS.Where(p => p.TruckId == truckId);
+                
+                if (startDate.HasValue)
+                    query = query.Where(p => p.Timestamp >= startDate.Value);
+                
+                if (endDate.HasValue)
+                    query = query.Where(p => p.Timestamp <= endDate.Value);
+                
+                var positions = await query.OrderByDescending(p => p.Timestamp).ToListAsync();
+                
                 var result = positions.Select(p => new
                 {
                     p.Id,
@@ -198,7 +220,10 @@ namespace TransportManagementSystem.Controllers
         {
             try
             {
-                var position = await _gpsService.GetLatestPositionByDriverAsync(driverId);
+                var position = await _context.PositionsGPS
+                    .Where(p => p.DriverId == driverId)
+                    .OrderByDescending(p => p.Timestamp)
+                    .FirstOrDefaultAsync();
                 if (position == null)
                     return NotFound(new { message = "Aucune position trouvée pour ce chauffeur" });
 
@@ -228,7 +253,11 @@ namespace TransportManagementSystem.Controllers
         {
             try
             {
-                var position = await _gpsService.GetLatestPositionByTruckAsync(truckId);
+                var position = await _context.PositionsGPS
+                    .Where(p => p.TruckId == truckId)
+                    .OrderByDescending(p => p.Timestamp)
+                    .FirstOrDefaultAsync();
+                    
                 if (position == null)
                     return NotFound(new { message = "Aucune position trouvée pour ce camion" });
 
@@ -418,7 +447,7 @@ namespace TransportManagementSystem.Controllers
         {
             try
             {
-                var distance = await _optimisationService.CalculateDistanceAsync(
+                var distance = CalculateDistance(
                     dto.Lat1,
                     dto.Lng1,
                     dto.Lat2,
@@ -432,6 +461,26 @@ namespace TransportManagementSystem.Controllers
                 _logger.LogError($"Error calculating distance: {ex.Message}");
                 return StatusCode(500, new { message = "Erreur lors du calcul" });
             }
+        }
+
+        /// <summary>
+        /// Calculate distance between two points using Haversine formula
+        /// </summary>
+        private double CalculateDistance(double lat1, double lng1, double lat2, double lng2)
+        {
+            const double R = 6371; // Earth's radius in km
+            var dLat = ToRad(lat2 - lat1);
+            var dLng = ToRad(lng2 - lng1);
+            var a = Math.Sin(dLat / 2) * Math.Sin(dLat / 2) +
+                    Math.Cos(ToRad(lat1)) * Math.Cos(ToRad(lat2)) *
+                    Math.Sin(dLng / 2) * Math.Sin(dLng / 2);
+            var c = 2 * Math.Atan2(Math.Sqrt(a), Math.Sqrt(1 - a));
+            return R * c;
+        }
+
+        private double ToRad(double degrees)
+        {
+            return degrees * Math.PI / 180;
         }
 
         /// <summary>
@@ -491,9 +540,16 @@ namespace TransportManagementSystem.Controllers
                     _logger.LogInformation($"Delivery address: {destinationAddress}");
                     
                     // PRIORITY 1: Check if delivery has Location with coordinates (most reliable)
-
+                    if (!destinationLatitude.HasValue && !destinationLongitude.HasValue &&
+                        lastDelivery.Location != null && lastDelivery.Location.Latitude.HasValue && lastDelivery.Location.Longitude.HasValue)
+                    {
+                        destinationLatitude = lastDelivery.Location.Latitude;
+                        destinationLongitude = lastDelivery.Location.Longitude;
+                        geolocationSource = "Location table";
+                        _logger.LogInformation($"Using coordinates from Location: {destinationLatitude}, {destinationLongitude}");
+                    }
                     // PRIORITY 2: Check if delivery has Geolocation field with coordinates
-                     if (!destinationLatitude.HasValue && !destinationLongitude.HasValue && !string.IsNullOrWhiteSpace(lastDelivery.Geolocation))
+                    else if (!destinationLatitude.HasValue && !destinationLongitude.HasValue && !string.IsNullOrWhiteSpace(lastDelivery.Geolocation))
                     {
                         var geoParts = lastDelivery.Geolocation.Split(',');
                         if (geoParts.Length >= 2)
@@ -509,7 +565,7 @@ namespace TransportManagementSystem.Controllers
                         }
                     }
                 }
-                else if (trip.Traject != null && trip.Traject.Points.Any())
+                else if (trip.Traject != null && trip.Traject.Points != null && trip.Traject.Points.Any())
                 {
                     if (string.IsNullOrWhiteSpace(destinationAddress))
                     {
@@ -672,7 +728,7 @@ namespace TransportManagementSystem.Controllers
                 var count = await _context.GeocodingCache.CountAsync();
                 _context.GeocodingCache.RemoveRange(_context.GeocodingCache);
                 await _context.SaveChangesAsync();
-                
+
                 return Ok(new { message = $"Cache vidé: {count} entrées supprimées" });
             }
             catch (Exception ex)
@@ -681,6 +737,241 @@ namespace TransportManagementSystem.Controllers
                 return StatusCode(500, new { message = "Erreur lors du vidage du cache" });
             }
         }
+
+        /// <summary>
+        /// Mettre à jour les coordonnées de destination d'un voyage
+        /// </summary>
+        [HttpPut("trip-destination/{tripId}")]
+        public async Task<IActionResult> UpdateTripDestination(int tripId, [FromBody] TripDestinationDto dto)
+        {
+            try
+            {
+                var trip = await _context.Trips.FindAsync(tripId);
+                if (trip == null)
+                    return NotFound(new { message = "Voyage non trouvé" });
+
+                // Save destination coordinates
+                trip.EndLatitude = dto.Latitude;
+                trip.EndLongitude = dto.Longitude;
+
+                // Also update the destination address if provided
+                if (!string.IsNullOrWhiteSpace(dto.Address))
+                {
+                    // Try to find and update the last delivery's address
+                    var lastDelivery = await _context.Deliveries
+                        .Where(d => d.TripId == tripId)
+                        .OrderByDescending(d => d.Sequence)
+                        .FirstOrDefaultAsync();
+
+                    if (lastDelivery != null)
+                    {
+                        if (string.IsNullOrWhiteSpace(lastDelivery.DeliveryAddress))
+                        {
+                            lastDelivery.DeliveryAddress = dto.Address;
+                        }
+                    }
+                }
+
+                await _context.SaveChangesAsync();
+
+                _logger.LogInformation($"✅ Destination coordinates saved for trip {tripId}: {dto.Latitude}, {dto.Longitude}");
+
+                return Ok(new
+                {
+                    success = true,
+                    tripId = tripId,
+                    latitude = dto.Latitude,
+                    longitude = dto.Longitude,
+                    address = dto.Address
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error updating trip destination: {ex.Message}");
+                return StatusCode(500, new { message = "Erreur lors de la mise à jour" });
+            }
+        }
+
+        /// <summary>
+        /// Accepter un voyage par le chauffeur
+        /// </summary>
+        [HttpPost("trip/{tripId}/accept")]
+        public async Task<IActionResult> AcceptTrip(int tripId)
+        {
+            try
+            {
+                var trip = await _context.Trips
+                    .Include(t => t.Driver)
+                    .FirstOrDefaultAsync(t => t.Id == tripId);
+
+                if (trip == null)
+                    return NotFound(new { message = "Voyage non trouvé" });
+
+                if (trip.TripStatus != Entity.TripStatus.Planned)
+                    return BadRequest(new { message = "Le voyage ne peut plus être accepté" });
+
+                trip.TripStatus = Entity.TripStatus.Accepted;
+                trip.Driver.Status = "En mission";
+                
+                await _context.SaveChangesAsync();
+
+                // Send real-time notification to admin/web that driver accepted
+                await _context.Entry(trip).Reference(t => t.Driver).LoadAsync();
+                
+                if (_notificationHub != null)
+                {
+                    // Send to admin group
+                    await _notificationHub.Clients.Group("admins").SendAsync("ReceiveNotification", new
+                    {
+                        type = "TRIP_UPDATE",
+                        tripId = tripId,
+                        tripReference = trip.TripReference,
+                        driverId = trip.DriverId,
+                        driverName = trip.Driver?.Name,
+                        title = "Voyage Accepté",
+                        message = $"Le chauffeur {trip.Driver?.Name} a accepté le voyage {trip.TripReference}",
+                        status = "Accepted"
+                    });
+                    
+                    // Also send to all clients
+                    await _notificationHub.Clients.All.SendAsync("ReceiveNotification", new
+                    {
+                        type = "TRIP_UPDATE",
+                        tripId = tripId,
+                        tripReference = trip.TripReference,
+                        driverId = trip.DriverId,
+                        driverName = trip.Driver?.Name,
+                        title = "Voyage Accepté",
+                        message = $"Le chauffeur {trip.Driver?.Name} a accepté le voyage {trip.TripReference}",
+                        status = "Accepted"
+                    });
+                }
+
+                Console.WriteLine($"✅ Voyage {trip.TripReference} accepté par le chauffeur {trip.Driver?.Name}");
+
+                return Ok(new { message = "Voyage accepté avec succès", trip = new { trip.Id, trip.TripReference, trip.TripStatus } });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error accepting trip: {ex.Message}");
+                return StatusCode(500, new { message = "Erreur lors de l'acceptation" });
+            }
+        }
+
+        /// <summary>
+        /// Refuser un voyage par le chauffeur
+        /// </summary>
+        [HttpPost("trip/{tripId}/reject")]
+        public async Task<IActionResult> RejectTrip(int tripId, [FromBody] RejectTripDto dto)
+        {
+            try
+            {
+                var trip = await _context.Trips
+                    .Include(t => t.Driver)
+                    .FirstOrDefaultAsync(t => t.Id == tripId);
+
+                if (trip == null)
+                    return NotFound(new { message = "Voyage non trouvé" });
+
+                if (trip.TripStatus != Entity.TripStatus.Planned)
+                    return BadRequest(new { message = "Le voyage ne peut plus être refusé" });
+
+                trip.TripStatus = Entity.TripStatus.Cancelled;
+                trip.Driver.Status = "Disponible";
+                trip.Message = dto.Reason;
+                
+                await _context.SaveChangesAsync();
+
+                // Send real-time notification to admin/web that driver rejected
+                if (_notificationHub != null)
+                {
+                    // Send to admin group
+                    await _notificationHub.Clients.Group("admins").SendAsync("ReceiveNotification", new
+                    {
+                        type = "TRIP_UPDATE",
+                        tripId = tripId,
+                        tripReference = trip.TripReference,
+                        driverId = trip.DriverId,
+                        driverName = trip.Driver?.Name,
+                        title = "Voyage Refusé",
+                        reason = dto.Reason,
+                        message = $"Le chauffeur {trip.Driver?.Name} a refusé le voyage {trip.TripReference}",
+                        status = "Cancelled"
+                    });
+                    
+                    // Also send to all clients
+                    await _notificationHub.Clients.All.SendAsync("ReceiveNotification", new
+                    {
+                        type = "TRIP_UPDATE",
+                        tripId = tripId,
+                        tripReference = trip.TripReference,
+                        driverId = trip.DriverId,
+                        driverName = trip.Driver?.Name,
+                        title = "Voyage Refusé",
+                        reason = dto.Reason,
+                        message = $"Le chauffeur {trip.Driver?.Name} a refusé le voyage {trip.TripReference}",
+                        status = "Cancelled"
+                    });
+                }
+
+                Console.WriteLine($"❌ Voyage {trip.TripReference} refusé par le chauffeur {trip.Driver?.Name} - Raison: {dto.Reason}");
+
+                return Ok(new { message = "Voyage refusé", trip = new { trip.Id, trip.TripReference, trip.TripStatus } });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error rejecting trip: {ex.Message}");
+                return StatusCode(500, new { message = "Erreur lors du refus" });
+            }
+        }
+
+        /// <summary>
+        /// Save a GPS position to the database
+        /// </summary>
+        private async Task<PositionGPS> SavePositionAsync(int? driverId, int? truckId, double latitude, double longitude, string source)
+        {
+            var position = new PositionGPS
+            {
+                DriverId = driverId,
+                TruckId = truckId,
+                Latitude = latitude,
+                Longitude = longitude,
+                Source = source,
+                Timestamp = DateTime.UtcNow
+            };
+
+            _context.PositionsGPS.Add(position);
+            await _context.SaveChangesAsync();
+
+            // Send real-time update via SignalR
+            if (_gpsHub != null)
+            {
+                await _gpsHub.Clients.All.SendAsync("ReceivePosition", new
+                {
+                    position.Id,
+                    position.DriverId,
+                    position.TruckId,
+                    position.Latitude,
+                    position.Longitude,
+                    position.Timestamp
+                });
+            }
+
+            return position;
+        }
+    }
+
+    public class RejectTripDto
+    {
+        public string Reason { get; set; } = string.Empty;
+    }
+
+    // DTO for updating trip destination
+    public class TripDestinationDto
+    {
+        public double Latitude { get; set; }
+        public double Longitude { get; set; }
+        public string Address { get; set; } = string.Empty;
     }
 
     // Helper class for Nominatim API response

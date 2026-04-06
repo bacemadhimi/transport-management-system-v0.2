@@ -3,6 +3,7 @@ import * as signalR from '@microsoft/signalr';
 import { BehaviorSubject } from 'rxjs';
 import { AuthService } from './auth.service';
 import { environment } from '../../environments/environment';
+import { NotificationStorageService } from './notification-storage.service';
 
 export interface TripNotification {
   id: number;
@@ -12,11 +13,13 @@ export interface TripNotification {
   timestamp: Date;
   tripId?: number;
   tripReference?: string;
+  driverId?: number;
   oldStatus?: string;
   newStatus?: string;
   driverName?: string;
   truckImmatriculation?: string;
   isRead: boolean;
+  additionalData?: any;
 }
 
 @Injectable({
@@ -25,6 +28,7 @@ export interface TripNotification {
 export class SignalRService {
   private hubConnection!: signalR.HubConnection;
   private authService = inject(AuthService);
+  private notificationStorage = inject(NotificationStorageService);
   
   private connectionStatusSubject = new BehaviorSubject<boolean>(false);
   public connectionStatus$ = this.connectionStatusSubject.asObservable();
@@ -38,14 +42,15 @@ export class SignalRService {
 
   private initializeConnection() {
     this.hubConnection = new signalR.HubConnectionBuilder()
-      .withUrl(`${environment.apiUrl}/triphub`, {
+      .withUrl(`${environment.apiUrl}/triphub`, {  // ✅ Reverted to triphub (gps-tracking.service handles gpshub notifications)
         accessTokenFactory: () => this.authService.getToken() || ''
       })
       .withAutomaticReconnect([0, 2000, 5000, 10000, 30000])
       .build();
 
-    this.startConnection();
+    // ✅ REGISTER HANDLERS BEFORE STARTING CONNECTION
     this.registerHandlers();
+    this.startConnection();
   }
 
   private startConnection() {
@@ -79,13 +84,68 @@ export class SignalRService {
 
   private registerHandlers() {
     this.hubConnection.on('ReceiveNotification', (notification: TripNotification) => {
-      console.log('📬 Received:', notification);
+      console.log('📬📬📬 ==========================================');
+      console.log('📬📬📬 ReceiveNotification received on TripHub!');
+      console.log('📬📬📬 Full data:', JSON.stringify(notification, null, 2));
+      console.log('📬📬📬 ==========================================');
       notification.timestamp = new Date(notification.timestamp);
+
+      // ✅ FILTER: Only process if notification is for THIS driver
+      const currentDriverId = this.getCurrentDriverId();
+      console.log(`🔍 Comparing: notification.driverId=${notification.driverId} vs currentDriverId=${currentDriverId}`);
       
+      if (notification.driverId && currentDriverId && String(notification.driverId) !== String(currentDriverId)) {
+        console.log(`🚫 Ignoring ReceiveNotification for driver ${notification.driverId} (current: ${currentDriverId})`);
+        return;
+      }
+
+      console.log('✅✅✅ Processing notification for current driver!');
+
+      // ✅ SAVE to NotificationStorageService (this updates the badge!)
+      const saved = this.notificationStorage.addNotification({
+        type: notification.type as any,
+        title: notification.title || '🚛 Nouvelle Mission',
+        message: notification.message || 'Vous avez une nouvelle mission',
+        tripId: notification.tripId || 0,
+        tripReference: notification.tripReference || '',
+        driverId: notification.driverId,
+        driverName: notification.driverName,
+        truckImmatriculation: notification.truckImmatriculation,
+        destination: notification.additionalData?.destination,
+        timestamp: notification.timestamp.toISOString(),
+        additionalData: notification
+      });
+
+      if (saved) {
+        console.log('✅ Notification saved to storage - badge count updated!');
+      }
+
+      // Also emit for trip status updates
       if (notification.tripId) {
         this.tripUpdateSubject.next(notification);
       }
     });
+  }
+
+  /**
+   * Get current driver ID from localStorage
+   */
+  private getCurrentDriverId(): number | null {
+    try {
+      const userStr = localStorage.getItem('user');
+      if (userStr) {
+        const user = JSON.parse(userStr);
+        return user.driverId || user.id || null;
+      }
+      const token = localStorage.getItem('token');
+      if (token) {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        return payload.driverId || payload.sub || null;
+      }
+    } catch (e) {
+      console.warn('⚠️ Could not get current driverId:', e);
+    }
+    return null;
   }
 
   disconnect() {

@@ -32,8 +32,8 @@
         <ion-button fill="clear" class="notification-btn" (click)="openNotifications()">
           <ion-icon name="notifications-outline"></ion-icon>
         </ion-button>
-        <span *ngIf="cancelledTripsCount > 0" class="notification-badge">
-          {{ cancelledTripsCount > 99 ? '99+' : cancelledTripsCount }}
+        <span *ngIf="notificationBadgeCount > 0 || cancelledTripsCount > 0" class="notification-badge">
+          {{ (notificationBadgeCount + cancelledTripsCount) > 99 ? '99+' : (notificationBadgeCount + cancelledTripsCount) }}
         </span>
       </div>
       <ion-button fill="clear" (click)="logout()" class="logout-btn">
@@ -70,7 +70,7 @@
   <!-- Navigation Rapide -->
   <div class="quick-actions-section">
     <h2 class="section-title">Navigation Rapide</h2>
-    
+
     <div class="quick-actions-grid">
       <ion-card class="action-card" button (click)="navigateToMyTrips()">
         <ion-icon name="map" class="action-icon"></ion-icon>
@@ -88,6 +88,12 @@
         <ion-icon name="location" class="action-icon"></ion-icon>
         <h3>Suivi GPS</h3>
         <p>Carte en temps réel</p>
+      </ion-card>
+
+      <ion-card class="action-card" button (click)="navigateToChatbot()">
+        <ion-icon name="sparkles" class="action-icon"></ion-icon>
+        <h3>Assistant IA</h3>
+        <p>Chatbot intelligent</p>
       </ion-card>
     </div>
   </div>
