@@ -56,6 +56,7 @@ namespace TransportManagementSystem.Data
         public DbSet<CustomerGeographicalEntity> CustomerGeographicalEntities { get; set; }
 
         public DbSet<CPDataX> CPDataX { get; set; }
+        public DbSet<CPUnits> tblCPUnits { get; set; }
         public DbSet<PMMWarehouse> PMMWarehouse { get; set; }
         public DbSet<PMMStorageLocation> tblPMMStorageLocation { get; set; }
         public DbSet<ItpProcessCell> tblItpProcessCell { get; set; }
@@ -68,7 +69,10 @@ namespace TransportManagementSystem.Data
         public DbSet<PMMQuant> tblPMMQuant { get; set; }
         public DbSet<PMMMaterial> tblPMMMaterial { get; set; }
         public DbSet<PMMMaterialClass> tblPMMMaterialClass { get; set; }
-
+        public DbSet<PMMBookingJournal> tblPMMBookingJournal { get; set; }
+        public DbSet<PMMBookingKey> tblPMMBookingKey { get; set; }
+        public DbSet<PMMBookingKeyRelation> tblPMMBookingKeyRelation { get; set; }
+        public DbSet<PMMBookingType> tblPMMBookingType { get; set; }
         public DbSet<PMMMaterialGroup> tblPMMMaterialGroup { get; set; }
         public DbSet<PMMItemGroup> tblPMMItemGroup { get; set; }
         public DbSet<IdcLanguage> tblIdcLanguage { get; set; }

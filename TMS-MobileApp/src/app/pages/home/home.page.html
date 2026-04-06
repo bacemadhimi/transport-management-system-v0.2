@@ -1,26 +1,39 @@
 <ion-content [fullscreen]="true" class="home-content">
- 
-  <div class="background-gradient"></div>
-
- 
+  <!-- Background Image with Truck Theme -->
+  <div class="background-image"></div>
+  
+  <!-- Header Section -->
   <div class="header-section">
     <div class="user-welcome" (click)="goToProfile()" style="cursor: pointer;">
       <div class="user-avatar">
-        <ion-icon name="person-circle-outline"></ion-icon>
+        <ng-container *ngIf="authService.currentUser()?.profileImage; else avatarIcon">
+          <img [src]="getProfileImageUrl()" alt="Profile" class="profile-image" />
+        </ng-container>
+        <ng-template #avatarIcon>
+          <ion-icon name="person-circle-outline"></ion-icon>
+        </ng-template>
       </div>
       <div class="user-info">
-        <h3>Welcome back!</h3>
+        <h3>Bon retour, Chauffeur!</h3>
         <p>{{ authService.currentUser()?.email }}</p>
       </div>
     </div>
 
     <div class="header-actions">
-      <div class="notification-wrapper" (click)="openNotifications()" style="cursor: pointer;">
-        <ion-button fill="clear" class="notification-btn">
+      <div class="chat-wrapper">
+        <ion-button fill="clear" class="chat-btn" (click)="openChat()">
+          <ion-icon name="chatbubble-outline"></ion-icon>
+        </ion-button>
+        <span *ngIf="unreadMessagesCount > 0" class="chat-badge">
+          {{ unreadMessagesCount > 99 ? '99+' : unreadMessagesCount }}
+        </span>
+      </div>
+      <div class="notification-wrapper">
+        <ion-button fill="clear" class="notification-btn" (click)="openNotifications()">
           <ion-icon name="notifications-outline"></ion-icon>
         </ion-button>
-        <span *ngIf="unreadNotificationsCount > 0" class="notification-badge">
-          {{ unreadNotificationsCount > 99 ? '99+' : unreadNotificationsCount }}
+        <span *ngIf="notificationBadgeCount > 0 || cancelledTripsCount > 0" class="notification-badge">
+          {{ (notificationBadgeCount + cancelledTripsCount) > 99 ? '99+' : (notificationBadgeCount + cancelledTripsCount) }}
         </span>
       </div>
       <ion-button fill="clear" (click)="logout()" class="logout-btn">
@@ -29,7 +42,7 @@
     </div>
   </div>
 
-  
+  <!-- Stats Section -->
   <div class="stats-section">
     <div class="stats-grid">
       <div class="stat-card active-trips">
@@ -38,29 +51,9 @@
         </div>
         <div class="stat-info">
           <h4>{{ (trips$ | async)?.length || 0 }}</h4>
-          <p>Active Trips</p>
+          <p>Trajets Actifs</p>
         </div>
       </div>
-
-      <!-- <div class="stat-card completed-trips">
-        <div class="stat-icon">
-          <ion-icon name="checkmark-circle-outline"></ion-icon>
-        </div>
-        <div class="stat-info">
-          <h4>{{ getCompletedTripsCount() }}</h4>
-          <p>Completed</p>
-        </div>
-      </div> -->
-
-      <!-- <div class="stat-card pending-trips">
-        <div class="stat-icon">
-          <ion-icon name="time-outline"></ion-icon>
-        </div>
-        <div class="stat-info">
-          <h4>{{ getPendingTripsCount() }}</h4>
-          <p>Pending</p>
-        </div>
-      </div> -->
 
       <div class="stat-card total-distance">
         <div class="stat-icon">
@@ -68,63 +61,163 @@
         </div>
         <div class="stat-info">
           <h4>{{ getTotalDistance() }}km</h4>
-          <p>Total Distance</p>
+          <p>Distance Totale</p>
         </div>
       </div>
     </div>
   </div>
 
-
-  <!-- Quick Actions - GPS & Trips -->
+  <!-- Navigation Rapide -->
   <div class="quick-actions-section">
     <h2 class="section-title">Navigation Rapide</h2>
-    
+
     <div class="quick-actions-grid">
-      <ion-card class="action-card" button routerLink="/my-trips">
+      <ion-card class="action-card" button (click)="navigateToMyTrips()">
         <ion-icon name="map" class="action-icon"></ion-icon>
         <h3>Mes Trajets</h3>
         <p>Trajets en cours</p>
       </ion-card>
 
-      <ion-card class="action-card" button routerLink="/trip-history">
+      <ion-card class="action-card" button (click)="navigateToTripHistory()">
         <ion-icon name="time" class="action-icon"></ion-icon>
         <h3>Historique</h3>
         <p>Anciens trajets</p>
       </ion-card>
 
-      <ion-card class="action-card" button routerLink="/gps-tracking">
+      <ion-card class="action-card" button (click)="navigateToGPSTracking()">
         <ion-icon name="location" class="action-icon"></ion-icon>
         <h3>Suivi GPS</h3>
         <p>Carte en temps réel</p>
       </ion-card>
+
+      <ion-card class="action-card" button (click)="navigateToChatbot()">
+        <ion-icon name="sparkles" class="action-icon"></ion-icon>
+        <h3>Assistant IA</h3>
+        <p>Chatbot intelligent</p>
+      </ion-card>
     </div>
   </div>
 
+  <!-- Modal Scanner QR Code intégré -->
+  <div class="qr-scanner-overlay" *ngIf="showQRScanner" (click)="closeQRScanner()">
+    <div class="qr-scanner-modal" (click)="$event.stopPropagation()">
+      <div class="qr-header">
+        <ion-icon name="qr-code-outline"></ion-icon>
+        <h3>Scanner QR Code</h3>
+        <ion-button fill="clear" class="close-scanner" (click)="closeQRScanner()">
+          <ion-icon name="close-outline"></ion-icon>
+        </ion-button>
+      </div>
 
+      <div class="qr-content">
+        <p class="scanner-info">Scannez le QR Code du client pour valider la livraison</p>
+
+        <!-- Scanner Frame -->
+        <div class="scanner-frame">
+          <div class="scanner-animation" *ngIf="!scannedQRData"></div>
+          <div class="scanner-success" *ngIf="scannedQRData">
+            <ion-icon name="checkmark-circle"></ion-icon>
+            <span>QR Code scanné !</span>
+          </div>
+        </div>
+
+        <!-- Scan Button -->
+        <ion-button 
+          expand="block" 
+          class="scan-btn"
+          (click)="startQRScan()"
+          [disabled]="isScanning">
+          <ion-icon slot="start" [name]="isScanning ? 'sync-outline' : 'scan-outline'"></ion-icon>
+          {{ isScanning ? 'Scan en cours...' : 'Scanner le QR Code' }}
+        </ion-button>
+
+        <!-- Manual Input -->
+        <div class="manual-section">
+          <div class="divider">
+            <span>ou</span>
+          </div>
+          
+          <ion-item lines="none" class="manual-input">
+            <ion-label position="floating">Saisir manuellement le QR Code</ion-label>
+            <ion-input 
+              [(ngModel)]="manualQRCode" 
+              placeholder="Entrez le contenu du QR Code"
+              clearInput>
+            </ion-input>
+          </ion-item>
+        </div>
+
+        <!-- Scanned Data Display -->
+        <div *ngIf="scannedQRData || manualQRCode" class="data-preview">
+          <div class="preview-header">
+            <ion-icon name="checkmark-circle" class="success-icon"></ion-icon>
+            <span>Données du QR Code</span>
+          </div>
+          <div class="preview-content">
+            <div class="data-row">
+              <ion-icon name="document-text-outline"></ion-icon>
+              <span class="label">Contenu:</span>
+              <span class="value">{{ scannedQRData?.content || manualQRCode }}</span>
+            </div>
+            <div class="data-row" *ngIf="scannedQRData?.timestamp">
+              <ion-icon name="time-outline"></ion-icon>
+              <span class="label">Scanné le:</span>
+              <span class="value">{{ scannedQRData?.timestamp | date:'dd/MM/yyyy HH:mm:ss' }}</span>
+            </div>
+          </div>
+          <ion-button 
+            fill="clear" 
+            size="small" 
+            class="clear-btn"
+            (click)="clearQRScan()">
+            <ion-icon name="trash-outline"></ion-icon>
+            Effacer
+          </ion-button>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="action-buttons">
+          <ion-button 
+            fill="outline" 
+            class="cancel-btn"
+            (click)="closeQRScanner()">
+            Annuler
+          </ion-button>
+          <ion-button 
+            class="confirm-btn"
+            (click)="confirmDeliveryWithQR()"
+            [disabled]="!scannedQRData && !manualQRCode">
+            <ion-icon slot="start" name="checkmark-done-outline"></ion-icon>
+            Confirmer Livraison
+          </ion-button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Trips Section -->
   <div class="trips-section">
     <div class="section-header">
-      <h2>Recent Trips</h2>
+      <h2>Trajets Récents</h2>
       <div class="header-actions">
-        <ion-button fill="clear" size="small" class="view-all-btn" routerLink="/cancelled-trips" (click)="navigateToCancelledTrips()">
+        <ion-button fill="clear" size="small" class="view-all-btn" (click)="navigateToCancelledTrips()">
           <ion-icon name="close-circle-outline" slot="start"></ion-icon>
-          Cancelled Trips
+          Trajets Annulés
         </ion-button>
-        <ion-button fill="clear" size="small" class="view-all-btn">
-          View All
+        <ion-button fill="clear" size="small" class="view-all-btn" (click)="navigateToAllTrips()">
+          Voir Tout
           <ion-icon name="chevron-forward" slot="end"></ion-icon>
         </ion-button>
       </div>
     </div>
 
-   
     <div class="loading-container" *ngIf="!(trips$ | async)">
       <div class="loading-card">
         <ion-spinner name="crescent" color="primary"></ion-spinner>
-        <p>Loading your trips...</p>
+        <p>Chargement de vos trajets...</p>
       </div>
     </div>
 
-   
     <div class="trips-list" *ngIf="trips$ | async as trips">
       <div class="trip-card" *ngFor="let trip of trips; trackBy: trackByTripId" (click)="viewTripDetails(trip)">
         <div class="trip-header">
@@ -138,15 +231,14 @@
         </div>
 
         <div class="trip-details">
-         
           <div class="trip-info-grid">
             <div class="info-card">
               <div class="info-icon calendar">
                 <ion-icon name="calendar-outline"></ion-icon>
               </div>
               <div class="info-content">
-                <span class="info-label">Start Date</span>
-                <span class="info-value">{{ trip.estimatedStartDate | date:'MMM dd, yyyy' }}</span>
+                <span class="info-label">Date de Départ</span>
+                <span class="info-value">{{ trip.estimatedStartDate | date:'dd MMM yyyy' }}</span>
               </div>
             </div>
 
@@ -155,7 +247,7 @@
                 <ion-icon name="time-outline"></ion-icon>
               </div>
               <div class="info-content">
-                <span class="info-label">Duration</span>
+                <span class="info-label">Durée</span>
                 <span class="info-value">{{ trip.estimatedDuration }}h</span>
               </div>
             </div>
@@ -175,112 +267,94 @@
                 <ion-icon name="car-outline"></ion-icon>
               </div>
               <div class="info-content">
-                <span class="info-label">Vehicle</span>
+                <span class="info-label">Véhicule</span>
                 <span class="info-value">{{ trip.truck.immatriculation }}</span>
               </div>
             </div>
           </div>
 
-         
           <div class="driver-section" *ngIf="trip.driver">
             <div class="driver-avatar">
               <ion-icon name="person-circle-outline"></ion-icon>
             </div>
             <div class="driver-info">
-              <span class="driver-label">Driver</span>
+              <span class="driver-label">Chauffeur</span>
               <span class="driver-name">{{ trip.driver.name }}</span>
             </div>
           </div>
 
-          
-          <!-- <div class="trip-progress" *ngIf="trip.tripStatus === 'LoadingInProgress' || trip.tripStatus === 'DeliveryInProgress'">
-            <div class="progress-bar">
-              <div class="progress-fill" [style.width.%]="getTripProgress(trip)"></div>
-            </div>
-            <span class="progress-text">{{ getTripProgress(trip) }}% Complete</span>
-          </div> -->
-
-          <!-- Status Update Button -->
+          <!-- Status Update Section -->
           <div class="status-update-section" *ngIf="trip.tripStatus !== 'Receipt' && trip.tripStatus !== 'Cancelled'">
+            
+            <!-- Accepter la Mission -->
             <ion-button 
               expand="block" 
-              color="primary" 
-              *ngIf="trip.tripStatus === 'Planned'" 
+              class="btn-orange"
+              *ngIf="trip.tripStatus === 'Pending' || trip.tripStatus === 'Planned'" 
               [disabled]="trip.updating"
               (click)="$event.stopPropagation(); updateTripStatus(trip, 'Accepted')">
               <ion-spinner *ngIf="trip.updating" slot="start" name="crescent"></ion-spinner>
-              Accepté
+              <ion-icon slot="start" name="checkmark-circle-outline"></ion-icon>
+              ✅ Accepter la Mission
             </ion-button>
+            
+            <!-- Commencer le Chargement -->
             <ion-button 
               expand="block" 
-              color="primary" 
+              class="btn-orange"
               *ngIf="trip.tripStatus === 'Accepted'" 
               [disabled]="trip.updating"
               (click)="$event.stopPropagation(); updateTripStatus(trip, 'LoadingInProgress')">
               <ion-spinner *ngIf="trip.updating" slot="start" name="crescent"></ion-spinner>
-              Chargement
+              <ion-icon slot="start" name="cube-outline"></ion-icon>
+              📦 Commencer le Chargement
             </ion-button>
+            
+            <!-- Commencer la Livraison -->
             <ion-button 
               expand="block" 
-              color="primary" 
-              *ngIf="trip.tripStatus === 'LoadingInProgress'" 
+              class="btn-orange"
+              *ngIf="trip.tripStatus === 'LoadingInProgress' || trip.tripStatus === 'Loading'" 
               [disabled]="trip.updating"
               (click)="$event.stopPropagation(); updateTripStatus(trip, 'DeliveryInProgress')">
               <ion-spinner *ngIf="trip.updating" slot="start" name="crescent"></ion-spinner>
-              Livraison
+              <ion-icon slot="start" name="boat-outline"></ion-icon>
+              🚚 Commencer la Livraison
             </ion-button>
+            
+            <!-- Scanner QR Code - Terminer la Livraison -->
             <ion-button 
               expand="block" 
-              color="success" 
-              *ngIf="trip.tripStatus === 'DeliveryInProgress'" 
+              class="qr-scan-btn"
+              *ngIf="trip.tripStatus === 'DeliveryInProgress' || trip.tripStatus === 'InDelivery'" 
               [disabled]="trip.updating"
-              (click)="$event.stopPropagation(); updateTripStatus(trip, 'Receipt')">
+              (click)="$event.stopPropagation(); openQRScannerForTrip(trip)">
               <ion-spinner *ngIf="trip.updating" slot="start" name="crescent"></ion-spinner>
-              Réception
+              <ion-icon slot="start" name="qr-code-outline"></ion-icon>
+              📱 Scanner QR Code
             </ion-button>
 
-            <!-- Cancel Button -->
+            <!-- Annuler la Mission -->
             <ion-button 
               expand="block" 
               color="danger" 
               fill="outline"
               *ngIf="canCancelTrip(trip.tripStatus)"
               (click)="$event.stopPropagation(); showCancelConfirmation(trip)">
-              <ion-icon name="close-circle-outline" slot="start"></ion-icon>
-              Annuler
+              <ion-icon slot="start" name="close-circle-outline"></ion-icon>
+              ❌ Annuler la Mission
             </ion-button>
           </div>
         </div>
       </div>
 
-      
       <div class="empty-state" *ngIf="trips.length === 0">
         <div class="empty-icon">
           <ion-icon name="car-outline"></ion-icon>
         </div>
-        <h3>No trips found</h3>
-        <p>You don't have any trips assigned yet.</p>
+        <h3>Aucun trajet trouvé</h3>
+        <p>Vous n'avez pas encore de trajets assignés.</p>
       </div>
     </div>
   </div>
-
-  
-  <!-- <div class="quick-actions">
-    <ion-button expand="block" class="action-btn primary" routerLink="/trips">
-      <ion-icon name="add-circle-outline" slot="start"></ion-icon>
-      Start New Trip
-    </ion-button>
-
-    <div class="secondary-actions">
-      <ion-button fill="outline" class="action-btn secondary">
-        <ion-icon name="map-outline" slot="start"></ion-icon>
-        View Routes
-      </ion-button>
-
-      <ion-button fill="outline" class="action-btn secondary">
-        <ion-icon name="settings-outline" slot="start"></ion-icon>
-        Settings
-      </ion-button>
-    </div>
-  </div> -->
 </ion-content>

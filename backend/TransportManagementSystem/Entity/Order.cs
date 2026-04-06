@@ -6,6 +6,7 @@ namespace TransportManagementSystem.Entity;
 public class Order
 {
     [Key]
+    [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
     public int Id { get; set; }
 
     [Required]

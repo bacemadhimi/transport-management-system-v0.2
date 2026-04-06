@@ -1,69 +1,62 @@
 <ion-content [fullscreen]="true" class="login-content">
-<div class="background-gradient"></div>
- 
+  <!-- Background Image with Overlay -->
+  <div class="background-image"></div>
+  
   <!-- Main Container -->
-<div class="login-container">
-<div class="brand-section">
-<div class="logo-container">
-<ion-icon name="bus-outline" class="main-logo"></ion-icon>
-</div>
-<h1 class="app-title">TMS Driver</h1>
-<p class="app-subtitle">Transport Management System</p>
-</div>
- 
+  <div class="login-container">
+    <div class="brand-section">
+      <h1 class="app-title">TMS Chauffeur</h1>
+      <p class="app-subtitle">Système de Gestion de Transport</p>
+    </div>
     
-<ion-card class="login-card">
-<ion-card-content class="login-card-content">
-<div class="welcome-section">
-<h2>Welcome Back</h2>
-<p>Sign in to continue</p>
-</div>
- 
-        <form class="login-form">
-<div class="input-group">
-<ion-item class="custom-input" lines="none">
-<ion-icon name="mail-outline" slot="start" class="input-icon"></ion-icon>
-<ion-input
-                #usernameInput
-                label="Email Address"
-                labelPlacement="floating"
-                inputmode="email"
-                type="email"
-                autocomplete="email"
-                placeholder="Enter your email"
-                class="custom-ion-input">
-</ion-input>
-</ion-item>
-</div>
- 
+    <ion-card class="login-card">
+      <ion-card-content class="login-card-content">
+        <div class="welcome-section">
+          <h2>Bon retour, Chauffeur</h2>
+          <p>Connectez-vous pour gérer vos livraisons</p>
+        </div>
         
-<div class="input-group">
-<ion-item class="custom-input" lines="none">
-<ion-icon name="lock-closed-outline" slot="start" class="input-icon"></ion-icon>
-<ion-input
+        <form class="login-form">
+          <div class="input-group">
+            <ion-item class="custom-input" lines="none">
+              <ion-icon name="person-outline" slot="start" class="input-icon"></ion-icon>
+              <ion-input
+                #usernameInput
+                type="email"
+                inputmode="email"
+                autocomplete="email"
+                placeholder="ID Chauffeur / Email"
+                class="custom-ion-input">
+              </ion-input>
+            </ion-item>
+          </div>
+          
+          <div class="input-group">
+            <ion-item class="custom-input" lines="none">
+              <ion-icon name="key-outline" slot="start" class="input-icon"></ion-icon>
+              <ion-input
                 #passwordInput
-                label="Password"
-                labelPlacement="floating"
                 type="password"
                 autocomplete="current-password"
-                placeholder="Enter your password"
+                placeholder="Mot de passe"
                 class="custom-ion-input">
-</ion-input>
-<ion-icon name="eye-outline" slot="end" class="eye-icon" (click)="togglePassword()"></ion-icon>
-</ion-item>
-</div>
- 
+              </ion-input>
+              <ion-icon name="eye-outline" slot="end" class="eye-icon" (click)="togglePassword()"></ion-icon>
+            </ion-item>
+          </div>
           
-<div class="form-options">
-<ion-checkbox labelPlacement="end" class="remember-checkbox">
-              Remember me
-</ion-checkbox>
-<ion-button fill="clear" size="small" class="forgot-btn">
-              Forgot Password?
-</ion-button>
-</div>
- 
-         
+          <div class="form-options">
+            <ion-checkbox 
+              [(ngModel)]="rememberMe" 
+              [ngModelOptions]="{standalone: true}"
+              labelPlacement="end" 
+              class="remember-checkbox">
+              Se souvenir de moi
+            </ion-checkbox>
+            <ion-button fill="clear" size="small" class="forgot-btn">
+              Mot de passe oublié ?
+            </ion-button>
+          </div>
           
           <ion-button
             expand="block"
@@ -71,35 +64,33 @@
             class="login-btn"
             (click)="login()"
             [disabled]="isLoading">
-<ion-spinner slot="start" *ngIf="isLoading" name="crescent"></ion-spinner>
-<span *ngIf="!isLoading">Sign In</span>
-<span *ngIf="isLoading">Signing In...</span>
-</ion-button>
- 
-         
-<div class="error-message" *ngIf="errorMessage">
-<ion-icon name="alert-circle-outline"></ion-icon>
-<span>{{ errorMessage }}</span>
-</div>
- 
-        
-<ion-button
+            <ion-icon name="bus-outline" slot="start" *ngIf="!isLoading"></ion-icon>
+            <ion-spinner slot="start" *ngIf="isLoading" name="crescent"></ion-spinner>
+            <span *ngIf="!isLoading">Commencer votre voyage</span>
+            <span *ngIf="isLoading">Connexion en cours...</span>
+          </ion-button>
+          
+          <div class="error-message" *ngIf="errorMessage">
+            <ion-icon name="alert-circle-outline"></ion-icon>
+            <span>{{ errorMessage }}</span>
+          </div>
+          
+          <ion-button
             expand="block"
             fill="clear"
             size="small"
             class="quit-btn"
             (click)="quit()">
-<ion-icon name="power-outline" slot="start"></ion-icon>
-            Exit Application
-</ion-button>
-</form>
-</ion-card-content>
-</ion-card>
- 
-  
-<div class="footer">
-<p>© 2026 Transport Management System</p>
-<p>Version 1.0.0</p>
-</div>
-</div>
+            <ion-icon name="power-outline" slot="start"></ion-icon>
+            Quitter l'application
+          </ion-button>
+        </form>
+      </ion-card-content>
+    </ion-card>
+    
+    <div class="footer">
+      <p>© 2026 Système de Gestion de Transport | Application Chauffeur</p>
+      <p>Version 1.0.0 | Toujours en sécurité, Toujours à l'heure</p>
+    </div>
+  </div>
 </ion-content>

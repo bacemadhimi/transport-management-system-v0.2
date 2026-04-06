@@ -11,6 +11,7 @@ export interface IDriver extends IEmployee {
   zoneName?: string;
   cityId?: number;
   imageBase64?: string | null;
+  permisNumber?: string;
 
  driverGeographicalEntities?: Array<{
     id?: number;

@@ -44,10 +44,10 @@
   }
 
   .page-header {
-    background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
     padding: 20px 24px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 20px rgba(102, 126, 234, 0.3);
 
     .header-content {
       display: flex;
@@ -55,35 +55,62 @@
       align-items: center;
       margin-bottom: 20px;
 
-      h1 {
-        margin: 0;
-        font-size: 28px;
+      .header-title {
         display: flex;
         align-items: center;
         gap: 12px;
-        font-weight: 700;
 
-        ion-icon {
+        h1 {
+          margin: 0;
+          font-size: 28px;
+          font-weight: 700;
+          letter-spacing: -0.5px;
+        }
+
+        .header-icon {
           font-size: 32px;
+          filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
         }
       }
 
-      .connection-status {
+      .header-actions {
         display: flex;
+        gap: 16px;
         align-items: center;
-        gap: 8px;
-        padding: 8px 16px;
-        background: rgba(255, 255, 255, 0.2);
-        border-radius: 20px;
-        font-size: 14px;
-        font-weight: 600;
 
-        ion-icon {
-          font-size: 18px;
+        .connection-status {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          padding: 8px 16px;
+          background: rgba(255, 255, 255, 0.2);
+          border-radius: 20px;
+          font-size: 14px;
+          font-weight: 600;
+          backdrop-filter: blur(10px);
+
+          mat-icon {
+            font-size: 18px;
+          }
+
+          &.connected {
+            background: rgba(16, 185, 129, 0.3);
+          }
         }
 
-        &.connected {
-          background: rgba(16, 185, 129, 0.3);
+        .refresh-btn {
+          background: rgba(255, 255, 255, 0.2);
+          color: white;
+          backdrop-filter: blur(10px);
+          border: 1px solid rgba(255, 255, 255, 0.3);
+          
+          &:hover {
+            background: rgba(255, 255, 255, 0.3);
+          }
+
+          mat-icon {
+            margin-right: 8px;
+          }
         }
       }
     }
@@ -98,16 +125,46 @@
         min-width: 180px;
         background: rgba(255, 255, 255, 0.15);
         backdrop-filter: blur(10px);
-        border-radius: 12px;
+        border-radius: 16px;
         padding: 16px;
         display: flex;
         align-items: center;
         gap: 12px;
         border: 1px solid rgba(255, 255, 255, 0.2);
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 
-        ion-icon {
-          font-size: 32px;
-          color: rgba(255, 255, 255, 0.9);
+        &:hover {
+          transform: translateY(-2px);
+          background: rgba(255, 255, 255, 0.25);
+        }
+
+        .stat-icon-wrapper {
+          width: 48px;
+          height: 48px;
+          border-radius: 12px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          mat-icon {
+            font-size: 28px;
+            color: white;
+          }
+
+          &.total {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          }
+
+          &.delivery {
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+          }
+
+          &.loading {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+          }
+
+          &.arrived {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+          }
         }
 
         .stat-content {
@@ -121,19 +178,9 @@
             font-size: 13px;
             color: rgba(255, 255, 255, 0.8);
             margin-top: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
           }
-        }
-
-        &.in-delivery {
-          background: rgba(59, 130, 246, 0.3);
-        }
-
-        &.loading {
-          background: rgba(245, 158, 11, 0.3);
-        }
-
-        &.arrived {
-          background: rgba(16, 185, 129, 0.3);
         }
       }
     }

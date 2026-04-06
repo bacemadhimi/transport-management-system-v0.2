@@ -154,8 +154,8 @@ namespace TransportManagementSystem.Services
                 {
                     for (int j = i + 1; j < n - 1; j++)
                     {
-                        var a = table.Distances[order[i - 1]][order[i]] + table.Distances[order[j]][order[j + 1]];
-                        var b = table.Distances[order[i - 1]][order[j]] + table.Distances[order[i]][order[j + 1]];
+                        var a = table.Distances?[order[i - 1]][order[i]] ?? 0 + table.Distances?[order[j]][order[j + 1]] ?? 0;
+                        var b = table.Distances?[order[i - 1]][order[j]] ?? 0 + table.Distances?[order[i]][order[j + 1]] ?? 0;
                         if (b + 1e-6 < a)
                         {
                             order.Reverse(i, j - i + 1);
@@ -196,7 +196,7 @@ namespace TransportManagementSystem.Services
                 {
                     var a = allPoints.IndexOf(route[i]);
                     var b = allPoints.IndexOf(route[i + 1]);
-                    if (a >= 0 && b >= 0)
+                    if (a >= 0 && b >= 0 && table.Distances != null)
                     {
                         total += table.Distances[a][b] / 1000d;
                     }

@@ -30,13 +30,14 @@ public class GeographicalEntityDto
     /// <summary>
     /// Latitude coordinate
     /// </summary>
-    public double? Latitude { get; set; }
+    [Range(-90, 90, ErrorMessage = "La latitude doit être comprise entre -90 et 90")]
+    public decimal? Latitude { get; set; }
 
     /// <summary>
     /// Longitude coordinate
     /// </summary>
-
-    public double? Longitude { get; set; }
+    [Range(-180, 180, ErrorMessage = "La longitude doit être comprise entre -180 et 180")]
+    public decimal? Longitude { get; set; }
 
     /// <summary>
     /// Whether the entity is active

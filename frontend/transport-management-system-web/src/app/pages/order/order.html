@@ -292,16 +292,17 @@
 
 
   
- <ng-container matColumnDef="source">
+<ng-container matColumnDef="source">
   <th mat-header-cell *matHeaderCellDef>Source</th>
   <td mat-cell *matCellDef="let element">
     <span class="source-badge"
           [ngClass]="{
             'source-tms': element.sourceSystem === 'TMS',
             'source-qad': element.sourceSystem === 'QAD',
-            'source-other': element.sourceSystem !== 'TMS' && element.sourceSystem !== 'QAD'
+            'source-plantit': element.sourceSystem === 'PlantIt',
+            'source-other': element.sourceSystem !== 'TMS' && element.sourceSystem !== 'QAD' && element.sourceSystem !== 'PlantIt'
           }">
-      {{ element.sourceSystem }}
+      {{ element.sourceSystem === 'PlantIt' ? 'Plant IT' : element.sourceSystem }}
     </span>
   </td>
 </ng-container>

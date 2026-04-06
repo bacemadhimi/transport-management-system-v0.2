@@ -1,62 +1,246 @@
 <ion-header>
-  <ion-toolbar>
- 
+  <ion-toolbar class="trip-details-toolbar">
+    <ion-title>
+      <div class="toolbar-title">
+        <ion-icon name="car-outline" class="title-icon"></ion-icon>
+        <span>Détails du Trajet</span>
+      </div>
+    </ion-title>
     <ion-buttons slot="end">
-      <ion-button (click)="close()">Fermer</ion-button>
+      <ion-button (click)="close()" class="close-btn">
+        <ion-icon name="close-outline" slot="icon-only"></ion-icon>
+      </ion-button>
     </ion-buttons>
   </ion-toolbar>
 </ion-header>
 
-<ion-content class="ion-padding">
+<ion-content class="ion-padding trip-details-content">
   <div class="trip-status-row">
-    <div class="status-badge" [ngClass]="trip.tripStatus.toLowerCase()">{{ trip.tripStatus }}</div>
+    <div class="status-badge" [ngClass]="getStatusClass(trip.tripStatus)">
+      <ion-icon name="flag-outline" class="status-icon"></ion-icon>
+      {{ getStatusText(trip.tripStatus) }}
+    </div>
   </div>
 
-  <ion-list>
-    <ion-item lines="none">
-      <ion-label>
-        <h3>Référence</h3>
-        <p>{{ trip.tripReference }}</p>
-      </ion-label>
-    </ion-item>
+  <div class="info-cards-container">
+    <!-- Reference Card -->
+    <div class="info-card-detail">
+      <div class="card-icon">
+        <ion-icon name="document-text-outline"></ion-icon>
+      </div>
+      <div class="card-content">
+        <span class="card-label">Référence du Trajet</span>
+        <span class="card-value">{{ trip.tripReference }}</span>
+      </div>
+    </div>
 
-    <ion-item lines="none">
-      <ion-label>
-        <h3>Statut</h3>
-        <p>{{ trip.tripStatus }}</p>
-      </ion-label>
-    </ion-item>
+    <!-- Status Card -->
+    <div class="info-card-detail">
+      <div class="card-icon">
+        <ion-icon name="radio-button-on-outline"></ion-icon>
+      </div>
+      <div class="card-content">
+        <span class="card-label">Statut Actuel</span>
+        <span class="card-value" [ngClass]="getStatusClass(trip.tripStatus)">{{ getStatusText(trip.tripStatus) }}</span>
+      </div>
+    </div>
 
-    <ion-item lines="none">
-      <ion-label>
-        <h3>Start Date</h3>
-        <p>{{ trip.estimatedStartDate | date:'medium' }}</p>
-      </ion-label>
-    </ion-item>
+    <!-- Start Date Card -->
+    <div class="info-card-detail">
+      <div class="card-icon">
+        <ion-icon name="calendar-outline"></ion-icon>
+      </div>
+      <div class="card-content">
+        <span class="card-label">Date de Début</span>
+        <span class="card-value">{{ trip.estimatedStartDate | date:'dd MMMM yyyy à HH:mm' }}</span>
+      </div>
+    </div>
 
-    <ion-item lines="none">
-      <ion-label>
-        <h3>End Date</h3>
-        <p>{{ trip.estimatedEndDate ? (trip.estimatedEndDate | date:'medium') : 'N/A' }}</p>
-      </ion-label>
-    </ion-item>
-  </ion-list>
+    <!-- End Date Card -->
+    <div class="info-card-detail">
+      <div class="card-icon">
+        <ion-icon name="checkmark-done-outline"></ion-icon>
+      </div>
+      <div class="card-content">
+        <span class="card-label">Date de Fin</span>
+        <span class="card-value">{{ trip.estimatedEndDate ? (trip.estimatedEndDate | date:'dd MMMM yyyy à HH:mm') : 'Non disponible' }}</span>
+      </div>
+    </div>
 
-  <div *ngIf="trip.tripStatus === 'Receipt'" class="proof-section">
-    <h4>Preuve de livraison</h4>
+    <!-- Distance Card -->
+    <div class="info-card-detail" *ngIf="trip.estimatedDistance">
+      <div class="card-icon">
+        <ion-icon name="navigate-outline"></ion-icon>
+      </div>
+      <div class="card-content">
+        <span class="card-label">Distance Estimée</span>
+        <span class="card-value">{{ trip.estimatedDistance }} km</span>
+      </div>
+    </div>
+
+    <!-- Duration Card -->
+    <div class="info-card-detail" *ngIf="trip.estimatedDuration">
+      <div class="card-icon">
+        <ion-icon name="time-outline"></ion-icon>
+      </div>
+      <div class="card-content">
+        <span class="card-label">Durée Estimée</span>
+        <span class="card-value">{{ trip.estimatedDuration }} heures</span>
+      </div>
+    </div>
+
+    <!-- Driver Card -->
+    <div class="info-card-detail" *ngIf="trip.driver">
+      <div class="card-icon">
+        <ion-icon name="person-outline"></ion-icon>
+      </div>
+      <div class="card-content">
+        <span class="card-label">Chauffeur Assigné</span>
+        <span class="card-value">{{ trip.driver.name }}</span>
+      </div>
+    </div>
+
+    <!-- Truck Card -->
+    <div class="info-card-detail" *ngIf="trip.truck">
+      <div class="card-icon">
+        <ion-icon name="car-outline"></ion-icon>
+      </div>
+      <div class="card-content">
+        <span class="card-label">Véhicule</span>
+        <span class="card-value">{{ trip.truck.immatriculation }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- QR Code Scanner Section - For delivery in progress -->
+  <div *ngIf="isDeliveryInProgress()" class="proof-section">
+    <div class="section-title">
+      <ion-icon name="qr-code-outline"></ion-icon>
+      <h4>Validation par QR Code</h4>
+    </div>
+    
+    <div class="qr-delivery-container">
+      <div class="qr-info">
+        <p>Scannez le QR Code du client pour valider la livraison</p>
+      </div>
+
+      <!-- Scanner Section -->
+      <div class="scanner-section">
+        <div class="qr-code-scanner">
+          <div class="scanner-frame">
+            <div class="scanner-animation" *ngIf="!scannedQRCode"></div>
+            <div class="scanner-success" *ngIf="scannedQRCode">
+              <ion-icon name="checkmark-circle"></ion-icon>
+            </div>
+          </div>
+          
+          <ion-button 
+            expand="block" 
+            class="scan-btn"
+            (click)="scanQRCodeForDelivery()"
+            [disabled]="isScanning">
+            <ion-icon slot="start" [name]="isScanning ? 'sync-outline' : 'scan-outline'"></ion-icon>
+            {{ isScanning ? 'Scan en cours...' : 'Scanner le QR Code' }}
+          </ion-button>
+        </div>
+
+        <!-- Manual input for web -->
+        <div class="manual-input">
+          <ion-item lines="none" class="manual-input-item">
+            <ion-label position="floating">Ou saisir manuellement le QR Code</ion-label>
+            <ion-input 
+              [(ngModel)]="manualQRCode" 
+              placeholder="Entrez le contenu du QR Code"
+              clearInput>
+            </ion-input>
+          </ion-item>
+        </div>
+
+        <!-- Scanned QR Code Data Display -->
+        <div *ngIf="scannedQRCode" class="qr-data-preview">
+          <div class="data-header">
+            <ion-icon name="checkmark-circle" class="success-icon"></ion-icon>
+            <span>QR Code scanné avec succès !</span>
+          </div>
+          <div class="data-content">
+            <div class="data-row">
+              <ion-icon name="document-text-outline"></ion-icon>
+              <span><strong>Contenu:</strong></span>
+              <code>{{ scannedQRCode.content }}</code>
+            </div>
+            <div class="data-row" *ngIf="scannedQRCode.format">
+              <ion-icon name="barcode-outline"></ion-icon>
+              <span><strong>Format:</strong></span>
+              <span>{{ barcodeScanner.getFormatName(scannedQRCode.format) }}</span>
+            </div>
+            <div class="data-row" *ngIf="scannedQRCode.timestamp">
+              <ion-icon name="time-outline"></ion-icon>
+              <span><strong>Scanné à:</strong></span>
+              <span>{{ scannedQRCode.timestamp | date:'HH:mm:ss' }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="qr-action-buttons">
+        <ion-button 
+          fill="outline" 
+          class="cancel-btn"
+          (click)="cancelQRScan()">
+          Annuler
+        </ion-button>
+        <ion-button 
+          class="confirm-btn"
+          (click)="confirmDeliveryWithQR()"
+          [disabled]="!scannedQRCode && !manualQRCode">
+          <ion-icon slot="start" name="checkmark-done-outline"></ion-icon>
+          Confirmer Livraison
+        </ion-button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Display QR Code Data for Completed Trips -->
+  <div *ngIf="isDeliveryCompleted()" class="proof-section">
+    <div class="section-title">
+      <ion-icon name="qr-code-outline"></ion-icon>
+      <h4>Données de Livraison</h4>
+    </div>
 
     <div *ngIf="trip.deliveries && trip.deliveries.length > 0; else noDeliveries">
       <ion-grid>
         <ion-row>
-          <ion-col size="6" *ngFor="let d of trip.deliveries">
+          <ion-col size="12" size-md="6" *ngFor="let d of trip.deliveries">
             <div class="proof-card">
-              <div *ngIf="d.proofOfDelivery; else noProof">
-                <img [src]="getDataUrl(d.proofOfDelivery)" class="proof-img" alt="proof" />
-                <p class="delivery-label">Livraison #{{ d.sequence }}</p>
+              <div class="proof-header">
+                <span class="proof-number">Livraison #{{ d.sequence }}</span>
+                <span *ngIf="d.qrCodeData" class="qr-badge">
+                  <ion-icon name="qr-code-outline"></ion-icon> QR Validé
+                </span>
               </div>
-              <ng-template #noProof>
-                <div class="no-proof">Aucune preuve pour livraison #{{ d.sequence }}</div>
-              </ng-template>
+              <!-- Display QR Code Data -->
+              <div *ngIf="d.qrCodeData" class="qr-data-display">
+                <div class="qr-data-row">
+                  <ion-icon name="document-text-outline"></ion-icon>
+                  <span><strong>Données QR:</strong></span>
+                  <span class="qr-content-text">{{ d.qrCodeData }}</span>
+                </div>
+                <div *ngIf="d.qrCodeFormat" class="qr-data-row">
+                  <ion-icon name="barcode-outline"></ion-icon>
+                  <span><strong>Format:</strong></span>
+                  <span>{{ d.qrCodeFormat }}</span>
+                </div>
+                <div *ngIf="d.qrCodeTimestamp" class="qr-data-row">
+                  <ion-icon name="time-outline"></ion-icon>
+                  <span><strong>Date validation:</strong></span>
+                  <span>{{ d.qrCodeTimestamp | date:'dd/MM/yyyy HH:mm:ss' }}</span>
+                </div>
+              </div>
+              <div *ngIf="!d.qrCodeData" class="no-proof">
+                <ion-icon name="qr-code-outline"></ion-icon>
+                <p>En attente de validation QR</p>
+              </div>
             </div>
           </ion-col>
         </ion-row>
@@ -64,7 +248,74 @@
     </div>
 
     <ng-template #noDeliveries>
-      <p>Aucune livraison associée.</p>
+      <div class="no-deliveries">
+        <ion-icon name="alert-circle-outline"></ion-icon>
+        <p>Aucune livraison associée à ce trajet.</p>
+      </div>
     </ng-template>
+  </div>
+
+  <!-- Action Buttons for In-Progress Trips -->
+  <div class="action-buttons" *ngIf="shouldShowActionButtons()">
+    <ion-button 
+      expand="block" 
+      class="update-status-btn"
+      *ngIf="trip.tripStatus === 'Pending' || trip.tripStatus === 'Planned'"
+      (click)="updateStatus('Accepted')">
+      <ion-icon name="checkmark-circle-outline" slot="start"></ion-icon>
+      Accepter le Trajet
+    </ion-button>
+    <ion-button 
+      expand="block" 
+      class="update-status-btn"
+      *ngIf="trip.tripStatus === 'Accepted'"
+      (click)="updateStatus('LoadingInProgress')">
+      <ion-icon name="cube-outline" slot="start"></ion-icon>
+      Démarrer Chargement
+    </ion-button>
+    <ion-button 
+      expand="block" 
+      class="update-status-btn"
+      *ngIf="trip.tripStatus === 'LoadingInProgress' || trip.tripStatus === 'Loading'"
+      (click)="updateStatus('DeliveryInProgress')">
+      <ion-icon name="location-outline" slot="start"></ion-icon>
+      Démarrer Livraison
+    </ion-button>
+  </div>
+
+  <!-- Action Buttons for In-Progress Trips -->
+  <div class="action-buttons" *ngIf="trip.tripStatus !== 'Receipt' && trip.tripStatus !== 'Cancelled'">
+    <ion-button 
+      expand="block" 
+      class="update-status-btn"
+      *ngIf="trip.tripStatus === 'Planned'"
+      (click)="updateStatus('Accepted')">
+      <ion-icon name="checkmark-circle-outline" slot="start"></ion-icon>
+      Accepter le Trajet
+    </ion-button>
+    <ion-button 
+      expand="block" 
+      class="update-status-btn"
+      *ngIf="trip.tripStatus === 'Accepted'"
+      (click)="updateStatus('LoadingInProgress')">
+      <ion-icon name="cube-outline" slot="start"></ion-icon>
+      Démarrer Chargement
+    </ion-button>
+    <ion-button 
+      expand="block" 
+      class="update-status-btn"
+      *ngIf="trip.tripStatus === 'LoadingInProgress'"
+      (click)="updateStatus('DeliveryInProgress')">
+      <ion-icon name="location-outline" slot="start"></ion-icon>
+      Démarrer Livraison
+    </ion-button>
+    <ion-button 
+      expand="block" 
+      class="update-status-btn success"
+      *ngIf="trip.tripStatus === 'DeliveryInProgress'"
+      (click)="updateStatus('Receipt')">
+      <ion-icon name="receipt-outline" slot="start"></ion-icon>
+      Confirmer Réception
+    </ion-button>
   </div>
 </ion-content>

@@ -41,6 +41,28 @@ export class GPSTrackingService {
   constructor(private notificationStorage: NotificationStorageService) {}
 
   /**
+   * Get current driver ID from localStorage
+   */
+  private getCurrentDriverId(): number | null {
+    try {
+      const userStr = localStorage.getItem('user');
+      if (userStr) {
+        const user = JSON.parse(userStr);
+        return user.driverId || user.id || null;
+      }
+      // Fallback: try to get from token
+      const token = localStorage.getItem('token');
+      if (token) {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        return payload.driverId || payload.sub || null;
+      }
+    } catch (e) {
+      console.warn('⚠️ Could not get current driverId:', e);
+    }
+    return null;
+  }
+
+  /**
    * Connecter au GPS Hub et écouter les notifications
    */
   public async connect(driverId?: number, truckId?: number): Promise<void> {
@@ -66,27 +88,33 @@ export class GPSTrackingService {
       // Also connect to NotificationHub for better notification handling
       await this.connectToNotificationHub(driverId);
 
+      // ===================================================================
+      // 🚨 REGISTER HANDLERS BEFORE STARTING CONNECTION
+      // ===================================================================
+      console.log('📝 Registering GPS Hub handlers...');
+
       // Écouter les notifications de nouveau trip - GPSHub (PRIMARY - only show native alert from here)
       this.hubConnection.on('NewTripAssigned', (data: any) => {
         console.log('🔔🔔🔔=================================');
         console.log('🔔 NEW TRIP ASSIGNED via GPSHub!');
         console.log('🔔 Data:', JSON.stringify(data, null, 2));
         console.log('🔔🔔🔔=================================');
-        
-        // Avoid processing same trip twice
-        if (this.processedTripIds.has(data.tripId)) {
-          console.log('⚠️ Trip already processed:', data.tripId);
-          return;
+
+        // ✅ FILTER: Only process if notification is for THIS driver
+        const currentDriverId = this.getCurrentDriverId();
+        if (data.driverId && currentDriverId && String(data.driverId) !== String(currentDriverId)) {
+          console.log(`🚫 Ignoring NewTripAssigned for driver ${data.driverId} (current driver: ${currentDriverId})`);
+          return; // Skip - not for this driver
         }
-        this.processedTripIds.add(data.tripId);
-        
-        // Store notification
+
+        // Store notification (allow duplicates for now - better to show twice than miss one)
         const stored = this.notificationStorage.addNotification({
           type: 'NEW_TRIP_ASSIGNMENT',
           title: data.title || 'Nouvelle Mission',
           message: data.message || `Trip ${data.tripReference} assigné`,
           tripId: data.tripId,
           tripReference: data.tripReference,
+          driverId: data.driverId,
           driverName: data.driverName,
           truckImmatriculation: data.truckImmatriculation,
           destination: data.destination,
@@ -96,26 +124,75 @@ export class GPSTrackingService {
           estimatedDuration: data.estimatedDuration,
           estimatedStartDate: data.estimatedStartDate,
           estimatedEndDate: data.estimatedEndDate,
-          timestamp: data.timestamp || new Date().toISOString()
+          timestamp: data.timestamp || new Date().toISOString(),
+          additionalData: data  // Store full data including destination coordinates
         });
-        
+
+        console.log('💾 Notification storage result:', stored ? 'SAVED' : 'DUPLICATE');
+
         // Only show native notification if successfully stored (not duplicate)
         if (stored) {
+          console.log('🔔 Showing native notification...');
           this.showNativeNotification(
             '🚛 Nouvelle Mission!',
             `Trip ${data.tripReference} assigné!\nDestination: ${data.destination || 'Non définie'}`
           );
+        } else {
+          console.log('ℹ️ Notification already exists, not showing duplicate alert');
         }
-        
+
         this.notificationSubject.next(data);
       });
+      console.log('✅ Handler registered: NewTripAssigned');
 
-      // Écouter les notifications générales
+      // Écouter les notifications générales - FILTER by userId/driverId
       this.hubConnection.on('ReceiveNotification', (notification: any) => {
-        console.log('🔔 Notification via GPSHub:', notification);
+        console.log('🔔🔔🔔 =========================================');
+        console.log('🔔🔔🔔 ReceiveNotification received on GPSHub!');
+        console.log('🔔🔔🔔 Full data:', JSON.stringify(notification, null, 2));
+        console.log('🔔🔔🔔 =========================================');
+
+        // ✅ FILTER: Check BOTH userId and driverId for matching
+        const currentDriverId = this.getCurrentDriverId();
+        const notifDriverId = notification.driverId;
+        const notifUserId = notification.userId;
+        
+        console.log(`🔍 Comparing: notif.driverId=${notifDriverId}, notif.userId=${notifUserId} vs currentDriverId=${currentDriverId}`);
+        
+        // Match if userId matches OR driverId matches (handles Employee ID vs User ID mismatch)
+        const isForMe = (notifUserId && String(notifUserId) === String(currentDriverId)) ||
+                        (notifDriverId && String(notifDriverId) === String(currentDriverId));
+        
+        if (!isForMe) {
+          console.log(`🚫 Ignoring notification - not for me (my ID: ${currentDriverId})`);
+          return;
+        }
+
+        console.log('✅✅✅ Processing notification for current driver');
+
+        // ✅ SAVE to NotificationStorageService (this updates the badge!)
+        const saved = this.notificationStorage.addNotification({
+          type: notification.type || 'NEW_TRIP_ASSIGNMENT',
+          title: notification.title || '🚛 Nouvelle Mission',
+          message: notification.message || 'Vous avez une nouvelle mission',
+          tripId: notification.tripId || 0,
+          tripReference: notification.tripReference || '',
+          driverId: notification.driverId,
+          driverName: notification.driverName,
+          truckImmatriculation: notification.truckImmatriculation,
+          destination: notification.destination,
+          timestamp: notification.timestamp || new Date().toISOString(),
+          additionalData: notification
+        });
+
+        if (saved) {
+          console.log('✅✅✅ Notification saved to storage - badge updated!');
+        }
+
         this.showNativeNotification(notification.title, notification.message);
         this.notificationSubject.next(notification);
       });
+      console.log('✅ Handler registered: ReceiveNotification');
 
       // Écouter les mises à jour de statut
       this.hubConnection.on('StatusUpdated', (update: any) => {
@@ -128,6 +205,8 @@ export class GPSTrackingService {
         console.log('📍 Position received:', position);
         this.positionSubject.next(position);
       });
+
+      console.log('🚀 Starting GPS Hub connection...');
 
       this.hubConnection.onreconnecting(() => {
         console.log('🔄 Reconnecting...');
@@ -147,6 +226,18 @@ export class GPSTrackingService {
       await this.hubConnection.start();
       this.connectionStatus.next(true);
       console.log('✅ GPS Hub connected successfully');
+
+      // 🧪 TEST: Send a test notification to verify handler works
+      console.log('🧪 Testing notification handler with test message...');
+      this.notificationSubject.next({
+        id: 0,
+        type: 'TEST',
+        title: '🔔 Test Notification',
+        message: 'GPS Hub connected - handler is working!',
+        driverId: driverId,
+        timestamp: new Date().toISOString(),
+        isRead: false
+      });
 
       // Join driver group si driverId fourni
       if (driverId) {
@@ -191,14 +282,14 @@ export class GPSTrackingService {
         console.log('🔔 NEW TRIP ASSIGNED via NotificationHub!');
         console.log('🔔 Data:', JSON.stringify(data, null, 2));
         console.log('🔔🔔🔔=================================');
-        
-        // Avoid processing same trip twice
-        if (this.processedTripIds.has(data.tripId)) {
-          console.log('⚠️ Trip already processed via NotificationHub:', data.tripId);
+
+        // ✅ FILTER: Only process if notification is for THIS driver
+        const currentDriverId = this.getCurrentDriverId();
+        if (data.driverId && currentDriverId && data.driverId !== currentDriverId) {
+          console.log(`🚫 Ignoring NewTripAssigned via NotificationHub for driver ${data.driverId} (current: ${currentDriverId})`);
           return;
         }
-        this.processedTripIds.add(data.tripId);
-        
+
         // Store notification (no native alert from NotificationHub)
         const notification: Omit<TripNotification, 'id' | 'isRead'> = {
           type: 'NEW_TRIP_ASSIGNMENT',
@@ -206,6 +297,7 @@ export class GPSTrackingService {
           message: data.message || `Trip ${data.tripReference} assigné`,
           tripId: data.tripId,
           tripReference: data.tripReference,
+          driverId: data.driverId,
           driverName: data.driverName,
           truckImmatriculation: data.truckImmatriculation,
           destination: data.destination,
@@ -215,15 +307,24 @@ export class GPSTrackingService {
           estimatedDuration: data.estimatedDuration,
           estimatedStartDate: data.estimatedStartDate,
           estimatedEndDate: data.estimatedEndDate,
-          timestamp: data.timestamp || new Date().toISOString()
+          timestamp: data.timestamp || new Date().toISOString(),
+          additionalData: data  // Store full data including destination coordinates
         };
-        
+
         this.notificationStorage.addNotification(notification);
         // No native notification from NotificationHub - only from GPSHub
       });
 
       this.notificationHubConnection.on('ReceiveNotification', (notification: any) => {
         console.log('🔔 Notification via NotificationHub:', notification);
+
+        // ✅ FILTER: Only process if notification is for THIS driver
+        const currentDriverId = this.getCurrentDriverId();
+        if (notification.driverId && currentDriverId && notification.driverId !== currentDriverId) {
+          console.log(`🚫 Ignoring ReceiveNotification via NotificationHub for driver ${notification.driverId} (current: ${currentDriverId})`);
+          return;
+        }
+
         this.notificationSubject.next(notification);
       });
 
@@ -323,8 +424,10 @@ export class GPSTrackingService {
     }
   }
 
+  private gpsWatchId?: number;
+
   /**
-   * Démarrer le tracking GPS
+   * Démarrer le tracking GPS avec watchPosition pour position réelle continue
    */
   public startTracking(driverId: number, truckId?: number, tripId?: number): void {
     if (this.isTracking) {
@@ -333,46 +436,101 @@ export class GPSTrackingService {
     }
 
     this.isTracking = true;
-    console.log('🚀 Starting GPS tracking...');
+    console.log('🚀 Starting GPS tracking with watchPosition...');
 
-    this.gpsTrackingInterval = setInterval(async () => {
-      if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-          async (position) => {
-            const gpsPosition: GPSPosition = {
-              driverId,
-              truckId,
-              tripId,
-              latitude: position.coords.latitude,
-              longitude: position.coords.longitude,
-              accuracy: position.coords.accuracy,
-              timestamp: new Date()
-            };
+    // Clear any existing interval (fallback safety)
+    if (this.gpsTrackingInterval) {
+      clearInterval(this.gpsTrackingInterval);
+      this.gpsTrackingInterval = undefined;
+    }
 
-            await this.sendPosition(gpsPosition);
-            this.positionSubject.next(gpsPosition);
-          },
-          (error) => {
-            console.error('❌ Geolocation error:', error);
-          },
-          {
-            enableHighAccuracy: true,
-            timeout: 10000,
-            maximumAge: 3000
-          }
-        );
-      }
-    }, this.gpsUpdateInterval);
+    // Stop any existing watch
+    if (this.gpsWatchId !== undefined) {
+      navigator.geolocation.clearWatch(this.gpsWatchId);
+      this.gpsWatchId = undefined;
+    }
+
+    if (navigator.geolocation) {
+      // Utiliser watchPosition pour un suivi continu et précis
+      this.gpsWatchId = navigator.geolocation.watchPosition(
+        async (position) => {
+          const gpsPosition: GPSPosition = {
+            driverId,
+            truckId,
+            tripId,
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude,
+            accuracy: position.coords.accuracy,
+            timestamp: new Date()
+          };
+
+          console.log('📍 watchPosition:', gpsPosition.latitude.toFixed(6), gpsPosition.longitude.toFixed(6), '±' + gpsPosition.accuracy + 'm');
+
+          await this.sendPosition(gpsPosition);
+          this.positionSubject.next(gpsPosition);
+        },
+        (error) => {
+          console.error('❌ watchPosition error:', error);
+        },
+        {
+          enableHighAccuracy: true,  // GPS hardware uniquement
+          timeout: 15000,
+          maximumAge: 0              // JAMAIS de cache
+        }
+      );
+
+      console.log('✅ watchPosition started, watchId:', this.gpsWatchId);
+    } else {
+      // Fallback: interval avec getCurrentPosition
+      console.warn('⚠️ watchPosition not supported, using fallback');
+      this.gpsTrackingInterval = setInterval(async () => {
+        if (navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition(
+            async (position) => {
+              const gpsPosition: GPSPosition = {
+                driverId,
+                truckId,
+                tripId,
+                latitude: position.coords.latitude,
+                longitude: position.coords.longitude,
+                accuracy: position.coords.accuracy,
+                timestamp: new Date()
+              };
+
+              await this.sendPosition(gpsPosition);
+              this.positionSubject.next(gpsPosition);
+            },
+            (error) => {
+              console.error('❌ Geolocation error:', error);
+            },
+            {
+              enableHighAccuracy: true,
+              timeout: 10000,
+              maximumAge: 0
+            }
+          );
+        }
+      }, this.gpsUpdateInterval);
+    }
   }
 
   /**
    * Arrêter le tracking
    */
   public stopTracking(): void {
+    // Clear watchPosition
+    if (this.gpsWatchId !== undefined) {
+      navigator.geolocation.clearWatch(this.gpsWatchId);
+      this.gpsWatchId = undefined;
+      console.log('⏹️ watchPosition stopped');
+    }
+
+    // Clear interval (fallback)
     if (this.gpsTrackingInterval) {
       clearInterval(this.gpsTrackingInterval);
       this.gpsTrackingInterval = undefined;
     }
+
     this.isTracking = false;
     console.log('⏹️ GPS tracking stopped');
   }
@@ -381,14 +539,62 @@ export class GPSTrackingService {
    * Accepter un trip
    */
   public async acceptTrip(tripId: number): Promise<void> {
-    if (!this.hubConnection) return;
+    console.log('📢📢📢 acceptTrip called with tripId:', tripId);
+    console.log('📢 HubConnection state:', this.hubConnection?.state);
+    
+    if (!this.hubConnection) {
+      console.error('❌❌❌ hubConnection is NULL!');
+      return;
+    }
+    
+    if (this.hubConnection.state !== HubConnectionState.Connected) {
+      console.error('❌❌❌ hubConnection is NOT connected! State:', this.hubConnection.state);
+      return;
+    }
 
     try {
+      console.log('✅ Invoking AcceptTrip on server via SignalR...');
       await this.hubConnection.invoke('AcceptTrip', tripId);
-      console.log(`✅ Trip ${tripId} accepted`);
+      console.log(`✅✅✅ Trip ${tripId} accepted - SignalR call completed!`);
+      
+      // FALLBACK: Also save directly to database via HTTP to guarantee admin receives notification
+      console.log('🔄 Saving notification to database via HTTP fallback...');
+      await this.saveAcceptanceToDatabase(tripId);
+      
     } catch (error) {
-      console.error('Error accepting trip:', error);
+      console.error('❌❌❌ Error accepting trip:', error);
       throw error;
+    }
+  }
+
+  /**
+   * Fallback: Save acceptance directly to database
+   */
+  private async saveAcceptanceToDatabase(tripId: number): Promise<void> {
+    try {
+      const token = localStorage.getItem('token');
+      console.log('🔄 HTTP Fallback - Calling POST /api/Trips/' + tripId + '/accept');
+      console.log('🔄 Token length:', token ? token.length : 0);
+      
+      const response = await fetch(`http://localhost:5191/api/Trips/${tripId}/accept`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      console.log('🔄 HTTP Fallback - Response status:', response.status);
+      
+      if (response.ok) {
+        const result = await response.json();
+        console.log(`✅✅✅ Fallback: Acceptance saved to database for trip ${tripId}`, result);
+      } else {
+        const errorText = await response.text();
+        console.warn('⚠️ Fallback: Failed to save acceptance to database - Status:', response.status, 'Body:', errorText);
+      }
+    } catch (error) {
+      console.error('❌ Fallback: Error saving acceptance:', error);
     }
   }
 
@@ -396,14 +602,55 @@ export class GPSTrackingService {
    * Refuser un trip
    */
   public async rejectTrip(tripId: number, reason: string, reasonCode: string): Promise<void> {
-    if (!this.hubConnection) return;
+    console.log('📢📢📢 rejectTrip called with tripId:', tripId, 'reason:', reason, 'reasonCode:', reasonCode);
+    console.log('📢 HubConnection state:', this.hubConnection?.state);
+    
+    if (!this.hubConnection) {
+      console.error('❌❌❌ hubConnection is NULL!');
+      return;
+    }
+    
+    if (this.hubConnection.state !== HubConnectionState.Connected) {
+      console.error('❌❌❌ hubConnection is NOT connected! State:', this.hubConnection.state);
+      return;
+    }
 
     try {
+      console.log('✅ Invoking RejectTrip on server via SignalR...');
       await this.hubConnection.invoke('RejectTrip', tripId, reason, reasonCode);
-      console.log(`❌ Trip ${tripId} rejected: ${reason}`);
+      console.log(`✅✅✅ Trip ${tripId} rejected - SignalR call completed!`);
+      
+      // FALLBACK: Also save directly to database via HTTP to guarantee admin receives notification
+      console.log('🔄 Saving rejection to database via HTTP fallback...');
+      await this.saveRejectionToDatabase(tripId, reason, reasonCode);
+      
     } catch (error) {
-      console.error('Error rejecting trip:', error);
+      console.error('❌❌❌ Error rejecting trip:', error);
       throw error;
+    }
+  }
+
+  /**
+   * Fallback: Save rejection directly to database
+   */
+  private async saveRejectionToDatabase(tripId: number, reason: string, reasonCode: string): Promise<void> {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`http://localhost:5191/api/Trips/${tripId}/reject?reason=${encodeURIComponent(reason)}&reasonCode=${encodeURIComponent(reasonCode)}`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (response.ok) {
+        console.log(`✅✅✅ Fallback: Rejection saved to database for trip ${tripId}`);
+      } else {
+        console.warn('⚠️ Fallback: Failed to save rejection to database');
+      }
+    } catch (error) {
+      console.error('❌ Fallback: Error saving rejection:', error);
     }
   }
 

@@ -12712,11 +12712,11 @@ svg {
   height: 400px;
   display: flex;
   flex-direction: column;
-  
+
   .capacity-virtual-viewport {
     height: 100%;
     flex: 1;
-    
+
     .cdk-virtual-scroll-content-wrapper {
       padding: 16px 24px;
     }
@@ -12730,12 +12730,12 @@ svg {
   overflow: hidden;
   background: white;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  
+
   &:hover {
     border-color: #3b82f6;
     box-shadow: 0 4px 12px rgba(59, 130, 246, 0.1);
   }
-  
+
   &.expanded {
     box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
     border-color: #3b82f6;
@@ -21662,7 +21662,7 @@ mat-error {
     font-size: 11px;
     color: #856404;
     margin-top: 8px;
-    
+
     mat-icon {
       font-size: 14px;
     }

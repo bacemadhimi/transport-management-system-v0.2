@@ -1,6 +1,14 @@
 <ion-header>
-  <ion-toolbar color="primary">
-    <ion-title>Historique des Trajets</ion-title>
+  <ion-toolbar style="--background: linear-gradient(135deg, #ff8c00, #ffcc00); --color: #000000;">
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/home" style="--color: #000000;"></ion-back-button>
+    </ion-buttons>
+    <ion-title style="--color: #000000;">
+      <div class="toolbar-title">
+        <ion-icon name="time-outline" class="title-icon"></ion-icon>
+        <span>Historique des Trajets</span>
+      </div>
+    </ion-title>
   </ion-toolbar>
 </ion-header>
 
@@ -24,17 +32,21 @@
   <!-- Liste des trajets -->
   <ion-list *ngIf="filteredHistory.length > 0">
     <ion-item-sliding *ngFor="let trip of filteredHistory">
-      <ion-item>
-        <ion-icon [name]="getStatusIcon(trip.status)" [color]="getStatusColor(trip.status)" slot="start"></ion-icon>
+      <ion-item (click)="viewDetails(trip)">
+        <div class="trip-icon" [style.background]="getStatusGradient(trip.status)">
+          <ion-icon [name]="getStatusIcon(trip.status)"></ion-icon>
+        </div>
         <ion-label>
           <h3>{{ trip.tripReference }}</h3>
           <p>{{ formatDate(trip.date) }} • {{ trip.distance }} km • {{ trip.deliveriesCount }} livraisons</p>
         </ion-label>
-        <ion-badge [color]="getStatusColor(trip.status)" slot="end">{{ trip.status }}</ion-badge>
+        <ion-badge [style.background]="getStatusGradient(trip.status)" [style.color]="getStatusTextColor(trip.status)" class="status-badge">
+          {{ getStatusText(trip.status) }}
+        </ion-badge>
       </ion-item>
       
       <ion-item-options side="end">
-        <ion-item-option color="primary" (click)="viewDetails(trip)">
+        <ion-item-option color="primary" (click)="viewDetails(trip)" class="detail-option">
           <ion-icon slot="icon-only" name="eye"></ion-icon>
         </ion-item-option>
       </ion-item-options>

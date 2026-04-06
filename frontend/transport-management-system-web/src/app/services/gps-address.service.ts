@@ -28,7 +28,7 @@ export class GpsAddressService {
   constructor(private http: HttpClient) {}
 
   /**
-   * Valider et normaliser une adresse en obtenant les coordonnées précises
+   * Valider et normaliser une adresse en obtenant les coordonnées précises     
    */
   validateAndNormalizeAddress(address: string): Observable<AddressValidationResult> {
     if (!address || address.trim().length === 0) {
@@ -80,22 +80,19 @@ export class GpsAddressService {
 
   /**
    * Obtenir des suggestions d'adresses pour une saisie partielle
+   * Utilise Nominatim uniquement avec CORS proxy
    */
-  getAddressSuggestions(query: string): Observable<AddressSuggestion[]> {
+  getAddressSuggestions(query: string): Observable<AddressSuggestion[]> {       
     if (!query || query.trim().length < 3) {
       return of([]);
     }
 
-    return this.http.get<any>(`${this.NOMINATIM_BASE_URL}/search`, {
-      params: {
-        q: query,
-        format: 'json',
-        limit: 5,
-        addressdetails: '1',
-        countrycodes: 'tn',
-        'accept-language': 'fr'
-      }
-    }).pipe(
+    // Use CORS proxy to avoid browser restrictions
+    const proxyUrl = 'https://corsproxy.io/?';
+    const nominatimUrl = `${this.NOMINATIM_BASE_URL}/search?q=${encodeURIComponent(query)}&format=json&limit=5&addressdetails=1&countrycodes=tn&accept-language=fr`;
+    const fullUrl = proxyUrl + encodeURIComponent(nominatimUrl);
+
+    return this.http.get<any>(fullUrl).pipe(
       map(response => {
         if (!response || response.length === 0) {
           return [];
@@ -106,10 +103,11 @@ export class GpsAddressService {
           lat: parseFloat(item.lat),
           lng: parseFloat(item.lon),
           confidence: this.calculateConfidence(item)
-        })).sort((a: AddressSuggestion, b: AddressSuggestion) => b.confidence - a.confidence);
+        })).sort((a: AddressSuggestion, b: AddressSuggestion) => b.confidence - 
+a.confidence);
       }),
       catchError(error => {
-        console.error('Erreur lors de la recherche de suggestions:', error);
+        console.error('Erreur lors de la recherche de suggestions:', error);    
         return of([]);
       })
     );
@@ -181,7 +179,7 @@ export class GpsAddressService {
   /**
    * Obtenir l'adresse à partir de coordonnées (reverse geocoding)
    */
-  getAddressFromCoordinates(lat: number, lng: number): Observable<string> {
+  getAddressFromCoordinates(lat: number, lng: number): Observable<string> {     
     return this.http.get<any>(`${this.NOMINATIM_BASE_URL}/reverse`, {
       params: {
         lat: lat.toString(),
@@ -255,7 +253,7 @@ export class GpsAddressService {
           return {
             lat: response.destinationLatitude,
             lng: response.destinationLongitude,
-            address: response.destinationAddress || 'Destination inconnue'
+            address: response.destinationAddress || 'Destination inconnue'      
           };
         }
 
@@ -269,7 +267,7 @@ export class GpsAddressService {
   }
 
   /**
-   * Mettre à jour les coordonnées d'une destination dans la base de données
+   * Mettre à jour les coordonnées d'une destination dans la base de données    
    */
   updateTripDestinationCoordinates(tripId: number, lat: number, lng: number, address: string): Observable<boolean> {
     return this.http.put<any>(`api/gps/trip-destination/${tripId}`, {
@@ -281,7 +279,7 @@ export class GpsAddressService {
         return response && response.success === true;
       }),
       catchError(error => {
-        console.error('Erreur lors de la mise à jour des coordonnées:', error);
+        console.error('Erreur lors de la mise à jour des coordonnées:', error); 
         return of(false);
       })
     );

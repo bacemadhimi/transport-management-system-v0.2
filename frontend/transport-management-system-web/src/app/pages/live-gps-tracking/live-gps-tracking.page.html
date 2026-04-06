@@ -1,41 +1,59 @@
 <div class="live-gps-tracking">
-  <!-- Header avec stats -->
+  <!-- Header avec stats - BLUE & VIOLET THEME -->
   <div class="page-header">
     <div class="header-content">
-      <h1>
-        <mat-icon>location_on</mat-icon>
-        Suivi GPS en Temps Réel
-      </h1>
-      <div class="connection-status" [class.connected]="connectionStatus">
-        <mat-icon>{{ connectionStatus ? 'wifi' : 'wifi_off' }}</mat-icon>
-        <span>{{ connectionStatus ? 'Connecté' : 'Déconnecté' }}</span>
+      <div class="header-title">
+        <mat-icon class="header-icon">satellite</mat-icon>
+        <h1>Suivi GPS en Temps Réel</h1>
+      </div>
+      <div class="header-actions">
+        <div class="connection-status" [class.connected]="connectionStatus">
+          <mat-icon>{{ connectionStatus ? 'wifi' : 'wifi_off' }}</mat-icon>
+          <span>{{ connectionStatus ? 'Connecté' : 'Déconnecté' }}</span>
+        </div>
+        <button mat-raised-button class="refresh-btn" (click)="refreshData()">
+          <mat-icon>refresh</mat-icon>
+          Actualiser
+        </button>
       </div>
     </div>
 
+    <!-- Stats Cards -->
     <div class="stats-bar">
-      <mat-card class="stat-card">
-        <mat-icon>directions_car</mat-icon>
+      <mat-card class="stat-card stat-total">
+        <div class="stat-icon-wrapper total">
+          <mat-icon>directions_car</mat-icon>
+        </div>
         <div class="stat-content">
-          <div class="stat-value">{{ activeTrips.length }}</div>
+          <div class="stat-value">{{ getTotalTrips() }}</div>
           <div class="stat-label">Trips Actifs</div>
         </div>
       </mat-card>
-      <mat-card class="stat-card in-delivery">
-        <mat-icon>navigation</mat-icon>
+
+      <mat-card class="stat-card stat-in-delivery">
+        <div class="stat-icon-wrapper delivery">
+          <mat-icon>navigation</mat-icon>
+        </div>
         <div class="stat-content">
           <div class="stat-value">{{ getInDeliveryCount() }}</div>
           <div class="stat-label">En Livraison</div>
         </div>
       </mat-card>
-      <mat-card class="stat-card loading">
-        <mat-icon>download</mat-icon>
+
+      <mat-card class="stat-card stat-loading">
+        <div class="stat-icon-wrapper loading">
+          <mat-icon>download</mat-icon>
+        </div>
         <div class="stat-content">
           <div class="stat-value">{{ getLoadingCount() }}</div>
           <div class="stat-label">Chargement</div>
         </div>
       </mat-card>
-      <mat-card class="stat-card arrived">
-        <mat-icon>location_on</mat-icon>
+
+      <mat-card class="stat-card stat-arrived">
+        <div class="stat-icon-wrapper arrived">
+          <mat-icon>location_on</mat-icon>
+        </div>
         <div class="stat-content">
           <div class="stat-value">{{ getArrivedCount() }}</div>
           <div class="stat-label">Arrivés</div>
@@ -44,152 +62,552 @@
     </div>
   </div>
 
-  <!-- Contenu principal -->
+  <!-- Main Content -->
   <div class="main-content">
-    <!-- Sidebar avec liste des trips -->
+    <!-- Sidebar with trips list -->
     <div class="trips-sidebar">
       <div class="sidebar-header">
-        <h3>Trips Actifs</h3>
+        <h3>
+          <mat-icon>list</mat-icon>
+          Trips Actifs
+        </h3>
         <div class="filters">
           <mat-form-field appearance="outline" class="search-input">
             <mat-icon matPrefix>search</mat-icon>
-            <input matInput [(ngModel)]="searchQuery" (ngModelChange)="applyFilters()" placeholder="Rechercher...">
+            <input matInput [(ngModel)]="searchQuery" (ngModelChange)="applyFilters()" placeholder="Rechercher un trip...">
           </mat-form-field>
-          
+
           <mat-form-field appearance="outline" class="status-filter">
             <mat-select [(ngModel)]="statusFilter" (ngModelChange)="applyFilters()">
-              <mat-option value="all">Tous</mat-option>
-              <mat-option value="Loading">Chargement</mat-option>
-              <mat-option value="InDelivery">En livraison</mat-option>
-              <mat-option value="Arrived">Arrivé</mat-option>
-              <mat-option value="Completed">Terminé</mat-option>
+              <mat-option value="all">Tous les statuts</mat-option>
+              <mat-option value="Loading">📦 Chargement</mat-option>
+              <mat-option value="InDelivery">🚚 En livraison</mat-option>
+              <mat-option value="Arrived">✅ Arrivé</mat-option>
+              <mat-option value="Accepted">✅ Accepté</mat-option>
             </mat-select>
           </mat-form-field>
         </div>
       </div>
 
       <div class="trips-list">
-        <mat-card 
-          *ngFor="let trip of filteredTrips"
-          class="trip-card"
-          [class.selected]="selectedTrip?.id === trip.id"
-          (click)="selectTrip(trip)"
-        >
-          <mat-card-header>
-            <mat-card-title>
-              <mat-icon>navigate_before</mat-icon>
-              {{ trip.tripReference }}
-            </mat-card-title>
-            <span class="status-badge status-{{ trip.status.toLowerCase() }}">{{ trip.status }}</span>
-          </mat-card-header>
+        @if (filteredTrips.length === 0) {
+          <div class="empty-state">
+            <mat-icon>inbox</mat-icon>
+            <p>Aucun trip actif</p>
+          </div>
+        }
 
-          <mat-card-content>
-            <div class="trip-details">
-              <div class="detail-row">
-                <mat-icon>directions_car</mat-icon>
-                <span>{{ trip.truckImmatriculation || 'N/A' }}</span>
-              </div>
-              <div class="detail-row">
-                <mat-icon>person</mat-icon>
-                <span>{{ trip.driverName || 'N/A' }}</span>
-              </div>
-              <div class="detail-row">
-                <mat-icon>inventory_2</mat-icon>
-                <span>{{ trip.deliveriesCount || 0 }} livraisons</span>
-              </div>
-              <div class="detail-row">
-                <mat-icon>speed</mat-icon>
-                <span>{{ trip.estimatedDistance || 0 }} km</span>
-              </div>
-            </div>
-          </mat-card-content>
+        @for (trip of filteredTrips; track trip.id) {
+          <mat-card
+            class="trip-card"
+            [class.selected]="selectedTrip?.id === trip.id"
+            [class.live]="isPositionLive(trip.lastPositionUpdate)"
+            (click)="selectTrip(trip)"
+          >
+            <mat-card-header>
+              <mat-card-title>
+                <mat-icon class="trip-icon">local_shipping</mat-icon>
+                {{ trip.tripReference }}
+                @if (isPositionLive(trip.lastPositionUpdate)) {
+                  <span class="live-indicator">
+                    <span class="pulse-dot"></span>
+                    En direct
+                  </span>
+                }
+              </mat-card-title>
+              <mat-chip [color]="getStatusBadgeClass(trip.status)">
+                {{ trip.status }}
+              </mat-chip>
+            </mat-card-header>
 
-          <mat-card-actions>
-            <div class="trip-footer">
-              <mat-icon>access_time</mat-icon>
-              <span class="last-update">{{ formatLastUpdate(trip.lastPositionUpdate) }}</span>
-              <mat-icon 
-                class="live-indicator"
-                [class.active]="isPositionLive(trip.lastPositionUpdate)"
-              >radio_button_checked</mat-icon>
-            </div>
-          </mat-card-actions>
-        </mat-card>
+            <mat-card-content>
+              <div class="trip-details">
+                <div class="detail-row">
+                  <mat-icon class="detail-icon">directions_car</mat-icon>
+                  <span class="detail-label">Camion:</span>
+                  <span class="detail-value">{{ trip.truckImmatriculation || 'N/A' }}</span>
+                </div>
 
-        <div *ngIf="filteredTrips.length === 0" class="no-trips">
-          <mat-icon>location_off</mat-icon>
-          <p>Aucun trip actif</p>
-        </div>
+                <div class="detail-row">
+                  <mat-icon class="detail-icon">person</mat-icon>
+                  <span class="detail-label">Chauffeur:</span>
+                  <span class="detail-value">{{ trip.driverName || 'N/A' }}</span>
+                </div>
+
+                <div class="detail-row">
+                  <mat-icon class="detail-icon">inventory_2</mat-icon>
+                  <span class="detail-label">Livraisons:</span>
+                  <span class="detail-value">{{ trip.deliveriesCount || 0 }}</span>
+                </div>
+
+                @if (trip.estimatedDistance) {
+                  <div class="detail-row">
+                    <mat-icon class="detail-icon">route</mat-icon>
+                    <span class="detail-label">Distance:</span>
+                    <span class="detail-value">{{ trip.estimatedDistance }} km</span>
+                  </div>
+                }
+
+                <div class="detail-row last-update">
+                  <mat-icon class="detail-icon">access_time</mat-icon>
+                  <span class="detail-label">Dernière MAJ:</span>
+                  <span class="detail-value">{{ getTimeAgo(trip.lastPositionUpdate) }}</span>
+                </div>
+              </div>
+            </mat-card-content>
+
+            <mat-card-actions>
+              <button mat-button color="primary" (click)="selectTrip(trip); $event.stopPropagation()">
+                <mat-icon>location_on</mat-icon>
+                Voir sur carte
+              </button>
+            </mat-card-actions>
+          </mat-card>
+        }
       </div>
     </div>
 
-    <!-- Carte -->
+    <!-- Map Container -->
     <div class="map-container">
       <div id="map"></div>
       
-      <!-- Overlay infos trip sélectionné -->
-      <mat-card class="trip-info-overlay" *ngIf="selectedTrip">
-        <mat-card-header>
-          <mat-card-title>
-            <mat-icon>navigate</mat-icon>
-            {{ selectedTrip.tripReference }}
-          </mat-card-title>
-          <span class="status-badge status-{{ selectedTrip.status.toLowerCase() }}">{{ selectedTrip.status }}</span>
-        </mat-card-header>
-
-        <mat-card-content>
-          <div class="info-row">
-            <mat-icon>directions_car</mat-icon>
-            <div>
-              <div class="label">Camion</div>
-              <div class="value">{{ selectedTrip.truckImmatriculation || 'N/A' }}</div>
+      <!-- Map Overlay Info -->
+      <div class="map-overlay">
+        <mat-card class="overlay-card">
+          <mat-card-content>
+            <div class="overlay-header">
+              <mat-icon>info</mat-icon>
+              <span>Informations</span>
             </div>
-          </div>
-
-          <div class="info-row">
-            <mat-icon>person</mat-icon>
-            <div>
-              <div class="label">Chauffeur</div>
-              <div class="value">{{ selectedTrip.driverName || 'N/A' }}</div>
-            </div>
-          </div>
-
-          <div class="info-row">
-            <mat-icon>location_on</mat-icon>
-            <div>
-              <div class="label">Position</div>
-              <div class="value">
-                {{ selectedTrip.currentLatitude?.toFixed(6) || 'N/A' }}, 
-                {{ selectedTrip.currentLongitude?.toFixed(6) || 'N/A' }}
+            <div class="overlay-content">
+              <div class="overlay-item">
+                <div class="overlay-dot" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);"></div>
+                <span>Camions en temps réel</span>
+              </div>
+              <div class="overlay-item">
+                <div class="overlay-dot live"></div>
+                <span>Position live (< 1 min)</span>
               </div>
             </div>
-          </div>
-
-          <div class="info-row">
-            <mat-icon>access_time</mat-icon>
-            <div>
-              <div class="label">Dernière MAJ</div>
-              <div class="value">{{ formatLastUpdate(selectedTrip.lastPositionUpdate) }}</div>
-            </div>
-          </div>
-
-          <div class="info-row">
-            <mat-icon>inventory_2</mat-icon>
-            <div>
-              <div class="label">Livraisons</div>
-              <div class="value">{{ selectedTrip.deliveriesCount || 0 }} arrêts</div>
-            </div>
-          </div>
-
-          <div class="info-row">
-            <mat-icon>speed</mat-icon>
-            <div>
-              <div class="label">Distance</div>
-              <div class="value">{{ selectedTrip.estimatedDistance || 0 }} km</div>
-            </div>
-          </div>
-        </mat-card-content>
-      </mat-card>
+          </mat-card-content>
+        </mat-card>
+      </div>
     </div>
   </div>
 </div>
+
+<style>
+/* Modern Blue-Violet Theme */
+.live-gps-tracking {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+}
+
+/* Header Styles */
+.page-header {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 20px;
+  box-shadow: 0 4px 20px rgba(102, 126, 234, 0.3);
+}
+
+.header-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.header-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.header-icon {
+  font-size: 32px;
+  width: 32px;
+  height: 32px;
+}
+
+.header-title h1 {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 600;
+}
+
+.header-actions {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+
+.connection-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 20px;
+  backdrop-filter: blur(10px);
+}
+
+.connection-status.connected {
+  background: rgba(76, 175, 80, 0.3);
+}
+
+/* Stats Bar */
+.stats-bar {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+
+.stat-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 20px;
+  background: rgba(255, 255, 255, 0.95) !important;
+  border-radius: 12px !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15) !important;
+}
+
+.stat-icon-wrapper {
+  width: 50px;
+  height: 50px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+}
+
+.stat-total .stat-icon-wrapper {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.stat-in-delivery .stat-icon-wrapper {
+  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+  color: white;
+}
+
+.stat-loading .stat-icon-wrapper {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  color: white;
+}
+
+.stat-arrived .stat-icon-wrapper {
+  background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+  color: white;
+}
+
+.stat-content {
+  flex: 1;
+}
+
+.stat-value {
+  font-size: 28px;
+  font-weight: 700;
+  color: #1a202c;
+}
+
+.stat-label {
+  font-size: 13px;
+  color: #718096;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-top: 2px;
+}
+
+/* Main Content */
+.main-content {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 400px 1fr;
+  gap: 0;
+  overflow: hidden;
+}
+
+/* Sidebar */
+.trips-sidebar {
+  background: white;
+  border-right: 1px solid #e2e8f0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.sidebar-header {
+  padding: 20px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.sidebar-header h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 16px 0;
+  color: #1a202c;
+  font-size: 18px;
+}
+
+.filters {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.search-input,
+.status-filter {
+  width: 100%;
+}
+
+/* Trips List */
+.trips-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: #a0aec0;
+}
+
+.empty-state mat-icon {
+  font-size: 64px;
+  width: 64px;
+  height: 64px;
+  margin-bottom: 16px;
+  opacity: 0.5;
+}
+
+.trip-card {
+  margin-bottom: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+  border-left: 4px solid transparent;
+}
+
+.trip-card:hover {
+  transform: translateX(4px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15) !important;
+}
+
+.trip-card.selected {
+  border-left-color: #667eea;
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%);
+}
+
+.trip-card.live {
+  border-left-color: #48bb78;
+}
+
+.trip-card mat-card-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.trip-icon {
+  color: #667eea;
+  margin-right: 8px;
+}
+
+.live-indicator {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: #48bb78;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.pulse-dot {
+  width: 8px;
+  height: 8px;
+  background: #48bb78;
+  border-radius: 50%;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(1.2); }
+}
+
+.trip-details {
+  margin-top: 12px;
+}
+
+.detail-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  font-size: 13px;
+}
+
+.detail-row:last-child {
+  margin-bottom: 0;
+}
+
+.detail-row.last-update {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #e2e8f0;
+  color: #718096;
+}
+
+.detail-icon {
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
+  color: #667eea;
+}
+
+.detail-label {
+  color: #718096;
+  font-weight: 500;
+}
+
+.detail-value {
+  color: #1a202c;
+  font-weight: 600;
+  margin-left: auto;
+}
+
+/* Map Container */
+.map-container {
+  position: relative;
+  height: 100%;
+}
+
+#map {
+  width: 100%;
+  height: 100%;
+}
+
+.map-overlay {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  z-index: 1000;
+}
+
+.overlay-card {
+  background: rgba(255, 255, 255, 0.95) !important;
+  backdrop-filter: blur(10px);
+  border-radius: 12px !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15) !important;
+}
+
+.overlay-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  color: #1a202c;
+  margin-bottom: 12px;
+}
+
+.overlay-content {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.overlay-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #4a5568;
+}
+
+.overlay-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.overlay-dot.live {
+  background: #48bb78;
+  animation: pulse 2s infinite;
+}
+
+/* Scrollbar Styling */
+.trips-list::-webkit-scrollbar {
+  width: 8px;
+}
+
+.trips-list::-webkit-scrollbar-track {
+  background: #f7fafc;
+}
+
+.trips-list::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 4px;
+}
+
+.trips-list::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+}
+
+/* Destination marker style */
+.destination-marker {
+  background: transparent !important;
+  border: none !important;
+}
+
+/* Truck marker animations */
+@keyframes truckPulse {
+  0%, 100% { transform: scale(1); box-shadow: 0 6px 20px rgba(0,0,0,0.3); }
+  50% { transform: scale(1.05); box-shadow: 0 8px 30px rgba(0,0,0,0.4); }
+}
+
+@keyframes destinationPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+}
+
+/* Responsive */
+@media (max-width: 1200px) {
+  .main-content {
+    grid-template-columns: 350px 1fr;
+  }
+  
+  .stats-bar {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .main-content {
+    grid-template-columns: 1fr;
+  }
+  
+  .trips-sidebar {
+    max-height: 400px;
+  }
+  
+  .stats-bar {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+</style>

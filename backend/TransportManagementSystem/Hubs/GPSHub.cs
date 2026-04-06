@@ -4,6 +4,7 @@ using TransportManagementSystem.Entity;
 using Microsoft.EntityFrameworkCore;
 using System.Collections.Concurrent;
 using TransportManagementSystem.Services;
+using System.Text.Json;
 
 namespace TransportManagementSystem.Hubs;
 
@@ -75,17 +76,75 @@ public class GPSHub : Hub
                     trip.CurrentLatitude = data.Latitude.ToString();
                     trip.CurrentLongitude = data.Longitude.ToString();
                     trip.LastPositionUpdate = DateTime.UtcNow;
-                    
-                    // Broadcast à tous les admins
+
+                    // Broadcast à tous les admins avec tripId explicite
                     await Clients.Group("Admins").SendAsync("ReceivePosition", new
                     {
                         tripId = trip.Id,
                         tripReference = trip.TripReference,
                         driverId = trip.DriverId,
+                        truckId = trip.TruckId,
                         latitude = data.Latitude,
                         longitude = data.Longitude,
                         timestamp = DateTime.UtcNow,
                         status = trip.TripStatus.ToString()
+                    });
+                    
+                    // Aussi broadcast au groupe AllTrips pour le tracking
+                    await Clients.Group("AllTrips").SendAsync("ReceivePosition", new
+                    {
+                        tripId = trip.Id,
+                        tripReference = trip.TripReference,
+                        driverId = trip.DriverId,
+                        truckId = trip.TruckId,
+                        latitude = data.Latitude,
+                        longitude = data.Longitude,
+                        timestamp = DateTime.UtcNow,
+                        status = trip.TripStatus.ToString()
+                    });
+                }
+            }
+            else if (data.DriverId.HasValue || data.TruckId.HasValue)
+            {
+                // Si pas de tripId mais driverId/truckId, trouver le trip actif
+                var activeTrip = await _context.Trips
+                    .Where(t => (t.DriverId == data.DriverId || t.TruckId == data.TruckId) && 
+                               (t.TripStatus == TripStatus.InDelivery || 
+                                t.TripStatus == TripStatus.Loading || 
+                                t.TripStatus == TripStatus.Arrived ||
+                                t.TripStatus == TripStatus.Accepted))
+                    .FirstOrDefaultAsync();
+                
+                if (activeTrip != null)
+                {
+                    activeTrip.CurrentLatitude = data.Latitude.ToString();
+                    activeTrip.CurrentLongitude = data.Longitude.ToString();
+                    activeTrip.LastPositionUpdate = DateTime.UtcNow;
+                    await _context.SaveChangesAsync();
+
+                    // Broadcast avec le tripId trouvé
+                    await Clients.Group("Admins").SendAsync("ReceivePosition", new
+                    {
+                        tripId = activeTrip.Id,
+                        tripReference = activeTrip.TripReference,
+                        driverId = activeTrip.DriverId,
+                        truckId = activeTrip.TruckId,
+                        latitude = data.Latitude,
+                        longitude = data.Longitude,
+                        timestamp = DateTime.UtcNow,
+                        status = activeTrip.TripStatus.ToString()
+                    });
+                    
+                    await Clients.Group("AllTrips").SendAsync("ReceivePosition", new
+                    {
+                        tripId = activeTrip.Id,
+                        tripReference = activeTrip.TripReference,
+                        driverId = activeTrip.DriverId,
+                        truckId = activeTrip.TruckId,
+                        latitude = data.Latitude,
+                        longitude = data.Longitude,
+                        timestamp = DateTime.UtcNow,
+                        status = activeTrip.TripStatus.ToString()
                     });
                 }
             }
@@ -134,6 +193,15 @@ public class GPSHub : Hub
     }
 
     /// <summary>
+    /// Rejoindre le groupe Tous les Trips (pour web admin)
+    /// </summary>
+    public async Task JoinAllTripsGroup()
+    {
+        await Groups.AddToGroupAsync(Context.ConnectionId, "AllTrips");
+        _logger.LogInformation($"Client {Context.ConnectionId} joined AllTrips group");
+    }
+
+    /// <summary>
     /// Rejoindre le groupe Drivers
     /// </summary>
     public async Task JoinDriverGroup(int driverId)
@@ -148,7 +216,7 @@ public class GPSHub : Hub
     public async Task GetActiveTrips()
     {
         var activeTrips = await _context.Trips
-            .Where(t => t.TripStatus == TripStatus.InDelivery || 
+            .Where(t => t.TripStatus == TripStatus.InDelivery ||
                        t.TripStatus == TripStatus.Loading ||
                        t.TripStatus == TripStatus.Arrived ||
                        t.TripStatus == TripStatus.Accepted)
@@ -161,13 +229,21 @@ public class GPSHub : Hub
                 t.TripReference,
                 Status = t.TripStatus.ToString(),
                 DriverName = t.Driver != null ? t.Driver.Name : null,
+                DriverPhone = t.Driver != null ? t.Driver.PhoneNumber : null,
                 TruckImmatriculation = t.Truck != null ? t.Truck.Immatriculation : null,
                 CurrentLatitude = t.CurrentLatitude != null ? double.Parse(t.CurrentLatitude) : (double?)null,
                 CurrentLongitude = t.CurrentLongitude != null ? double.Parse(t.CurrentLongitude) : (double?)null,
                 LastPositionUpdate = t.LastPositionUpdate,
                 DeliveriesCount = t.Deliveries.Count,
                 EstimatedDistance = t.EstimatedDistance,
-                EstimatedDuration = t.EstimatedDuration
+                EstimatedDuration = t.EstimatedDuration,
+                // Destination coordinates
+                DestinationLat = t.EndLatitude,
+                DestinationLng = t.EndLongitude,
+                // Get destination address from last delivery if available
+                Destination = t.Deliveries.OrderByDescending(d => d.Id).FirstOrDefault() != null 
+                    ? t.Deliveries.OrderByDescending(d => d.Id).FirstOrDefault().DeliveryAddress 
+                    : null
             })
             .ToListAsync();
 
@@ -216,13 +292,42 @@ public class GPSHub : Hub
                     Notes = notes
                 });
 
-                // Broadcast à tous les admins
+                // Broadcast à tous les admins avec détails complets
                 await Clients.Group("Admins").SendAsync("TripStatusChanged", new
                 {
                     TripId = tripId,
                     TripReference = trip.TripReference,
-                    Status = newStatus.ToString(),
-                    Timestamp = DateTime.UtcNow
+                    DriverId = trip.DriverId,
+                    DriverName = trip.Driver?.Name,
+                    TruckId = trip.TruckId,
+                    TruckImmatriculation = trip.Truck?.Immatriculation,
+                    OldStatus = oldStatus.ToString(),
+                    NewStatus = newStatus.ToString(),
+                    CurrentLatitude = trip.CurrentLatitude != null ? double.Parse(trip.CurrentLatitude) : (double?)null,
+                    CurrentLongitude = trip.CurrentLongitude != null ? double.Parse(trip.CurrentLongitude) : (double?)null,
+                    DestinationLat = trip.EndLatitude,
+                    DestinationLng = trip.EndLongitude,
+                    Timestamp = DateTime.UtcNow,
+                    Notes = notes
+                });
+                
+                // Aussi broadcast au groupe AllTrips
+                await Clients.Group("AllTrips").SendAsync("TripStatusChanged", new
+                {
+                    TripId = tripId,
+                    TripReference = trip.TripReference,
+                    DriverId = trip.DriverId,
+                    DriverName = trip.Driver?.Name,
+                    TruckId = trip.TruckId,
+                    TruckImmatriculation = trip.Truck?.Immatriculation,
+                    OldStatus = oldStatus.ToString(),
+                    NewStatus = newStatus.ToString(),
+                    CurrentLatitude = trip.CurrentLatitude != null ? double.Parse(trip.CurrentLatitude) : (double?)null,
+                    CurrentLongitude = trip.CurrentLongitude != null ? double.Parse(trip.CurrentLongitude) : (double?)null,
+                    DestinationLat = trip.EndLatitude,
+                    DestinationLng = trip.EndLongitude,
+                    Timestamp = DateTime.UtcNow,
+                    Notes = notes
                 });
             }
         }
@@ -238,28 +343,111 @@ public class GPSHub : Hub
     /// </summary>
     public async Task AcceptTrip(int tripId)
     {
-        await UpdateTripStatus(tripId, TripStatus.Accepted.ToString(), "Trip accepté");
-        
-        // Mettre à jour l'assignment
-        var assignment = await _context.TripAssignments
-            .Where(a => a.TripId == tripId)
-            .OrderByDescending(a => a.AssignedAt)
-            .FirstOrDefaultAsync();
-        
-        if (assignment != null)
+        try
         {
-            assignment.Status = AssignmentStatus.Accepted;
-            assignment.RespondedAt = DateTime.UtcNow;
+            _logger.LogInformation($"🔔 [AcceptTrip] START - tripId: {tripId}");
+            
+            var trip = await _context.Trips
+                .Include(t => t.Driver)
+                .Include(t => t.Truck)
+                .Include(t => t.Deliveries)
+                .FirstOrDefaultAsync(t => t.Id == tripId);
+
+            if (trip == null)
+            {
+                _logger.LogWarning($"⚠️ [AcceptTrip] Trip {tripId} not found");
+                await Clients.Caller.SendAsync("Error", "Trip non trouvé");
+                return;
+            }
+
+            _logger.LogInformation($"🔔 [AcceptTrip] Trip found: {trip.TripReference}, Driver: {trip.Driver?.Name}");
+
+            trip.TripStatus = TripStatus.Accepted;
             await _context.SaveChangesAsync();
             
-            // Notifier les admins
-            await Clients.Group("Admins").SendAsync("TripAccepted", new
+            _logger.LogInformation($"🔔 [AcceptTrip] Trip status updated to Accepted");
+
+            var notificationData = new
             {
                 TripId = tripId,
-                TripReference = assignment.Trip?.TripReference,
-                DriverId = assignment.DriverId,
+                TripReference = trip.TripReference,
+                DriverId = trip.DriverId,
+                DriverName = trip.Driver?.Name,
+                TruckImmatriculation = trip.Truck?.Immatriculation,
+                Status = "Acceptée",
+                Timestamp = DateTime.UtcNow
+            };
+
+            // Send via SignalR to Admins group (GPSHub) - USE ReceiveNotification event!
+            _logger.LogInformation($"🔔 [AcceptTrip] Sending ReceiveNotification to Admins group (GPSHub)...");
+            await Clients.Group("admins").SendAsync("ReceiveNotification", new
+            {
+                type = "TRIP_UPDATE",
+                tripId = tripId,
+                tripReference = trip.TripReference,
+                driverId = trip.DriverId,
+                driverName = trip.Driver?.Name,
+                title = "Voyage Accepté",
+                message = $"Le chauffeur {trip.Driver?.Name} a accepté le voyage {trip.TripReference}",
+                status = "Accepted",
+                timestamp = DateTime.UtcNow
+            });
+            _logger.LogInformation($"✅ [AcceptTrip] ReceiveNotification sent to Admins group (GPSHub)!");
+
+            // ALSO send TripAccepted event for web compatibility (like sauvegarde-gps branch)
+            await Clients.All.SendAsync("TripAccepted", new
+            {
+                TripId = tripId,
+                TripReference = trip.TripReference,
+                DriverId = trip.DriverId,
+                DriverName = trip.Driver?.Name,
+                TruckImmatriculation = trip.Truck?.Immatriculation,
+                Status = "Accepted",
                 Timestamp = DateTime.UtcNow
             });
+            _logger.LogInformation($"✅ [AcceptTrip] TripAccepted sent to all clients!");
+
+            // ALSO send via NotificationHub for web admin - USE ReceiveNotification event!
+            _logger.LogInformation($"🔔 [AcceptTrip] Sending ReceiveNotification via NotificationHub...");
+            await Clients.All.SendAsync("ReceiveNotification", new
+            {
+                type = "TRIP_UPDATE",
+                tripId = tripId,
+                tripReference = trip.TripReference,
+                driverId = trip.DriverId,
+                driverName = trip.Driver?.Name,
+                title = "Voyage Accepté",
+                message = $"Le chauffeur {trip.Driver?.Name} a accepté le voyage {trip.TripReference}",
+                status = "Accepted",
+                timestamp = DateTime.UtcNow
+            });
+            _logger.LogInformation($"✅ [AcceptTrip] ReceiveNotification sent via NotificationHub!");
+
+            // Also save to database
+            var dbNotification = new Notification
+            {
+                Type = "TRIP_ACCEPTED",
+                Title = "✅ Mission Acceptée",
+                Message = $"Le chauffeur {trip.Driver?.Name} a accepté la mission {trip.TripReference}",
+                Timestamp = DateTime.UtcNow,
+                TripId = tripId,
+                TripReference = trip.TripReference,
+                DriverName = trip.Driver?.Name,
+                TruckImmatriculation = trip.Truck?.Immatriculation,
+                AdditionalData = System.Text.Json.JsonSerializer.Serialize(notificationData),
+                CreatedAt = DateTime.UtcNow
+            };
+
+            _context.Notifications.Add(dbNotification);
+            await _context.SaveChangesAsync();
+
+            _logger.LogInformation($"✅ [AcceptTrip] Notification saved to DB: {dbNotification.Id}");
+            _logger.LogInformation($"✅ [AcceptTrip] COMPLETE - tripId: {tripId}");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, $"❌ [AcceptTrip] ERROR - {ex.Message}");
+            await Clients.Caller.SendAsync("Error", $"Erreur: {ex.Message}");
         }
     }
 
@@ -268,31 +456,149 @@ public class GPSHub : Hub
     /// </summary>
     public async Task RejectTrip(int tripId, string reason, string reasonCode)
     {
-        await UpdateTripStatus(tripId, TripStatus.Refused.ToString(), reason);
-        
-        var assignment = await _context.TripAssignments
-            .Where(a => a.TripId == tripId)
-            .OrderByDescending(a => a.AssignedAt)
-            .FirstOrDefaultAsync();
-        
-        if (assignment != null)
+        try
         {
+            var trip = await _context.Trips
+                .Include(t => t.Driver)
+                .Include(t => t.Truck)
+                .FirstOrDefaultAsync(t => t.Id == tripId);
+
+            if (trip == null)
+            {
+                await Clients.Caller.SendAsync("Error", "Trip non trouvé");
+                return;
+            }
+
+            var assignment = await _context.TripAssignments
+                .Where(a => a.TripId == tripId)
+                .OrderByDescending(a => a.AssignedAt)
+                .FirstOrDefaultAsync();
+
+            if (assignment == null)
+            {
+                assignment = new TripAssignment
+                {
+                    TripId = tripId,
+                    DriverId = trip.DriverId,
+                    Status = AssignmentStatus.Pending,
+                    AssignedAt = DateTime.UtcNow,
+                    NotificationSent = true
+                };
+                _context.TripAssignments.Add(assignment);
+                await _context.SaveChangesAsync();
+            }
+
             assignment.Status = AssignmentStatus.Rejected;
             assignment.RejectionReason = reason;
             assignment.RejectionReasonCode = reasonCode;
             assignment.RespondedAt = DateTime.UtcNow;
             await _context.SaveChangesAsync();
-            
-            // Notifier les admins
-            await Clients.Group("Admins").SendAsync("TripRejected", new
+
+            trip.TripStatus = TripStatus.Refused;
+            await _context.SaveChangesAsync();
+
+            var notificationData = new
             {
                 TripId = tripId,
-                TripReference = assignment.Trip?.TripReference,
-                DriverId = assignment.DriverId,
+                TripReference = trip.TripReference,
+                DriverId = trip.DriverId,
+                DriverName = trip.Driver?.Name,
+                TruckImmatriculation = trip.Truck?.Immatriculation,
+                Reason = reason,
+                ReasonCode = reasonCode,
+                Status = "Refusée",
+                Timestamp = DateTime.UtcNow
+            };
+
+            // Send via SignalR to Admins group (GPSHub) - USE TripStatusChanged event!
+            _logger.LogInformation($"🔔 [RejectTrip] Sending TripStatusChanged to Admins group (GPSHub)...");
+            await Clients.Group("Admins").SendAsync("TripStatusChanged", new
+            {
+                TripId = tripId,
+                TripReference = trip.TripReference,
+                DriverId = trip.DriverId,
+                DriverName = trip.Driver?.Name,
+                TruckImmatriculation = trip.Truck?.Immatriculation,
+                NewStatus = "Refused",
+                PreviousStatus = "Assigned",
                 Reason = reason,
                 ReasonCode = reasonCode,
                 Timestamp = DateTime.UtcNow
             });
+            _logger.LogInformation($"✅ [RejectTrip] TripStatusChanged sent to Admins group (GPSHub)!");
+
+            // ALSO send TripRejected event for web compatibility (like sauvegarde-gps branch)
+            await Clients.All.SendAsync("TripRejected", new
+            {
+                TripId = tripId,
+                TripReference = trip.TripReference,
+                DriverId = trip.DriverId,
+                DriverName = trip.Driver?.Name,
+                TruckImmatriculation = trip.Truck?.Immatriculation,
+                Reason = reason,
+                ReasonCode = reasonCode,
+                Status = "Refused",
+                Timestamp = DateTime.UtcNow
+            });
+            _logger.LogInformation($"✅ [RejectTrip] TripRejected sent to all clients!");
+
+            // ALSO send via NotificationHub for web admin - USE TripStatusChanged event!
+            _logger.LogInformation($"🔔 [RejectTrip] Sending TripStatusChanged via NotificationHub...");
+            await Clients.All.SendAsync("TripStatusChanged", new
+            {
+                TripId = tripId,
+                TripReference = trip.TripReference,
+                DriverId = trip.DriverId,
+                DriverName = trip.Driver?.Name,
+                TruckImmatriculation = trip.Truck?.Immatriculation,
+                NewStatus = "Refused",
+                PreviousStatus = "Assigned",
+                Reason = reason,
+                ReasonCode = reasonCode,
+                Timestamp = DateTime.UtcNow
+            });
+            _logger.LogInformation($"✅ [RejectTrip] TripStatusChanged sent via NotificationHub!");
+
+            // Also save to database for all admins
+            var allUsers = await _context.Users.ToListAsync();
+            var adminUsers = allUsers.Where(u => u.Email.Contains("admin") || u.Email.Contains("super")).ToList();
+
+            foreach (var adminUser in adminUsers)
+            {
+                var dbNotification = new Notification
+                {
+                    Type = "TRIP_CANCELLED", // Use TRIP_CANCELLED for consistency with existing notifications
+                    Title = "❌ Mission Refusée",
+                    Message = $"Le chauffeur {trip.Driver?.Name} a refusé la mission {trip.TripReference}. Raison: {reason}",
+                    Timestamp = DateTime.UtcNow,
+                    TripId = tripId,
+                    TripReference = trip.TripReference,
+                    DriverName = trip.Driver?.Name,
+                    TruckImmatriculation = trip.Truck?.Immatriculation,
+                    AdditionalData = System.Text.Json.JsonSerializer.Serialize(notificationData),
+                    CreatedAt = DateTime.UtcNow
+                };
+
+                _context.Notifications.Add(dbNotification);
+
+                var userNotification = new UserNotification
+                {
+                    NotificationId = dbNotification.Id,
+                    UserId = adminUser.Id,
+                    IsRead = false,
+                    ReadAt = null
+                };
+
+                _context.UserNotifications.Add(userNotification);
+            }
+
+            await _context.SaveChangesAsync();
+            _logger.LogInformation($"✅ Notification saved to DB for {adminUsers.Count} admins");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, $"❌ ERROR in RejectTrip");
+            await Clients.Caller.SendAsync("Error", $"Erreur: {ex.Message}");
         }
     }
 
@@ -359,8 +665,11 @@ public class GPSHub : Hub
     {
         _logger.LogInformation($"GPS Client connected: {Context.ConnectionId}");
 
-        // Auto-join Admins group for all connections
+        // Auto-join BOTH Admins and AllTrips groups for all connections
         await Groups.AddToGroupAsync(Context.ConnectionId, "Admins");
+        await Groups.AddToGroupAsync(Context.ConnectionId, "AllTrips");
+        
+        _logger.LogInformation($"✅ Client {Context.ConnectionId} auto-joined Admins and AllTrips groups");
 
         // Try to get driver ID from JWT claims - check multiple possible claim types
         var userIdClaim = Context.User?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;

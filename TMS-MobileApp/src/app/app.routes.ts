@@ -30,9 +30,23 @@ export const routes: Routes = [
   },
   {
     path: 'profile',
-    loadComponent: () => import('./pages/profile/profile.page').then( m => m.ProfilePage),
+    loadComponent: () => import('./profile/profile.page').then( m => m.ProfilePage)
+  },
+{
+    path: 'chatbot',
+    loadComponent: () => import('./pages/chatbot/chatbot.page').then( m => m.ChatbotPage),
     canActivate: [authGuard]
   },
+  {
+    path: 'chat',
+    loadComponent: () => import('./pages/chat/chat.component').then( m => m.ChatComponent),
+    canActivate: [authGuard]
+  },
+  {
+    path: 'barcode-test',
+    loadComponent: () => import('./pages/barcode-test/barcode-test.page').then( m => m.BarcodeTestPage),
+    canActivate: [authGuard]
+  }, 
   {
     path: 'trip/:tripId',
     loadComponent: () => import('./pages/trip-workflow/trip-workflow.page').then( m => m.TripWorkflowPage),
@@ -58,6 +72,5 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/trip-history/trip-history.page').then( m => m.TripHistoryPage),
     canActivate: [authGuard]
   }
-
-  // Future routes will be added here
+ 
 ];

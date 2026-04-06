@@ -4,6 +4,7 @@ import { IonicModule } from '@ionic/angular';
 import { Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { HttpClient } from '@angular/common/http';
+import { environment } from 'src/environments/environment.prod';
 
 interface MyTrip {
   id: number;
@@ -37,7 +38,7 @@ export class MyTripsPage implements OnInit {
   driverId: number | null = null;
   error: string | null = null;
 
-  private readonly API_URL = 'http://localhost:5191/api/Trips';
+  private readonly API_URL = `${environment.apiUrl}/api/Trips`;
 
   constructor(
     private authService: AuthService,
@@ -54,7 +55,6 @@ export class MyTripsPage implements OnInit {
     this.error = null;
 
     try {
-      // Get current user info
       const user = this.authService.currentUser();
       if (!user) {
         this.error = 'Utilisateur non connecté';
@@ -65,20 +65,17 @@ export class MyTripsPage implements OnInit {
       this.driverId = (user as any).driverId || user.id;
       console.log('📦 Loading trips for driver:', this.driverId);
 
-      // Get token
       const token = localStorage.getItem('token');
       const headers = {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
       };
 
-      // Fetch real trips from API - Filter by driver
       this.http.get<any[]>(`${this.API_URL}?status=all`, { headers })
         .subscribe({
           next: (trips) => {
             console.log('📦 Trips received:', trips.length);
             
-            // Filter trips for this driver only
             const driverTrips = trips.filter(trip => 
               trip.driverId === this.driverId || 
               (trip.driver && trip.driver.id === this.driverId)
@@ -86,7 +83,6 @@ export class MyTripsPage implements OnInit {
 
             console.log('🚛 Driver trips:', driverTrips.length);
 
-            // Transform API data
             this.trips = driverTrips.map(trip => ({
               id: trip.id,
               tripReference: trip.tripReference || `TRIP-${trip.id}`,
@@ -101,7 +97,6 @@ export class MyTripsPage implements OnInit {
               startDate: trip.estimatedStartDate
             }));
 
-            // Separate active and history
             this.activeTrips = this.trips.filter(t => t.isActive);
             this.historyTrips = this.trips.filter(t => !t.isActive);
 
@@ -139,13 +134,90 @@ export class MyTripsPage implements OnInit {
   }
 
   private isActiveStatus(status: string): boolean {
-    const activeStatuses = ['Planned', 'Accepted', 'LoadingInProgress', 'DeliveryInProgress', 'InDelivery', 'Loading'];
+    const activeStatuses = ['Pending', 'Planned', 'Accepted', 'LoadingInProgress', 'DeliveryInProgress', 'InDelivery', 'Loading'];
     return activeStatuses.includes(status);
+  }
+
+  /**
+   * Formater la date
+   */
+  formatDate(dateString: string): string {
+    if (!dateString) return '';
+    try {
+      return new Date(dateString).toLocaleDateString('fr-FR', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric'
+      });
+    } catch {
+      return dateString;
+    }
+  }
+
+  /**
+   * Obtenir le gradient du statut
+   */
+  getStatusGradient(status: string): string {
+    const gradientMap: { [key: string]: string } = {
+      'Receipt': 'linear-gradient(135deg, #4caf50, #45a049)',
+      'Completed': 'linear-gradient(135deg, #4caf50, #45a049)',
+      'Cancelled': 'linear-gradient(135deg, #f44336, #da190b)',
+      'Refused': 'linear-gradient(135deg, #f44336, #da190b)',
+      'Pending': 'linear-gradient(135deg, #ff8c00, #ffcc00)',
+      'Planned': 'linear-gradient(135deg, #ff8c00, #ffcc00)',
+      'Accepted': 'linear-gradient(135deg, #4caf50, #45a049)',
+      'Loading': 'linear-gradient(135deg, #5856d6, #5e5ce0)',
+      'LoadingInProgress': 'linear-gradient(135deg, #5856d6, #5e5ce0)',
+      'InDelivery': 'linear-gradient(135deg, #ff9500, #ff9f0a)',
+      'DeliveryInProgress': 'linear-gradient(135deg, #ff9500, #ff9f0a)'
+    };
+    return gradientMap[status] || 'linear-gradient(135deg, #94a3b8, #64748b)';
+  }
+
+  /**
+   * Obtenir la couleur du texte pour le badge
+   */
+  getStatusTextColor(status: string): string {
+    const colorMap: { [key: string]: string } = {
+      'Receipt': '#ffffff',
+      'Completed': '#ffffff',
+      'Cancelled': '#ffffff',
+      'Refused': '#ffffff',
+      'Pending': '#000000',
+      'Planned': '#000000',
+      'Accepted': '#ffffff',
+      'Loading': '#ffffff',
+      'LoadingInProgress': '#ffffff',
+      'InDelivery': '#ffffff',
+      'DeliveryInProgress': '#ffffff'
+    };
+    return colorMap[status] || '#ffffff';
+  }
+
+  /**
+   * Obtenir l'icône du statut
+   */
+  getStatusIcon(status: string): string {
+    const iconMap: { [key: string]: string } = {
+      'Receipt': 'checkmark-done',
+      'Completed': 'checkmark-done',
+      'Cancelled': 'close',
+      'Refused': 'close',
+      'Pending': 'time',
+      'Planned': 'calendar',
+      'Accepted': 'checkmark',
+      'Loading': 'cube',
+      'LoadingInProgress': 'cube',
+      'InDelivery': 'boat',
+      'DeliveryInProgress': 'boat'
+    };
+    return iconMap[status] || 'help';
   }
 
   getStatusColor(status: string): string {
     const colors: Record<string, string> = {
       'Planned': 'medium',
+      'Pending': 'warning',
       'Accepted': 'primary',
       'LoadingInProgress': 'warning',
       'Loading': 'warning',
@@ -161,16 +233,17 @@ export class MyTripsPage implements OnInit {
 
   getStatusText(status: string): string {
     const texts: Record<string, string> = {
-      'Planned': 'Planifié',
-      'Accepted': 'Accepté',
-      'LoadingInProgress': 'Chargement',
-      'Loading': 'Chargement',
-      'DeliveryInProgress': 'Livraison',
-      'InDelivery': 'Livraison',
-      'Completed': 'Terminé',
-      'Receipt': 'Livré',
-      'Cancelled': 'Annulé',
-      'Refused': 'Refusé'
+      'Pending': '⏳ En attente',
+      'Planned': '📋 Planifié',
+      'Accepted': '✅ Accepté',
+      'Loading': '📦 Chargement',
+      'LoadingInProgress': '📦 Chargement',
+      'InDelivery': '🚚 Livraison',
+      'DeliveryInProgress': '🚚 Livraison',
+      'Completed': '🎉 Terminé',
+      'Receipt': '🎉 Terminé',
+      'Cancelled': '❌ Annulé',
+      'Refused': '⛔ Refusé'
     };
     return texts[status] || status;
   }

@@ -98,8 +98,8 @@ public class TrucksController : ControllerBase
                     GeographicalEntityName = tg.GeographicalEntity.Name,
                     LevelName = tg.GeographicalEntity.Level?.Name,
                     LevelNumber = tg.GeographicalEntity.Level?.LevelNumber ?? 0,
-                    Latitude = tg.GeographicalEntity.Latitude,
-                    Longitude = tg.GeographicalEntity.Longitude
+                    Latitude = tg.GeographicalEntity.Latitude.HasValue ? (double?)tg.GeographicalEntity.Latitude.Value : null,
+                    Longitude = tg.GeographicalEntity.Longitude.HasValue ? (double?)tg.GeographicalEntity.Longitude.Value : null
                 }).ToList() ?? new List<TruckGeographicalEntityDto>()
         }).ToList();
 
@@ -154,8 +154,8 @@ public class TrucksController : ControllerBase
                     GeographicalEntityName = tg.GeographicalEntity.Name,
                     LevelName = tg.GeographicalEntity.Level?.Name,
                     LevelNumber = tg.GeographicalEntity.Level?.LevelNumber ?? 0,
-                    Latitude = tg.GeographicalEntity.Latitude,
-                    Longitude = tg.GeographicalEntity.Longitude
+                    Latitude = tg.GeographicalEntity.Latitude.HasValue ? (double?)tg.GeographicalEntity.Latitude.Value : null,
+                    Longitude = tg.GeographicalEntity.Longitude.HasValue ? (double?)tg.GeographicalEntity.Longitude.Value : null
                 }).ToList() ?? new List<TruckGeographicalEntityDto>()
         };
 
@@ -255,8 +255,8 @@ public class TrucksController : ControllerBase
                     GeographicalEntityName = tg.GeographicalEntity.Name,
                     LevelName = tg.GeographicalEntity.Level?.Name,
                     LevelNumber = tg.GeographicalEntity.Level?.LevelNumber ?? 0,
-                    Latitude = tg.GeographicalEntity.Latitude,
-                    Longitude = tg.GeographicalEntity.Longitude
+                    Latitude = tg.GeographicalEntity.Latitude.HasValue ? (double?)tg.GeographicalEntity.Latitude.Value : null,
+                    Longitude = tg.GeographicalEntity.Longitude.HasValue ? (double?)tg.GeographicalEntity.Longitude.Value : null
                 }).ToList() ?? new List<TruckGeographicalEntityDto>()
         };
 
@@ -363,8 +363,8 @@ public class TrucksController : ControllerBase
                     GeographicalEntityName = tg.GeographicalEntity.Name,
                     LevelName = tg.GeographicalEntity.Level?.Name,
                     LevelNumber = tg.GeographicalEntity.Level?.LevelNumber ?? 0,
-                    Latitude = tg.GeographicalEntity.Latitude,
-                    Longitude = tg.GeographicalEntity.Longitude
+                    Latitude = tg.GeographicalEntity.Latitude.HasValue ? (double?)tg.GeographicalEntity.Latitude.Value : null,
+                    Longitude = tg.GeographicalEntity.Longitude.HasValue ? (double?)tg.GeographicalEntity.Longitude.Value : null
                 }).ToList() ?? new List<TruckGeographicalEntityDto>()
         };
 
@@ -444,8 +444,8 @@ public class TrucksController : ControllerBase
                     GeographicalEntityName = tg.GeographicalEntity.Name,
                     LevelName = tg.GeographicalEntity.Level?.Name,
                     LevelNumber = tg.GeographicalEntity.Level?.LevelNumber ?? 0,
-                    Latitude = tg.GeographicalEntity.Latitude,
-                    Longitude = tg.GeographicalEntity.Longitude
+                    Latitude = tg.GeographicalEntity.Latitude.HasValue ? (double?)tg.GeographicalEntity.Latitude.Value : null,
+                    Longitude = tg.GeographicalEntity.Longitude.HasValue ? (double?)tg.GeographicalEntity.Longitude.Value : null
                 }).ToList() ?? new List<TruckGeographicalEntityDto>()
         }).ToList();
 

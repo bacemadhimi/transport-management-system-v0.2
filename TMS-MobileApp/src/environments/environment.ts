@@ -1,4 +1,9 @@
+
+
 export const environment = {
   production: false,
-  apiUrl: 'https://localhost:7287'
+  apiUrl: 'http://localhost:5191',
+  weatherApiKey: '' // OpenWeatherMap API key (optional - leave empty for simulated weather)
 };
+
+

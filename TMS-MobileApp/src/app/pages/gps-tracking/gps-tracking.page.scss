@@ -1,6 +1,42 @@
 .gps-tracking-content {
   --background: #f8fafc;
 
+  // Header toolbar styling - VISIBLE
+  ion-header {
+    ion-toolbar {
+      --background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      --border-width: 0;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+      min-height: 56px;
+
+      ion-buttons {
+        display: flex;
+        align-items: center;
+        
+        ion-button {
+          --color: white;
+          opacity: 1;
+          margin: 0 4px;
+          min-width: 44px;
+          min-height: 44px;
+          
+          ion-icon {
+            font-size: 24px;
+            color: white !important;
+            pointer-events: none;
+          }
+        }
+      }
+
+      ion-title {
+        font-weight: 600;
+        font-size: 18px;
+        letter-spacing: 0.3px;
+        text-align: center;
+      }
+    }
+  }
+
   .connection-status {
     position: fixed;
     top: 100px;
@@ -31,20 +67,170 @@
     }
   }
 
-  // Carte plus grande - Style Glovo/InDrive - TOUJOURS VISIBLE
+  .admin-info-card {
+    --background: rgba(255, 255, 255, 0.98);
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+    border-radius: 16px;
+    box-shadow: 0 4px 20px rgba(102, 126, 234, 0.2);
+    margin: 0;
+    border: 2px solid rgba(102, 126, 234, 0.1);
+
+    .admin-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+
+      ion-icon {
+        font-size: 28px;
+      }
+
+      h3 {
+        margin: 0;
+        font-size: 18px;
+        font-weight: 700;
+        color: #1e293b;
+      }
+    }
+
+    .admin-stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-bottom: 12px;
+
+      .stat-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 12px;
+        background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
+        border-radius: 12px;
+
+        .stat-value {
+          font-size: 24px;
+          font-weight: 800;
+          color: #667eea;
+          line-height: 1;
+        }
+
+        .stat-label {
+          font-size: 11px;
+          color: #64748b;
+          margin-top: 4px;
+          text-align: center;
+        }
+      }
+    }
+
+    ion-note {
+      display: block;
+      text-align: center;
+      font-size: 12px;
+      color: #94a3b8;
+    }
+  }
+
+  .active-trips-section {
+    margin: 16px;
+
+    ion-card {
+      --background: white;
+      border-radius: 16px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+
+      ion-card-header {
+        padding-bottom: 12px;
+
+        ion-card-title {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          font-size: 18px;
+          font-weight: 700;
+          color: #1e293b;
+
+          ion-icon {
+            font-size: 22px;
+            color: #667eea;
+          }
+        }
+      }
+
+      ion-list {
+        background: transparent;
+      }
+
+      ion-item {
+        --background: transparent;
+        --padding-top: 12px;
+        --padding-bottom: 12px;
+        --border-width: 0 0 1px 0;
+        --border-color: #f1f5f9;
+        border-radius: 8px;
+        margin-bottom: 8px;
+
+        &:last-child {
+          --border-width: 0;
+        }
+
+        ion-icon[slot="start"] {
+          font-size: 24px;
+          margin-right: 12px;
+        }
+
+        h2 {
+          font-size: 16px;
+          font-weight: 700;
+          color: #1e293b;
+          margin-bottom: 4px;
+        }
+
+        p {
+          font-size: 13px;
+          color: #64748b;
+          margin: 2px 0;
+        }
+      }
+
+      .empty-state {
+        text-align: center;
+        padding: 40px 20px;
+
+        .empty-icon {
+          font-size: 64px;
+          color: #cbd5e1;
+          margin-bottom: 16px;
+        }
+
+        p {
+          font-size: 16px;
+          color: #64748b;
+          margin-bottom: 8px;
+        }
+
+        ion-note {
+          font-size: 13px;
+          color: #94a3b8;
+        }
+      }
+    }
+  }
+
   .map-wrapper {
     position: relative;
-    height: 500px; // Augmenté de 300px à 500px pour une meilleure visibilité
-    width: calc(100% - 32px); // Marges de 16px de chaque côté
+    height: 500px;
+    width: calc(100% - 32px);
     margin: 16px;
     border-radius: 16px;
     overflow: hidden;
     box-shadow: 0 4px 20px rgba(102, 126, 234, 0.2);
     border: 2px solid rgba(102, 126, 234, 0.1);
-    background: #e5e7eb; // Couleur de fond pendant chargement
-    display: block; // Force l'affichage
-    visibility: visible; // Toujours visible
-    opacity: 1; // Pleine opacité
+    background: #e5e7eb;
+    display: block;
+    visibility: visible;
+    opacity: 1;
 
     #map {
       width: 100%;
@@ -65,6 +251,7 @@
 
       .info-card {
         --background: rgba(255, 255, 255, 0.98);
+        -webkit-backdrop-filter: blur(10px);
         backdrop-filter: blur(10px);
         border-radius: 12px;
         box-shadow: 0 4px 16px rgba(102, 126, 234, 0.2);
@@ -226,20 +413,82 @@
   }
 }
 
-// Truck marker animation
-@keyframes pulse {
+// ==================== WHITE TRUCK STYLES ====================
+
+// Voice navigation button animations - MODERN PROFESSIONAL
+@keyframes wave-expand {
   0% {
-    box-shadow: 0 0 0 0 rgba(102, 126, 234, 0.7);
-  }
-  70% {
-    box-shadow: 0 0 0 20px rgba(102, 126, 234, 0);
+    width: 100%;
+    height: 100%;
+    opacity: 1;
   }
   100% {
-    box-shadow: 0 0 0 0 rgba(102, 126, 234, 0);
+    width: 180%;
+    height: 180%;
+    opacity: 0;
   }
 }
 
-// Celebration animation for completed mission
+@keyframes dot-bounce {
+  0%, 100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  50% {
+    transform: translateY(-4px);
+    opacity: 0.6;
+  }
+}
+
+// GPS indicator pulse animation
+@keyframes gps-pulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+    box-shadow: 0 2px 10px rgba(34, 197, 94, 0.8);
+  }
+  50% {
+    transform: scale(1.2);
+    opacity: 0.4;
+    box-shadow: 0 3px 15px rgba(34, 197, 94, 1);
+  }
+}
+
+// White/Gray truck marker
+.truck-marker-white {
+  transition: all 0.2s ease-out;
+
+  .truck-marker-container {
+    will-change: transform;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+  }
+
+  &:hover {
+    filter: drop-shadow(0 5px 12px rgba(0,0,0,0.4)) !important;
+    transform: scale(1.15);
+  }
+}
+
+// Map container - CRITICAL for visibility
+#map {
+  background: #e5e7eb;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+  position: relative;
+}
+
+// Destination marker
+.destination-marker-pro {
+  transition: transform 0.2s ease;
+
+  &:hover {
+    transform: scale(1.1);
+  }
+}
+
+// Celebration animation
 @keyframes celebrate {
   0% {
     transform: scale(0.8);
@@ -252,9 +501,4 @@
     transform: scale(1);
     opacity: 1;
   }
-}
-
-// Map container
-#map {
-  background: #e5e7eb;
 }
