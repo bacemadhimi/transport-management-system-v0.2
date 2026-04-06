@@ -204,7 +204,20 @@ public class TripsController : ControllerBase
 
                 Truck = t.Truck != null ? t.Truck.Immatriculation : null,
                 Driver = t.Driver != null ? t.Driver.Name : null,
+                DriverId = t.DriverId,
+                TruckId = t.TruckId,
+                DriverPhone = t.Driver != null ? t.Driver.PhoneNumber : null,
                 Convoyeur = t.Convoyeur != null ? t.Convoyeur.Name : null,
+
+                // GPS Tracking fields - CRITICAL for real-time tracking
+                // ✅ FIXED: Return as double? directly to avoid string parsing issues
+                CurrentLatitude = !string.IsNullOrEmpty(t.CurrentLatitude) ? double.Parse(t.CurrentLatitude, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture) : (double?)null,
+                CurrentLongitude = !string.IsNullOrEmpty(t.CurrentLongitude) ? double.Parse(t.CurrentLongitude, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture) : (double?)null,
+                LastPositionUpdate = t.LastPositionUpdate,
+                EndLatitude = t.EndLatitude,
+                EndLongitude = t.EndLongitude,
+                StartLatitude = t.StartLatitude,
+                StartLongitude = t.StartLongitude,
 
                 DeliveryCount = t.Deliveries.Count(),
                 CompletedDeliveries = t.Deliveries

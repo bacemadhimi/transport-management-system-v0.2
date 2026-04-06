@@ -34,6 +34,15 @@ public class TripListDto
     // Message
     public string? Message { get; set; }
 
+    // GPS Tracking fields
+    public double? CurrentLatitude { get; set; }
+    public double? CurrentLongitude { get; set; }
+    public DateTime? LastPositionUpdate { get; set; }
+    public double? EndLatitude { get; set; }
+    public double? EndLongitude { get; set; }
+    public double? StartLatitude { get; set; }
+    public double? StartLongitude { get; set; }
+
     // Delivery statistics
     public int DeliveryCount { get; set; }
     public int CompletedDeliveries { get; set; }

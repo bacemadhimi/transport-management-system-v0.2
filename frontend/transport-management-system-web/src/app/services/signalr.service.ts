@@ -66,9 +66,12 @@ export class SignalRService {
   private positionSubject = new BehaviorSubject<GPSPosition | null>(null);
   public position$ = this.positionSubject.asObservable();
 
-  // Listen for GPS positions
+  // Listen for GPS positions - DEPRECATED, use position$ observable instead
   public onGPSPosition(callback: (position: GPSPosition) => void): void {
-    this.hubConnection?.on('ReceivePosition', callback);
+    // Subscribe to position$ instead
+    this.position$.subscribe(pos => {
+      if (pos) callback(pos);
+    });
   }
 
   // Listen for trip status changes
@@ -313,8 +316,12 @@ export class SignalRService {
       this.addNotification(notification, 20);
       this.showBrowserNotification(notification);
 
-      // Reload notifications from DB to ensure sync
-      setTimeout(() => this.loadInitialNotifications(), 500);
+      // 🚛 CRITICAL: Reload active trips to show the newly accepted trip on GPS tracking page
+      console.log('🔄 Reloading active trips after acceptance...');
+      setTimeout(() => {
+        this.requestActiveTrips();
+        this.loadInitialNotifications();
+      }, 1000);
     });
 
     // Handler for Trip Rejected by driver - REAL TIME
@@ -342,8 +349,12 @@ export class SignalRService {
       this.addNotification(notification, 20);
       this.showBrowserNotification(notification);
 
-      // Reload notifications from DB to ensure sync
-      setTimeout(() => this.loadInitialNotifications(), 500);
+      // 🚛 CRITICAL: Reload active trips to remove the rejected trip from GPS tracking
+      console.log('🔄 Reloading active trips after rejection...');
+      setTimeout(() => {
+        this.requestActiveTrips();
+        this.loadInitialNotifications();
+      }, 1000);
     });
 
     // Handler for Trip Cancelled (alternative event name for compatibility)
@@ -390,9 +401,26 @@ export class SignalRService {
       console.log('User disconnected:', userId);
     });
 
-    // GPS position handler
+    // GPS position handler - receives REAL positions from mobile via SignalR
+    this.hubConnection.on('ReceivePosition', (position: any) => {
+      console.log('📍📍📍 ========================================');
+      console.log('📍 SignalRService received ReceivePosition:');
+      console.log('📍 ========================================');
+      console.log('  → TripId:', position.tripId);
+      console.log('  → TripRef:', position.tripReference);
+      console.log('  → Latitude:', position.latitude);
+      console.log('  → Longitude:', position.longitude);
+      console.log('  → Status:', position.status);
+      console.log('  → Timestamp:', position.timestamp);
+      console.log('📍 ========================================');
+      
+      // Broadcast to ALL subscribers
+      this.positionSubject.next(position);
+    });
+
+    // Also listen for alternate event name
     this.hubConnection.on('ReceiveGPSPosition', (position: GPSPosition) => {
-      console.log('📍 Received GPS position:', position);
+      console.log('📍 Received GPS position (alternate):', position);
       this.positionSubject.next(position);
     });
 

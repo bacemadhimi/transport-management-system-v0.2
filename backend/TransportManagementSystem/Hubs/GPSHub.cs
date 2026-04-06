@@ -79,6 +79,8 @@ public class GPSHub : Hub
     {
         try
         {
+            _logger.LogInformation($"📍 Received GPS position: TripId={data.TripId}, DriverId={data.DriverId}, TruckId={data.TruckId}, Lat={data.Latitude.ToString(System.Globalization.CultureInfo.InvariantCulture)}, Lng={data.Longitude.ToString(System.Globalization.CultureInfo.InvariantCulture)}");
+
             // Validation des coordonnées
             if (!IsValidCoordinates(data.Latitude, data.Longitude))
             {
@@ -116,8 +118,9 @@ public class GPSHub : Hub
                 var trip = await _context.Trips.FindAsync(data.TripId.Value);
                 if (trip != null)
                 {
-                    trip.CurrentLatitude = data.Latitude.ToString();
-                    trip.CurrentLongitude = data.Longitude.ToString();
+                    // ✅ FIXED: Always use InvariantCulture to avoid French comma issues
+                    trip.CurrentLatitude = data.Latitude.ToString(System.Globalization.CultureInfo.InvariantCulture);
+                    trip.CurrentLongitude = data.Longitude.ToString(System.Globalization.CultureInfo.InvariantCulture);
                     trip.LastPositionUpdate = DateTime.UtcNow;
 
                     // Broadcast à tous les admins avec tripId explicite
@@ -132,7 +135,9 @@ public class GPSHub : Hub
                         timestamp = DateTime.UtcNow,
                         status = trip.TripStatus.ToString()
                     });
-                    
+
+                    _logger.LogInformation($"📡 Broadcast ReceivePosition to Admins group: TripId={trip.Id}, Lat={data.Latitude.ToString(System.Globalization.CultureInfo.InvariantCulture)}, Lng={data.Longitude.ToString(System.Globalization.CultureInfo.InvariantCulture)}");
+
                     // Aussi broadcast au groupe AllTrips pour le tracking
                     await Clients.Group("AllTrips").SendAsync("ReceivePosition", new
                     {
@@ -145,23 +150,26 @@ public class GPSHub : Hub
                         timestamp = DateTime.UtcNow,
                         status = trip.TripStatus.ToString()
                     });
+
+                    _logger.LogInformation($"📡 Broadcast ReceivePosition to AllTrips group: TripId={trip.Id}");
                 }
             }
             else if (data.DriverId.HasValue || data.TruckId.HasValue)
             {
                 // Si pas de tripId mais driverId/truckId, trouver le trip actif
                 var activeTrip = await _context.Trips
-                    .Where(t => (t.DriverId == data.DriverId || t.TruckId == data.TruckId) && 
-                               (t.TripStatus == TripStatus.InDelivery || 
-                                t.TripStatus == TripStatus.Loading || 
+                    .Where(t => (t.DriverId == data.DriverId || t.TruckId == data.TruckId) &&
+                               (t.TripStatus == TripStatus.InDelivery ||
+                                t.TripStatus == TripStatus.Loading ||
                                 t.TripStatus == TripStatus.Arrived ||
                                 t.TripStatus == TripStatus.Accepted))
                     .FirstOrDefaultAsync();
-                
+
                 if (activeTrip != null)
                 {
-                    activeTrip.CurrentLatitude = data.Latitude.ToString();
-                    activeTrip.CurrentLongitude = data.Longitude.ToString();
+                    // ✅ FIXED: Always use InvariantCulture to avoid French comma issues
+                    activeTrip.CurrentLatitude = data.Latitude.ToString(System.Globalization.CultureInfo.InvariantCulture);
+                    activeTrip.CurrentLongitude = data.Longitude.ToString(System.Globalization.CultureInfo.InvariantCulture);
                     activeTrip.LastPositionUpdate = DateTime.UtcNow;
                     await _context.SaveChangesAsync();
 
@@ -177,7 +185,9 @@ public class GPSHub : Hub
                         timestamp = DateTime.UtcNow,
                         status = activeTrip.TripStatus.ToString()
                     });
-                    
+
+                    _logger.LogInformation($"📡 Broadcast ReceivePosition to Admins (fallback): TripId={activeTrip.Id}, Lat={data.Latitude.ToString(System.Globalization.CultureInfo.InvariantCulture)}, Lng={data.Longitude.ToString(System.Globalization.CultureInfo.InvariantCulture)}");
+
                     await Clients.Group("AllTrips").SendAsync("ReceivePosition", new
                     {
                         tripId = activeTrip.Id,
@@ -189,6 +199,12 @@ public class GPSHub : Hub
                         timestamp = DateTime.UtcNow,
                         status = activeTrip.TripStatus.ToString()
                     });
+
+                    _logger.LogInformation($"📡 Broadcast ReceivePosition to AllTrips (fallback): TripId={activeTrip.Id}");
+                }
+                else
+                {
+                    _logger.LogWarning($"⚠️ No active trip found for DriverId={data.DriverId}, TruckId={data.TruckId}");
                 }
             }
 
@@ -254,43 +270,65 @@ public class GPSHub : Hub
     }
 
     /// <summary>
-    /// Obtenir toutes les positions actives
+    /// Obtenir toutes les positions actives avec destination complète
     /// </summary>
     public async Task GetActiveTrips()
     {
-        var activeTrips = await _context.Trips
-            .Where(t => t.TripStatus == TripStatus.InDelivery ||
-                       t.TripStatus == TripStatus.Loading ||
-                       t.TripStatus == TripStatus.Arrived ||
-                       t.TripStatus == TripStatus.Accepted)
-            .Include(t => t.Driver)
-            .Include(t => t.Truck)
-            .Include(t => t.Deliveries)
-            .Select(t => new
-            {
-                t.Id,
-                t.TripReference,
-                Status = t.TripStatus.ToString(),
-                DriverName = t.Driver != null ? t.Driver.Name : null,
-                DriverPhone = t.Driver != null ? t.Driver.PhoneNumber : null,
-                TruckImmatriculation = t.Truck != null ? t.Truck.Immatriculation : null,
-                CurrentLatitude = t.CurrentLatitude != null ? double.Parse(t.CurrentLatitude) : (double?)null,
-                CurrentLongitude = t.CurrentLongitude != null ? double.Parse(t.CurrentLongitude) : (double?)null,
-                LastPositionUpdate = t.LastPositionUpdate,
-                DeliveriesCount = t.Deliveries.Count,
-                EstimatedDistance = t.EstimatedDistance,
-                EstimatedDuration = t.EstimatedDuration,
-                // Destination coordinates
-                DestinationLat = t.EndLatitude,
-                DestinationLng = t.EndLongitude,
-                // Get destination address from last delivery if available
-                Destination = t.Deliveries.OrderByDescending(d => d.Id).FirstOrDefault() != null 
-                    ? t.Deliveries.OrderByDescending(d => d.Id).FirstOrDefault().DeliveryAddress 
-                    : null
-            })
-            .ToListAsync();
+        try
+        {
+            var activeTrips = await _context.Trips
+                .Where(t => t.TripStatus == TripStatus.InDelivery ||
+                           t.TripStatus == TripStatus.Loading ||
+                           t.TripStatus == TripStatus.Arrived ||
+                           t.TripStatus == TripStatus.Accepted)
+                .Include(t => t.Driver)
+                .Include(t => t.Truck)
+                .Include(t => t.Deliveries)
+                .ThenInclude(d => d.Location)
+                .Select(t => new
+                {
+                    t.Id,
+                    t.TripReference,
+                    Status = t.TripStatus.ToString(),
+                    DriverName = t.Driver != null ? t.Driver.Name : null,
+                    DriverPhone = t.Driver != null ? t.Driver.PhoneNumber : null,
+                    TruckImmatriculation = t.Truck != null ? t.Truck.Immatriculation : null,
+                    CurrentLatitude = t.CurrentLatitude != null ? double.Parse(t.CurrentLatitude) : (double?)null,
+                    CurrentLongitude = t.CurrentLongitude != null ? double.Parse(t.CurrentLongitude) : (double?)null,
+                    LastPositionUpdate = t.LastPositionUpdate,
+                    DeliveriesCount = t.Deliveries.Count,
+                    EstimatedDistance = t.EstimatedDistance,
+                    EstimatedDuration = t.EstimatedDuration,
+                    // Destination coordinates - Priority 1: Trip end coordinates
+                    DestinationLat = t.EndLatitude,
+                    DestinationLng = t.EndLongitude,
+                    // Get destination address from last delivery if available
+                    Destination = t.Deliveries.OrderByDescending(d => d.Id).FirstOrDefault() != null
+                        ? t.Deliveries.OrderByDescending(d => d.Id).FirstOrDefault().DeliveryAddress
+                        : null,
+                    // Also include last delivery geolocation if available
+                    LastDeliveryGeolocation = t.Deliveries.OrderByDescending(d => d.Id).FirstOrDefault() != null
+                        ? t.Deliveries.OrderByDescending(d => d.Id).FirstOrDefault().Geolocation
+                        : null,
+                    // Include last delivery location coordinates if available
+                    LastDeliveryLocationLat = t.Deliveries.OrderByDescending(d => d.Id).FirstOrDefault(d => d.Location != null && d.Location.Latitude.HasValue) != null
+                        ? t.Deliveries.OrderByDescending(d => d.Id).FirstOrDefault(d => d.Location != null && d.Location.Latitude.HasValue).Location.Latitude
+                        : (double?)null,
+                    LastDeliveryLocationLng = t.Deliveries.OrderByDescending(d => d.Id).FirstOrDefault(d => d.Location != null && d.Location.Latitude.HasValue) != null
+                        ? t.Deliveries.OrderByDescending(d => d.Id).FirstOrDefault(d => d.Location != null && d.Location.Latitude.HasValue).Location.Longitude
+                        : (double?)null
+                })
+                .ToListAsync();
 
-        await Clients.Caller.SendAsync("ActiveTrips", activeTrips);
+            await Clients.Caller.SendAsync("ActiveTrips", activeTrips);
+            
+            _logger.LogInformation($"📊 GetActiveTrips: Sent {activeTrips.Count} active trips to client {Context.ConnectionId}");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "❌ Error in GetActiveTrips");
+            await Clients.Caller.SendAsync("Error", $"Erreur: {ex.Message}");
+        }
     }
 
     /// <summary>
