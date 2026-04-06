@@ -1,0 +1,171 @@
+<ion-header>
+  <ion-toolbar class="chatbot-toolbar">
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/home"></ion-back-button>
+    </ion-buttons>
+    <ion-title>
+      <div class="header-title">
+        <div class="ai-avatar">
+          <ion-icon name="sparkles"></ion-icon>
+        </div>
+        <div class="ai-info">
+          <span class="ai-name">Assistant IA</span>
+          <span class="ai-status" [class.connected]="isOllamaConnected">
+            <span class="status-dot"></span>
+            {{ isOllamaConnected ? 'En ligne' : 'Hors ligne' }}
+          </span>
+        </div>
+      </div>
+    </ion-title>
+    <ion-buttons slot="end">
+      <ion-button (click)="toggleVoiceMode()" class="voice-mode-btn" [class.active]="voiceModeEnabled">
+        <ion-icon slot="icon-only" [name]="voiceModeEnabled ? 'volume-high' : 'volume-mute'"></ion-icon>
+      </ion-button>
+      <ion-button (click)="clearChat()" class="clear-btn">
+        <ion-icon slot="icon-only" name="trash-outline"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="chatbot-content">
+
+  <!-- Chat Messages -->
+  <div #chatContainer class="chat-container">
+
+    <!-- Welcome Card -->
+    <div class="welcome-card" *ngIf="messages.length <= 1">
+      <ion-card class="welcome-card-inner">
+        <ion-card-header>
+          <div class="welcome-avatar">
+            <ion-icon name="sparkles"></ion-icon>
+          </div>
+          <ion-card-title>Assistant Intelligent</ion-card-title>
+          <ion-card-subtitle>Toujours là pour vous aider</ion-card-subtitle>
+        </ion-card-header>
+        <ion-card-content>
+          <p>Je suis votre assistant personnel pour :</p>
+          <div class="feature-list">
+            <div class="feature-item">
+              <div class="feature-icon map">
+                <ion-icon name="map"></ion-icon>
+              </div>
+              <span>Trajets en cours</span>
+            </div>
+            <div class="feature-item">
+              <div class="feature-icon package">
+                <ion-icon name="package"></ion-icon>
+              </div>
+              <span>Livraisons</span>
+            </div>
+            <div class="feature-item">
+              <div class="feature-icon shield">
+                <ion-icon name="shield-checkmark"></ion-icon>
+              </div>
+              <span>Sécurité</span>
+            </div>
+            <div class="feature-item">
+              <div class="feature-icon help">
+                <ion-icon name="help-circle"></ion-icon>
+              </div>
+              <span>Questions</span>
+            </div>
+          </div>
+        </ion-card-content>
+      </ion-card>
+    </div>
+
+    <!-- Messages -->
+    <div *ngFor="let message of messages"
+         [class]="'message message-' + message.role"
+         [class.typing]="message.isTyping">
+
+      <div class="message-avatar" *ngIf="message.role === 'assistant'">
+        <div class="avatar-ai">
+          <ion-icon name="sparkles"></ion-icon>
+        </div>
+      </div>
+
+      <div class="message-content">
+        <div class="message-bubble">
+          {{ message.content }}
+        </div>
+        <div class="message-time">
+          {{ message.timestamp | date:'HH:mm' }}
+        </div>
+      </div>
+
+      <div class="message-avatar" *ngIf="message.role === 'user'">
+        <div class="avatar-user">
+          <ion-icon name="person"></ion-icon>
+        </div>
+      </div>
+    </div>
+
+    <!-- Loading Indicator -->
+    <div *ngIf="isLoading" class="message message-assistant typing">
+      <div class="message-avatar">
+        <div class="avatar-ai">
+          <ion-icon name="sparkles"></ion-icon>
+        </div>
+      </div>
+      <div class="message-content">
+        <div class="typing-indicator">
+          <span></span>
+          <span></span>
+          <span></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Suggested Questions -->
+  <div class="suggestions-container" *ngIf="messages.length <= 2">
+    <ion-label class="suggestions-title">
+      <ion-icon name="bulb"></ion-icon>
+      Questions suggérées
+    </ion-label>
+    <div class="suggestions-list">
+      <ion-chip *ngFor="let question of suggestedQuestions"
+                (click)="sendSuggestion(question)"
+                class="suggestion-chip">
+        <ion-label>{{ question }}</ion-label>
+      </ion-chip>
+    </div>
+  </div>
+
+</ion-content>
+
+<ion-footer class="chat-footer">
+  <ion-toolbar>
+    <div class="input-container">
+      <!-- Voice Input Button -->
+      <button class="voice-input-btn" 
+              (click)="toggleVoiceInput()" 
+              [class.recording]="isRecording"
+              title="Appuyer pour parler">
+        <ion-icon [name]="isRecording ? 'mic-off' : 'mic'"></ion-icon>
+        <div class="pulse-ring" *ngIf="isRecording"></div>
+      </button>
+      
+      <!-- Text Input -->
+      <div class="text-input-wrapper">
+        <ion-textarea #messageInput
+                      [(ngModel)]="inputMessage"
+                      placeholder="Posez votre question..."
+                      rows="1"
+                      max-rows="4"
+                      (ionInput)="autoResize($event)"
+                      (keydown.enter)="sendMessage()">
+        </ion-textarea>
+      </div>
+      
+      <!-- Send Button -->
+      <button class="send-btn"
+              (click)="sendMessage()"
+              [disabled]="!inputMessage.trim() || isLoading">
+        <ion-icon name="send"></ion-icon>
+      </button>
+    </div>
+  </ion-toolbar>
+</ion-footer>

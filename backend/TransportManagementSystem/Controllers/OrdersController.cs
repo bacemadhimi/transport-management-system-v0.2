@@ -305,7 +305,7 @@ public class OrdersController : ControllerBase
             Reference = reference,
             Type = model.Type,
             Weight = model.Weight,
-            WeightUnit = model.WeightUnit,
+            WeightUnit = string.IsNullOrWhiteSpace(model.WeightUnit) ? "palette" : model.WeightUnit,
             Status = OrderStatus.Pending,
             CreatedDate = DateTime.UtcNow,
             DeliveryAddress = model.DeliveryAddress,

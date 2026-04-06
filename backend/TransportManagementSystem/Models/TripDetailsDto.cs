@@ -38,4 +38,9 @@ public class TripDetailsDto
     public DateTime? CreatedAt { get; set; }
     public int? UpdatedBy { get; set; }
     public DateTime? UpdatedAt { get; set; }
+    
+    // Destination coordinates for GPS tracking
+    public double? DestinationLatitude { get; set; }
+    public double? DestinationLongitude { get; set; }
+    public string? Destination { get; set; }
 }

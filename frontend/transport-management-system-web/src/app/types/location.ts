@@ -5,6 +5,10 @@ export interface ILocation {
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
+  address?: string;
+  latitude?: number;
+  longitude?: number;
+  zoneName?: string;
   geographicalEntities?: ILocationGeographicalEntity[];
 }
 

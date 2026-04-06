@@ -11,4 +11,9 @@ public class CreateTripDto
     public List<CreateDeliveryDto>? Deliveries { get; set; }
     public int? TrajectId { get; set; }
     public int? ConvoyeurId { get; set; }
+    
+    // Destination coordinates for GPS tracking (from web form address search)
+    public double? DestinationLatitude { get; set; }
+    public double? DestinationLongitude { get; set; }
+    public string? DestinationAddress { get; set; }
 }

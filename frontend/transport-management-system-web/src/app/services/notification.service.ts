@@ -1,6 +1,5 @@
-﻿
 import { Injectable, inject } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { TripNotification } from './signalr.service';
@@ -32,7 +31,13 @@ export class NotificationService {
   private http = inject(HttpClient);
   private apiUrl = `${environment.apiUrl}/api/notifications`;
 
-  constructor() { }
+  private getHeaders(): HttpHeaders {
+    const token = localStorage.getItem('token');
+    return new HttpHeaders({
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    });
+  }
 
   getNotifications(filter?: NotificationFilter): Observable<NotificationResponse> {
     let params: any = {};
@@ -45,22 +50,18 @@ export class NotificationService {
       if (filter.pageIndex !== undefined) params.pageIndex = filter.pageIndex;
       if (filter.pageSize !== undefined) params.pageSize = filter.pageSize;
     }
-    return this.http.get<NotificationResponse>(this.apiUrl, { params });
-  }
-
-  getUnreadCount(): Observable<{ success: boolean; data: { unreadCount: number } }> {
-    return this.http.get<{ success: boolean; data: { unreadCount: number } }>(`${this.apiUrl}/unread-count`);
+    return this.http.get<NotificationResponse>(this.apiUrl, { params, headers: this.getHeaders() });
   }
 
   markAsRead(notificationId: number): Observable<any> {
-    return this.http.put(`${this.apiUrl}/${notificationId}/read`, {});
+    return this.http.post(`${this.apiUrl}/${notificationId}/mark-as-read`, {}, { headers: this.getHeaders() });
   }
 
   markAllAsRead(): Observable<any> {
-    return this.http.put(`${this.apiUrl}/mark-all-read`, {});
+    return this.http.post(`${this.apiUrl}/mark-all-as-read`, {}, { headers: this.getHeaders() });
   }
 
-deleteAllNotifications(): Observable<any> {
-  return this.http.delete(`${this.apiUrl}/delete-all`);
-}
+  deleteAllNotifications(): Observable<any> {
+    return this.http.delete(`${this.apiUrl}`, { headers: this.getHeaders() });
+  }
 }

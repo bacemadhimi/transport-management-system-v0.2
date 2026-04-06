@@ -1,4 +1,4 @@
-<div class="trip-form-wrapper">
+﻿<div class="trip-form-wrapper">
   <div class="loading-overlay" *ngIf="loading">
     <mat-spinner diameter="50"></mat-spinner>
     <span>Chargement...</span>
@@ -186,7 +186,7 @@
                 <mat-option *ngFor="let location of activeLocations" [value]="location.id">
                   <div class="location-option">
                     <span class="location-name">{{ location.name }}</span>
-                    
+
                   </div>
                 </mat-option>
               </mat-select>
@@ -195,6 +195,151 @@
               </mat-error>
             </mat-form-field>
           </div>
+
+          <!-- ===== ADDED: Smart Address Search for Final Destination ===== -->
+          <div class="destination-address-section" style="margin-top: 24px; padding: 24px; background: linear-gradient(135deg, #667eea15 0%, #764ba215 100%); border-radius: 12px; border: 1px solid #e2e8f0; grid-column: 1 / -1;">
+            <div class="destination-header" style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
+              <div style="background: linear-gradient(135deg, #667eea, #764ba2); padding: 10px; border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+                <mat-icon style="color: white; font-size: 24px; width: 24px; height: 24px;">location_on</mat-icon>
+              </div>
+              <div>
+                <h4 style="margin: 0; font-size: 16px; font-weight: 600; color: #1e293b;">Adresse de destination finale</h4>
+                <p style="margin: 4px 0 0 0; font-size: 13px; color: #64748b;">Recherche intelligente avec géocodage automatique</p>
+              </div>
+            </div>
+
+            <mat-form-field appearance="outline" style="width: 100%; font-size: 15px;" subscriptSizing="dynamic" class="destination-address-field">
+              <mat-label style="font-size: 15px;">
+                <mat-icon style="font-size: 18px; width: 18px; height: 18px; vertical-align: middle; margin-right: 6px; color: #667eea;">my_location</mat-icon>
+                Rechercher l'adresse de destination
+              </mat-label>
+              <input
+                matInput
+                [formControl]="globalDestinationAddress"
+                placeholder="Ex: 123 Avenue Habib Bourguiba, Tunis, Tunisie"
+                autocomplete="off"
+                style="font-size: 15px;"
+              >
+              <mat-icon matSuffix style="cursor: pointer; color: #667eea;" (click)="searchGlobalAddress()">search</mat-icon>
+              <mat-hint style="font-size: 12px;">
+                <mat-icon style="font-size: 14px; width: 14px; height: 14px; vertical-align: middle; margin-right: 4px;">info</mat-icon>
+                Tapez une adresse et sélectionnez parmi les suggestions
+              </mat-hint>
+            </mat-form-field>
+
+            <!-- Address Suggestions -->
+            <div *ngIf="globalAddressSuggestions.length > 0" class="address-suggestions" style="border: 1px solid #e2e8f0; border-radius: 12px; max-height: 240px; overflow-y: auto; background: white; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+              <div style="padding: 12px 16px; background: #f8fafc; border-bottom: 1px solid #e2e8f0; font-size: 12px; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em;">
+                Suggestions d'adresses
+              </div>
+              <div
+                *ngFor="let suggestion of globalAddressSuggestions"
+                class="suggestion-item"
+                (click)="onGlobalAddressSelected(suggestion)"
+                style="padding: 14px 16px; cursor: pointer; border-bottom: 1px solid #f1f5f9; transition: all 0.2s;"
+                [ngStyle]="{'background': hoveredSuggestion === suggestion ? '#f0f9ff' : 'white'}"
+                (mouseenter)="hoveredSuggestion = suggestion"
+                (mouseleave)="hoveredSuggestion = null"
+              >
+                <div style="display: flex; align-items: start; gap: 12px;">
+                  <div style="background: #e0e7ff; padding: 8px; border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+                    <mat-icon style="font-size: 20px; width: 20px; height: 20px; color: #667eea;">location_on</mat-icon>
+                  </div>
+                  <div style="flex: 1; min-width: 0;">
+                    <div style="font-weight: 500; color: #1e293b; font-size: 14px; line-height: 1.4;">{{ suggestion.display_name || suggestion.address }}</div>
+                    <div style="font-size: 12px; color: #64748b; margin-top: 4px; font-family: monospace;">📍 {{ suggestion.lat }}, {{ suggestion.lon }}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Selected Destination Display -->
+            <div *ngIf="selectedDestinationCoords" class="selected-destination-info" style="margin-top: 16px; padding: 16px; background: linear-gradient(135deg, #ecfdf5, #d1fae5); border-radius: 12px; border-left: 4px solid #10b981; box-shadow: 0 2px 4px rgba(16, 185, 129, 0.1);">
+              <div style="display: flex; align-items: center; gap: 12px;">
+                <div style="background: #10b981; padding: 10px; border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+                  <mat-icon style="color: white; font-size: 22px; width: 22px; height: 22px;">check_circle</mat-icon>
+                </div>
+                <div style="flex: 1; min-width: 0;">
+                  <div style="font-weight: 600; color: #065f46; font-size: 14px; margin-bottom: 4px;">✅ Destination définie avec succès</div>
+                  <div style="font-size: 13px; color: #047857; line-height: 1.5; word-break: break-word;">{{ selectedDestinationCoords.address }}</div>
+                  <div style="font-size: 12px; color: #059669; margin-top: 6px; font-family: monospace; background: rgba(255,255,255,0.5); padding: 4px 8px; border-radius: 6px; display: inline-block;">
+                    📍 Lat: {{ selectedDestinationCoords.lat }}, Lng: {{ selectedDestinationCoords.lng }}
+                  </div>
+                </div>
+                <button mat-raised-button (click)="clearGlobalDestination()" style="background: #fee2e2; color: #dc2626; font-weight: 500; min-width: auto;">
+                  <mat-icon style="font-size: 18px; margin-right: 4px;">delete</mat-icon>
+                  Effacer
+                </button>
+              </div>
+            </div>
+
+            <!-- ===== ADDED: Optional Map Adjustment Feature ===== -->
+            <div *ngIf="selectedDestinationCoords" class="map-adjustment-section" style="margin-top: 20px;">
+              <!-- Toggle Button -->
+              <button 
+                mat-stroked-button 
+                (click)="toggleMapAdjustment()" 
+                [color]="showMapAdjustment ? 'warn' : 'primary'"
+                style="width: 100%; padding: 14px; font-size: 15px; font-weight: 500; display: flex; align-items: center; justify-content: center; gap: 10px;">
+                <mat-icon style="font-size: 22px; width: 22px; height: 22px;">
+                  {{ showMapAdjustment ? 'close' : 'map' }}
+                </mat-icon>
+                {{ showMapAdjustment ? 'Fermer l\'ajustement de position' : 'Ajuster la position sur la carte (optionnel)' }}
+              </button>
+
+              <!-- Map Container (shown when toggled) -->
+              <div *ngIf="showMapAdjustment" class="map-container-wrapper" style="margin-top: 16px;">
+                <!-- Info Banner -->
+                <div style="padding: 12px 16px; background: linear-gradient(135deg, #dbeafe, #bfdbfe); border-radius: 8px; border-left: 4px solid #3b82f6; margin-bottom: 12px; display: flex; align-items: center; gap: 10px;">
+                  <mat-icon style="color: #1d4ed8; font-size: 20px;">info</mat-icon>
+                  <div style="flex: 1; font-size: 13px; color: #1e40af;">
+                    <strong>💡 Comment utiliser:</strong> Déplacez le marqueur ou recherchez un lieu pour ajuster la position GPS
+                  </div>
+                </div>
+
+                <!-- Map Container -->
+                <div id="map-adjustment-container" class="adjustment-map" style="height: 450px; border-radius: 12px; border: 2px solid #e2e8f0; box-shadow: 0 4px 12px rgba(0,0,0,0.1);"></div>
+
+                <!-- Action Buttons -->
+                <div style="margin-top: 16px; display: flex; gap: 12px; flex-wrap: wrap;">
+                  <button 
+                    mat-raised-button 
+                    (click)="applyCustomPosition()" 
+                    *ngIf="customDestinationCoords"
+                    style="flex: 1; background: linear-gradient(135deg, #10b981, #059669); color: white; font-weight: 600; padding: 12px;">
+                    <mat-icon style="margin-right: 6px;">check_circle</mat-icon>
+                    Utiliser cette position
+                  </button>
+                  <button 
+                    mat-stroked-button 
+                    (click)="closeMapAdjustment()"
+                    style="flex: 0 0 auto; padding: 12px 24px;">
+                    <mat-icon style="margin-right: 6px;">close</mat-icon>
+                    Fermer
+                  </button>
+                </div>
+
+                <!-- Custom Position Info (if adjusted) -->
+                <div *ngIf="customDestinationCoords" style="margin-top: 16px; padding: 14px; background: linear-gradient(135deg, #fef3c7, #fde68a); border-radius: 10px; border-left: 4px solid #f59e0b;">
+                  <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+                    <mat-icon style="color: #d97706; font-size: 20px;">flag</mat-icon>
+                    <div style="font-weight: 600; color: #92400e; font-size: 14px;">Position ajustée</div>
+                  </div>
+                  <div style="font-size: 13px; color: #78350f; line-height: 1.5; margin-bottom: 6px;">
+                    {{ customDestinationCoords.address }}
+                  </div>
+                  <div style="font-size: 12px; color: #92400e; font-family: monospace; background: rgba(255,255,255,0.5); padding: 6px 10px; border-radius: 6px; display: inline-block;">
+                    📍 Lat: {{ customDestinationCoords.lat.toFixed(6) }}, Lng: {{ customDestinationCoords.lng.toFixed(6) }}
+                    <span style="margin-left: 10px; padding-left: 10px; border-left: 1px solid #d97706;">
+                      ✓ isCustomLocation: {{ customDestinationCoords.isCustomLocation }}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <!-- ===== END: Optional Map Adjustment Feature ===== -->
+          </div>
+          <!-- ===== END: Smart Address Search ===== -->
 
         </div>
         
@@ -2029,8 +2174,8 @@
               </div>
             </div>
           </div>
-          
-          <!-- Delivery Details - MOVED OUTSIDE client-orders-details -->
+
+          <!-- Delivery Details -->
           <div class="delivery-details" *ngIf="isCapacityGroupExpanded(group.customerId)">
             <div class="detail-item full-width">
               <mat-icon class="detail-icon">location_on</mat-icon>
@@ -2092,10 +2237,10 @@
             </div>
           </div>
           <!-- End of Delivery Details -->
-          
+
         </div>
       </cdk-virtual-scroll-viewport>
-      
+
       <div class="virtual-scroll-info">
         <div class="scroll-info-item">
           <mat-icon class="info-icon">pie_chart</mat-icon>
@@ -2104,7 +2249,7 @@
             <small class="info-subtext">Répartition par client</small>
           </div>
         </div>
-        
+
         <div class="scroll-info-item" *ngIf="getVisibleCapacityRange()">
           <mat-icon class="info-icon">visibility</mat-icon>
           <div class="info-content">
@@ -2112,24 +2257,18 @@
             <small class="info-subtext">Clients visibles</small>
           </div>
         </div>
-        
+
         <div class="scroll-actions">
-          <button mat-icon-button 
-                  type="button" 
-                  (click)="scrollCapacityToTop()"
-                  matTooltip="Premier client">
+          <button mat-icon-button type="button" (click)="scrollCapacityToTop()" matTooltip="Premier client">
             <mat-icon>keyboard_arrow_up</mat-icon>
           </button>
-          <button mat-icon-button 
-                  type="button" 
-                  (click)="scrollCapacityToBottom()"
-                  matTooltip="Dernier client">
+          <button mat-icon-button type="button" (click)="scrollCapacityToBottom()" matTooltip="Dernier client">
             <mat-icon>keyboard_arrow_down</mat-icon>
           </button>
         </div>
       </div>
     </div>
-    
+
     <div class="capacity-total-summary">
       <div class="total-row">
         <div class="total-label">
@@ -2628,7 +2767,7 @@
         mat-flat-button
         color="primary"
         type="submit"
-        [disabled]="tripForm.invalid || deliveries.length === 0 || loading || (saveAsPredefined && !trajectName.trim())"
+        [disabled]="tripForm.invalid || loading || (saveAsPredefined && !trajectName.trim())"
         class="save-btn"
       >
         <mat-icon *ngIf="loading" class="loading-icon">hourglass_empty</mat-icon>

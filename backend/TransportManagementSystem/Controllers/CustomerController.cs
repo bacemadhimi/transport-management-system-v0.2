@@ -79,8 +79,8 @@ namespace TransportManagementSystem.Controllers
                         GeographicalEntityName = cg.GeographicalEntity.Name,
                         LevelName = cg.GeographicalEntity.Level?.Name,
                         LevelNumber = cg.GeographicalEntity.Level?.LevelNumber ?? 0,
-                        Latitude = cg.GeographicalEntity.Latitude,
-                        Longitude = cg.GeographicalEntity.Longitude
+                        Latitude = cg.GeographicalEntity.Latitude.HasValue ? (double?)cg.GeographicalEntity.Latitude.Value : null,
+                        Longitude = cg.GeographicalEntity.Longitude.HasValue ? (double?)cg.GeographicalEntity.Longitude.Value : null
                     }).ToList() ?? new List<CustomerGeographicalEntityDto>()
             }).ToList();
 
@@ -118,8 +118,8 @@ namespace TransportManagementSystem.Controllers
                         GeographicalEntityName = cg.GeographicalEntity.Name,
                         LevelName = cg.GeographicalEntity.Level?.Name,
                         LevelNumber = cg.GeographicalEntity.Level?.LevelNumber ?? 0,
-                        Latitude = cg.GeographicalEntity.Latitude,
-                        Longitude = cg.GeographicalEntity.Longitude
+                        Latitude = cg.GeographicalEntity.Latitude.HasValue ? (double?)cg.GeographicalEntity.Latitude.Value : null,
+                        Longitude = cg.GeographicalEntity.Longitude.HasValue ? (double?)cg.GeographicalEntity.Longitude.Value : null
                     }).ToList() ?? new List<CustomerGeographicalEntityDto>()
             }).ToList();
 
@@ -156,8 +156,8 @@ namespace TransportManagementSystem.Controllers
                         GeographicalEntityName = cg.GeographicalEntity.Name,
                         LevelName = cg.GeographicalEntity.Level?.Name,
                         LevelNumber = cg.GeographicalEntity.Level?.LevelNumber ?? 0,
-                        Latitude = cg.GeographicalEntity.Latitude,
-                        Longitude = cg.GeographicalEntity.Longitude
+                        Latitude = cg.GeographicalEntity.Latitude.HasValue ? (double?)cg.GeographicalEntity.Latitude.Value : null,
+                        Longitude = cg.GeographicalEntity.Longitude.HasValue ? (double?)cg.GeographicalEntity.Longitude.Value : null
                     }).ToList() ?? new List<CustomerGeographicalEntityDto>()
             };
 
@@ -242,8 +242,8 @@ namespace TransportManagementSystem.Controllers
                         GeographicalEntityName = cg.GeographicalEntity.Name,
                         LevelName = cg.GeographicalEntity.Level?.Name,
                         LevelNumber = cg.GeographicalEntity.Level?.LevelNumber ?? 0,
-                        Latitude = cg.GeographicalEntity.Latitude,
-                        Longitude = cg.GeographicalEntity.Longitude
+                        Latitude = cg.GeographicalEntity.Latitude.HasValue ? (double?)cg.GeographicalEntity.Latitude.Value : null,
+                        Longitude = cg.GeographicalEntity.Longitude.HasValue ? (double?)cg.GeographicalEntity.Longitude.Value : null
                     }).ToList() ?? new List<CustomerGeographicalEntityDto>()
             };
 
@@ -341,8 +341,8 @@ namespace TransportManagementSystem.Controllers
                         GeographicalEntityName = cg.GeographicalEntity.Name,
                         LevelName = cg.GeographicalEntity.Level?.Name,
                         LevelNumber = cg.GeographicalEntity.Level?.LevelNumber ?? 0,
-                        Latitude = cg.GeographicalEntity.Latitude,
-                        Longitude = cg.GeographicalEntity.Longitude
+                        Latitude = cg.GeographicalEntity.Latitude.HasValue ? (double?)cg.GeographicalEntity.Latitude.Value : null,
+                        Longitude = cg.GeographicalEntity.Longitude.HasValue ? (double?)cg.GeographicalEntity.Longitude.Value : null
                     }).ToList() ?? new List<CustomerGeographicalEntityDto>()
             };
 
@@ -408,8 +408,8 @@ namespace TransportManagementSystem.Controllers
                         GeographicalEntityName = cg.GeographicalEntity.Name,
                         LevelName = cg.GeographicalEntity.Level?.Name,
                         LevelNumber = cg.GeographicalEntity.Level?.LevelNumber ?? 0,
-                        Latitude = cg.GeographicalEntity.Latitude,
-                        Longitude = cg.GeographicalEntity.Longitude
+                        Latitude = cg.GeographicalEntity.Latitude.HasValue ? (double?)cg.GeographicalEntity.Latitude.Value : null,
+                        Longitude = cg.GeographicalEntity.Longitude.HasValue ? (double?)cg.GeographicalEntity.Longitude.Value : null
                     }).ToList() ?? new List<CustomerGeographicalEntityDto>()
             }).ToList();
 
@@ -447,8 +447,8 @@ namespace TransportManagementSystem.Controllers
                         GeographicalEntityName = cg.GeographicalEntity.Name,
                         LevelName = cg.GeographicalEntity.Level?.Name,
                         LevelNumber = cg.GeographicalEntity.Level?.LevelNumber ?? 0,
-                        Latitude = cg.GeographicalEntity.Latitude,
-                        Longitude = cg.GeographicalEntity.Longitude
+                        Latitude = cg.GeographicalEntity.Latitude.HasValue ? (double?)cg.GeographicalEntity.Latitude.Value : null,
+                        Longitude = cg.GeographicalEntity.Longitude.HasValue ? (double?)cg.GeographicalEntity.Longitude.Value : null
                     }).ToList() ?? new List<CustomerGeographicalEntityDto>()
             }).ToList();
 

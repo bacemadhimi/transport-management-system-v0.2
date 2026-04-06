@@ -8,6 +8,8 @@ export interface ICustomer {
   email: string;
   matricule: string;
   contact: string;
+  address?: string;
+  deliveryAddress?: string;
   sourceSystem?: string;
 
 

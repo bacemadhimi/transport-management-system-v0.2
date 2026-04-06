@@ -1,8 +1,8 @@
 import { Component, inject, OnInit, OnDestroy } from '@angular/core';
-import { ModalController } from '@ionic/angular';
+import { ModalController, ToastController, AlertController } from '@ionic/angular';
 import { TripDetailsModalComponent } from '../trip-details-modal/trip-details-modal.component';
 import { CommonModule } from '@angular/common';
-import { IonicModule, ToastController, AlertController } from '@ionic/angular';
+import { IonicModule } from '@ionic/angular';
 import { RouterModule } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { Router } from '@angular/router';
@@ -17,6 +17,8 @@ import { Network } from '@capacitor/network';
 import { Capacitor } from '@capacitor/core';
 import { FormsModule } from '@angular/forms';
 import { BarcodeScannerService } from '../../services/barcode-scanner.service';
+import { GPSTrackingService } from '../../services/gps-tracking.service';
+import { NotificationStorageService } from '../../services/notification-storage.service';
 
 @Component({
   selector: 'app-home',
@@ -36,10 +38,13 @@ export class HomePage implements OnInit, OnDestroy {
   signalRService = inject(SignalRService);
   chatService = inject(SignalRChatService);
   barcodeScanner = inject(BarcodeScannerService);
+  gpsService = inject(GPSTrackingService);
+  notificationStorageService = inject(NotificationStorageService);
 
   trips$: Observable<ITrip[]> | null = null;
   totalDistance: number = 0;
   cancelledTripsCount: number = 0;
+  notificationBadgeCount: number = 0;
   private _notifSub: Subscription | null = null;
   updatedTripIds: Set<number> = new Set();
   unreadMessagesCount: number = 0;
@@ -64,11 +69,31 @@ export class HomePage implements OnInit, OnDestroy {
     await this.checkNetworkStatus();
     this.setupNetworkListener();
     await this.loadTrips();
-    this.setupSignalR(); 
-    
+    this.setupSignalR();
+
+    // ===== ADDED: Connect to GPS Hub for real-time notifications =====
+    const user = this.authService.currentUser();
+    if (user && user.role === 'Driver') {
+      console.log('🔌 Connecting to GPS Hub from Home Page for driver:', user.id);
+      this.gpsService.connect(user.id).catch(err => {
+        console.error('❌ Error connecting to GPS Hub:', err);
+      });
+
+      // ✅ Sync notifications from server on login (persistent like Facebook)
+      this.notificationStorageService.syncNotificationsFromServer();
+    } else if (user) {
+      console.log('ℹ️ User is not a driver, skipping GPS Hub connection');
+    }
+    // ================================================================
+
     this.subscriptions.push(
       this.chatService.unreadCount$.subscribe(count => {
         this.unreadMessagesCount = count;
+      }),
+      // Subscribe to notification storage unread count for new trip assignments
+      this.notificationStorageService.unreadCount$.subscribe(count => {
+        this.notificationBadgeCount = count;
+        console.log('🔔 Notification badge updated:', count);
       })
     );
 
@@ -716,6 +741,14 @@ export class HomePage implements OnInit, OnDestroy {
       return;
     }
     this.router.navigate(['/chat']);
+  }
+
+  navigateToChatbot() {
+    console.log('🤖 Navigating to AI Chatbot');
+    if (!this.isOnline) {
+      this.showToast('Mode hors ligne - Le chatbot utilise un fallback intelligent', 2000, 'warning');
+    }
+    this.router.navigate(['/chatbot']);
   }
 
   private async showToast(message: string, duration: number, color: string) {

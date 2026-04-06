@@ -114,7 +114,10 @@ export interface CreateTripDto {
   deliveries: CreateDeliveryDto[];
   trajectId?: number | null;
   convoyeurId?: number | null;
-
+  // Destination coordinates for GPS tracking (from web form address search)
+  destinationLatitude?: number | null;
+  destinationLongitude?: number | null;
+  destinationAddress?: string | null;
 }
 
 export interface UpdateTripDto {

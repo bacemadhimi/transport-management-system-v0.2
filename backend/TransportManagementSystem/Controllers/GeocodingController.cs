@@ -64,9 +64,12 @@ public class GeocodingController : ControllerBase
         var location = new Location
         {
             Name = dto.Name,
+            AddressText = dto.DisplayName ?? dto.AddressText,
+            Latitude = dto.Latitude,
+            Longitude = dto.Longitude,
             IsValidated = true,
             IsActive = dto.IsActive ?? true,
-            //ZoneId = dto.ZoneId.Value,
+            // ZoneId = dto.ZoneId.Value, // Temporarily commented - ZoneId property doesn't exist
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
         };
@@ -78,6 +81,9 @@ public class GeocodingController : ControllerBase
         {
             location.Id,
             location.Name,
+            location.AddressText,
+            location.Latitude,
+            location.Longitude,
             location.IsValidated
         }));
     }
