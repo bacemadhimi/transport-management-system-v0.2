@@ -552,15 +552,15 @@ export class GPSTrackingPage implements OnInit, OnDestroy {
    */
   private searchLocalPOIDatabase(address: string): { lat: number, lng: number, address: string } | null {
     const addressLower = address.toLowerCase();
-    
+
     const LOCAL_POI = [
-      // Tajerouine
-      { name: 'aziza tajerouine', lat: 35.5140, lng: 8.6550, address: 'Aziza Tajerouine Centre, Avenue Habib Bourguiba, Tajerouine' },
-      { name: 'magasin general tajerouine', lat: 35.5140, lng: 8.6550, address: 'Magasin General Tajerouine, Avenue Habib Bourguiba, Tajerouine' },
-      { name: 'tajerouine', lat: 35.5140, lng: 8.6550, address: 'Avenue Habib Bourguiba, Tajerouine' },
-      { name: 'hôpital tajerouine', lat: 35.5155, lng: 8.6545, address: 'Hôpital Régional Tajerouine' },
-      { name: 'école tajerouine', lat: 35.5145, lng: 8.6555, address: 'École Primaire Tajerouine' },
-      { name: 'pharmacie tajerouine', lat: 35.5142, lng: 8.6552, address: 'Pharmacie Centrale Tajerouine' },
+      // Tajerouine - CORRECTED coordinates
+      { name: 'aziza tajerouine', lat: 35.8914, lng: 8.5530, address: 'Aziza Tajerouine Centre, Avenue Habib Bourguiba, Tajerouine' },
+      { name: 'magasin general tajerouine', lat: 35.8930, lng: 8.5540, address: 'Magasin General Tajerouine, Avenue Habib Bourguiba, Tajerouine' },
+      { name: 'tajerouine', lat: 35.8914, lng: 8.5530, address: 'Avenue Habib Bourguiba, Tajerouine' },
+      { name: 'hôpital tajerouine', lat: 35.8920, lng: 8.5545, address: 'Hôpital Régional Tajerouine' },
+      { name: 'école tajerouine', lat: 35.8920, lng: 8.5540, address: 'École Primaire Tajerouine' },
+      { name: 'pharmacie tajerouine', lat: 35.8918, lng: 8.5535, address: 'Pharmacie Centrale Tajerouine' },
       
       // Grand Tunis
       { name: 'aziza la marsa', lat: 36.8790, lng: 10.3250, address: 'Aziza La Marsa Centre, Avenue Habib Bourguiba, La Marsa' },

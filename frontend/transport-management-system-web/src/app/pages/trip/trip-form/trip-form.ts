@@ -179,6 +179,7 @@ export class TripForm implements OnInit {
   mapSearchControl: any = null;
   mapReady = false;
   searchMarkers: any[] = []; // Array to store search result markers
+  searchResultMarkers: any[] = []; // Array to store search result point markers
 
   // Filtres hiérarchiques pour camions
   truckSelectedLevelIds: (number | null)[] = [];
@@ -2738,6 +2739,28 @@ private async checkCapacityBeforeAddingOrders(selectedWeight: number): Promise<b
   }
 
   private createTrip(formValue: any, deliveries: CreateDeliveryDto[], trajectId: number | null): void {
+    // WARNING: Check if map was opened but custom position not applied
+    if (this.customDestinationCoords && this.showMapAdjustment === false) {
+      // Map was opened and marker was moved, but user closed map without applying
+      console.warn('⚠️ WARNING: Custom position exists but was NOT applied!');
+      console.warn('   Original coordinates will be used instead of adjusted ones.');
+      console.warn('   To use adjusted position, click "Utiliser cette position" before creating trip.');
+    }
+
+    // FINAL CHECK: Log exactly what coordinates will be saved
+    const finalLat = this.selectedDestinationCoords?.lat || null;
+    const finalLng = this.selectedDestinationCoords?.lng || null;
+    const finalAddress = this.selectedDestinationCoords?.address || null;
+
+    console.log('\n' + '='.repeat(80));
+    console.log('🚀 CREATING TRIP - FINAL DESTINATION COORDINATES:');
+    console.log('   Latitude:', finalLat);
+    console.log('   Longitude:', finalLng);
+    console.log('   Address:', finalAddress);
+    console.log('   These coordinates will be saved to backend');
+    console.log('   Mobile app will display EXACTLY these coordinates');
+    console.log('='.repeat(80) + '\n');
+
     const createTripData: CreateTripDto = {
       estimatedDistance: parseFloat(formValue.estimatedDistance) || 0,
       estimatedDuration: parseFloat(formValue.estimatedDuration) || 0,
@@ -2749,19 +2772,10 @@ private async checkCapacityBeforeAddingOrders(selectedWeight: number): Promise<b
       deliveries: deliveries,
       trajectId: trajectId,
       // Send destination coordinates from web form address search
-      destinationLatitude: this.selectedDestinationCoords?.lat || null,
-      destinationLongitude: this.selectedDestinationCoords?.lng || null,
-      destinationAddress: this.selectedDestinationCoords?.address || null
+      destinationLatitude: finalLat,
+      destinationLongitude: finalLng,
+      destinationAddress: finalAddress
     };
-
-    console.log('🚀 Creating trip with coordinates:', {
-      lat: createTripData.destinationLatitude,
-      lng: createTripData.destinationLongitude,
-      address: createTripData.destinationAddress,
-      isCustom: !!this.customDestinationCoords,
-      selectedDestinationCoords: this.selectedDestinationCoords,
-      customDestinationCoords: this.customDestinationCoords
-    });
 
     this.http.createTrip(createTripData).subscribe({
       next: (response: any) => {
@@ -9164,7 +9178,8 @@ private addMapSearchControl(): void {
 }
 
 /**
- * Search for locations in Tunisia using Nominatim (free, with CORS proxy)
+ * Search for locations using ENRICHED POI database + Nominatim fallback
+ * Enterprise approach: Local enriched database (500+ POI) → Nominatim fallback
  */
 private searchOnMap(query: string): void {
   if (!query || query.length < 2) {
@@ -9186,18 +9201,82 @@ private searchOnMap(query: string): void {
     this.searchMarkers = [];
   }
 
+  const lowerQuery = query.toLowerCase().trim();
+
+  // Step 1: Search in ENRICHED local POI database
+  this.searchInEnrichedPOI(lowerQuery, resultsDropdown);
+}
+
+/**
+ * Search in enriched POI database (500+ locations including known chains)
+ */
+private searchInEnrichedPOI(query: string, resultsDropdown: Element | null): void {
+  console.log('📦 Searching enriched POI database...');
+
+  // Import enriched POI data
+  import('../../../../assets/tunisia-poi-enriched.json').then(poiData => {
+    const allPOI = poiData.poi || [];
+    
+    // Full-text search across name, city, type, brand
+    const matches = allPOI.filter((poi: any) => {
+      const searchText = [
+        poi.name,
+        poi.city,
+        poi.type,
+        poi.brand
+      ].filter(Boolean).join(' ').toLowerCase();
+
+      // Match if ALL query words appear in any field
+      return query.split(' ').every(word => searchText.includes(word));
+    });
+
+    console.log(`✅ Enriched POI found ${matches.length} matches`);
+
+    if (matches.length > 0) {
+      // Convert to display format and sort by confidence
+      const results = matches
+        .sort((a: any, b: any) => b.confidence - a.confidence)
+        .slice(0, 20)
+        .map((poi: any) => ({
+          display_name: `${poi.name}${poi.city ? ', ' + poi.city : ''}`,
+          lat: poi.lat,
+          lon: poi.lon,
+          address: poi.name,
+          type: poi.type,
+          brand: poi.brand,
+          confidence: poi.confidence,
+          isFromEnrichedPOI: true
+        }));
+
+      console.log(`📍 Showing ${results.length} enriched POI results`);
+      this.displaySearchResults(results);
+    } else {
+      // Fallback to Nominatim if not found in enriched DB
+      console.log('⚠️ No enriched POI matches, falling back to Nominatim');
+      this.searchWithNominatimFallback(query, resultsDropdown);
+    }
+  }).catch(error => {
+    console.error('❌ Error loading enriched POI:', error);
+    this.searchWithNominatimFallback(query, resultsDropdown);
+  });
+}
+
+/**
+ * Fallback to Nominatim if not found in enriched POI database
+ */
+private searchWithNominatimFallback(query: string, resultsDropdown: Element | null): void {
   const proxyUrl = 'https://corsproxy.io/?';
   const searchQuery = `${query}, Tunisia`;
   const nominatimUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery)}&limit=20&addressdetails=1&accept-language=fr`;
   const fullUrl = proxyUrl + encodeURIComponent(nominatimUrl);
 
-  console.log('🗺️ Nominatim search:', searchQuery);
+  console.log('🗺️ Nominatim fallback:', searchQuery);
 
   fetch(fullUrl)
     .then(response => response.json())
     .then(results => {
       if (results && results.length > 0) {
-        console.log(`✅ Found ${results.length} results`);
+        console.log(`✅ Nominatim found ${results.length} results`);
         
         const tunisiaResults = results.filter((r: any) => {
           const lat = parseFloat(r.lat);
@@ -9206,14 +9285,11 @@ private searchOnMap(query: string): void {
         });
 
         if (tunisiaResults.length > 0) {
-          console.log(`📍 ${tunisiaResults.length} results in Tunisia`);
           this.displaySearchResults(tunisiaResults);
         } else {
-          console.log('⚠️ No Tunisia results');
           this.showNoResultsMessage(resultsDropdown);
         }
       } else {
-        console.log('⚠️ No results found');
         this.showNoResultsMessage(resultsDropdown);
       }
     })
@@ -9404,7 +9480,7 @@ private showErrorMessage(resultsDropdown: Element | null): void {
 }
 
 /**
- * Display search results in dropdown
+ * Display search results in dropdown AND as markers on map
  */
 private displaySearchResults(results: any[]): void {
   const resultsDropdown = this.map?.getContainer()?.querySelector('.map-search-results');
@@ -9413,7 +9489,28 @@ private displaySearchResults(results: any[]): void {
   resultsDropdown.innerHTML = '';
   resultsDropdown.style.display = 'block';
 
+  // Create small blue icon for search results
+  const blueIcon = L.icon({
+    iconUrl: 'data:image/svg+xml;base64,' + btoa(`
+      <svg xmlns="http://www.w3.org/2000/svg" width="30" height="45" viewBox="0 0 30 45">
+        <path d="M15 0 C6.75 0 0 6.75 0 15 C0 26.25 15 45 15 45 C15 45 30 26.25 30 15 C30 6.75 23.25 0 15 0 Z" 
+              fill="#3B82F6"/>
+        <circle cx="15" cy="14" r="6" fill="white"/>
+      </svg>
+    `),
+    iconSize: [30, 45],
+    iconAnchor: [15, 45],
+    popupAnchor: [0, -45]
+  });
+
+  // Clear previous search result markers
+  if (this.searchResultMarkers) {
+    this.searchResultMarkers.forEach(m => this.map.removeLayer(m));
+  }
+  this.searchResultMarkers = [];
+
   results.forEach((result, index) => {
+    // Add to dropdown list
     const item = document.createElement('div');
     item.className = 'search-result-item';
     item.style.padding = '12px';
@@ -9422,15 +9519,25 @@ private displaySearchResults(results: any[]): void {
     item.style.transition = 'background 0.2s';
     item.style.fontSize = '13px';
     item.style.lineHeight = '1.4';
+    item.style.display = 'flex';
+    item.style.alignItems = 'center';
+    item.style.gap = '8px';
     
-    // Address text
-    const addressText = result.display_name || 'Adresse inconnue';
-    const shortAddress = addressText.length > 80 ? addressText.substring(0, 80) + '...' : addressText;
+    // Brand badge
+    const brandBadge = result.brand ? `<span style="background: #e0e7ff; color: #4f46e5; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 600;">${result.brand.toUpperCase()}</span>` : '';
+    
+    const addressText = result.display_name || result.address || 'Adresse inconnue';
+    const shortAddress = addressText.length > 60 ? addressText.substring(0, 60) + '...' : addressText;
     
     item.innerHTML = `
-      <div style="font-weight: 500; color: #333; margin-bottom: 4px;">${shortAddress}</div>
-      <div style="font-size: 11px; color: #999; font-family: monospace;">
-        📍 ${parseFloat(result.lat).toFixed(6)}, ${parseFloat(result.lon).toFixed(6)}
+      <div style="flex: 1;">
+        <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 2px;">
+          ${brandBadge}
+          <span style="font-weight: 500; color: #333;">${shortAddress}</span>
+        </div>
+        <div style="font-size: 11px; color: #999; font-family: monospace;">
+          📍 ${parseFloat(result.lat || result.latitude).toFixed(6)}, ${parseFloat(result.lon || result.longitude || result.lng).toFixed(6)}
+        </div>
       </div>
     `;
     
@@ -9444,40 +9551,45 @@ private displaySearchResults(results: any[]): void {
     
     // Click to select
     item.addEventListener('click', () => {
-      const lat = parseFloat(result.lat);
-      const lng = parseFloat(result.lon);
-      
-      console.log(`📍 Selected result #${index + 1}:`, { lat, lng });
-      
-      // Move main marker to this location
-      this.marker.setLatLng([lat, lng]);
-      this.map.setView([lat, lng], 16);
-      
-      // Update custom position
-      this.updateCustomPosition(lat, lng);
-      
-      // Update popup
-      this.marker.setPopupContent(`
-        <div style="text-align: center; padding: 8px; min-width: 200px;">
-          <strong style="font-size: 14px;">📍 Résultat de recherche</strong><br/>
-          <hr style="margin: 8px 0; border: none; border-top: 1px solid #eee;"/>
-          <div style="font-size: 11px; color: #666; margin-bottom: 6px; max-width: 180px; word-wrap: break-word;">
-            ${shortAddress}
-          </div>
-          <span style="font-family: monospace; font-size: 12px; color: #666;">
-            Lat: ${lat.toFixed(6)}<br/>
-            Lng: ${lng.toFixed(6)}
-          </span>
-        </div>
-      `).openPopup();
-      
-      // Close dropdown
+      this.selectSearchResult(result);
       resultsDropdown.style.display = 'none';
-      resultsDropdown.innerHTML = '';
     });
     
     resultsDropdown.appendChild(item);
+
+    // Add marker on map
+    const lat = parseFloat(result.lat || result.latitude);
+    const lng = parseFloat(result.lon || result.longitude || result.lng);
+    
+    const marker = L.marker([lat, lng], { icon: blueIcon })
+      .addTo(this.map)
+      .bindPopup(`
+        <div style="text-align: center; padding: 4px; min-width: 150px;">
+          <strong style="font-size: 12px;">${result.brand ? result.brand.toUpperCase() + ' ' : ''}${result.name || result.address || 'Magasin'}</strong><br/>
+          <span style="font-size: 10px; color: #666;">${addressText}</span><br/>
+          <button onclick="window.selectResultMarker(${lat}, ${lng})" style="margin-top: 6px; background: #3B82F6; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 11px;">
+            ✅ Utiliser cette position
+          </button>
+        </div>
+      `);
+    
+    marker.on('click', () => {
+      marker.openPopup();
+    });
+    
+    this.searchResultMarkers.push(marker);
   });
+
+  // Make selectResultMarker available globally for popup button
+  (window as any).selectResultMarker = (lat: number, lng: number) => {
+    this.selectSearchResult({ lat, lng });
+  };
+
+  // Fit map to show all results
+  if (this.searchResultMarkers.length > 0) {
+    const group = L.featureGroup(this.searchResultMarkers);
+    this.map.fitBounds(group.getBounds().pad(0.1));
+  }
 
   // Close dropdown when clicking outside
   setTimeout(() => {
@@ -9490,6 +9602,40 @@ private displaySearchResults(results: any[]): void {
     };
     document.addEventListener('click', closeHandler);
   }, 100);
+}
+
+/**
+ * Select a search result and move main marker to that position
+ */
+private selectSearchResult(result: any): void {
+  const lat = parseFloat(result.lat || result.latitude);
+  const lng = parseFloat(result.lon || result.longitude || result.lng);
+  
+  console.log('📍 Selected search result:', { lat, lng });
+  
+  // Move main marker to this location
+  if (this.marker) {
+    this.marker.setLatLng([lat, lng]);
+    this.map.setView([lat, lng], 16);
+    
+    // Update custom position
+    this.updateCustomPosition(lat, lng);
+    
+    // Update popup
+    this.marker.setPopupContent(`
+      <div style="text-align: center; padding: 8px; min-width: 200px;">
+        <strong style="font-size: 14px;">📍 ${result.brand ? result.brand.toUpperCase() : 'Position sélectionnée'}</strong><br/>
+        <hr style="margin: 8px 0; border: none; border-top: 1px solid #eee;"/>
+        <div style="font-size: 11px; color: #666; margin-bottom: 6px; max-width: 180px; word-wrap: break-word;">
+          ${result.display_name || result.address || ''}
+        </div>
+        <span style="font-family: monospace; font-size: 12px; color: #666;">
+          Lat: ${lat.toFixed(6)}<br/>
+          Lng: ${lng.toFixed(6)}
+        </span>
+      </div>
+    `).openPopup();
+  }
 }
 
 /**
@@ -9527,9 +9673,11 @@ private updateCustomPosition(lat: number, lng: number): void {
 
 /**
  * Apply custom position from map adjustment
+ * IMPORTANT: This MUST be called before creating the trip for adjusted coords to be saved
  */
 applyCustomPosition(): void {
   if (this.customDestinationCoords) {
+    // CRITICAL: Copy adjusted coords to selectedDestinationCoords so they get saved with the trip
     this.selectedDestinationCoords = {
       lat: this.customDestinationCoords.lat,
       lng: this.customDestinationCoords.lng,
@@ -9537,15 +9685,25 @@ applyCustomPosition(): void {
     };
     
     this.globalDestinationAddress.setValue(this.customDestinationCoords.address);
-    
-    this.snackBar.open('✅ Position personnalisée appliquée', 'Fermer', {
+
+    console.log('✅ Custom position APPLIED and will be saved with trip:');
+    console.log('   Lat:', this.customDestinationCoords.lat);
+    console.log('   Lng:', this.customDestinationCoords.lng);
+    console.log('   Address:', this.customDestinationCoords.address);
+    console.log('   ⚠️ You MUST create the trip NOW for these coordinates to be saved!');
+
+    this.snackBar.open('✅ Position personnalisée appliquée - Créez le voyage maintenant', 'Fermer', {
+      duration: 5000,
+      horizontalPosition: 'right',
+      verticalPosition: 'top'
+    });
+  } else {
+    console.warn('⚠️ No custom position to apply - original coordinates will be used');
+    this.snackBar.open('⚠️ Aucune position ajustée à appliquer', 'Fermer', {
       duration: 3000,
       horizontalPosition: 'right',
       verticalPosition: 'top'
     });
-    
-    // Optionally close the map
-    // this.closeMapAdjustment();
   }
 }
 
