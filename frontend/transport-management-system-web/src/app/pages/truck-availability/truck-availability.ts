@@ -670,7 +670,7 @@ processAvailabilityData(data: any[]) {
     this.httpService.updateTruckAvailability(truckId, updateDto).subscribe({
       next: () => {
         const status = newAvailability ? 'Disponible' : 'Indisponible';
-        this.snackBar.open(`${truck.marqueName} pour le ${dateCol.label} ${dateCol.dayOfWeek}: ${status}`, 'OK', { duration: 2000 });
+        this.snackBar.open(`${truck.brand} pour le ${dateCol.label} ${dateCol.dayOfWeek}: ${status}`, 'OK', { duration: 2000 });
       },
       error: (err) => {
         console.error('Error updating availability:', err);
@@ -707,7 +707,7 @@ processAvailabilityData(data: any[]) {
     const csvContent = [
       headers.join(','),
       ...this.pagedTruckData.data.map(truck => [
-        `"${truck.marqueName}"`,
+        `"${truck.brand}"`,
         `"${truck.immatriculation}"`,
         `"${truck.status}"`,
         ...this.dateColumns.map(dateCol => {
@@ -739,7 +739,7 @@ processAvailabilityData(data: any[]) {
 
     const data = this.pagedTruckData.data.map(truck => {
       const row: any = {
-        'Marque': truck.marqueName,
+        'Marque': truck.brand,
         'Immatriculation': truck.immatriculation,
         'Statut': truck.status
       };
