@@ -6,6 +6,7 @@ import { Router } from '@angular/router';
 import { IUser } from '../types/user';
 import { Observable, tap } from 'rxjs';
 import { JwtHelperService } from '@auth0/angular-jwt';
+import { LogoService } from './logo.service';
 
 @Injectable({ providedIn: 'root' })
 export class Auth {
@@ -14,7 +15,7 @@ export class Auth {
   router = inject(Router);
   private ngZone = inject(NgZone);
   private jwtHelper = new JwtHelperService();
-
+ private logoService = inject(LogoService);
 
   private logoutTimer: any;
   private tokenCheckInterval: any;
@@ -27,6 +28,8 @@ export class Auth {
           this.saveToken(authToken);
           this.setLogoutTimer(authToken.token);
           this.startTokenCheck();
+          this.logoService.refresh();
+          this.loadLoggedInUser(); 
         })
       );
   }
@@ -246,4 +249,24 @@ export class Auth {
    getToken(): string | null {
     return localStorage.getItem('token');
   }
+  isTokenValid(): boolean {
+  const token = this.getToken();
+  if (!token) return false;
+  
+  try {
+    return !this.jwtHelper.isTokenExpired(token);
+  } catch {
+    return false;
+  }
+}
+
+
+ensureAuthentication(): boolean {
+  if (!this.isLoggedIn || !this.isTokenValid()) {
+    console.warn('Token invalide ou expiré, redirection vers login');
+    this.logout();
+    return false;
+  }
+  return true;
+}
 }
