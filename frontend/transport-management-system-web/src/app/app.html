@@ -1,4 +1,4 @@
-<header>
+<header *ngIf="authService.isLoggedIn">
   <mat-toolbar class="bg-blue-600! flex justify-between relative shadow-md">
  
  <!-- Logo -->
@@ -54,6 +54,7 @@
   
   <!-- DROPDOWN MENU - Enhanced with Theme Colors -->
   <div
+    #permissionsMenu
     *ngIf="showPermissions"
     class="absolute right-0 top-12 w-96 bg-white rounded-xl shadow-2xl border border-gray-200 z-50 overflow-hidden"
   >
@@ -215,6 +216,7 @@
 
 <!-- Notifications Panel - FACEBOOK STYLE with Theme Colors -->
 <div 
+  #notificationsPanel
   *ngIf="showNotificationsPanel"
   class="absolute right-0 top-12 w-96 bg-white rounded-xl shadow-2xl border border-gray-200 z-50 overflow-hidden theme-notifications-panel facebook-style-panel"
   style="max-height: 500px; overflow-y: auto;">
@@ -385,8 +387,8 @@
 </div>
 
       <!-- Language Selector with Flags -->
-      <div class="relative group">
-        <button mat-icon-button class="rounded-full transition-colors hover-button">
+      <div class="relative group" #languageMenu>
+        <button mat-icon-button class="rounded-full transition-colors hover-button" (click)="showLanguageMenu = !showLanguageMenu">
           <div class="w-6 h-6 rounded-full overflow-hidden shadow-sm border border-white">
             <img [src]="currentLanguage === 'en' ? 'en.png' : 'fr.png'" 
                  [alt]="currentLanguage === 'en' ? 'English' : 'French'"
@@ -395,7 +397,9 @@
         </button>
 
         <!-- Language Dropdown -->
-        <div class="absolute right-0 top-10 w-40 bg-white rounded-lg shadow-2xl border border-gray-100 z-50 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 transform translate-y-2 group-hover:translate-y-0">
+        <div *ngIf="showLanguageMenu" 
+             class="absolute right-0 top-10 w-40 bg-white rounded-lg shadow-2xl border border-gray-100 z-50"
+             style="transform-origin: top right;">
           <!-- English -->
           <button (click)="changeLanguage('en')" 
                   class="w-full px-4 py-3 flex items-center gap-3 hover:bg-blue-50 transition-colors border-b border-gray-100 first:rounded-t-lg"
@@ -421,7 +425,7 @@
       </div>
 
   <!-- Theme Color Picker -->
-<div class="relative" (mouseleave)="showThemePicker = false">
+<div class="relative" #themePicker (mouseleave)="showThemePicker = false">
   <button 
     mat-icon-button 
     class="rounded-full transition-colors hover-button theme-picker-btn"

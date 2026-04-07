@@ -506,8 +506,9 @@
   "EXPORT_CSV": "Exporter CSV",
   "EXPORT_PDF": "Exporter PDF",
   "CATEGORY_REQUIRED": "Catégorie requise",
-  "TRAVEL_MANAGEMENT": "Gestion des voyages"
-
+  "TRAVEL_MANAGEMENT": "Gestion des voyages",
+  "SUPPORTED_FORMATS": "Formats pris en charge",
+  "WAREHOUSE": "Entrepôt"
 
 
 }
