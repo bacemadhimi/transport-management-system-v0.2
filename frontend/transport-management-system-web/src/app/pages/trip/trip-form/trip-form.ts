@@ -197,6 +197,7 @@ export class TripForm implements OnInit {
   @ViewChild('rightViewport') rightViewport!: CdkVirtualScrollViewport;
   driverTruckMap: Map<number, number> = new Map();
   linkDriverToTruck = false;
+  useGpsInTrips = true; // ✅ GPS tracking enabled by default
 
   private translation = inject(Translation);
   t(key: string): string { return this.translation.t(key); }
@@ -691,15 +692,18 @@ private loadConfiguration(): void {
       estimatedEndDate: [null, [Validators.required, this.dateSequenceValidator.bind(this)]],
       truckId: ['', Validators.required],
       driverId: ['', Validators.required],
-      estimatedDistance: ['', [Validators.required, Validators.min(0.1)]],
-      estimatedDuration: ['', [Validators.required, Validators.min(0.1)]],
+      estimatedDistance: [''], // ✅ Optional - auto-calculated when GPS enabled
+      estimatedDuration: [''], // ✅ Optional - auto-calculated when GPS enabled
       tripStatus: [{ value: TripStatus.Planned, disabled: true }],
       deliveries: this.deliveries,
-      startLocationId: [null, Validators.required],
-      endLocationId: [null, Validators.required],
+      startLocationId: [null], // ✅ Optional when GPS enabled
+      endLocationId: [null], // ✅ Optional when GPS enabled
       convoyeurId: [null],
       trajectId: [null]
-    }, { validators: this.orderTypeValidator.bind(this) }); 
+    }, { validators: this.orderTypeValidator.bind(this) });
+
+    // ✅ Initialize GPS fields as optional (will be updated when settings load)
+    this.updateGpsFieldsValidation(); 
 
     const startDateControl = this.tripForm.get('estimatedStartDate');
     const endDateControl = this.tripForm.get('estimatedEndDate');
@@ -2055,16 +2059,19 @@ async confirmAddOrders(): Promise<void> {
       this.tripForm.get('endLocationId')?.enable();
     }
 
-    if (!this.tripForm.get('startLocationId')?.value || !this.tripForm.get('endLocationId')?.value) {
-      Swal.fire({
-        icon: 'warning',
-        title: 'Attention',
-        text: 'Veuillez sélectionner les lieux de départ et d\'arrivée',
-        confirmButtonText: 'OK'
-      });
-      this.tripForm.get('startLocationId')?.markAsTouched();
-      this.tripForm.get('endLocationId')?.markAsTouched();
-      return;
+    // ✅ Skip location validation when GPS is enabled
+    if (!this.useGpsInTrips) {
+      if (!this.tripForm.get('startLocationId')?.value || !this.tripForm.get('endLocationId')?.value) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'Attention',
+          text: 'Veuillez sélectionner les lieux de départ et d\'arrivée',
+          confirmButtonText: 'OK'
+        });
+        this.tripForm.get('startLocationId')?.markAsTouched();
+        this.tripForm.get('endLocationId')?.markAsTouched();
+        return;
+      }
     }
 
     if (this.tripForm.invalid) {
@@ -7493,11 +7500,41 @@ private loadTripSettings(): void {
       this.tripSettings = settings;
       this.updateTruckFieldBasedOnSettings();
       this.linkDriverToTruck = settings.linkDriverToTruck || false;
+      this.useGpsInTrips = settings.useGpsInTrips !== false; // ✅ Default to true
+      
+      // ✅ Update validation for distance/duration based on GPS setting
+      this.updateGpsFieldsValidation();
     },
     error: (error) => {
       console.error('Erreur chargement paramètres:', error);
     }
   });
+}
+
+private updateGpsFieldsValidation(): void {
+  const distanceControl = this.tripForm.get('estimatedDistance');
+  const durationControl = this.tripForm.get('estimatedDuration');
+  const startLocationControl = this.tripForm.get('startLocationId');
+  const endLocationControl = this.tripForm.get('endLocationId');
+  
+  if (this.useGpsInTrips) {
+    // GPS enabled - location fields are optional, distance/duration are optional
+    distanceControl?.clearValidators();
+    durationControl?.clearValidators();
+    startLocationControl?.clearValidators();
+    endLocationControl?.clearValidators();
+  } else {
+    // GPS disabled - location fields are required, distance/duration are required
+    distanceControl?.setValidators([Validators.min(0.1)]);
+    durationControl?.setValidators([Validators.min(0.1)]);
+    startLocationControl?.setValidators([Validators.required]);
+    endLocationControl?.setValidators([Validators.required]);
+  }
+  
+  distanceControl?.updateValueAndValidity();
+  durationControl?.updateValueAndValidity();
+  startLocationControl?.updateValueAndValidity();
+  endLocationControl?.updateValueAndValidity();
 }
 
 private listenToSettingsChanges(): void {
@@ -7507,6 +7544,10 @@ private listenToSettingsChanges(): void {
         console.log('🔄 Paramètres mis à jour:', updatedSettings);
         this.tripSettings = updatedSettings;
         this.updateTruckFieldBasedOnSettings();
+        this.useGpsInTrips = updatedSettings.useGpsInTrips !== false; // ✅ Update GPS setting
+        
+        // ✅ Update validation when setting changes
+        this.updateGpsFieldsValidation();
       }
     }
   });

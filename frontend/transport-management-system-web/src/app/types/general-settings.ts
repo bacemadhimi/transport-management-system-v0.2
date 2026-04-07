@@ -29,6 +29,7 @@ export interface ITripSettings {
   notifyOnTripEdit: boolean;
   notifyOnTripDelete: boolean;
   linkDriverToTruck: boolean;
+  useGpsInTrips: boolean; // ✅ GPS tracking setting
 }
 
 export type TripOrderType = 'chronological' | 'priority' | 'geographical' | 'optimized';

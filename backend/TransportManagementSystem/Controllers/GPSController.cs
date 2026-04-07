@@ -802,6 +802,7 @@ namespace TransportManagementSystem.Controllers
             {
                 var trip = await _context.Trips
                     .Include(t => t.Driver)
+                    .Include(t => t.Truck)
                     .FirstOrDefaultAsync(t => t.Id == tripId);
 
                 if (trip == null)
@@ -812,40 +813,48 @@ namespace TransportManagementSystem.Controllers
 
                 trip.TripStatus = Entity.TripStatus.Accepted;
                 trip.Driver.Status = "En mission";
-                
+
                 await _context.SaveChangesAsync();
 
-                // Send real-time notification to admin/web that driver accepted
-                await _context.Entry(trip).Reference(t => t.Driver).LoadAsync();
-                
-                if (_notificationHub != null)
+                // Create notification entity
+                var notificationData = new
                 {
-                    // Send to admin group
-                    await _notificationHub.Clients.Group("admins").SendAsync("ReceiveNotification", new
-                    {
-                        type = "TRIP_UPDATE",
-                        tripId = tripId,
-                        tripReference = trip.TripReference,
-                        driverId = trip.DriverId,
-                        driverName = trip.Driver?.Name,
-                        title = "Voyage Accepté",
-                        message = $"Le chauffeur {trip.Driver?.Name} a accepté le voyage {trip.TripReference}",
-                        status = "Accepted"
-                    });
-                    
-                    // Also send to all clients
-                    await _notificationHub.Clients.All.SendAsync("ReceiveNotification", new
-                    {
-                        type = "TRIP_UPDATE",
-                        tripId = tripId,
-                        tripReference = trip.TripReference,
-                        driverId = trip.DriverId,
-                        driverName = trip.Driver?.Name,
-                        title = "Voyage Accepté",
-                        message = $"Le chauffeur {trip.Driver?.Name} a accepté le voyage {trip.TripReference}",
-                        status = "Accepted"
-                    });
-                }
+                    TripId = tripId,
+                    TripReference = trip.TripReference,
+                    DriverId = trip.DriverId,
+                    DriverName = trip.Driver?.Name,
+                    TruckImmatriculation = trip.Truck?.Immatriculation,
+                    Status = "Accepted",
+                    Timestamp = DateTime.UtcNow
+                };
+
+                var dbNotification = new Notification
+                {
+                    Type = "TRIP_ACCEPTED",
+                    Title = "✅ Mission Acceptée",
+                    Message = $"Le chauffeur {trip.Driver?.Name} a accepté la mission {trip.TripReference}",
+                    Timestamp = DateTime.UtcNow,
+                    TripId = tripId,
+                    TripReference = trip.TripReference,
+                    NewStatus = "Accepted",
+                    DriverName = trip.Driver?.Name,
+                    TruckImmatriculation = trip.Truck?.Immatriculation,
+                    AdditionalData = System.Text.Json.JsonSerializer.Serialize(notificationData),
+                    CreatedAt = DateTime.UtcNow
+                };
+
+                await NotifyAdminsAsync(dbNotification, new
+                {
+                    type = "TRIP_ACCEPTED",
+                    tripId = tripId,
+                    tripReference = trip.TripReference,
+                    driverId = trip.DriverId,
+                    driverName = trip.Driver?.Name,
+                    title = "Voyage Accepté",
+                    message = $"Le chauffeur {trip.Driver?.Name} a accepté le voyage {trip.TripReference}",
+                    status = "Accepted",
+                    timestamp = DateTime.UtcNow
+                });
 
                 Console.WriteLine($"✅ Voyage {trip.TripReference} accepté par le chauffeur {trip.Driver?.Name}");
 
@@ -868,6 +877,7 @@ namespace TransportManagementSystem.Controllers
             {
                 var trip = await _context.Trips
                     .Include(t => t.Driver)
+                    .Include(t => t.Truck)
                     .FirstOrDefaultAsync(t => t.Id == tripId);
 
                 if (trip == null)
@@ -876,43 +886,56 @@ namespace TransportManagementSystem.Controllers
                 if (trip.TripStatus != Entity.TripStatus.Planned)
                     return BadRequest(new { message = "Le voyage ne peut plus être refusé" });
 
-                trip.TripStatus = Entity.TripStatus.Cancelled;
+                trip.TripStatus = Entity.TripStatus.Refused;
                 trip.Driver.Status = "Disponible";
                 trip.Message = dto.Reason;
-                
+
                 await _context.SaveChangesAsync();
 
-                // Send real-time notification to admin/web that driver rejected
-                if (_notificationHub != null)
+                // Create notification entity
+                var notificationData = new
                 {
-                    // Send to admin group
-                    await _notificationHub.Clients.Group("admins").SendAsync("ReceiveNotification", new
-                    {
-                        type = "TRIP_UPDATE",
-                        tripId = tripId,
-                        tripReference = trip.TripReference,
-                        driverId = trip.DriverId,
-                        driverName = trip.Driver?.Name,
-                        title = "Voyage Refusé",
-                        reason = dto.Reason,
-                        message = $"Le chauffeur {trip.Driver?.Name} a refusé le voyage {trip.TripReference}",
-                        status = "Cancelled"
-                    });
-                    
-                    // Also send to all clients
-                    await _notificationHub.Clients.All.SendAsync("ReceiveNotification", new
-                    {
-                        type = "TRIP_UPDATE",
-                        tripId = tripId,
-                        tripReference = trip.TripReference,
-                        driverId = trip.DriverId,
-                        driverName = trip.Driver?.Name,
-                        title = "Voyage Refusé",
-                        reason = dto.Reason,
-                        message = $"Le chauffeur {trip.Driver?.Name} a refusé le voyage {trip.TripReference}",
-                        status = "Cancelled"
-                    });
-                }
+                    TripId = tripId,
+                    TripReference = trip.TripReference,
+                    DriverId = trip.DriverId,
+                    DriverName = trip.Driver?.Name,
+                    TruckImmatriculation = trip.Truck?.Immatriculation,
+                    Reason = dto.Reason,
+                    ReasonCode = dto.ReasonCode,
+                    Status = "Refused",
+                    Timestamp = DateTime.UtcNow
+                };
+
+                var dbNotification = new Notification
+                {
+                    Type = "TRIP_REJECTED",
+                    Title = "❌ Mission Refusée",
+                    Message = $"Le chauffeur {trip.Driver?.Name} a refusé la mission {trip.TripReference}. Raison: {dto.Reason}",
+                    Timestamp = DateTime.UtcNow,
+                    TripId = tripId,
+                    TripReference = trip.TripReference,
+                    NewStatus = "Refused",
+                    DriverName = trip.Driver?.Name,
+                    TruckImmatriculation = trip.Truck?.Immatriculation,
+                    AdditionalData = System.Text.Json.JsonSerializer.Serialize(notificationData),
+                    CreatedAt = DateTime.UtcNow
+                };
+
+                await NotifyAdminsAsync(dbNotification, new
+                {
+                    type = "TRIP_REJECTED",
+                    tripId = tripId,
+                    tripReference = trip.TripReference,
+                    driverId = trip.DriverId,
+                    driverName = trip.Driver?.Name,
+                    truckImmatriculation = trip.Truck?.Immatriculation,
+                    title = "Voyage Refusé",
+                    message = $"Le chauffeur {trip.Driver?.Name} a refusé le voyage {trip.TripReference}. Raison: {dto.Reason}",
+                    reason = dto.Reason,
+                    reasonCode = dto.ReasonCode,
+                    status = "Refused",
+                    timestamp = DateTime.UtcNow
+                });
 
                 Console.WriteLine($"❌ Voyage {trip.TripReference} refusé par le chauffeur {trip.Driver?.Name} - Raison: {dto.Reason}");
 
@@ -922,6 +945,52 @@ namespace TransportManagementSystem.Controllers
             {
                 _logger.LogError($"Error rejecting trip: {ex.Message}");
                 return StatusCode(500, new { message = "Erreur lors du refus" });
+            }
+        }
+
+        /// <summary>
+        /// Helper method to create a notification and send it to all admin users.
+        /// Creates Notification entity + UserNotification for each admin, sends SignalR to Admins group.
+        /// </summary>
+        private async Task NotifyAdminsAsync(Notification notification, object signalRData)
+        {
+            try
+            {
+                // Save notification to DB first to get its ID
+                _context.Notifications.Add(notification);
+                await _context.SaveChangesAsync();
+
+                // Get all admin users (by email pattern)
+                var allUsers = await _context.Users.ToListAsync();
+                var adminUsers = allUsers.Where(u =>
+                    u.Email != null && (u.Email.Contains("admin") || u.Email.Contains("super"))
+                ).Distinct().ToList();
+
+                // Create UserNotification for each admin
+                foreach (var adminUser in adminUsers)
+                {
+                    var userNotification = new UserNotification
+                    {
+                        NotificationId = notification.Id,
+                        UserId = adminUser.Id,
+                        IsRead = false,
+                        ReadAt = null
+                    };
+                    _context.UserNotifications.Add(userNotification);
+                }
+                await _context.SaveChangesAsync();
+
+                // Send SignalR notification to Admins group (uppercase - consistent)
+                await _notificationHub.Clients.Group("Admins").SendAsync("ReceiveNotification", signalRData);
+
+                // Also send to all clients for real-time compatibility
+                await _notificationHub.Clients.All.SendAsync("ReceiveNotification", signalRData);
+
+                _logger.LogInformation($"✅ [NotifyAdmins] HTTP Notification {notification.Id} sent to {adminUsers.Count} admins via SignalR");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"❌ [NotifyAdmins] HTTP Failed to notify admins for notification {notification.Id}");
             }
         }
 
@@ -964,6 +1033,7 @@ namespace TransportManagementSystem.Controllers
     public class RejectTripDto
     {
         public string Reason { get; set; } = string.Empty;
+        public string? ReasonCode { get; set; }
     }
 
     // DTO for updating trip destination
