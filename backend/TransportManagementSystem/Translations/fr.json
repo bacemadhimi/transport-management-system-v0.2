@@ -508,7 +508,10 @@
   "CATEGORY_REQUIRED": "Catégorie requise",
   "TRAVEL_MANAGEMENT": "Gestion des voyages",
   "SUPPORTED_FORMATS": "Formats pris en charge",
-  "WAREHOUSE": "Entrepôt"
+  "WAREHOUSE": "Entrepôt",
+  "CLIENT_MANAGEMENT": "Gestion des clients",
+  "CUSTOMERS_LIST": "Liste des clients",
+  "CLIENTS": "Clients"
 
 
 }
