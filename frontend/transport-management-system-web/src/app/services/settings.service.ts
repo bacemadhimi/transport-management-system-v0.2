@@ -147,7 +147,8 @@ export class SettingsService {
       requireDeleteConfirmation: this.getBooleanValue(settingsMap, 'REQUIRE_DELETE_CONFIRMATION', true),
       notifyOnTripEdit: this.getBooleanValue(settingsMap, 'NOTIFY_ON_TRIP_EDIT', false),
       notifyOnTripDelete: this.getBooleanValue(settingsMap, 'NOTIFY_ON_TRIP_DELETE', false),
-      linkDriverToTruck: this.getBooleanValue(settingsMap, 'LINK_DRIVER_TO_TRUCK', true)
+      linkDriverToTruck: this.getBooleanValue(settingsMap, 'LINK_DRIVER_TO_TRUCK', true),
+      useGpsInTrips: this.getBooleanValue(settingsMap, 'USE_GPS_IN_TRIPS', true) // ✅ True by default
     };
   }
 

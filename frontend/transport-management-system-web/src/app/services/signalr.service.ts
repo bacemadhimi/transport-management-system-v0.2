@@ -66,9 +66,12 @@ export class SignalRService {
   private positionSubject = new BehaviorSubject<GPSPosition | null>(null);
   public position$ = this.positionSubject.asObservable();
 
-  // Listen for GPS positions
+  // Listen for GPS positions - DEPRECATED, use position$ observable instead
   public onGPSPosition(callback: (position: GPSPosition) => void): void {
-    this.hubConnection?.on('ReceivePosition', callback);
+    // Subscribe to position$ instead
+    this.position$.subscribe(pos => {
+      if (pos) callback(pos);
+    });
   }
 
   // Listen for trip status changes
@@ -212,6 +215,10 @@ export class SignalRService {
     this.hubConnection.on('ReceiveNotification', (notification: TripNotification) => {
       console.log('🔔 Received new notification:', notification);
       this.addNotification(notification, 20);
+      this.showBrowserNotification(notification);
+
+      // Reload notifications from DB to ensure sync (for offline persistence)
+      setTimeout(() => this.loadInitialNotifications(), 500);
     });
 
     // Handler for Trip Status Changed (Accepted/Refused) - REAL TIME
@@ -235,22 +242,27 @@ export class SignalRService {
         message = `Le chauffeur ${data.DriverName || 'inconnu'} a refusé la mission ${data.TripReference || ''}. Raison: ${data.Reason || 'Non spécifiée'}`;
         newStatus = 'Refusée';
       } else if (data.NewStatus === 'Completed' || data.status === 'Completed') {
-        type = 'STATUS_CHANGE';
+        type = 'MISSION_COMPLETED';
         title = '✅ Mission Terminée';
-        message = `Mission ${data.TripReference || ''} terminée`;
+        message = `Mission ${data.TripReference || ''} terminée par ${data.DriverName || 'inconnu'}`;
         newStatus = 'Terminée';
       } else if (data.NewStatus === 'InDelivery' || data.status === 'InDelivery') {
-        type = 'STATUS_CHANGE';
-        title = '🚚 En livraison';
-        message = `Mission ${data.TripReference || ''} en cours de livraison`;
+        type = 'DELIVERY_STARTED';
+        title = '🚚 Livraison démarrée';
+        message = `Mission ${data.TripReference || ''} en cours de livraison par ${data.DriverName || 'inconnu'}`;
         newStatus = 'En livraison';
       } else if (data.NewStatus === 'Loading' || data.status === 'Loading') {
-        type = 'STATUS_CHANGE';
-        title = '📦 Chargement';
-        message = `Mission ${data.TripReference || ''} en chargement`;
+        type = 'LOADING_STARTED';
+        title = '📦 Chargement démarré';
+        message = `Mission ${data.TripReference || ''} en chargement par ${data.DriverName || 'inconnu'}`;
         newStatus = 'Chargement';
+      } else if (data.NewStatus === 'Arrived' || data.status === 'Arrived') {
+        type = 'ARRIVED_AT_DESTINATION';
+        title = '📍 Arrivé à destination';
+        message = `Mission ${data.TripReference || ''} - arrivé à destination`;
+        newStatus = 'Arrivé';
       } else {
-        type = 'TRIP_STATUS_CHANGED';
+        type = 'STATUS_CHANGE';
         title = '🔄 Status changé';
         message = `Mission ${data.TripReference || ''} - Nouveau status: ${data.NewStatus || data.status}`;
         newStatus = data.NewStatus || data.status;
@@ -274,6 +286,9 @@ export class SignalRService {
       console.log('📬 Created notification:', notification);
       this.addNotification(notification, 20);
       this.showBrowserNotification(notification);
+
+      // Reload notifications from DB to ensure sync (for offline persistence)
+      setTimeout(() => this.loadInitialNotifications(), 500);
     });
 
     // Handler for Trip Accepted by driver - REAL TIME
@@ -301,8 +316,12 @@ export class SignalRService {
       this.addNotification(notification, 20);
       this.showBrowserNotification(notification);
 
-      // Reload notifications from DB to ensure sync
-      setTimeout(() => this.loadInitialNotifications(), 500);
+      // 🚛 CRITICAL: Reload active trips to show the newly accepted trip on GPS tracking page
+      console.log('🔄 Reloading active trips after acceptance...');
+      setTimeout(() => {
+        this.requestActiveTrips();
+        this.loadInitialNotifications();
+      }, 1000);
     });
 
     // Handler for Trip Rejected by driver - REAL TIME
@@ -330,8 +349,12 @@ export class SignalRService {
       this.addNotification(notification, 20);
       this.showBrowserNotification(notification);
 
-      // Reload notifications from DB to ensure sync
-      setTimeout(() => this.loadInitialNotifications(), 500);
+      // 🚛 CRITICAL: Reload active trips to remove the rejected trip from GPS tracking
+      console.log('🔄 Reloading active trips after rejection...');
+      setTimeout(() => {
+        this.requestActiveTrips();
+        this.loadInitialNotifications();
+      }, 1000);
     });
 
     // Handler for Trip Cancelled (alternative event name for compatibility)
@@ -378,9 +401,26 @@ export class SignalRService {
       console.log('User disconnected:', userId);
     });
 
-    // GPS position handler
+    // GPS position handler - receives REAL positions from mobile via SignalR
+    this.hubConnection.on('ReceivePosition', (position: any) => {
+      console.log('📍📍📍 ========================================');
+      console.log('📍 SignalRService received ReceivePosition:');
+      console.log('📍 ========================================');
+      console.log('  → TripId:', position.tripId);
+      console.log('  → TripRef:', position.tripReference);
+      console.log('  → Latitude:', position.latitude);
+      console.log('  → Longitude:', position.longitude);
+      console.log('  → Status:', position.status);
+      console.log('  → Timestamp:', position.timestamp);
+      console.log('📍 ========================================');
+      
+      // Broadcast to ALL subscribers
+      this.positionSubject.next(position);
+    });
+
+    // Also listen for alternate event name
     this.hubConnection.on('ReceiveGPSPosition', (position: GPSPosition) => {
-      console.log('📍 Received GPS position:', position);
+      console.log('📍 Received GPS position (alternate):', position);
       this.positionSubject.next(position);
     });
 
@@ -394,49 +434,17 @@ private addNotification(notification: TripNotification, pageSize: number = 20) {
   const currentNotifications = this.notificationsSubject.value;
   notification.timestamp = new Date(notification.timestamp);
 
-
-
-  if (notification.type === 'STATUS_CHANGE') {
-
-    const updatedNotifications = [notification, ...currentNotifications];
-
-    const maxNotifications = pageSize * 2;
-    if (updatedNotifications.length > maxNotifications) {
-      updatedNotifications.pop();
+  // Check for duplicates based on id (for numeric IDs) or tripId+type+timestamp combo
+  const exists = currentNotifications.some(n => {
+    if (n.id === notification.id && notification.id !== 0) return true;
+    if (n.tripId === notification.tripId && n.type === notification.type &&
+        Math.abs(new Date(n.timestamp).getTime() - new Date(notification.timestamp).getTime()) < 5000) {
+      return true;
     }
+    return false;
+  });
 
-    this.notificationsSubject.next(updatedNotifications);
-
-
-    const currentUnread = this.unreadCountSubject.value;
-    this.unreadCountSubject.next(currentUnread + 1);
-
-    console.log('✅ STATUS_CHANGE notification added');
-  }
-
-  else if (notification.type === 'TRIP_CANCELLED') {
-
-    const exists = currentNotifications.some(n => n.id === notification.id);
-    if (!exists) {
-      const updatedNotifications = [notification, ...currentNotifications];
-
-      const maxNotifications = pageSize * 2;
-      if (updatedNotifications.length > maxNotifications) {
-        updatedNotifications.pop();
-      }
-
-      this.notificationsSubject.next(updatedNotifications);
-
-      const currentUnread = this.unreadCountSubject.value;
-      this.unreadCountSubject.next(currentUnread + 1);
-
-      console.log('✅ TRIP_CANCELLED notification added');
-    } else {
-      console.log('⚠️ Duplicate TRIP_CANCELLED notification ignored');
-    }
-  }
-
-  else {
+  if (!exists) {
     const updatedNotifications = [notification, ...currentNotifications];
 
     const maxNotifications = pageSize * 2;
@@ -449,7 +457,9 @@ private addNotification(notification: TripNotification, pageSize: number = 20) {
     const currentUnread = this.unreadCountSubject.value;
     this.unreadCountSubject.next(currentUnread + 1);
 
-    console.log('✅ Notification added');
+    console.log(`✅ Notification added: ${notification.type}`);
+  } else {
+    console.log(`⚠️ Duplicate ${notification.type} notification ignored`);
   }
 }
 

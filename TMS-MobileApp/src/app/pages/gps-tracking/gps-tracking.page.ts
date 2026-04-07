@@ -667,86 +667,153 @@ export class GPSTrackingPage implements OnInit, OnDestroy {
   }
 
   /**
-   * Créer l'icône du camion - Style BLANC/GRIS professionnel
-   * Design minimaliste et élégant
+   * Camion 3D blanc/gris professionnel — proportions ajustées
+   * Remorque plus courte et plus haute, effet 3D renforcé
    */
   private createTruckIcon(color?: string): L.DivIcon {
     return L.divIcon({
       html: `
-        <div class="truck-marker-container" style="
-          position: relative;
-          width: 48px;
-          height: 48px;
-          filter: drop-shadow(0 3px 8px rgba(0,0,0,0.3));
-          transition: all 0.2s ease-out;
-        ">
-          <!-- Modern White/Gray Truck Icon -->
-          <svg width="48" height="48" viewBox="0 0 96 96" xmlns="http://www.w3.org/2000/svg">
+        <div class="truck-v2">
+          <svg viewBox="0 0 56 34" xmlns="http://www.w3.org/2000/svg">
             <defs>
-              <!-- White body gradient -->
-              <linearGradient id="truckWhiteBody" x1="0%" y1="0%" x2="0%" y2="100%">
-                <stop offset="0%" style="stop-color:#ffffff;stop-opacity:1" />
-                <stop offset="100%" style="stop-color:#e5e7eb;stop-opacity:1" />
+              <!-- Remorque blanc 3D -->
+              <linearGradient id="wBody" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" style="stop-color:#fff;stop-opacity:1"/>
+                <stop offset="100%" style="stop-color:#ececec;stop-opacity:1"/>
               </linearGradient>
-
-              <!-- Gray cab gradient -->
-              <linearGradient id="truckGrayCab" x1="0%" y1="0%" x2="100%" y2="0%">
-                <stop offset="0%" style="stop-color:#9ca3af;stop-opacity:1" />
-                <stop offset="100%" style="stop-color:#6b7280;stop-opacity:1" />
+              <!-- Côté remorque (gris 3D) -->
+              <linearGradient id="wSide" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" style="stop-color:#e0e0e0;stop-opacity:1"/>
+                <stop offset="100%" style="stop-color:#bbb;stop-opacity:1"/>
               </linearGradient>
-
-              <!-- Dark glass -->
-              <linearGradient id="truckDarkGlass" x1="0%" y1="0%" x2="0%" y2="100%">
-                <stop offset="0%" style="stop-color:#4b5563;stop-opacity:0.8" />
-                <stop offset="100%" style="stop-color:#374151;stop-opacity:0.9" />
+              <!-- Haut remorque -->
+              <linearGradient id="wTop" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" style="stop-color:#fff;stop-opacity:0.8"/>
+                <stop offset="100%" style="stop-color:#f5f5f5;stop-opacity:0.4"/>
               </linearGradient>
-
-              <!-- Black wheel -->
-              <radialGradient id="blackWheel" cx="50%" cy="50%" r="50%">
-                <stop offset="0%" style="stop-color:#4b5563;stop-opacity:1" />
-                <stop offset="100%" style="stop-color:#1f2937;stop-opacity:1" />
+              <!-- Cabine gris foncé 3D -->
+              <linearGradient id="wCab" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" style="stop-color:#6a6a6a;stop-opacity:1"/>
+                <stop offset="100%" style="stop-color:#4a4a4a;stop-opacity:1"/>
+              </linearGradient>
+              <!-- Côté cabine -->
+              <linearGradient id="wCabSide" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" style="stop-color:#4a4a4a;stop-opacity:1"/>
+                <stop offset="100%" style="stop-color:#333;stop-opacity:1"/>
+              </linearGradient>
+              <!-- Toit cabine -->
+              <linearGradient id="wCabTop" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" style="stop-color:#888;stop-opacity:0.7"/>
+                <stop offset="100%" style="stop-color:#666;stop-opacity:0.5"/>
+              </linearGradient>
+              <!-- Vitre -->
+              <linearGradient id="wGlass" x1="20%" y1="0%" x2="80%" y2="100%">
+                <stop offset="0%" style="stop-color:#b0bec5;stop-opacity:0.6"/>
+                <stop offset="50%" style="stop-color:#cfd8dc;stop-opacity:0.3"/>
+                <stop offset="100%" style="stop-color:#546e7a;stop-opacity:0.7"/>
+              </linearGradient>
+              <!-- Pneus -->
+              <radialGradient id="wTire" cx="45%" cy="40%" r="55%">
+                <stop offset="0%" style="stop-color:#444;stop-opacity:1"/>
+                <stop offset="100%" style="stop-color:#1a1a1a;stop-opacity:1"/>
               </radialGradient>
+              <!-- Jante -->
+              <radialGradient id="wRim" cx="50%" cy="50%" r="50%">
+                <stop offset="0%" style="stop-color:#eee;stop-opacity:1"/>
+                <stop offset="100%" style="stop-color:#aaa;stop-opacity:1"/>
+              </radialGradient>
+              <!-- Ombre -->
+              <filter id="wSh">
+                <feDropShadow dx="0" dy="1" stdDeviation="1.5" flood-color="#000" flood-opacity="0.15"/>
+              </filter>
             </defs>
 
-            <!-- Shadow -->
-            <ellipse cx="48" cy="88" rx="38" ry="5" fill="rgba(0,0,0,0.15)"/>
+            <g filter="url(#wSh)">
+              <!-- Ombre sol -->
+              <ellipse cx="28" cy="32" rx="22" ry="1.8" fill="rgba(0,0,0,0.1)"/>
 
-            <!-- Cargo body - white rounded rectangle -->
-            <rect x="6" y="22" width="52" height="42" rx="5" fill="url(#truckWhiteBody)" stroke="#d1d5db" stroke-width="1"/>
+              <!-- === REMORQUE (plus courte, plus haute, 3D) === -->
+              <!-- Face -->
+              <rect x="4" y="8" width="18" height="16" rx="1.5" fill="url(#wBody)" stroke="#ccc" stroke-width="0.3"/>
+              <!-- Côté 3D (profondeur) -->
+              <path d="M22,9.5 L26,8 Q27.5,8 27.5,9.5 L27.5,23 Q27.5,24.5 26,24 L22,24 Z"
+                    fill="url(#wSide)" stroke="#aaa" stroke-width="0.25"/>
+              <!-- Haut 3D (dessus) -->
+              <path d="M4,8 L22,8 L26,8 Q27.5,8 27.5,9.5 L5,10.5 Z" fill="url(#wTop)"/>
 
-            <!-- Body accent line -->
-            <line x1="10" y1="35" x2="54" y2="35" stroke="#e5e7eb" stroke-width="2"/>
+              <!-- Reflet haut remorque -->
+              <rect x="5" y="8.5" width="16" height="3" rx="1" fill="#fff" opacity="0.25"/>
+              <!-- Ombre basse remorque -->
+              <rect x="4" y="22" width="18" height="2" rx="0.8" fill="#ddd" opacity="0.5"/>
 
-            <!-- TMS Logo -->
-            <circle cx="32" cy="43" r="9" fill="#3b82f6" opacity="0.9"/>
-            <text x="32" y="47" text-anchor="middle" fill="white" font-size="10" font-weight="bold">T</text>
+              <!-- Rainures verticales -->
+              <line x1="8" y1="8" x2="8" y2="24" stroke="#eee" stroke-width="0.3"/>
+              <line x1="12" y1="8" x2="12" y2="24" stroke="#eee" stroke-width="0.3"/>
+              <line x1="16" y1="8" x2="16" y2="24" stroke="#eee" stroke-width="0.3"/>
+              <line x1="20" y1="8" x2="20" y2="24" stroke="#eee" stroke-width="0.3"/>
 
-            <!-- Cab section - gray -->
-            <rect x="60" y="28" width="30" height="36" rx="4" fill="url(#truckGrayCab)"/>
+              <!-- Feux arrière -->
+              <rect x="4" y="21" width="1.5" height="2.5" rx="0.5" fill="#e53935" opacity="0.7"/>
 
-            <!-- Windshield - dark -->
-            <rect x="64" y="32" width="22" height="14" rx="2" fill="url(#truckDarkGlass)"/>
+              <!-- === CABINE === -->
+              <!-- Face cabine -->
+              <path d="M27.5,10 L36,8 Q38,7.5 38,10 L38,24 Q38,25 36,25 L27.5,25 Z"
+                    fill="url(#wCab)" stroke="#3a3a3a" stroke-width="0.3"/>
+              <!-- Côté cabine -->
+              <path d="M38,10 L42,8.5 Q43,8.5 43,10 L43,24 Q43,25 42,25 L38,25 Z"
+                    fill="url(#wCabSide)" stroke="#2a2a2a" stroke-width="0.2"/>
+              <!-- Toit cabine -->
+              <path d="M27.5,8 L36,8 Q38,7.5 39,8 L42,8.5 L38,10 L27.5,10 Z"
+                    fill="url(#wCabTop)"/>
 
-            <!-- Headlight -->
-            <ellipse cx="90" cy="46" r="3" fill="#fef3c7"/>
+              <!-- Vitre -->
+              <path d="M30,11 L36,9.5 Q37,9.3 37,10.5 L37,18 L30,18 Z"
+                    fill="url(#wGlass)" stroke="#455a64" stroke-width="0.25"/>
+              <!-- Reflet vitre -->
+              <path d="M31,11.5 L34,10.8 L34,15 L31,15.5 Z" fill="#cfd8dc" opacity="0.25"/>
 
-            <!-- Wheels - black -->
-            <circle cx="24" cy="68" r="9" fill="url(#blackWheel)" stroke="#374151" stroke-width="1"/>
-            <circle cx="24" cy="68" r="4" fill="#6b7280"/>
+              <!-- Phare -->
+              <rect x="40" y="15" width="2.2" height="1.8" rx="0.5" fill="#ffee58" opacity="0.9">
+                <animate attributeName="opacity" values="0.9;0.5;0.9" dur="2s" repeatCount="indefinite"/>
+              </rect>
+              <ellipse cx="41.1" cy="15.9" rx="0.8" ry="0.5" fill="#fff9c4"/>
+              <!-- Clignotant -->
+              <rect x="40" y="18" width="2.2" height="1" rx="0.3" fill="#ff9800" opacity="0.6"/>
 
-            <circle cx="74" cy="68" r="9" fill="url(#blackWheel)" stroke="#374151" stroke-width="1"/>
-            <circle cx="74" cy="68" r="4" fill="#6b7280"/>
+              <!-- Pare-choc -->
+              <rect x="38" y="23" width="5" height="1.5" rx="0.5" fill="#333"/>
+              <!-- Bande chrome -->
+              <rect x="39" y="23.3" width="3.5" height="0.4" rx="0.1" fill="#888" opacity="0.5"/>
 
-            <!-- GPS indicator - pulsing green -->
-            <circle cx="82" cy="26" r="5" fill="#22c55e">
-              <animate attributeName="opacity" values="1;0.4;1" dur="1.5s" repeatCount="indefinite"/>
-            </circle>
+              <!-- Rétroviseur -->
+              <rect x="26" y="11" width="1.8" height="3" rx="0.7" fill="#555"/>
+              <line x1="27.2" y1="12.5" x2="28.5" y2="12.5" stroke="#666" stroke-width="0.5"/>
+
+              <!-- Châssis -->
+              <rect x="8" y="23" width="34" height="1.5" rx="0.5" fill="#888"/>
+
+              <!-- === ROUES === -->
+              <!-- Avant -->
+              <circle cx="35" cy="27.5" r="3.5" fill="url(#wTire)" stroke="#111" stroke-width="0.2"/>
+              <circle cx="35" cy="27.5" r="2" fill="url(#wRim)"/>
+              <circle cx="35" cy="27.5" r="0.7" fill="#888"/>
+              <circle cx="35" cy="27.5" r="0.3" fill="#aaa"/>
+              <!-- Arrière -->
+              <circle cx="13" cy="27.5" r="3.5" fill="url(#wTire)" stroke="#111" stroke-width="0.2"/>
+              <circle cx="13" cy="27.5" r="2" fill="url(#wRim)"/>
+              <circle cx="13" cy="27.5" r="0.7" fill="#888"/>
+              <circle cx="13" cy="27.5" r="0.3" fill="#aaa"/>
+
+              <!-- Bavettes -->
+              <path d="M8,23 L8,27 Q8,28 9,28 L10,28 L10,23" fill="#666" opacity="0.5"/>
+              <path d="M31,23 L31,27 Q31,28 32,28 L33,28 L33,23" fill="#666" opacity="0.5"/>
+            </g>
           </svg>
         </div>
       `,
-      className: 'truck-marker-white',
-      iconSize: [48, 48],
-      iconAnchor: [24, 24]
+      className: 'truck-v2',
+      iconSize: [66, 38],
+      iconAnchor: [33, 19]
     });
   }
 
@@ -1023,18 +1090,21 @@ export class GPSTrackingPage implements OnInit, OnDestroy {
 
     const newPosition: [number, number] = [lat, lng];
 
-    // Calculate rotation angle based on movement direction
+    // Calculate GPS direction and rotate truck to face movement direction
     if (this.previousPosition) {
-      const angle = this.calculateRotationAngle(
+      const bearing = this.calculateRotationAngle(
         this.previousPosition.lat,
         this.previousPosition.lng,
         lat,
         lng
       );
 
-      const truckElement = document.querySelector('.truck-marker-container') as HTMLElement;
+      const truckElement = this.truckMarker?.getElement();
       if (truckElement) {
-        truckElement.style.transform = `rotate(${angle - 90}deg)`;
+        // Truck points RIGHT by default (cabine à droite)
+        // bearing=0 (north) → rotate -90deg (face le haut)
+        // bearing=90 (east) → rotate 0deg (face la droite, position par défaut)
+        truckElement.style.transform = `rotate(${bearing - 90}deg)`;
       }
     }
 
@@ -1105,7 +1175,7 @@ export class GPSTrackingPage implements OnInit, OnDestroy {
     });
     
     // Add/remove moving class based on speed
-    const truckContainer = document.querySelector('.truck-marker-container') as HTMLElement;
+    const truckContainer = this.truckMarker?.getElement();
     if (truckContainer) {
       if (this.speed > 1) {
         truckContainer.classList.add('truck-moving');

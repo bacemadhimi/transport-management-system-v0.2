@@ -137,7 +137,16 @@ export class ChatbotPage implements OnInit {
 
     const userMessage = this.inputMessage.trim();
     this.inputMessage = '';
-    
+
+    console.log('📤 Sending chat message:');
+    console.log('  → driverId:', this.driverId);
+    console.log('  → message:', userMessage);
+    console.log('  → conversationHistory:', this.messages.length, 'messages');
+
+    if (this.driverId === 0) {
+      console.error('❌ ERROR: driverId is 0! Chatbot will not work correctly.');
+    }
+
     // Add user message
     this.addMessage('user', userMessage);
     this.isLoading = true;

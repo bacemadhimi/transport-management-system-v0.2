@@ -428,15 +428,17 @@ export class GPSTrackingService {
 
   /**
    * Démarrer le tracking GPS avec watchPosition pour position réelle continue
+   * ✅ FIXED: Always restart with new tripId to ensure positions are sent for the correct trip
    */
   public startTracking(driverId: number, truckId?: number, tripId?: number): void {
+    // ✅ FIXED: Stop existing tracking first to clear old tripId
     if (this.isTracking) {
-      console.log('⚠️ GPS tracking already started');
-      return;
+      console.log('⚠️ GPS tracking already started - stopping and restarting with new tripId:', tripId);
+      this.stopTracking();
     }
 
     this.isTracking = true;
-    console.log('🚀 Starting GPS tracking with watchPosition...');
+    console.log('🚀 Starting GPS tracking with watchPosition for tripId:', tripId);
 
     // Clear any existing interval (fallback safety)
     if (this.gpsTrackingInterval) {

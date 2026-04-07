@@ -321,9 +321,19 @@
                 <mat-checkbox formControlName="LINK_DRIVER_TO_TRUCK" color="primary">Le chauffeur doit correspondre au camion</mat-checkbox>
               </div>
             </div>
-            
+
             <mat-divider class="my-2"></mat-divider>
-            
+
+            <h3 class="section-title">Paramètres GPS</h3>
+            <div class="gps-settings">
+              <div class="checkbox-item">
+                <mat-checkbox formControlName="USE_GPS_IN_TRIPS" color="primary">Utiliser le GPS dans les voyages</mat-checkbox>
+                <mat-hint class="field-hint">Si activé, le suivi GPS sera utilisé pour les voyages (coordonnées automatiques)</mat-hint>
+              </div>
+            </div>
+
+            <mat-divider class="my-2"></mat-divider>
+
             <h3 class="section-title">Paramètres de capacité</h3>
             <div class="capacity-settings">
               <div class="checkbox-item">

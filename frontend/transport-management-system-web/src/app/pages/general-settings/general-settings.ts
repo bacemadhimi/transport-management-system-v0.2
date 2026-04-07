@@ -159,6 +159,7 @@ hasAtLeastOneActiveEntity(): boolean {
     'LINK_DRIVER_TO_TRUCK': 'LINK_DRIVER_TO_TRUCK',
     'ALLOW_EXCEED_MAX_CAPACITY': 'ALLOW_EXCEED_MAX_CAPACITY',
     'MAX_CAPACITY_PERCENTAGE': 'MAX_CAPACITY_PERCENTAGE',
+    'USE_GPS_IN_TRIPS': 'USE_GPS_IN_TRIPS',
   };
 
   ngOnInit() {
@@ -190,6 +191,7 @@ hasAtLeastOneActiveEntity(): boolean {
       NOTIFY_ON_TRIP_EDIT: [false],
       NOTIFY_ON_TRIP_DELETE: [false],
       LINK_DRIVER_TO_TRUCK: [false],
+      USE_GPS_IN_TRIPS: [true], // ✅ Checked by default
       ALLOW_EXCEED_MAX_CAPACITY: [false],
       MAX_CAPACITY_PERCENTAGE: [{ value: 100, disabled: true }, [Validators.min(1), Validators.max(200)]],
     });
@@ -884,7 +886,8 @@ hasAtLeastOneActiveEntity(): boolean {
       'NOTIFY_ON_TRIP_DELETE': 'Notify when trip deleted',
       'LINK_DRIVER_TO_TRUCK': 'Driver must match truck',
       'ALLOW_EXCEED_MAX_CAPACITY': 'Allow exceeding max capacity',
-      'MAX_CAPACITY_PERCENTAGE': 'Maximum capacity percentage'
+      'MAX_CAPACITY_PERCENTAGE': 'Maximum capacity percentage',
+      'USE_GPS_IN_TRIPS': 'Use GPS in trips (auto coordinates)'
     };
     return descriptions[key] || key;
   }
