@@ -64,6 +64,10 @@ dist/
 .angular/cache/
 
 # Environment files
+.env
+.env.*
+.env.local
+.env.production
 src/environments/*.ts
 !src/environments/environment.ts  # uncomment if you want to keep default file
 
