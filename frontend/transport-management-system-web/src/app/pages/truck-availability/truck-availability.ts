@@ -33,7 +33,7 @@ interface ITruckAvailability extends ITruck {
     };
   };
   dayOffs: string[];
-
+  marqueName?: string;
   name?: string;
   permisNumber?: string;
   phone?: string;
@@ -670,7 +670,7 @@ processAvailabilityData(data: any[]) {
     this.httpService.updateTruckAvailability(truckId, updateDto).subscribe({
       next: () => {
         const status = newAvailability ? 'Disponible' : 'Indisponible';
-        this.snackBar.open(`${truck.brand} pour le ${dateCol.label} ${dateCol.dayOfWeek}: ${status}`, 'OK', { duration: 2000 });
+        this.snackBar.open(`${truck.marqueName} pour le ${dateCol.label} ${dateCol.dayOfWeek}: ${status}`, 'OK', { duration: 2000 });
       },
       error: (err) => {
         console.error('Error updating availability:', err);
@@ -707,7 +707,7 @@ processAvailabilityData(data: any[]) {
     const csvContent = [
       headers.join(','),
       ...this.pagedTruckData.data.map(truck => [
-        `"${truck.brand}"`,
+        `"${truck.marqueName}"`,
         `"${truck.immatriculation}"`,
         `"${truck.status}"`,
         ...this.dateColumns.map(dateCol => {
@@ -739,7 +739,7 @@ processAvailabilityData(data: any[]) {
 
     const data = this.pagedTruckData.data.map(truck => {
       const row: any = {
-        'Marque': truck.brand,
+        'Marque': truck.marqueName,
         'Immatriculation': truck.immatriculation,
         'Statut': truck.status
       };
