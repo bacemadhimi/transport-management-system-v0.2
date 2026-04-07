@@ -73,53 +73,55 @@ export class Employee implements OnInit {
 
   loadingUnit: string = 'tonnes';
 
-  showCols = [
-    { key: 'idNumber', label: this.t('CUSTOMER_REG_NUMBER') },
-    { key: 'name', label: this.t('TABLE_NAME') },
-    { key: 'email', label: this.t('Email') },
-    { key: 'phoneNumber', label: this.t('TABLE_PHONE') },
-    { key: 'drivingLicense', label: this.t('TABLE_LICENSE_NUMBER')},
-    { 
-      key: 'isInternal', 
-      label: this.t('INTERNAL_EMPLOYEE'),
-      format: (row: IEmployee) => {
-        return row.isInternal ? this.t('YES') : this.t('NO');
-      }
-    },
-    { key: 'employeeCategory', label: this.t('CATEGORY_TABLE')},
-    {
-      key: 'truckType',
-      label: this.t('TYPE_VEHICULE_LABEL'),
-      format: (row: IEmployee) => {
-        if (!row.typeTruck) return '-';
-        
-        const capacity = row.typeTruck.capacity || 'N/A';
-        const unit =  this.loadingUnit || 'tonnes';
-        
-        return `${row.typeTruck.type || 'N/A'} (${capacity} ${unit})`;
-      }
-    },
-    {
-      key: 'attachment',
-      label: this.t('TABLE_ATTACHMENT'),
-      format: (row: IEmployee) => {
-        if (row.attachmentFileType) {
-          return `<span class="attachment-cell" data-employee-id="${row.id}">
-                    ✓ ${row.attachmentFileType}
-                    <span class="view-icon">👁️</span>
-                  </span>`;
+  get showCols() {
+    return [
+      { key: 'idNumber', label: this.t('CUSTOMER_REG_NUMBER') },
+      { key: 'name', label: this.t('TABLE_NAME') },
+      { key: 'email', label: this.t('Email') },
+      { key: 'phoneNumber', label: this.t('TABLE_PHONE') },
+      { key: 'drivingLicense', label: this.t('TABLE_LICENSE_NUMBER')},
+      { 
+        key: 'isInternal', 
+        label: this.t('INTERNAL_EMPLOYEE'),
+        format: (row: IEmployee) => {
+          return row.isInternal ? this.t('YES') : this.t('NO');
         }
-        return '-';
+      },
+      { key: 'employeeCategory', label: this.t('CATEGORY_TABLE')},
+      {
+        key: 'truckType',
+        label: this.t('TYPE_VEHICULE_LABEL'),
+        format: (row: IEmployee) => {
+          if (!row.typeTruck) return '-';
+          
+          const capacity = row.typeTruck.capacity || 'N/A';
+          const unit = this.loadingUnit || 'tonnes';
+          
+          return `${row.typeTruck.type || 'N/A'} (${capacity} ${unit})`;
+        }
+      },
+      {
+        key: 'attachment',
+        label: this.t('TABLE_ATTACHMENT'),
+        format: (row: IEmployee) => {
+          if (row.attachmentFileType) {
+            return `<span class="attachment-cell" data-employee-id="${row.id}">
+                      ✓ ${row.attachmentFileType}
+                      <span class="view-icon">👁️</span>
+                    </span>`;
+          }
+          return '-';
+        }
+      },
+      {
+        key: 'Action',
+        format: (row: IEmployee) =>
+          row.isEnable
+            ? [this.t('ACTION_EDIT'), this.t('ACTION_DISABLE')]
+            : [this.t('ACTION_EDIT'), this.t('ACTION_ENABLE')]
       }
-    },
-    {
-      key: 'Action',
-      format: (row: IEmployee) =>
-        row.isEnable
-          ? [this.t('ACTION_EDIT'), this.t('ACTION_DISABLE')]
-          : [this.t('ACTION_EDIT'), this.t('ACTION_ENABLE')]
-    }
-  ];
+    ];
+  }
 
   ngOnInit() {
     this.loadSettings();

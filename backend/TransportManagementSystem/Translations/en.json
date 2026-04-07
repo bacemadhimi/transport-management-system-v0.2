@@ -504,7 +504,9 @@
   "EXPORT_CSV": "Export CSV",
   "EXPORT_PDF": "Export PDF",
   "CATEGORY_REQUIRED": "Category Required",
-  "TRAVEL_MANAGEMENT": "Travel Management"
+  "TRAVEL_MANAGEMENT": "Travel Management",
+  "SUPPORTED_FORMATS": "Supported Formats",
+  "WAREHOUSE": "Warehouse"
 
 
 }
