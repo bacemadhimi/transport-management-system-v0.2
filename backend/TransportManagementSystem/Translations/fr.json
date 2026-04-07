@@ -511,7 +511,8 @@
   "WAREHOUSE": "Entrepôt",
   "CLIENT_MANAGEMENT": "Gestion des clients",
   "CUSTOMERS_LIST": "Liste des clients",
-  "CLIENTS": "Clients"
+  "CLIENTS": "Clients",
+  "ADDED_SUCCESS": "Ajouté avec succès"
 
 
 }
