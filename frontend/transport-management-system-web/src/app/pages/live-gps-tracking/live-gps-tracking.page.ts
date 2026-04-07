@@ -681,14 +681,34 @@ export class LiveGPSTrackingPage implements OnInit, OnDestroy {
       this.routePolylines.forEach(poly => poly.remove());
       this.routePolylines.clear();
 
-      // Add/update markers for active trips
+      // ✅ FIXED: Separate markers when trips share exact same position
+      const positionGroups = new Map<string, ActiveTrip[]>();
       this.activeTrips.forEach((trip) => {
         const lat = trip.currentLatitude;
         const lng = trip.currentLongitude;
-
-        // ✅ Validate coordinates before creating markers
         if (lat && lng && Math.abs(lat) <= 90 && Math.abs(lng) <= 180) {
-          const newPosition: [number, number] = [lat, lng];
+          const key = `${lat.toFixed(6)},${lng.toFixed(6)}`;
+          if (!positionGroups.has(key)) {
+            positionGroups.set(key, []);
+          }
+          positionGroups.get(key)!.push(trip);
+        }
+      });
+
+      positionGroups.forEach((tripsAtPosition) => {
+        tripsAtPosition.forEach((trip, index) => {
+          let finalLat = trip.currentLatitude!;
+          let finalLng = trip.currentLongitude!;
+
+          // ✅ Add small offset if multiple trips at same position
+          if (tripsAtPosition.length > 1) {
+            const offsetAmount = 0.0003; // ~30 meters
+            const angle = (index * 120) * (Math.PI / 180);
+            finalLat += offsetAmount * Math.cos(angle);
+            finalLng += offsetAmount * Math.sin(angle);
+          }
+
+          const newPosition: [number, number] = [finalLat, finalLng];
 
           if (!this.truckMarkers.has(trip.id)) {
             const truckIcon = this.createTruckIcon();
@@ -707,7 +727,7 @@ export class LiveGPSTrackingPage implements OnInit, OnDestroy {
           if (trip.destinationLat && trip.destinationLng) {
             this.drawRouteToDestination(trip);
           }
-        }
+        });
       });
 
       console.log('🎯 Total markers on map:', this.truckMarkers.size);
