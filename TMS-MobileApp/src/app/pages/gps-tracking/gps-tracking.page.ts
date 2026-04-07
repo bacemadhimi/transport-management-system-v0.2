@@ -128,7 +128,7 @@ export class GPSTrackingPage implements OnInit, OnDestroy {
 
       console.log('📡 Fetching trip details from API...');
 
-      const response = await fetch(`http://localhost:5191/api/Trips/${this.tripId}`, {
+      const response = await fetch(`https://localhost:7287/api/Trips/${this.tripId}`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
