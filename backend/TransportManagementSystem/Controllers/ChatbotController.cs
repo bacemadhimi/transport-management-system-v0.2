@@ -30,16 +30,32 @@ public class ChatbotController : ControllerBase
     {
         try
         {
+            // Log incoming request
+            _logger.LogInformation($"📥 Chatbot API - Incoming request: DriverId={request?.DriverId}, Message={request?.Message}");
+
             // Get driver ID from JWT token if not provided
             if (request.DriverId == 0)
             {
                 var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-                if (int.TryParse(userIdClaim, out int userId))
+                var driverIdClaim = User.FindFirst("driverId")?.Value;
+                var emailClaim = User.FindFirst(ClaimTypes.Email)?.Value;
+
+                _logger.LogInformation($"🔑 JWT Claims - UserId: {userIdClaim}, DriverId: {driverIdClaim}, Email: {emailClaim}");
+
+                // Try multiple ways to get driver ID
+                if (int.TryParse(driverIdClaim, out int driverIdFromClaim))
+                {
+                    request.DriverId = driverIdFromClaim;
+                    _logger.LogInformation($"✅ Using driverId from JWT driverId claim: {request.DriverId}");
+                }
+                else if (int.TryParse(userIdClaim, out int userId))
                 {
                     request.DriverId = userId;
+                    _logger.LogInformation($"✅ Using driverId from JWT userId claim: {request.DriverId}");
                 }
                 else
                 {
+                    _logger.LogWarning("⚠️ Could not extract driver ID from JWT token");
                     return Unauthorized(new { message = "Driver ID required" });
                 }
             }
@@ -48,7 +64,7 @@ public class ChatbotController : ControllerBase
 
             var response = await _chatbotService.GetResponseAsync(request);
 
-            _logger.LogInformation($"🤖 Chatbot response: {response.Message}");
+            _logger.LogInformation($"🤖 Chatbot response: Source={response.Source}, IsConfident={response.IsConfident}");
 
             return Ok(new ApiResponse(true, "Message sent", response));
         }

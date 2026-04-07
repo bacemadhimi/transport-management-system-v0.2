@@ -40,6 +40,7 @@ export interface DriverZoneInfo {
 export class ChatbotService {
   private readonly OLLAMA_URL = 'http://localhost:11434/api/chat';
   private readonly MODEL = 'llama3';
+  private readonly BACKEND_CHATBOT_URL = `${environment.apiUrl}/api/chatbot/message`;
 
   // Weather cache to avoid repeated API calls
   private weatherCache: Map<string, any> = new Map();
@@ -47,6 +48,65 @@ export class ChatbotService {
   constructor(private http: HttpClient) {}
 
   async sendMessage(request: ChatRequest): Promise<ChatResponse> {
+    try {
+      // ✅ PRIMARY: Call backend chatbot API with RAG
+      const token = localStorage.getItem('token');
+      if (token) {
+        try {
+          console.log('🤖 Calling backend chatbot API...');
+          console.log('📤 Request:', JSON.stringify({
+            driverId: request.driverId,
+            message: request.message
+          }));
+          
+          const backendResponse = await firstValueFrom(
+            this.http.post<any>(this.BACKEND_CHATBOT_URL, {
+              driverId: request.driverId,
+              message: request.message,
+              conversationHistory: request.conversationHistory?.slice(-10)
+            }, {
+              headers: { 'Authorization': `Bearer ${token}` }
+            }).pipe(
+              catchError((err) => {
+                console.error('❌ Backend chatbot error:', err.status, err.message);
+                console.error('❌ Error details:', JSON.stringify(err.error));
+                return of(null);
+              })
+            )
+          );
+
+          console.log('📡 Backend response:', JSON.stringify(backendResponse, null, 2));
+
+          // Backend returns: { success: true, message: "Message sent", data: { message, source, isConfident, context } }
+          if (backendResponse && backendResponse.success && backendResponse.data) {
+            const data = backendResponse.data;
+            console.log('✅ Using backend RAG response:', data.message?.substring(0, 100));
+            console.log('📊 Response context:', JSON.stringify(data.context));
+            return {
+              message: data.message || "Désolé, je n'ai pas pu générer une réponse.",
+              source: data.source || 'rag-backend',
+              isConfident: data.isConfident || true,
+              context: data.context || {}
+            };
+          } else {
+            console.warn('⚠️ Backend returned invalid response:', JSON.stringify(backendResponse));
+            console.warn('⚠️ Falling back to Ollama');
+          }
+        } catch (e) {
+          console.error('❌ Backend chatbot exception:', e);
+          console.warn('⚠️ Falling back to Ollama');
+        }
+      }
+
+      // ✅ FALLBACK 1: Direct Ollama call with enhanced context
+      return this.sendMessageViaOllama(request);
+    } catch (error) {
+      console.error('Chatbot error:', error);
+      return this.getIntelligentFallback(request.message, request.driverId);
+    }
+  }
+
+  private async sendMessageViaOllama(request: ChatRequest): Promise<ChatResponse> {
     try {
       // Fetch real data context before sending to Ollama
       const dataContext = await this.fetchDataContext(request.driverId);
