@@ -33,7 +33,7 @@ interface ITruckAvailability extends ITruck {
     };
   };
   dayOffs: string[];
-
+  marqueName?: string;
   name?: string;
   permisNumber?: string;
   phone?: string;
