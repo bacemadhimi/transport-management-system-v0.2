@@ -2,8 +2,9 @@ import { Injectable } from '@angular/core';
 import { HubConnection, HubConnectionBuilder, HubConnectionState } from '@microsoft/signalr';
 import { BehaviorSubject, Observable, Subject } from 'rxjs';
 import { NotificationStorageService, TripNotification } from './notification-storage.service';
+import { environment } from '../../environments/environment';
 
-const API_URL = 'http://localhost:5191';
+const API_URL = environment.apiUrl;
 
 export interface GPSPosition {
   driverId?: number;
@@ -578,7 +579,7 @@ export class GPSTrackingService {
       console.log('🔄 HTTP Fallback - Calling POST /api/Trips/' + tripId + '/accept');
       console.log('🔄 Token length:', token ? token.length : 0);
       
-      const response = await fetch(`http://localhost:5191/api/Trips/${tripId}/accept`, {
+      const response = await fetch(`${API_URL}/api/Trips/${tripId}/accept`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -638,7 +639,7 @@ export class GPSTrackingService {
   private async saveRejectionToDatabase(tripId: number, reason: string, reasonCode: string): Promise<void> {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:5191/api/Trips/${tripId}/reject?reason=${encodeURIComponent(reason)}&reasonCode=${encodeURIComponent(reasonCode)}`, {
+      const response = await fetch(`${API_URL}/api/Trips/${tripId}/reject?reason=${encodeURIComponent(reason)}&reasonCode=${encodeURIComponent(reasonCode)}`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,

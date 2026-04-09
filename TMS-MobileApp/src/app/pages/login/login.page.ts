@@ -29,15 +29,17 @@ import { environment } from 'src/environments/environment';
 export class LoginPage implements AfterViewInit {
   @ViewChild('usernameInput') usernameInput!: IonInput;
   @ViewChild('passwordInput') passwordInput!: IonInput;
-  
-  apiUrl = environment.apiUrl + '/api/Auth/login';
-  
+
+  // HARDCODED for Android device - change this to your PC hostname
+  private readonly DEVICE_API_URL = 'http://fida:5191/api/Auth/login';
+  apiUrl = this.DEVICE_API_URL;
+
   isLoading = false;
   errorMessage = '';
   showPassword = false;
   isOnline = true;
   offlineMode = false;
-  rememberMe = false; // Add this for the checkbox
+  rememberMe = false;
   platform: string;
 
   constructor(
@@ -55,7 +57,7 @@ export class LoginPage implements AfterViewInit {
   async ngAfterViewInit() {
     await this.checkNetworkStatus();
     await this.loadSavedCredentials();
-    
+
     // Listen for network changes
     Network.addListener('networkStatusChange', (status) => {
       this.isOnline = status.connected;
