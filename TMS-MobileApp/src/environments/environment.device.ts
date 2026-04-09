@@ -10,7 +10,7 @@
  */
 export const environment = {
   production: false,
-  // IP du PC: utilise le hostname (permanent, ne change pas)
-  apiUrl: 'http://fida:5191',
+  // IP du PC: utilise l'adresse IP reelle (192.168.68.186)
+  apiUrl: 'http://192.168.68.186:5191',
   weatherApiKey: '' // OpenWeatherMap API key (optional)
 };

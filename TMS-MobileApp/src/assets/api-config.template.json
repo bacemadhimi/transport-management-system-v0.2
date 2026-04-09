@@ -1,0 +1,6 @@
+{
+  "_comment": "API configuration for TMS Mobile App",
+  "_instructions": "This file is auto-generated. Run 'npm run setup-api' to configure.",
+  "_example": "Change 'YOUR_PC_IP' to your actual IP address (e.g., 192.168.1.100)",
+  "apiUrl": "http://YOUR_PC_IP:5191"
+}

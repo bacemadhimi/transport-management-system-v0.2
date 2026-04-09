@@ -1,10 +1,17 @@
 
 
+import { Capacitor } from '@capacitor/core';
+
+// Platform-aware API URL detection at runtime
+function getApiUrl(): string {
+  return Capacitor.isNativePlatform()
+    ? 'http://192.168.68.186:5191'
+    : 'http://localhost:5191';
+}
+
 export const environment = {
   production: false,
-  // For Android/iOS: use PC hostname (permanent, doesn't change with IP)
-  // For Web: change to 'localhost' if testing locally
-  apiUrl: 'http://fida:5191',
+  apiUrl: getApiUrl(),
   weatherApiKey: ''
 };
 
