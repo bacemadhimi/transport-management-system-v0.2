@@ -11,8 +11,13 @@ function getApiUrl(): string {
 
 export const environment = {
   production: false,
+<<<<<<< test-apk
   apiUrl: getApiUrl(),
   weatherApiKey: ''
+=======
+  apiUrl: 'https://localhost:7287',
+  weatherApiKey: '' // OpenWeatherMap API key (optional - leave empty for simulated weather)
+>>>>>>> dev
 };
 
 
