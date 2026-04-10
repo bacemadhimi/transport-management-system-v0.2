@@ -438,15 +438,15 @@ getMaintenances(): Observable<IMaintenance[]> {
 }
 
 getTripsForDropdown(): Observable<ITrip[]> {
-  return this.http.get<ITrip[]>(`${environment.apiUrl}/api/Trips/ForDropdown`);
+  return this.http.get<ITrip[]>(`${environment.apiUrl}/api/Trips/all`);
 }
 
 getMechanicsForDropdown(): Observable<IMechanic[]> {
-  return this.http.get<IMechanic[]>(`${environment.apiUrl}/api/Mechanic/ForDropdown`);
+  return this.http.get<IMechanic[]>(`${environment.apiUrl}/api/Mechanic/all`);
 }
 
 getVendorsForDropdown(): Observable<IVendor[]> {
-  return this.http.get<IVendor[]>(`${environment.apiUrl}/api/Vendor/ForDropdown`);
+  return this.http.get<IVendor[]>(`${environment.apiUrl}/api/Vendor/all`);
 }
 
 

@@ -71,6 +71,8 @@ builder.Services.AddScoped<IRepository<Location>, Repository<Location>>();
 builder.Services.AddScoped<IRepository<TypeTruck>, Repository<TypeTruck>>();
 builder.Services.AddScoped<IRepository<Employee>, Repository<Employee>>();
 builder.Services.AddScoped<IRepository<GeneralSettings>, Repository<GeneralSettings>>();
+builder.Services.AddScoped<IRepository<Mechanic>, Repository<Mechanic>>();
+builder.Services.AddScoped<IRepository<FuelVendor>, Repository<FuelVendor>>();
 
 builder.Services.AddScoped<UserHelper>();
 builder.Services.AddScoped<SyncService>();
