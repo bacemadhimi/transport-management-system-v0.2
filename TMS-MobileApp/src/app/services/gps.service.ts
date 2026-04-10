@@ -59,6 +59,23 @@ export class GpsService {
 
   async getCurrentPosition(): Promise<GPSPosition | null> {
     try {
+      // Request location permission first on native platform
+      if (Capacitor.isNativePlatform()) {
+        const status = await Geolocation.checkPermissions();
+        console.log('📍 Location permission status:', status);
+
+        if (status.location !== 'granted') {
+          console.log('⚠️ Permission not granted, requesting...');
+          const requestResult = await Geolocation.requestPermissions();
+          console.log('📍 Permission request result:', requestResult);
+          
+          if (requestResult.location !== 'granted') {
+            console.error('❌ Location permission not granted');
+            throw new Error('Location permission not granted');
+          }
+        }
+      }
+
       const position: Position = await Geolocation.getCurrentPosition({
         enableHighAccuracy: true,
         timeout: 10000,

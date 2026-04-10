@@ -5,8 +5,15 @@ const config: CapacitorConfig = {
   appName: 'TMS',
   webDir: 'www',
   server: {
-    androidScheme: 'http', 
-    cleartext: true         
+    androidScheme: 'http',
+    cleartext: true
+  },
+  android: {
+    buildOptions: {
+      compileSdkVersion: 36,
+      targetSdkVersion: 36,
+      minSdkVersion: 24
+    }
   }
 };
 

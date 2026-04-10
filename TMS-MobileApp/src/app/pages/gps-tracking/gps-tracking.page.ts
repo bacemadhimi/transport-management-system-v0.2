@@ -4,6 +4,7 @@ import { IonicModule, AlertController, ToastController, LoadingController } from
 import { GPSTrackingService, GPSPosition } from '../../services/gps-tracking.service';
 import { AuthService } from '../../services/auth.service';
 import { ActivatedRoute, Router } from '@angular/router';
+import { environment } from '../../../environments/environment';
 import * as L from 'leaflet';
 
 @Component({
@@ -128,7 +129,11 @@ export class GPSTrackingPage implements OnInit, OnDestroy {
 
       console.log('📡 Fetching trip details from API...');
 
+<<<<<<< test-apk
+      const response = await fetch(`${environment.apiUrl}/api/Trips/${this.tripId}`, {
+=======
       const response = await fetch(`https://localhost:7287/api/Trips/${this.tripId}`, {
+>>>>>>> dev
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -332,19 +337,22 @@ export class GPSTrackingPage implements OnInit, OnDestroy {
       maxZoom: 16,
       zoomControl: true,
       attributionControl: true,
-      preferCanvas: true
+      preferCanvas: true,
+      touchZoom: true
     });
 
     // Tuiles OpenStreetMap
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '© OpenStreetMap contributors',
       maxZoom: 16,
-      minZoom: 6
+      minZoom: 6,
+      crossOrigin: true
     }).addTo(this.map);
 
+    // Force map to render properly on mobile
     setTimeout(() => {
       if (this.map) {
-        this.map.invalidateSize();
+        this.map.invalidateSize(true);
         console.log('✅ Map initialized and size invalidated');
 
         // Check if destination was already loaded (geocoded before map was ready)
@@ -353,7 +361,15 @@ export class GPSTrackingPage implements OnInit, OnDestroy {
           this.addDestinationMarker();
         }
       }
-    }, 500);
+    }, 300);
+
+    // Second invalidate to ensure proper rendering on mobile
+    setTimeout(() => {
+      if (this.map) {
+        this.map.invalidateSize(true);
+        console.log('✅ Map size invalidated (second pass for mobile)');
+      }
+    }, 1000);
 
     // Le marker du camion sera créé UNIQUEMENT quand la position GPS réelle est obtenue
     // PAS de position par défaut

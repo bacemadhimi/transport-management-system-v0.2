@@ -2,7 +2,11 @@ import { Injectable } from '@angular/core';
 import { HubConnection, HubConnectionBuilder, HubConnectionState } from '@microsoft/signalr';
 import { BehaviorSubject, Observable, Subject } from 'rxjs';
 import { NotificationStorageService, TripNotification } from './notification-storage.service';
+<<<<<<< test-apk
+import { environment } from '../../environments/environment';
+=======
 import { environment } from 'src/environments/environment';
+>>>>>>> dev
 
 const API_URL = environment.apiUrl;
 

@@ -29,15 +29,18 @@ import { environment } from 'src/environments/environment';
 export class LoginPage implements AfterViewInit {
   @ViewChild('usernameInput') usernameInput!: IonInput;
   @ViewChild('passwordInput') passwordInput!: IonInput;
-  
-  apiUrl = environment.apiUrl + '/api/Auth/login';
-  
+
+  // Platform-aware API URL detection at runtime
+  apiUrl = Capacitor.isNativePlatform()
+    ? 'http://192.168.68.186:5191/api/Auth/login'
+    : 'http://localhost:5191/api/Auth/login';
+
   isLoading = false;
   errorMessage = '';
   showPassword = false;
   isOnline = true;
   offlineMode = false;
-  rememberMe = false; // Add this for the checkbox
+  rememberMe = false;
   platform: string;
 
   constructor(
@@ -55,7 +58,7 @@ export class LoginPage implements AfterViewInit {
   async ngAfterViewInit() {
     await this.checkNetworkStatus();
     await this.loadSavedCredentials();
-    
+
     // Listen for network changes
     Network.addListener('networkStatusChange', (status) => {
       this.isOnline = status.connected;
