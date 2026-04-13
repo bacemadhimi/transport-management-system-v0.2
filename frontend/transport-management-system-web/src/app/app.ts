@@ -1,9 +1,10 @@
 ﻿import { Component, inject, signal, OnInit, OnDestroy, ViewChild, ElementRef, HostListener } from '@angular/core';
+import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
 import { RouterLink, RouterOutlet } from '@angular/router';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
-import { MatSidenavModule } from '@angular/material/sidenav';
+import { MatSidenavModule, MatDrawer } from '@angular/material/sidenav';
 import { MatListModule } from '@angular/material/list';
 import { MatExpansionModule } from '@angular/material/expansion';
 import { CommonModule } from '@angular/common';
@@ -14,7 +15,8 @@ import { Theme, ThemeService } from './services/theme.service';
 import { SignalRService, TripNotification } from './services/signalr.service';
 import { MatBadgeModule } from '@angular/material/badge';
 import { MatMenuModule } from '@angular/material/menu';
-import { Subscription } from 'rxjs';
+import { Subscription, Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
 import { Translation } from './services/Translation';
 import { environment } from '../environments/environment';
 import { IGeneralSettings } from './types/general-settings';
@@ -49,6 +51,7 @@ export class App implements OnInit, OnDestroy {
   @ViewChild('notificationsPanel') notificationsPanel!: ElementRef;
   @ViewChild('languageMenu') languageMenu!: ElementRef;
   @ViewChild('themePicker') themePicker!: ElementRef;
+  @ViewChild('drawer') drawer!: MatDrawer;
 
   themes!: Theme[];
   allNotifications: TripNotification[] = [];
@@ -60,6 +63,10 @@ export class App implements OnInit, OnDestroy {
   private translation = inject(Translation);
   private menuManager: MenuManagerService = inject(MenuManagerService);
   private logoService = inject(LogoService);
+  
+  // ✅ ADD: BreakpointObserver for mobile detection
+  private breakpointObserver = inject(BreakpointObserver);
+  private destroy$ = new Subject<void>();
 
   currentPage = 0;
   pageSize = 20;
@@ -77,6 +84,10 @@ export class App implements OnInit, OnDestroy {
   refreshNotificationInterval: any;
   selectedNotificationTab: 'all' | 'unread' = 'all';
   showOnlineDot = true;
+
+  // ✅ ADD: Mobile detection properties
+  isMobile = false;
+  isTablet = false;
 
   private notificationsSubscription!: Subscription;
   private cancelledTripsSubscription!: Subscription;
@@ -107,7 +118,7 @@ export class App implements OnInit, OnDestroy {
     });
   }
 
-  // Écouter les clics sur tout le document
+  // ✅ ENHANCED: Document click handler with mobile awareness
   @HostListener('document:click', ['$event'])
   onDocumentClick(event: MouseEvent): void {
     const target = event.target as HTMLElement;
@@ -122,6 +133,29 @@ export class App implements OnInit, OnDestroy {
     if (!clickedInsidePermission && !clickedInsideNotification && 
         !clickedInsideLanguage && !clickedInsideTheme) {
       this.menuManager.closeAllMenus();
+      
+      // ✅ ADD: Remove body class on mobile when closing menus
+      if (this.isMobile) {
+        document.body.classList.remove('menu-open');
+      }
+    }
+  }
+
+  // ✅ ADD: Window resize handler
+  @HostListener('window:resize', ['$event'])
+  onResize(event: any) {
+    if (window.innerWidth <= 768 && this.drawer?.opened) {
+      this.drawer.close();
+      document.body.classList.remove('menu-open');
+    }
+  }
+
+  // ✅ ADD: Back button handler for mobile
+  @HostListener('window:popstate', ['$event'])
+  onPopState(event: PopStateEvent) {
+    if (this.isMobile) {
+      this.menuManager.closeAllMenus();
+      document.body.classList.remove('menu-open');
     }
   }
 
@@ -146,16 +180,82 @@ export class App implements OnInit, OnDestroy {
     }
   }
 
+  // ✅ ENHANCED: Toggle menu with mobile optimization
   toggleMenu(menuType: MenuType): void {
     this.menuManager.toggleMenu(menuType);
+    
+    // ✅ ADD: Add body class when menu is open on mobile
+    if (this.isMobile) {
+      const isAnyMenuOpen = this.showPermissions || this.showNotificationsPanel || 
+                           this.showLanguageMenu || this.showThemePicker;
+      if (isAnyMenuOpen) {
+        document.body.classList.add('menu-open');
+      } else {
+        document.body.classList.remove('menu-open');
+      }
+    }
   }
 
   openNotificationPanel(): void {
     this.toggleMenu('notifications');
   }
 
+  // ✅ ENHANCED: Close all menus with mobile cleanup
   closeAllMenus(): void {
     this.menuManager.closeAllMenus();
+    
+    // ✅ ADD: Remove body class on mobile
+    if (this.isMobile) {
+      document.body.classList.remove('menu-open');
+    }
+  }
+
+  // ✅ ADD: Toggle drawer method for mobile
+  toggleDrawer() {
+    if (this.drawer) {
+      this.drawer.toggle();
+      if (this.isMobile) {
+        document.body.classList.toggle('menu-open', this.drawer.opened);
+      }
+    }
+  }
+
+  // ✅ ADD: Initialize mobile detection
+  private initializeMobileDetection() {
+    this.breakpointObserver
+      .observe([
+        Breakpoints.Handset,
+        Breakpoints.Tablet,
+        '(max-width: 768px)'
+      ])
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(result => {
+        this.isMobile = result.breakpoints['(max-width: 768px)'] || 
+                       result.breakpoints[Breakpoints.Handset];
+        this.isTablet = result.breakpoints[Breakpoints.Tablet];
+        
+        // Close drawer by default on mobile
+        if (this.isMobile && this.drawer) {
+          this.drawer.close();
+        }
+        
+        // Add/remove mobile class to body
+        if (this.isMobile) {
+          document.body.classList.add('is-mobile');
+        } else {
+          document.body.classList.remove('is-mobile');
+        }
+      });
+
+    this.detectIOS();
+  }
+
+  // ✅ ADD: iOS detection
+  private detectIOS() {
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
+    if (isIOS) {
+      document.body.classList.add('ios-device');
+    }
   }
 
   get filteredNotifications() {
@@ -166,6 +266,9 @@ export class App implements OnInit, OnDestroy {
   }
 
   ngOnInit() {
+    // ✅ ADD: Initialize mobile detection
+    this.initializeMobileDetection();
+    
     this.httpService.getTranslations(this.currentLanguage).subscribe({
       next: data => this.translation.setTranslations(data),
       error: err => console.error('Error loading translations', err)
@@ -324,6 +427,11 @@ export class App implements OnInit, OnDestroy {
     if (tripId) {
       // Navigation vers les détails du voyage
       this.menuManager.closeAllMenus();
+      
+      // ✅ ADD: Remove body class on mobile
+      if (this.isMobile) {
+        document.body.classList.remove('menu-open');
+      }
     }
   }
 
@@ -345,11 +453,9 @@ export class App implements OnInit, OnDestroy {
     if (!notification.isRead) {
       await this.signalRService.markAsRead(notification.id);
       notification.isRead = true;
-       // Ajouter au set local et sauvegarder
       this.readNotificationIds.add(String(notification.id));
       this.saveReadNotificationIds();
 
-      // Retirer de la liste des notifications non lues
       this.notifications = this.notifications.filter(n => n.id !== notification.id);
       this.unreadNotificationsCount = this.notifications.filter((n: TripNotification) => !n.isRead).length;
     }
@@ -400,7 +506,11 @@ export class App implements OnInit, OnDestroy {
   viewAllNotifications() {
     console.log('View all notifications');
     this.menuManager.closeAllMenus();
-    // Navigation vers la page de toutes les notifications
+    
+    // ✅ ADD: Remove body class on mobile
+    if (this.isMobile) {
+      document.body.classList.remove('menu-open');
+    }
   }
 
   onFooterButtonMouseEnter(event: MouseEvent) {
@@ -421,6 +531,10 @@ export class App implements OnInit, OnDestroy {
     this.notificationsSubscription?.unsubscribe();
     this.cancelledTripsSubscription?.unsubscribe();
     this.connectionStatusSubscription?.unsubscribe();
+    
+    // ✅ ADD: Complete destroy subject
+    this.destroy$.next();
+    this.destroy$.complete();
 
     this.signalRService.disconnect();
   }
@@ -437,6 +551,11 @@ export class App implements OnInit, OnDestroy {
     this.signalRService.disconnect();
     this.authService.logout();
     this.menuManager.closeAllMenus();
+    
+    // ✅ ADD: Remove body class on mobile
+    if (this.isMobile) {
+      document.body.classList.remove('menu-open');
+    }
   }
 
   changeLanguage(lang: string) {
@@ -446,6 +565,11 @@ export class App implements OnInit, OnDestroy {
       error: err => console.error('Error loading translations', err)
     });
     this.menuManager.closeAllMenus();
+    
+    // ✅ ADD: Remove body class on mobile
+    if (this.isMobile) {
+      document.body.classList.remove('menu-open');
+    }
   }
 
   t(key: string): string { 
@@ -456,13 +580,18 @@ export class App implements OnInit, OnDestroy {
     this.themeService.setTheme(theme);
     this.currentTheme = theme;
     this.menuManager.closeAllMenus();
+    
+    // ✅ ADD: Remove body class on mobile
+    if (this.isMobile) {
+      document.body.classList.remove('menu-open');
+    }
   }
 
   resetToDefaultTheme() {
     this.changeTheme(this.themes[0]);
   }
 
-   private loadReadNotificationIds() {
+  private loadReadNotificationIds() {
     try {
       const stored = localStorage.getItem('readNotificationIds');
       if (stored) {
