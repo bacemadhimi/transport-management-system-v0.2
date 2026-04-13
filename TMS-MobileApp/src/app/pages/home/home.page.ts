@@ -274,14 +274,20 @@ export class HomePage implements OnInit, OnDestroy {
 
   async loadTrips() {
     const userEmail = this.authService.currentUser()?.email;
-    
+
     if (this.isOnline) {
       this.trips$ = this.tripService.getAllTrips().pipe(
         map(trips => {
-          if (userEmail) {
-            return trips.filter(trip => trip.driver?.email === userEmail);
-          }
-          return trips;
+          let filteredTrips = userEmail
+            ? trips.filter(trip => trip.driver?.email === userEmail)
+            : trips;
+          // ✅ Trier par date: le plus récent en PREMIER
+          filteredTrips.sort((a, b) => {
+            const dateA = new Date(a.estimatedStartDate || 0).getTime();
+            const dateB = new Date(b.estimatedStartDate || 0).getTime();
+            return dateB - dateA;
+          });
+          return filteredTrips;
         }),
         catchError(error => {
           console.error('Error loading trips online, falling back to offline:', error);
@@ -293,7 +299,7 @@ export class HomePage implements OnInit, OnDestroy {
     }
 
     this.trips$.subscribe(trips => {
-      console.log('Trips loaded:', trips.length, 'mode:', this.isOnline ? 'online' : 'offline');
+      console.log('Trips loaded (sorted newest first):', trips.length, 'mode:', this.isOnline ? 'online' : 'offline');
       this.totalDistance = this.calculateTotalDistance(trips);
       this.saveTripsOffline(trips);
     });
@@ -307,6 +313,12 @@ export class HomePage implements OnInit, OnDestroy {
         if (userEmail) {
           trips = trips.filter(trip => trip.driver?.email === userEmail);
         }
+        // ✅ Trier par date: le plus récent en premier
+        trips.sort((a, b) => {
+          const dateA = new Date(a.estimatedStartDate || 0).getTime();
+          const dateB = new Date(b.estimatedStartDate || 0).getTime();
+          return dateB - dateA;
+        });
         return of(trips);
       }
     } catch (error) {
