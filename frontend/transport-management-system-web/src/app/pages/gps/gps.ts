@@ -88,10 +88,39 @@ export class GpsPage implements OnInit, OnDestroy, AfterViewInit {
       this.handleRealTimePosition(position);
     });
 
-    // Listen for trip status changes
+    // ✅ Écouter les changements de statut en temps réel - MISE À JOUR DIRECTE SANS REFRESH
     this.signalR.onTripStatusChanged((update: any) => {
-      console.log('📊 Trip status changed:', update);
-      this.refreshData();
+      console.log('📊 Trip status changed REAL TIME:', update);
+      
+      // ✅ Mettre à jour DIRECTEMENT le trajet dans la liste en mémoire
+      const tripId = update.TripId || update.tripId;
+      const newStatus = update.NewStatus || update.newStatus || update.status;
+      
+      if (tripId && newStatus) {
+        const trip = this.trips.find(t => t.id === tripId);
+        if (trip) {
+          console.log(`🔄 Updating trip ${tripId} status: ${trip.tripStatus} → ${newStatus}`);
+          trip.tripStatus = newStatus;
+          
+          // ✅ Si terminé/annulé, retirer de la liste après un délai
+          if (newStatus === 'Completed' || newStatus === 'Receipt' || newStatus === 'Cancelled' || newStatus === 'Refused') {
+            console.log(`🗑️ Trip ${tripId} is now ${newStatus} - removing from active list in 3s`);
+            setTimeout(() => {
+              this.trips = this.trips.filter(t => t.id !== tripId);
+              this.refreshData(); // Refresh après suppression
+            }, 3000);
+          }
+          
+          // ✅ Mettre à jour l'affichage immédiatement
+          this.trips = [...this.trips]; // Trigger change detection
+          
+          console.log(`✅ Trip ${tripId} status updated to ${newStatus} - NO refresh needed!`);
+        } else {
+          console.warn(`⚠️ Trip ${tripId} not found in local list, will refresh...`);
+          // Si le trajet n'est pas trouvé, alors on refresh
+          this.refreshData();
+        }
+      }
     });
 
     // Listen for active trips
@@ -799,39 +828,57 @@ export class GpsPage implements OnInit, OnDestroy, AfterViewInit {
   }
 
   getStatusText(status: string): string {
+    // ✅ Utiliser les MÊMES noms de statut que le mobile
     const texts: any = {
-      'Planned': 'Planifié',
-      'Accepted': 'Accepté',
-      'LoadingInProgress': 'En chargement',
-      'DeliveryInProgress': 'En livraison',
-      'Receipt': 'Livré',
-      'Cancelled': 'Annulé'
+      'Pending': '⏳ En attente',
+      'Planned': '📋 Planifié',
+      'Accepted': '✅ Accepté',
+      'Loading': '📦 Chargement',
+      'LoadingInProgress': '📦 Chargement',
+      'InDelivery': '🚚 Livraison',
+      'DeliveryInProgress': '🚚 Livraison',
+      'Receipt': '🎉 Terminé',
+      'Completed': '🎉 Terminé',
+      'Cancelled': '❌ Annulé',
+      'Refused': '⛔ Refusé'
     };
     return texts[status] || status;
   }
 
   getTripProgress(status: string): number {
+    // ✅ Progression selon les statuts mobile
     const progress: any = {
+      'Pending': 0,
       'Planned': 0,
       'Accepted': 25,
+      'Loading': 50,
       'LoadingInProgress': 50,
+      'InDelivery': 75,
       'DeliveryInProgress': 75,
       'Receipt': 100,
-      'Cancelled': 0
+      'Completed': 100,
+      'Cancelled': 0,
+      'Refused': 0
     };
     return progress[status] || 0;
   }
 
   getStatusColor(status: string): string {
+    // ✅ Couleurs selon les statuts mobile
     const colors: any = {
-      'Planned': '#2196F3',
-      'Accepted': '#9C27B0',
-      'LoadingInProgress': '#FF9800',
-      'DeliveryInProgress': '#4CAF50',
-      'Receipt': '#4CAF50',
-      'Cancelled': '#F44336'
+      'Pending': '#ff8c00',
+      'Planned': '#ff8c00',
+      'Accepted': '#4caf50',
+      'Loading': '#5856d6',
+      'LoadingInProgress': '#5856d6',
+      'InDelivery': '#ff9500',
+      'DeliveryInProgress': '#ff9500',
+      'Receipt': '#4caf50',
+      'Completed': '#4caf50',
+      'Cancelled': '#f44336',
+      'Refused': '#f44336'
     };
-    return colors[status] || '#9E9E9E';
+    return colors[status] || '#94a3b8';
   }
 
   focusOnTrip(trip: any) {

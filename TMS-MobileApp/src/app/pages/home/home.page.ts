@@ -71,6 +71,48 @@ export class HomePage implements OnInit, OnDestroy {
     await this.loadTrips();
     this.setupSignalR();
 
+    // ✅ Écouter les changements de statut en temps réel via SignalR - MISE À JOUR EN MÉMOIRE
+    this.subscriptions.push(
+      this.signalRService.tripStatusChanged$.subscribe((update: any) => {
+        if (update && (update.TripId || update.tripId)) {
+          const tripId = update.TripId || update.tripId;
+          const newStatus = update.NewStatus || update.newStatus || update.status;
+          console.log('🏠 Home page received TripStatusChanged:', tripId, '→', newStatus);
+          
+          // ✅ Mettre à jour DIRECTEMENT dans localStorage sans recharger l'API
+          const offlineTrips = localStorage.getItem('offlineTrips');
+          if (offlineTrips) {
+            try {
+              const trips = JSON.parse(offlineTrips);
+              const tripIndex = trips.findIndex((t: any) => t.id === tripId);
+              if (tripIndex !== -1) {
+                trips[tripIndex].tripStatus = newStatus;
+                localStorage.setItem('offlineTrips', JSON.stringify(trips));
+                console.log(`✅ Home: Trip ${tripId} status updated in localStorage to ${newStatus}`);
+                
+                // ✅ Recharger les trajets depuis localStorage (pas l'API)
+                this.loadTrips();
+              } else {
+                console.warn(`⚠️ Home: Trip ${tripId} not found in localStorage, reloading from API`);
+                this.loadTrips();
+              }
+            } catch (e) {
+              console.error('❌ Home: Error updating localStorage:', e);
+              this.loadTrips();
+            }
+          }
+        }
+      }),
+      this.chatService.unreadCount$.subscribe(count => {
+        this.unreadMessagesCount = count;
+      }),
+      // Subscribe to notification storage unread count for new trip assignments
+      this.notificationStorageService.unreadCount$.subscribe(count => {
+        this.notificationBadgeCount = count;
+        console.log('🔔 Notification badge updated:', count);
+      })
+    );
+
     // ===== ADDED: Connect to GPS Hub for real-time notifications =====
     const user = this.authService.currentUser();
     if (user && user.role === 'Driver') {

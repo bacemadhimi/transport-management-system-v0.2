@@ -75,8 +75,15 @@ export class SignalRService {
   }
 
   // Listen for trip status changes
+  /**
+   * ✅ Écouter les changements de statut de trajet en temps réel
+   */
   public onTripStatusChanged(callback: (update: any) => void): void {
-    this.hubConnection?.on('TripStatusChanged', callback);
+    if (this.hubConnection?.state === 'Connected') {
+      this.hubConnection.off('TripStatusChanged'); // Éviter les doublons
+      this.hubConnection.on('TripStatusChanged', callback);
+      console.log('✅ Listening for TripStatusChanged events');
+    }
   }
 
   // Invoke server methods
@@ -221,7 +228,7 @@ export class SignalRService {
       setTimeout(() => this.loadInitialNotifications(), 500);
     });
 
-    // Handler for Trip Status Changed (Accepted/Refused) - REAL TIME
+    // Handler for Trip Status Changed (Accepted/Refused/Loading/Delivery/Completed) - REAL TIME
     this.hubConnection.on('TripStatusChanged', (data: any) => {
       console.log('🔄🔄🔄=================================');
       console.log('🔄 Trip Status Changed - REAL TIME SIGNALR!');
@@ -230,42 +237,44 @@ export class SignalRService {
 
       // Determine notification type based on new status
       let type, title, message, newStatus;
+      const status = data.NewStatus || data.status || data.newStatus || '';
 
-      if (data.NewStatus === 'Accepted' || data.status === 'Accepted') {
+      if (status === 'Accepted' || status === 'Accepté') {
         type = 'TRIP_ACCEPTED';
         title = '✅ Mission Acceptée';
-        message = `Le chauffeur ${data.DriverName || 'inconnu'} a accepté la mission ${data.TripReference || ''}`;
-        newStatus = 'Acceptée';
-      } else if (data.NewStatus === 'Refused' || data.status === 'Refused') {
+        message = `Mission ${data.TripReference || ''} acceptée par ${data.DriverName || 'inconnu'}`;
+        newStatus = '✅ Accepté';
+      } else if (status === 'Refused' || status === 'Refusé' || status === 'Cancelled') {
         type = 'TRIP_REJECTED';
-        title = '❌ Mission Refusée';
-        message = `Le chauffeur ${data.DriverName || 'inconnu'} a refusé la mission ${data.TripReference || ''}. Raison: ${data.Reason || 'Non spécifiée'}`;
-        newStatus = 'Refusée';
-      } else if (data.NewStatus === 'Completed' || data.status === 'Completed') {
+        title = '❌ Mission Refusée/Annulée';
+        message = `Mission ${data.TripReference || ''} refusée/annulée par ${data.DriverName || 'inconnu'}. Raison: ${data.Reason || data.Message || 'Non spécifiée'}`;
+        newStatus = status === 'Cancelled' ? '❌ Annulé' : '⛔ Refusé';
+      } else if (status === 'Completed' || status === 'Receipt' || status === 'Terminé') {
         type = 'MISSION_COMPLETED';
-        title = '✅ Mission Terminée';
+        title = '🚚 Mission Terminée';
         message = `Mission ${data.TripReference || ''} terminée par ${data.DriverName || 'inconnu'}`;
-        newStatus = 'Terminée';
-      } else if (data.NewStatus === 'InDelivery' || data.status === 'InDelivery') {
+        newStatus = '🚚 Terminé';
+      } else if (status === 'InDelivery' || status === 'DeliveryInProgress' || status === 'Livraison en cours') {
         type = 'DELIVERY_STARTED';
-        title = '🚚 Livraison démarrée';
+        title = '🚛 Livraison en cours';
         message = `Mission ${data.TripReference || ''} en cours de livraison par ${data.DriverName || 'inconnu'}`;
-        newStatus = 'En livraison';
-      } else if (data.NewStatus === 'Loading' || data.status === 'Loading') {
+        newStatus = '🚛 Livraison en cours';
+      } else if (status === 'Loading' || status === 'LoadingInProgress' || status === 'Chargement') {
         type = 'LOADING_STARTED';
-        title = '📦 Chargement démarré';
-        message = `Mission ${data.TripReference || ''} en chargement par ${data.DriverName || 'inconnu'}`;
-        newStatus = 'Chargement';
-      } else if (data.NewStatus === 'Arrived' || data.status === 'Arrived') {
-        type = 'ARRIVED_AT_DESTINATION';
-        title = '📍 Arrivé à destination';
-        message = `Mission ${data.TripReference || ''} - arrivé à destination`;
-        newStatus = 'Arrivé';
+        title = '📦 Chargement en cours';
+        message = `Mission ${data.TripReference || ''} en cours de chargement par ${data.DriverName || 'inconnu'}`;
+        newStatus = '📦 Chargement';
+      } else if (status === 'Pending' || status === 'Planned' || status === 'En attente') {
+        type = 'TRIP_UPDATED';
+        title = '⏳ Mission en attente';
+        message = `Mission ${data.TripReference || ''} en attente - ${data.DriverName || 'inconnu'}`;
+        newStatus = '⏳ En attente';
       } else {
-        type = 'STATUS_CHANGE';
-        title = '🔄 Status changé';
-        message = `Mission ${data.TripReference || ''} - Nouveau status: ${data.NewStatus || data.status}`;
-        newStatus = data.NewStatus || data.status;
+        // Generic handler for any other status
+        type = 'TRIP_UPDATED';
+        title = `🔄 Mission mise à jour`;
+        message = `Statut de la mission ${data.TripReference || ''} changé: ${status}`;
+        newStatus = status;
       }
 
       const notification: TripNotification = {

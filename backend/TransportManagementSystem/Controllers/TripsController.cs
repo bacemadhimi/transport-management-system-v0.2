@@ -846,6 +846,15 @@ public class TripsController : ControllerBase
 
         await _notificationService.NotifyTripStatusChanged(statusChange, userId);
 
+        // ✅ Notifier TOUS les clients via GPS Hub (web écoute ce hub)
+        await _gpsHub.Clients.All.SendAsync("TripStatusChanged", statusChange);
+        
+        // ✅ Notifier aussi via TripHub
+        await _tripHub.Clients.All.SendAsync("TripStatusChanged", statusChange);
+        
+        _logger.LogInformation("📡 TripStatusChanged broadcasted via GPSHub+TripHub: Trip {TripId} {OldStatus} → {NewStatus}", 
+            trip.Id, oldStatus, model.Status);
+
         return Ok(new ApiResponse(true,
             $"Statut du trajet mis à jour: {TripStatusTransitions.GetStatusLabel(model.Status)}",
             new

@@ -1711,7 +1711,7 @@ export class GPSTrackingPage implements OnInit, OnDestroy {
       case 'pending': return 'time';
       case 'accepted': return 'checkmark-circle';
       case 'loading': return 'cube';
-      case 'delivery': return 'boat';
+      case 'delivery': return 'truck';
       case 'completed': return 'checkmark-done-circle';
       case 'refused': return 'close-circle';
       default: return 'help-circle';
