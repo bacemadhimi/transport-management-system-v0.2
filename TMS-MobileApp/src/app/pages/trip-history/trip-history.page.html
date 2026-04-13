@@ -56,7 +56,14 @@
         </div>
         <ion-label>
           <h3>{{ trip.tripReference }}</h3>
-          <p>{{ formatDate(trip.date) }}</p>
+          <p class="destination-text">
+            <ion-icon name="location-outline" size="small"></ion-icon>
+            {{ trip.destination }}
+          </p>
+          <p class="trip-details-text">
+            <ion-icon name="calendar-outline" size="small"></ion-icon>
+            {{ formatDate(trip.date) }}
+          </p>
           <p class="trip-details-text">
             <ion-icon name="navigate-outline" size="small"></ion-icon>
             {{ trip.distance }} km • 

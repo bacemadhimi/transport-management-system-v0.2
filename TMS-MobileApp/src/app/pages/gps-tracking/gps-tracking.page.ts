@@ -106,6 +106,15 @@ export class GPSTrackingPage implements OnInit, OnDestroy {
       this.connectionStatus = status;
     });
 
+    // ✅ Charger le statut de mission depuis localStorage (fallback si API lente)
+    if (this.tripId) {
+      const savedStatus = localStorage.getItem(`missionStatus_${this.tripId}`);
+      if (savedStatus) {
+        console.log('📦 Loaded mission status from localStorage:', savedStatus);
+        this.missionStatus = savedStatus;
+      }
+    }
+
     // Initialize map after view is ready
     setTimeout(() => {
       this.initMap();
@@ -147,6 +156,12 @@ export class GPSTrackingPage implements OnInit, OnDestroy {
 
       if (result && result.data) {
         const trip = result.data;
+
+        console.log('📦 Trip data received:', trip);
+        console.log('📊 Trip status from API:', trip.tripStatus);
+
+        // ✅ SYNCHRONISER le statut de mission depuis l'API
+        this.syncMissionStatusFromAPI(trip.tripStatus);
 
         console.log('🔍 Searching for destination in trip data...');
 
@@ -1414,6 +1429,47 @@ export class GPSTrackingPage implements OnInit, OnDestroy {
   /**
    * Update mission status
    */
+  /**
+   * ✅ Synchroniser le statut de mission depuis l'API (après refresh)
+   */
+  private syncMissionStatusFromAPI(tripStatus: string) {
+    console.log('🔄 Syncing mission status from API:', tripStatus);
+
+    switch (tripStatus) {
+      case 'Pending':
+      case 'Planned':
+        this.missionStatus = 'pending';
+        break;
+      case 'Accepted':
+        this.missionStatus = 'accepted';
+        break;
+      case 'Loading':
+      case 'LoadingInProgress':
+        this.missionStatus = 'loading';
+        break;
+      case 'InDelivery':
+      case 'DeliveryInProgress':
+        this.missionStatus = 'delivery';
+        break;
+      case 'Receipt':
+      case 'Completed':
+        this.missionStatus = 'completed';
+        break;
+      case 'Cancelled':
+      case 'Refused':
+        this.missionStatus = 'refused';
+        break;
+      default:
+        this.missionStatus = 'pending';
+        break;
+    }
+
+    console.log('✅ Mission status synced:', this.missionStatus);
+
+    // ✅ Sauvegarder dans localStorage pour persister après refresh
+    localStorage.setItem(`missionStatus_${this.tripId}`, this.missionStatus);
+  }
+
   async updateMissionStatus(newStatus: string) {
     if (!this.tripId) {
       await this.showToast('Trip ID non disponible', 'danger');
@@ -1444,6 +1500,10 @@ export class GPSTrackingPage implements OnInit, OnDestroy {
           await this.showToast('🎉 Livraison terminée!', 'success');
           break;
       }
+
+      // ✅ Sauvegarder dans localStorage pour persister après refresh
+      localStorage.setItem(`missionStatus_${this.tripId}`, this.missionStatus);
+      console.log('💾 Mission status saved to localStorage:', this.missionStatus);
     } catch (error) {
       console.error('Error updating status:', error);
       await this.showToast('Erreur lors de la mise à jour', 'danger');
@@ -1473,6 +1533,9 @@ export class GPSTrackingPage implements OnInit, OnDestroy {
 
       // Update local status
       this.missionStatus = 'accepted';
+
+      // ✅ Sauvegarder dans localStorage pour persister après refresh
+      localStorage.setItem(`missionStatus_${this.tripId}`, this.missionStatus);
 
       // Send acceptance via SignalR - this will notify admin in real-time
       await this.gpsService.acceptTrip(this.tripId);

@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { IonicModule, ToastController } from '@ionic/angular';
 import { Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
+import { TripService } from '../../services/trip.service';
 
 interface MyTrip {
   id: number;
@@ -16,9 +17,6 @@ interface MyTrip {
   driverName?: string;
   truckImmatriculation?: string;
   startDate?: string;
-  deliveries?: any[];
-  truck?: any;
-  driver?: any;
 }
 
 @Component({
@@ -34,6 +32,7 @@ interface MyTrip {
 export class MyTripsPage implements OnInit {
   private authService = inject(AuthService);
   private router = inject(Router);
+  private tripService = inject(TripService);
   private toastController = inject(ToastController);
 
   trips: MyTrip[] = [];
@@ -52,93 +51,121 @@ export class MyTripsPage implements OnInit {
 
     try {
       const user = this.authService.currentUser();
-      if (!user) {
+      const token = localStorage.getItem('token');
+      
+      if (!user || !token) {
         this.error = 'Utilisateur non connecté';
         this.loading = false;
         await this.showToast('Veuillez vous connecter', 'danger');
         return;
       }
 
-      console.log('📦 Loading trips for user:', user.email, 'role:', user.role);
+      console.log('📡 Loading trips from API...');
 
-      // Charger depuis localStorage comme la page Home
-      const offlineTrips = localStorage.getItem('offlineTrips');
-      
-      if (!offlineTrips) {
-        console.warn('⚠️ No trips found in localStorage');
-        this.error = 'Aucun trajet disponible. Revenez à la page d\'accueil pour synchroniser les données.';
-        this.loading = false;
-        return;
-      }
+      // Charger depuis l'API directement
+      this.tripService.getAllTrips().subscribe({
+        next: (trips: any[]) => {
+          console.log('📦 Trips received from API:', trips.length);
+          console.log('🔍 Sample trip structure:', trips[0]);
 
-      let allTrips = JSON.parse(offlineTrips);
-      console.log('📊 Total trips in storage:', allTrips.length);
+          // Filtrer les trajets du conducteur
+          const driverId = (user as any).driverId || user.id;
+          const userEmail = user.email;
+          
+          const userTrips = trips.filter((trip: any) => {
+            const tripData = trip.data || trip;
+            return tripData.driverId === driverId || 
+                   tripData.driver?.id === driverId ||
+                   tripData.driver?.email === userEmail;
+          });
 
-      // Filtrer les trajets du conducteur connecté
-      const driverId = (user as any).driverId || user.id;
-      const userEmail = user.email;
-      
-      let userTrips = allTrips.filter((trip: any) => {
-        // Filtrer par driverId ou par email du conducteur
-        return trip.driverId === driverId || 
-               trip.driver?.id === driverId ||
-               trip.driver?.email === userEmail;
+          console.log('🚗 User trips:', userTrips.length);
+
+          // Mapper avec les VRAIES données
+          this.trips = userTrips.map((trip: any) => {
+            let destination = 'Destination';
+            let distance = 0;
+            let deliveriesCount = 0;
+            let driverName = '';
+            let truckImmat = '';
+
+            // Destination et livraisons
+            if (trip.deliveries && trip.deliveries.length > 0) {
+              const lastDelivery = trip.deliveries[trip.deliveries.length - 1];
+              destination = lastDelivery.customerName || 
+                           lastDelivery.customer?.companyName ||
+                           lastDelivery.customer?.name ||
+                           lastDelivery.deliveryAddress || 
+                           `Livraison #${lastDelivery.sequence}`;
+              deliveriesCount = trip.deliveries.length;
+            } else if (trip.destination) {
+              destination = trip.destination;
+            } else if (trip.dropoffLocation) {
+              destination = trip.dropoffLocation.address || trip.dropoffLocation.name || 'Destination';
+            }
+
+            // Distance
+            distance = trip.estimatedDistance || 0;
+
+            // Durée
+            const duration = trip.estimatedDuration || 0;
+
+            // Chauffeur
+            driverName = trip.driver?.name || trip.driverName || '';
+
+            // Véhicule
+            truckImmat = trip.truck?.immatriculation || trip.truckImmatriculation || '';
+
+            return {
+              id: trip.id,
+              tripReference: trip.tripReference || `TRIP-${trip.id}`,
+              status: trip.tripStatus || trip.status || 'Planned',
+              destination: destination,
+              estimatedDistance: distance,
+              estimatedDuration: duration,
+              deliveriesCount: deliveriesCount,
+              isActive: this.isActiveStatus(trip.tripStatus || trip.status),
+              driverName: driverName,
+              truckImmatriculation: truckImmat,
+              startDate: trip.estimatedStartDate
+            };
+          });
+
+          // Trier par date (plus récent en premier)
+          this.trips.sort((a, b) => {
+            const dateA = new Date(a.startDate || 0).getTime();
+            const dateB = new Date(b.startDate || 0).getTime();
+            return dateB - dateA;
+          });
+
+          // Séparer les trajets actifs et historiques
+          this.activeTrips = this.trips.filter(t => t.isActive);
+          this.historyTrips = this.trips.filter(t => !t.isActive);
+
+          console.log('✅ Active trips:', this.activeTrips.length);
+          console.log('📚 History trips:', this.historyTrips.length);
+          console.log('📋 Sample trip:', this.trips[0]);
+
+          this.loading = false;
+          
+          if (this.trips.length === 0) {
+            this.error = 'Aucun trajet assigné pour le moment';
+          }
+        },
+        error: (err) => {
+          console.error('❌ Error loading trips:', err);
+          this.error = 'Erreur de chargement des trajets';
+          this.loading = false;
+        }
       });
-
-      console.log('🚗 User trips count:', userTrips.length);
-
-      // Mapper les trajets
-      this.trips = userTrips.map((trip: any) => ({
-        id: trip.id,
-        tripReference: trip.tripReference || `TRIP-${trip.id}`,
-        status: trip.tripStatus || trip.status || 'Planned',
-        destination: this.getDestination(trip),
-        estimatedDistance: trip.estimatedDistance || 0,
-        estimatedDuration: trip.estimatedDuration || 0,
-        deliveriesCount: trip.deliveries?.length || 0,
-        isActive: this.isActiveStatus(trip.tripStatus || trip.status),
-        driverName: trip.driver?.name,
-        truckImmatriculation: trip.truck?.immatriculation,
-        startDate: trip.estimatedStartDate,
-        deliveries: trip.deliveries || [],
-        truck: trip.truck,
-        driver: trip.driver
-      }));
-
-      // Séparer les trajets actifs et historiques
-      this.activeTrips = this.trips.filter(t => t.isActive);
-      this.historyTrips = this.trips.filter(t => !t.isActive);
-
-      console.log('✅ Active trips:', this.activeTrips.length);
-      console.log('📚 History trips:', this.historyTrips.length);
-      console.log('📋 Active statuses:', this.activeTrips.map(t => t.status));
-      console.log('📋 History statuses:', this.historyTrips.map(t => t.status));
-
-      this.loading = false;
-      
-      if (this.trips.length === 0) {
-        this.error = 'Aucun trajet assigné pour le moment';
-      }
     } catch (error) {
-      console.error('❌ Error loading trips:', error);
-      this.error = 'Erreur de chargement des trajets. Revenez à l\'accueil et réessayez.';
-      this.trips = [];
-      this.activeTrips = [];
-      this.historyTrips = [];
+      console.error('❌ Error:', error);
+      this.error = 'Erreur inattendue';
       this.loading = false;
     }
-  }
-
-  private getDestination(trip: any): string {
-    if (trip.deliveries && trip.deliveries.length > 0) {
-      const lastDelivery = trip.deliveries[trip.deliveries.length - 1];
-      return lastDelivery.customerName || lastDelivery.deliveryAddress || 'Destination inconnue';
-    }
-    return 'Destination inconnue';
   }
 
   private isActiveStatus(status: string): boolean {
-    // Les statuts actifs sont ceux qui ne sont pas terminés ou annulés
     const inactiveStatuses = ['Receipt', 'Completed', 'Cancelled', 'Refused'];
     return !inactiveStatuses.includes(status);
   }
@@ -219,23 +246,6 @@ export class MyTripsPage implements OnInit {
     return iconMap[status] || 'help';
   }
 
-  getStatusColor(status: string): string {
-    const colors: Record<string, string> = {
-      'Planned': 'medium',
-      'Pending': 'warning',
-      'Accepted': 'primary',
-      'LoadingInProgress': 'warning',
-      'Loading': 'warning',
-      'DeliveryInProgress': 'primary',
-      'InDelivery': 'primary',
-      'Completed': 'success',
-      'Receipt': 'success',
-      'Cancelled': 'danger',
-      'Refused': 'danger'
-    };
-    return colors[status] || 'medium';
-  }
-
   getStatusText(status: string): string {
     const texts: Record<string, string> = {
       'Pending': '⏳ En attente',
@@ -254,7 +264,6 @@ export class MyTripsPage implements OnInit {
   }
 
   viewTrip(trip: MyTrip) {
-    // Stocker le trajet sélectionné pour les détails
     localStorage.setItem('selectedTrip', JSON.stringify(trip));
     this.router.navigate([`/trip/${trip.id}`]);
   }
@@ -263,7 +272,8 @@ export class MyTripsPage implements OnInit {
     this.router.navigate([`/gps-tracking`], {
       queryParams: {
         tripId: trip.id,
-        tripReference: trip.tripReference
+        tripReference: trip.tripReference,
+        destination: trip.destination
       }
     });
   }

@@ -1293,6 +1293,9 @@ public class TripsController : ControllerBase
         return await context.Trips
             .Include(t => t.Driver)
             .Include(t => t.Convoyeur)
+            .Include(t => t.Truck)
+            .Include(t => t.Deliveries)
+                .ThenInclude(d => d.Customer)
             .ToListAsync();
     }
 

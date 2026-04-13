@@ -602,10 +602,15 @@ export class HomePage implements OnInit, OnDestroy {
         type: 'status',
         status: newStatus
       });
-      
+
       trip.tripStatus = newStatus as TripStatus;
       trip.updating = false;
       this.updateTripInLocalStorage(trip);
+      
+      // ✅ Sauvegarder aussi le missionStatus pour la page GPS
+      const missionStatus = this.convertToMissionStatus(newStatus);
+      localStorage.setItem(`missionStatus_${trip.id}`, missionStatus);
+      
       this.showToast('Statut mis à jour (hors ligne) - Synchronisation à la reconnexion', 3000, 'warning');
       return;
     }
@@ -616,6 +621,12 @@ export class HomePage implements OnInit, OnDestroy {
         trip.updating = false;
         trip.tripStatus = newStatus as TripStatus;
         this.updateTripInLocalStorage(trip);
+        
+        // ✅ Sauvegarder aussi le missionStatus pour la page GPS
+        const missionStatus = this.convertToMissionStatus(newStatus);
+        localStorage.setItem(`missionStatus_${trip.id}`, missionStatus);
+        console.log('💾 Mission status saved for GPS page:', missionStatus);
+        
         this.showToast('Statut du trajet mis à jour avec succès', 2000, 'success');
       },
       error: async (err) => {
@@ -749,6 +760,33 @@ export class HomePage implements OnInit, OnDestroy {
       this.showToast('Mode hors ligne - Le chatbot utilise un fallback intelligent', 2000, 'warning');
     }
     this.router.navigate(['/chatbot']);
+  }
+
+  /**
+   * Convertir le statut du trajet en statut de mission pour la page GPS
+   */
+  private convertToMissionStatus(tripStatus: string): string {
+    switch (tripStatus) {
+      case 'Pending':
+      case 'Planned':
+        return 'pending';
+      case 'Accepted':
+        return 'accepted';
+      case 'Loading':
+      case 'LoadingInProgress':
+        return 'loading';
+      case 'InDelivery':
+      case 'DeliveryInProgress':
+        return 'delivery';
+      case 'Receipt':
+      case 'Completed':
+        return 'completed';
+      case 'Cancelled':
+      case 'Refused':
+        return 'refused';
+      default:
+        return 'pending';
+    }
   }
 
   private async showToast(message: string, duration: number, color: string) {
