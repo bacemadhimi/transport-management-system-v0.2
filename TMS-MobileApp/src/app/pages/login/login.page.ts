@@ -263,7 +263,9 @@ export class LoginPage implements AfterViewInit {
       await this.showToast('Login successful!', 1500, 'success');
       this.isLoading = false;
       setTimeout(() => {
-        this.router.navigate(['/home']);
+        this.router.navigate(['/home'], { 
+        replaceUrl: true  
+      });
       }, 1500);
 
     } catch (error: any) {
@@ -340,8 +342,9 @@ await this.showAlert('Login Error', errorMessage);
         this.isLoading = false;
         setTimeout(() => {
           this.router.navigate(['/home'], { 
-            queryParams: { offline: true }
-          });
+          replaceUrl: true,  
+          queryParams: { offline: true }
+        });
         }, 1500);
       } else {
         this.isLoading = false;

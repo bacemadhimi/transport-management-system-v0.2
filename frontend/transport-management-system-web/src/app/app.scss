@@ -690,3 +690,127 @@ button.active {
 .footer-button:hover {
   color: var(--primary-dark);
 }
+/* ============================================
+   MOBILE RESPONSIVE STYLES
+   ============================================ */
+
+/* Hide hamburger menu by default (visible on mobile) */
+.hamburger-menu {
+  display: none;
+}
+
+/* Mobile-first approach - Default styles for mobile */
+@media (max-width: 768px) {
+  /* Show hamburger menu on mobile */
+  .hamburger-menu {
+    display: block !important;
+  }
+
+  /* Toolbar adjustments */
+  mat-toolbar {
+    padding: 0 8px !important;
+    height: 64px !important;
+    flex-wrap: wrap;
+  }
+
+  /* Hide email on mobile */
+  .mat-toolbar span[routerLink="/profile"] {
+    display: none !important;
+  }
+
+  /* Reduce gap between items */
+  .mat-toolbar .flex.gap-4 {
+    gap: 0.5rem !important;
+  }
+
+  /* Make avatar smaller */
+  .mat-toolbar img.w-8.h-8 {
+    width: 32px !important;
+    height: 32px !important;
+  }
+
+  /* Logo adjustments */
+  .mat-toolbar .w-10.h-10 {
+    width: 36px !important;
+    height: 36px !important;
+  }
+
+  /* Hide permissions menu on very small screens */
+  @media (max-width: 480px) {
+    .mat-toolbar [data-menu="permissions"] {
+      display: none !important;
+    }
+  }
+
+  /* Hide theme picker on very small screens */
+  @media (max-width: 400px) {
+    .mat-toolbar [data-menu="theme"] {
+      display: none !important;
+    }
+  }
+
+  /* Dropdown/Panel Mobile Styles */
+  .absolute.right-0.top-12,
+  .absolute.right-0.top-10 {
+    position: fixed !important;
+    top: 64px !important;
+    left: 0 !important;
+    right: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    border-radius: 0 !important;
+    max-height: calc(100vh - 64px) !important;
+  }
+
+  /* Drawer/Sidebar Mobile Styles */
+  mat-drawer {
+    width: 280px !important;
+  }
+
+  /* When drawer is closed on mobile */
+  mat-drawer:not(.mat-drawer-opened) {
+    transform: translateX(-100%) !important;
+  }
+
+  /* Drawer content area */
+  mat-drawer-content {
+    margin-left: 0 !important;
+    width: 100% !important;
+  }
+
+  /* Main content padding */
+  main.min-h-screen {
+    padding: 12px !important;
+  }
+
+  /* Body class when menu is open */
+  body.menu-open {
+    overflow: hidden;
+  }
+
+  /* Notification panel mobile */
+  .facebook-style-panel {
+    border-radius: 0 !important;
+    box-shadow: none !important;
+  }
+
+  .notification-item {
+    padding: 12px !important;
+  }
+}
+
+/* iOS specific styles */
+body.ios-device {
+  /* Add iOS-specific fixes if needed */
+}
+
+/* Touch-friendly improvements */
+@media (hover: none) and (pointer: coarse) {
+  button,
+  [role="button"],
+  .clickable,
+  mat-list-item,
+  .mat-expansion-panel-header {
+    min-height: 48px !important;
+  }
+}
