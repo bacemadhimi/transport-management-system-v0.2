@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, of } from 'rxjs';
 import { debounceTime, switchMap, catchError, shareReplay } from 'rxjs/operators';
+import { environment } from '../../environments/environment';
 
 export interface GeocodingSuggestion {
   address: string;
@@ -28,13 +29,12 @@ export interface GeocodingResult {
   providedIn: 'root'
 })
 export class SmartAddressSearchService {
-  private readonly nominatimBaseUrl = 'https://nominatim.openstreetmap.org';
-  private readonly userAgent = 'TMS-App/1.0 (fida.khammassi@example.com)';
-  
+  // ✅ Utiliser le endpoint backend proxy au lieu de Nominatim direct
+  private readonly GEOCODING_API_URL = `${environment.apiUrl}/api/geocoding`;
+
   // Cache pour éviter les requêtes répétées
-  private cache = new Map<string, GeocodingResult>();
-  private readonly cacheDuration = 24 * 60 * 60 * 1000; // 24 heures
   private cacheWithExpiry = new Map<string, { result: GeocodingResult, expiresAt: number }>();
+  private readonly cacheDuration = 24 * 60 * 60 * 1000; // 24 heures
 
   constructor(private http: HttpClient) {}
 
@@ -48,7 +48,7 @@ export class SmartAddressSearchService {
     }
 
     return of(query).pipe(
-      debounceTime(300), // Attendre 300ms après la dernière frappe
+      debounceTime(300),
       switchMap(q => this.performSearch(q, limit)),
       shareReplay(1)
     );
@@ -56,22 +56,19 @@ export class SmartAddressSearchService {
 
   /**
    * Géocoder une adresse (texte → coordonnées)
+   * ✅ Utilise le endpoint backend proxy
    */
   geocodeAddress(address: string): Observable<GeocodingResult | null> {
-    // Vérifier le cache
     const cached = this.getCached(address);
     if (cached) {
       console.log('Cache hit for:', address);
       return of(cached);
     }
 
-    const params = new HttpParams()
-      .set('q', address)
-      .set('format', 'json')
-      .set('limit', '1')
-      .set('addressdetails', '1');
-
-    return this.http.get<any[]>(`${this.nominatimBaseUrl}/search`, { params }).pipe(
+    // ✅ Appel au backend proxy
+    return this.http.get<any[]>(`${this.GEOCODING_API_URL}/search`, {
+      params: { q: address, limit: 1 }
+    }).pipe(
       switchMap(results => {
         if (!results || results.length === 0) {
           return of(null);
@@ -90,22 +87,20 @@ export class SmartAddressSearchService {
 
   /**
    * Reverse geocoding (coordonnées → adresse)
+   * ✅ Utilise le endpoint backend proxy
    */
   reverseGeocode(latitude: number, longitude: number): Observable<GeocodingResult | null> {
     const cacheKey = `${latitude.toFixed(6)},${longitude.toFixed(6)}`;
-    
+
     const cached = this.getCached(cacheKey);
     if (cached) {
       return of(cached);
     }
 
-    const params = new HttpParams()
-      .set('lat', latitude.toString())
-      .set('lon', longitude.toString())
-      .set('format', 'json')
-      .set('addressdetails', '1');
-
-    return this.http.get<any>(`${this.nominatimBaseUrl}/reverse`, { params }).pipe(
+    // ✅ Appel au backend proxy
+    return this.http.get<any>(`${this.GEOCODING_API_URL}/reverse`, {
+      params: { lat: latitude.toString(), lon: longitude.toString() }
+    }).pipe(
       switchMap(data => {
         if (!data || !data.display_name) {
           return of(null);
@@ -116,7 +111,7 @@ export class SmartAddressSearchService {
           latitude,
           longitude,
           displayName: data.display_name,
-          source: 'Nominatim Reverse'
+          source: 'Backend Reverse'
         };
 
         if (data.address) {
@@ -136,13 +131,10 @@ export class SmartAddressSearchService {
   }
 
   private performSearch(query: string, limit: number): Observable<GeocodingSuggestion[]> {
-    const params = new HttpParams()
-      .set('q', query)
-      .set('format', 'json')
-      .set('limit', limit.toString())
-      .set('addressdetails', '1');
-
-    return this.http.get<any[]>(`${this.nominatimBaseUrl}/search`, { params }).pipe(
+    // ✅ Appel au backend proxy
+    return this.http.get<any[]>(`${this.GEOCODING_API_URL}/search`, {
+      params: { q: query, limit: limit.toString() }
+    }).pipe(
       switchMap(results => {
         if (!results) {
           return of([]);
@@ -162,7 +154,7 @@ export class SmartAddressSearchService {
       latitude: parseFloat(element.lat),
       longitude: parseFloat(element.lon),
       displayName: element.display_name,
-      source: 'Nominatim'
+      source: 'Backend Geocoding'
     };
 
     if (element.address) {

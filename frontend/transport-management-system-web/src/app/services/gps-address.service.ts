@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, of } from 'rxjs';
 import { map, catchError } from 'rxjs/operators';
+import { environment } from '../../environments/environment';
 
 interface AddressValidationResult {
   success: boolean;
@@ -23,12 +24,13 @@ interface AddressSuggestion {
 })
 export class GpsAddressService {
   private readonly OSRM_BASE_URL = 'https://router.project-osrm.org';
-  private readonly NOMINATIM_BASE_URL = 'https://nominatim.openstreetmap.org';
+  // ✅ Utiliser le endpoint backend proxy au lieu de Nominatim direct + corsproxy.io
+  private readonly GEOCODING_API_URL = `${environment.apiUrl}/api/geocoding`;
 
   constructor(private http: HttpClient) {}
 
   /**
-   * Valider et normaliser une adresse en obtenant les coordonnées précises     
+   * Valider et normaliser une adresse en obtenant les coordonnées précises
    */
   validateAndNormalizeAddress(address: string): Observable<AddressValidationResult> {
     if (!address || address.trim().length === 0) {
@@ -38,27 +40,19 @@ export class GpsAddressService {
       });
     }
 
-    // Nettoyer l'adresse
     const cleanAddress = this.cleanAddress(address);
 
-    return this.http.get<any>(`${this.NOMINATIM_BASE_URL}/search`, {
-      params: {
-        q: cleanAddress,
-        format: 'json',
-        limit: 1,
-        addressdetails: '1',
-        countrycodes: 'tn', // Tunisie
-        'accept-language': 'fr'
-      }
+    // ✅ Appel au backend proxy au lieu de Nominatim direct
+    return this.http.get<any>(`${this.GEOCODING_API_URL}/geocode`, {
+      params: { address: cleanAddress }
     }).pipe(
       map(response => {
-        if (response && response.length > 0) {
-          const result = response[0];
+        if (response && response.lat && response.lon) {
           return {
             success: true,
-            lat: parseFloat(result.lat),
-            lng: parseFloat(result.lon),
-            address: result.display_name,
+            lat: parseFloat(response.lat),
+            lng: parseFloat(response.lon),
+            address: response.display_name || cleanAddress,
             error: undefined
           };
         }
@@ -80,35 +74,49 @@ export class GpsAddressService {
 
   /**
    * Obtenir des suggestions d'adresses pour une saisie partielle
-   * Utilise Nominatim uniquement avec CORS proxy
+   * ✅ Utilise le endpoint backend proxy, avec fallback direct si échec
    */
-  getAddressSuggestions(query: string): Observable<AddressSuggestion[]> {       
+  getAddressSuggestions(query: string): Observable<AddressSuggestion[]> {
     if (!query || query.trim().length < 3) {
       return of([]);
     }
 
-    // Use CORS proxy to avoid browser restrictions
-    const proxyUrl = 'https://corsproxy.io/?';
-    const nominatimUrl = `${this.NOMINATIM_BASE_URL}/search?q=${encodeURIComponent(query)}&format=json&limit=5&addressdetails=1&countrycodes=tn&accept-language=fr`;
-    const fullUrl = proxyUrl + encodeURIComponent(nominatimUrl);
-
-    return this.http.get<any>(fullUrl).pipe(
+    // Essayer d'abord le backend proxy
+    return this.http.get<any[]>(`${this.GEOCODING_API_URL}/search`, {
+      params: { q: query, limit: 5 }
+    }).pipe(
       map(response => {
         if (!response || response.length === 0) {
           return [];
         }
-
         return response.map((item: any) => ({
           address: item.display_name,
           lat: parseFloat(item.lat),
           lng: parseFloat(item.lon),
           confidence: this.calculateConfidence(item)
-        })).sort((a: AddressSuggestion, b: AddressSuggestion) => b.confidence - 
-a.confidence);
+        })).sort((a: AddressSuggestion, b: AddressSuggestion) => b.confidence - a.confidence);
       }),
-      catchError(error => {
-        console.error('Erreur lors de la recherche de suggestions:', error);    
-        return of([]);
+      catchError(backendError => {
+        console.warn('⚠️ Backend geocoding failed, trying direct Nominatim:', backendError.message);
+        // Fallback: appel direct à Nominatim si le backend échoue
+        return this.http.get<any[]>(
+          `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=5&addressdetails=1&countrycodes=tn&accept-language=fr`,
+          { headers: { 'User-Agent': 'TMS-App/1.0' } }
+        ).pipe(
+          map(response => {
+            if (!response || response.length === 0) return [];
+            return response.map((item: any) => ({
+              address: item.display_name,
+              lat: parseFloat(item.lat),
+              lng: parseFloat(item.lon),
+              confidence: this.calculateConfidence(item)
+            })).sort((a: AddressSuggestion, b: AddressSuggestion) => b.confidence - a.confidence);
+          }),
+          catchError(directError => {
+            console.error('❌ Direct Nominatim also failed:', directError);
+            return of([]);
+          })
+        );
       })
     );
   }
@@ -119,7 +127,6 @@ a.confidence);
   private calculateConfidence(item: any): number {
     let confidence = 0;
 
-    // Score basé sur le type de lieu
     const typeScores: { [key: string]: number } = {
       'building': 100,
       'address': 95,
@@ -132,12 +139,10 @@ a.confidence);
 
     confidence += typeScores[item.type] || 50;
 
-    // Score basé sur la précision
     if (item.importance) {
       confidence += (item.importance * 50);
     }
 
-    // Score basé sur la présence d'informations détaillées
     if (item.address && item.address.house_number) {
       confidence += 10;
     }
@@ -152,13 +157,9 @@ a.confidence);
    * Nettoyer et normaliser une adresse
    */
   private cleanAddress(address: string): string {
-    // Supprimer les espaces multiples
     let cleaned = address.replace(/\s+/g, ' ').trim();
-
-    // Normaliser les caractères
     cleaned = cleaned.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 
-    // Remplacer les abréviations courantes
     const replacements: { [key: string]: string } = {
       ' av ': ' avenue ',
       ' ave ': ' avenue ',
@@ -178,16 +179,11 @@ a.confidence);
 
   /**
    * Obtenir l'adresse à partir de coordonnées (reverse geocoding)
+   * ✅ Utilise le endpoint backend proxy
    */
-  getAddressFromCoordinates(lat: number, lng: number): Observable<string> {     
-    return this.http.get<any>(`${this.NOMINATIM_BASE_URL}/reverse`, {
-      params: {
-        lat: lat.toString(),
-        lon: lng.toString(),
-        format: 'json',
-        addressdetails: '1',
-        'accept-language': 'fr'
-      }
+  getAddressFromCoordinates(lat: number, lng: number): Observable<string> {
+    return this.http.get<any>(`${this.GEOCODING_API_URL}/reverse`, {
+      params: { lat: lat.toString(), lon: lng.toString() }
     }).pipe(
       map(response => {
         if (response && response.display_name) {
@@ -211,10 +207,8 @@ a.confidence);
     const clean1 = this.cleanAddress(address1).toLowerCase();
     const clean2 = this.cleanAddress(address2).toLowerCase();
 
-    // Vérification exacte
     if (clean1 === clean2) return true;
 
-    // Vérification partielle (contient les mêmes mots clés)
     const words1 = clean1.split(' ').filter(w => w.length > 2);
     const words2 = clean2.split(' ').filter(w => w.length > 2);
 
@@ -229,13 +223,9 @@ a.confidence);
   formatAddressForDisplay(address: string): string {
     if (!address) return 'Adresse inconnue';
 
-    // Nettoyer l'adresse
     let formatted = this.cleanAddress(address);
-
-    // Capitaliser chaque mot
     formatted = formatted.replace(/\b\w/g, l => l.toUpperCase());
 
-    // Limiter la longueur pour l'affichage
     if (formatted.length > 100) {
       formatted = formatted.substring(0, 97) + '...';
     }
@@ -253,7 +243,7 @@ a.confidence);
           return {
             lat: response.destinationLatitude,
             lng: response.destinationLongitude,
-            address: response.destinationAddress || 'Destination inconnue'      
+            address: response.destinationAddress || 'Destination inconnue'
           };
         }
 
@@ -267,7 +257,7 @@ a.confidence);
   }
 
   /**
-   * Mettre à jour les coordonnées d'une destination dans la base de données    
+   * Mettre à jour les coordonnées d'une destination dans la base de données
    */
   updateTripDestinationCoordinates(tripId: number, lat: number, lng: number, address: string): Observable<boolean> {
     return this.http.put<any>(`api/gps/trip-destination/${tripId}`, {
@@ -279,7 +269,7 @@ a.confidence);
         return response && response.success === true;
       }),
       catchError(error => {
-        console.error('Erreur lors de la mise à jour des coordonnées:', error); 
+        console.error('Erreur lors de la mise à jour des coordonnées:', error);
         return of(false);
       })
     );
