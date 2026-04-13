@@ -10,5 +10,5 @@
  */
 
 export const API_CONFIG = {
-  apiUrl: 'http://192.168.76.186:5191'
+  apiUrl: 'http://YOUR_PC_IP:5191'
 };
