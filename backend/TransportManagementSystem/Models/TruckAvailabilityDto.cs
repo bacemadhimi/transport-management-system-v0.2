@@ -8,6 +8,7 @@ public class TruckAvailabilityDto
     public bool IsDayOff { get; set; }
     public string Reason { get; set; }
     public int MarqueTruckId { get; set; }
+    public string MarqueName { get; set; }
     public Dictionary<string, AvailabilityDayDto> Availability { get; set; }
 }
 

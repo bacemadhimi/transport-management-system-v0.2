@@ -47,7 +47,7 @@ export class Customer implements OnInit {
 
   filter: any = {
     pageIndex: 0,
-    pageSize: 20,
+    pageSize: 10,
     sourceSystem: null
   };
 
@@ -185,8 +185,9 @@ loadGeographicalEntities() {
     ref.afterClosed().subscribe(() => this.getLatestData());
   }
 
-  pageChange(event: any) {
-    this.filter.pageIndex = event.pageIndex;
+  pageChange(pageEvent: any) {
+    this.filter.pageIndex = pageEvent.pageIndex;
+    this.filter.pageSize = pageEvent.pageSize;
     this.getLatestData();
   }
 
