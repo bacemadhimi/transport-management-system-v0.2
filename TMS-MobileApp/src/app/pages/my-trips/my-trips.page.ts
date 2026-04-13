@@ -1,10 +1,8 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { IonicModule } from '@ionic/angular';
+import { IonicModule, ToastController } from '@ionic/angular';
 import { Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
-import { HttpClient } from '@angular/common/http';
-import { environment } from 'src/environments/environment.prod';
 
 interface MyTrip {
   id: number;
@@ -18,6 +16,9 @@ interface MyTrip {
   driverName?: string;
   truckImmatriculation?: string;
   startDate?: string;
+  deliveries?: any[];
+  truck?: any;
+  driver?: any;
 }
 
 @Component({
@@ -31,20 +32,15 @@ interface MyTrip {
   ]
 })
 export class MyTripsPage implements OnInit {
+  private authService = inject(AuthService);
+  private router = inject(Router);
+  private toastController = inject(ToastController);
+
   trips: MyTrip[] = [];
   activeTrips: MyTrip[] = [];
   historyTrips: MyTrip[] = [];
   loading: boolean = true;
-  driverId: number | null = null;
   error: string | null = null;
-
-  private readonly API_URL = `${environment.apiUrl}/api/Trips`;
-
-  constructor(
-    private authService: AuthService,
-    private router: Router,
-    private http: HttpClient
-  ) {}
 
   ngOnInit() {
     this.loadMyTrips();
@@ -59,65 +55,73 @@ export class MyTripsPage implements OnInit {
       if (!user) {
         this.error = 'Utilisateur non connecté';
         this.loading = false;
+        await this.showToast('Veuillez vous connecter', 'danger');
         return;
       }
 
-      this.driverId = (user as any).driverId || user.id;
-      console.log('📦 Loading trips for driver:', this.driverId);
+      console.log('📦 Loading trips for user:', user.email, 'role:', user.role);
 
-      const token = localStorage.getItem('token');
-      const headers = {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      };
+      // Charger depuis localStorage comme la page Home
+      const offlineTrips = localStorage.getItem('offlineTrips');
+      
+      if (!offlineTrips) {
+        console.warn('⚠️ No trips found in localStorage');
+        this.error = 'Aucun trajet disponible. Revenez à la page d\'accueil pour synchroniser les données.';
+        this.loading = false;
+        return;
+      }
 
-      this.http.get<any[]>(`${this.API_URL}?status=all`, { headers })
-        .subscribe({
-          next: (trips) => {
-            console.log('📦 Trips received:', trips.length);
-            
-            const driverTrips = trips.filter(trip => 
-              trip.driverId === this.driverId || 
-              (trip.driver && trip.driver.id === this.driverId)
-            );
+      let allTrips = JSON.parse(offlineTrips);
+      console.log('📊 Total trips in storage:', allTrips.length);
 
-            console.log('🚛 Driver trips:', driverTrips.length);
+      // Filtrer les trajets du conducteur connecté
+      const driverId = (user as any).driverId || user.id;
+      const userEmail = user.email;
+      
+      let userTrips = allTrips.filter((trip: any) => {
+        // Filtrer par driverId ou par email du conducteur
+        return trip.driverId === driverId || 
+               trip.driver?.id === driverId ||
+               trip.driver?.email === userEmail;
+      });
 
-            this.trips = driverTrips.map(trip => ({
-              id: trip.id,
-              tripReference: trip.tripReference || `TRIP-${trip.id}`,
-              status: trip.status || trip.tripStatus || 'Planned',
-              destination: this.getDestination(trip),
-              estimatedDistance: trip.estimatedDistance || 0,
-              estimatedDuration: trip.estimatedDuration || 0,
-              deliveriesCount: trip.deliveriesCount || trip.deliveries?.length || 0,
-              isActive: this.isActiveStatus(trip.status || trip.tripStatus),
-              driverName: trip.driver?.name,
-              truckImmatriculation: trip.truck?.immatriculation,
-              startDate: trip.estimatedStartDate
-            }));
+      console.log('🚗 User trips count:', userTrips.length);
 
-            this.activeTrips = this.trips.filter(t => t.isActive);
-            this.historyTrips = this.trips.filter(t => !t.isActive);
+      // Mapper les trajets
+      this.trips = userTrips.map((trip: any) => ({
+        id: trip.id,
+        tripReference: trip.tripReference || `TRIP-${trip.id}`,
+        status: trip.tripStatus || trip.status || 'Planned',
+        destination: this.getDestination(trip),
+        estimatedDistance: trip.estimatedDistance || 0,
+        estimatedDuration: trip.estimatedDuration || 0,
+        deliveriesCount: trip.deliveries?.length || 0,
+        isActive: this.isActiveStatus(trip.tripStatus || trip.status),
+        driverName: trip.driver?.name,
+        truckImmatriculation: trip.truck?.immatriculation,
+        startDate: trip.estimatedStartDate,
+        deliveries: trip.deliveries || [],
+        truck: trip.truck,
+        driver: trip.driver
+      }));
 
-            console.log('✅ Active trips:', this.activeTrips.length);
-            console.log('📚 History trips:', this.historyTrips.length);
-            
-            this.loading = false;
-          },
-          error: (err) => {
-            console.error('❌ Error loading trips:', err);
-            this.error = 'Erreur de chargement des trajets';
-            this.trips = [];
-            this.activeTrips = [];
-            this.historyTrips = [];
-            this.loading = false;
-          }
-        });
+      // Séparer les trajets actifs et historiques
+      this.activeTrips = this.trips.filter(t => t.isActive);
+      this.historyTrips = this.trips.filter(t => !t.isActive);
 
+      console.log('✅ Active trips:', this.activeTrips.length);
+      console.log('📚 History trips:', this.historyTrips.length);
+      console.log('📋 Active statuses:', this.activeTrips.map(t => t.status));
+      console.log('📋 History statuses:', this.historyTrips.map(t => t.status));
+
+      this.loading = false;
+      
+      if (this.trips.length === 0) {
+        this.error = 'Aucun trajet assigné pour le moment';
+      }
     } catch (error) {
-      console.error('Error loading trips:', error);
-      this.error = 'Erreur inattendue';
+      console.error('❌ Error loading trips:', error);
+      this.error = 'Erreur de chargement des trajets. Revenez à l\'accueil et réessayez.';
       this.trips = [];
       this.activeTrips = [];
       this.historyTrips = [];
@@ -134,8 +138,9 @@ export class MyTripsPage implements OnInit {
   }
 
   private isActiveStatus(status: string): boolean {
-    const activeStatuses = ['Pending', 'Planned', 'Accepted', 'LoadingInProgress', 'DeliveryInProgress', 'InDelivery', 'Loading'];
-    return activeStatuses.includes(status);
+    // Les statuts actifs sont ceux qui ne sont pas terminés ou annulés
+    const inactiveStatuses = ['Receipt', 'Completed', 'Cancelled', 'Refused'];
+    return !inactiveStatuses.includes(status);
   }
 
   /**
@@ -202,7 +207,7 @@ export class MyTripsPage implements OnInit {
       'Receipt': 'checkmark-done',
       'Completed': 'checkmark-done',
       'Cancelled': 'close',
-      'Refused': 'close',
+      'Refused': 'ban',
       'Pending': 'time',
       'Planned': 'calendar',
       'Accepted': 'checkmark',
@@ -249,6 +254,8 @@ export class MyTripsPage implements OnInit {
   }
 
   viewTrip(trip: MyTrip) {
+    // Stocker le trajet sélectionné pour les détails
+    localStorage.setItem('selectedTrip', JSON.stringify(trip));
     this.router.navigate([`/trip/${trip.id}`]);
   }
 
@@ -261,7 +268,18 @@ export class MyTripsPage implements OnInit {
     });
   }
 
-  refreshData() {
-    this.loadMyTrips();
+  async refreshData() {
+    await this.showToast('Actualisation des trajets...', 'primary', 'bottom');
+    await this.loadMyTrips();
+  }
+
+  private async showToast(message: string, color: string, position: 'top' | 'bottom' | 'middle' = 'top') {
+    const toast = await this.toastController.create({
+      message,
+      duration: 2000,
+      color,
+      position
+    });
+    await toast.present();
   }
 }

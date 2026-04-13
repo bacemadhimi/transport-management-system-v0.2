@@ -5,6 +5,6 @@
 export const environment = {
   production: true,
   // Public API server
-  apiUrl: 'http://51.178.65.32:45880/api',
+  apiUrl: 'http://51.178.65.32:45880',
   weatherApiKey: '' // OpenWeatherMap API key (optional)
 };
