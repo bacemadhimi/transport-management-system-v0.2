@@ -234,7 +234,7 @@ export class LoginPage implements AfterViewInit {
     };
 
     try {
-      const res = await firstValueFrom(this.http.post<any>(this.apiUrl, body));
+      const res = await firstValueFrom(this.http.post<any>(`${this.apiUrl}/api/auth/login`, body));
       
       const roles = res.roles || [];
 
