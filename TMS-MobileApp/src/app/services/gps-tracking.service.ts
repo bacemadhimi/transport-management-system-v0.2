@@ -76,21 +76,24 @@ export class GPSTrackingService {
     }
 
     try {
-      console.log('🔌 Connecting to GPS Hub...', `${API_URL}/gpshub`);
+      // Remove '/api' suffix for SignalR hub URLs
+      const baseUrl = environment.apiUrl.replace('/api', '');
       
+      console.log('🔌 Connecting to GPS Hub...', `${baseUrl}/gpshub`);
+
       // Get token from localStorage
       const token = localStorage.getItem('token') || '';
       console.log('📋 Token for GPS Hub:', token ? 'PRESENT (length: ' + token.length + ')' : 'MISSING');
 
       this.hubConnection = new HubConnectionBuilder()
-        .withUrl(`${API_URL}/gpshub`, {
+        .withUrl(`${baseUrl}/gpshub`, {
           accessTokenFactory: () => token
         })
         .withAutomaticReconnect([0, 2000, 5000, 10000, 30000])
         .build();
 
       // Also connect to NotificationHub for better notification handling
-      await this.connectToNotificationHub(driverId);
+      await this.connectToNotificationHub(driverId, baseUrl);
 
       // ===================================================================
       // 🚨 REGISTER HANDLERS BEFORE STARTING CONNECTION
@@ -265,16 +268,17 @@ export class GPSTrackingService {
   /**
    * Connect to NotificationHub for dedicated notification handling
    */
-  private async connectToNotificationHub(driverId?: number): Promise<void> {
+  private async connectToNotificationHub(driverId?: number, baseUrl?: string): Promise<void> {
     try {
-      console.log('🔌 Connecting to NotificationHub...', `${API_URL}/notificationhub`);
-      
+      const hubUrl = baseUrl || environment.apiUrl.replace('/api', '');
+      console.log('🔌 Connecting to NotificationHub...', `${hubUrl}/notificationhub`);
+
       // Get token from localStorage
       const token = localStorage.getItem('token') || '';
       console.log('📋 Token for NotificationHub:', token ? 'PRESENT (length: ' + token.length + ')' : 'MISSING');
 
       this.notificationHubConnection = new HubConnectionBuilder()
-        .withUrl(`${API_URL}/notificationhub`, {
+        .withUrl(`${hubUrl}/notificationhub`, {
           accessTokenFactory: () => token
         })
         .withAutomaticReconnect([0, 2000, 5000, 10000, 30000])

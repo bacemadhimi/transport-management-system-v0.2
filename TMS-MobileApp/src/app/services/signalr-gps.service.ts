@@ -50,8 +50,11 @@ export class SignalrGpsService implements OnDestroy {
       return;
     }
 
+    // Remove '/api' suffix for SignalR hub URLs
+    const baseUrl = environment.apiUrl.replace('/api', '');
+
     this.hubConnection = new signalR.HubConnectionBuilder()
-      .withUrl(`${environment.apiUrl}/hubs/gps`)
+      .withUrl(`${baseUrl}/hubs/gps`)
       .withAutomaticReconnect()
       .configureLogging(signalR.LogLevel.Warning)
       .build();
