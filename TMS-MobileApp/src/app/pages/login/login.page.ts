@@ -31,9 +31,7 @@ export class LoginPage implements AfterViewInit {
   @ViewChild('passwordInput') passwordInput!: IonInput;
 
   // Platform-aware API URL detection at runtime
-  apiUrl = Capacitor.isNativePlatform()
-    ? 'http://192.168.68.186:5191/api/Auth/login'
-    : 'http://localhost:5191/api/Auth/login';
+  apiUrl =environment.apiUrl;
 
   isLoading = false;
   errorMessage = '';
