@@ -330,17 +330,17 @@ export class GPSTrackingPage implements OnInit, OnDestroy {
       center: tunisiaCenter,
       zoom: 10,
       minZoom: 6,
-      maxZoom: 16,
+      maxZoom: 18,
       zoomControl: true,
       attributionControl: true,
       preferCanvas: true,
       touchZoom: true
     });
 
-    // Tuiles OpenStreetMap
+    // Tuiles OpenStreetMap - rendu normal avec noms de villes FR/AR en Tunisie
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '© OpenStreetMap contributors',
-      maxZoom: 16,
+      maxZoom: 19,
       minZoom: 6,
       crossOrigin: true
     }).addTo(this.map);
@@ -368,8 +368,9 @@ export class GPSTrackingPage implements OnInit, OnDestroy {
     }, 1000);
 
     // Le marker du camion sera créé UNIQUEMENT quand la position GPS réelle est obtenue
-    // PAS de position par défaut
-    this.truckMarker = L.marker([0, 0], { icon: this.createTruckIcon(), opacity: 0 }).addTo(this.map);
+    // PAS de position par défaut - marqueur invisible initialement
+    const initialIcon = this.createTruckMarker(false, 0);
+    this.truckMarker = L.marker([0, 0], { icon: initialIcon, opacity: 0 }).addTo(this.map);
 
     // Géocoder la destination si fournie
     if (this.destinationAddress) {
@@ -679,154 +680,198 @@ export class GPSTrackingPage implements OnInit, OnDestroy {
   }
 
   /**
-   * Camion 3D blanc/gris professionnel — proportions ajustées
-   * Remorque plus courte et plus haute, effet 3D renforcé
+   * Marqueur camion SVG professionnel avec effet 3D bombé
+   * Vue de côté avec effet de profondeur réaliste, se déplace en temps réel
    */
-  private createTruckIcon(color?: string): L.DivIcon {
+  private createTruckMarker(isMoving: boolean = false, bearing: number = 0): L.DivIcon {
+    const statusColor = this.getMissionStatusColor();
+    const isUrgent = this.missionStatus === 'refused';
+
     return L.divIcon({
       html: `
-        <div class="truck-v2">
-          <svg viewBox="0 0 56 34" xmlns="http://www.w3.org/2000/svg">
-            <defs>
-              <!-- Remorque blanc 3D -->
-              <linearGradient id="wBody" x1="0%" y1="0%" x2="0%" y2="100%">
-                <stop offset="0%" style="stop-color:#fff;stop-opacity:1"/>
-                <stop offset="100%" style="stop-color:#ececec;stop-opacity:1"/>
-              </linearGradient>
-              <!-- Côté remorque (gris 3D) -->
-              <linearGradient id="wSide" x1="0%" y1="0%" x2="0%" y2="100%">
-                <stop offset="0%" style="stop-color:#e0e0e0;stop-opacity:1"/>
-                <stop offset="100%" style="stop-color:#bbb;stop-opacity:1"/>
-              </linearGradient>
-              <!-- Haut remorque -->
-              <linearGradient id="wTop" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" style="stop-color:#fff;stop-opacity:0.8"/>
-                <stop offset="100%" style="stop-color:#f5f5f5;stop-opacity:0.4"/>
-              </linearGradient>
-              <!-- Cabine gris foncé 3D -->
-              <linearGradient id="wCab" x1="0%" y1="0%" x2="0%" y2="100%">
-                <stop offset="0%" style="stop-color:#6a6a6a;stop-opacity:1"/>
-                <stop offset="100%" style="stop-color:#4a4a4a;stop-opacity:1"/>
-              </linearGradient>
-              <!-- Côté cabine -->
-              <linearGradient id="wCabSide" x1="0%" y1="0%" x2="0%" y2="100%">
-                <stop offset="0%" style="stop-color:#4a4a4a;stop-opacity:1"/>
-                <stop offset="100%" style="stop-color:#333;stop-opacity:1"/>
-              </linearGradient>
-              <!-- Toit cabine -->
-              <linearGradient id="wCabTop" x1="0%" y1="0%" x2="100%" y2="0%">
-                <stop offset="0%" style="stop-color:#888;stop-opacity:0.7"/>
-                <stop offset="100%" style="stop-color:#666;stop-opacity:0.5"/>
-              </linearGradient>
-              <!-- Vitre -->
-              <linearGradient id="wGlass" x1="20%" y1="0%" x2="80%" y2="100%">
-                <stop offset="0%" style="stop-color:#b0bec5;stop-opacity:0.6"/>
-                <stop offset="50%" style="stop-color:#cfd8dc;stop-opacity:0.3"/>
-                <stop offset="100%" style="stop-color:#546e7a;stop-opacity:0.7"/>
-              </linearGradient>
-              <!-- Pneus -->
-              <radialGradient id="wTire" cx="45%" cy="40%" r="55%">
-                <stop offset="0%" style="stop-color:#444;stop-opacity:1"/>
-                <stop offset="100%" style="stop-color:#1a1a1a;stop-opacity:1"/>
-              </radialGradient>
-              <!-- Jante -->
-              <radialGradient id="wRim" cx="50%" cy="50%" r="50%">
-                <stop offset="0%" style="stop-color:#eee;stop-opacity:1"/>
-                <stop offset="100%" style="stop-color:#aaa;stop-opacity:1"/>
-              </radialGradient>
-              <!-- Ombre -->
-              <filter id="wSh">
-                <feDropShadow dx="0" dy="1" stdDeviation="1.5" flood-color="#000" flood-opacity="0.15"/>
-              </filter>
-            </defs>
+        <div class="truck-wrapper ${isMoving ? 'is-moving' : 'is-idle'}" style="--bearing:${bearing}deg">
+          <div class="pulse-ring"></div>
+          <div class="road-glow"></div>
+          <div class="truck-svg">
+            <svg viewBox="0 0 72 38" xmlns="http://www.w3.org/2000/svg" width="72" height="38">
+              <defs>
+                <!-- Filtre d'ombre 3D -->
+                <filter id="ts3d" x="-10%" y="-10%" width="130%" height="140%">
+                  <feDropShadow dx="0" dy="2.5" stdDeviation="2" flood-color="#000" flood-opacity=".3"/>
+                </filter>
+                <!-- Gradient 3D remorque blanc bombé -->
+                <linearGradient id="tb3d" x1="0" y1="0" x2="0.15" y2="1">
+                  <stop offset="0%" stop-color="#ffffff"/>
+                  <stop offset="30%" stop-color="#f8f9fa"/>
+                  <stop offset="70%" stop-color="#e5e7eb"/>
+                  <stop offset="100%" stop-color="#d1d5db"/>
+                </linearGradient>
+                <!-- Reflet haut remorque (effet bombé) -->
+                <linearGradient id="tbShine" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#ffffff" stop-opacity="0.9"/>
+                  <stop offset="50%" stop-color="#ffffff" stop-opacity="0.3"/>
+                  <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+                </linearGradient>
+                <!-- Gradient 3D cabine sombre bombée -->
+                <linearGradient id="tc3d" x1="0" y1="0" x2="0.2" y2="1">
+                  <stop offset="0%" stop-color="#6b7280"/>
+                  <stop offset="40%" stop-color="#4b5563"/>
+                  <stop offset="100%" stop-color="#1f2937"/>
+                </linearGradient>
+                <!-- Reflet cabine (effet bombé) -->
+                <linearGradient id="tcShine" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#9ca3af" stop-opacity="0.5"/>
+                  <stop offset="100%" stop-color="#9ca3af" stop-opacity="0"/>
+                </linearGradient>
+                <!-- Gradient pare-brise 3D -->
+                <linearGradient id="glass3d" x1="0" y1="0" x2="0.3" y2="1">
+                  <stop offset="0%" stop-color="#bfdbfe"/>
+                  <stop offset="60%" stop-color="#93c5fd"/>
+                  <stop offset="100%" stop-color="#60a5fa" stop-opacity="0.6"/>
+                </linearGradient>
+                <!-- Gradient roues 3D -->
+                <radialGradient id="w3d" cx="40%" cy="30%" r="60%">
+                  <stop offset="0%" stop-color="#4b5563"/>
+                  <stop offset="50%" stop-color="#1f2937"/>
+                  <stop offset="100%" stop-color="#111827"/>
+                </radialGradient>
+                <!-- Gradient phare -->
+                <radialGradient id="hlGlow" cx="50%" cy="50%" r="50%">
+                  <stop offset="0%" stop-color="#fde68a" stop-opacity="1"/>
+                  <stop offset="60%" stop-color="#fbbf24" stop-opacity="0.5"/>
+                  <stop offset="100%" stop-color="#f59e0b" stop-opacity="0"/>
+                </radialGradient>
+                <!-- Gradient feu arrière -->
+                <radialGradient id="tlGlow" cx="50%" cy="50%" r="50%">
+                  <stop offset="0%" stop-color="#fca5a5"/>
+                  <stop offset="60%" stop-color="#ef4444"/>
+                  <stop offset="100%" stop-color="#dc2626" stop-opacity="0"/>
+                </radialGradient>
+              </defs>
 
-            <g filter="url(#wSh)">
-              <!-- Ombre sol -->
-              <ellipse cx="28" cy="32" rx="22" ry="1.8" fill="rgba(0,0,0,0.1)"/>
+              <!-- Ombre portée au sol -->
+              <ellipse cx="36" cy="35.5" rx="30" ry="2.5" fill="rgba(0,0,0,.18)"/>
 
-              <!-- === REMORQUE (plus courte, plus haute, 3D) === -->
-              <!-- Face -->
-              <rect x="4" y="8" width="18" height="16" rx="1.5" fill="url(#wBody)" stroke="#ccc" stroke-width="0.3"/>
-              <!-- Côté 3D (profondeur) -->
-              <path d="M22,9.5 L26,8 Q27.5,8 27.5,9.5 L27.5,23 Q27.5,24.5 26,24 L22,24 Z"
-                    fill="url(#wSide)" stroke="#aaa" stroke-width="0.25"/>
-              <!-- Haut 3D (dessus) -->
-              <path d="M4,8 L22,8 L26,8 Q27.5,8 27.5,9.5 L5,10.5 Z" fill="url(#wTop)"/>
+              <!-- ===== REMORQUE ===== -->
+              <!-- Corps principal 3D bombé -->
+              <path d="M4,8 Q4,6 6,6 L40,6 Q42,6 42,8 L42,26 Q42,28 40,28 L6,28 Q4,28 4,26 Z"
+                    fill="url(#tb3d)" stroke="#d1d5db" stroke-width=".5" filter="url(#ts3d)"/>
+              
+              <!-- Reflet bombé haut -->
+              <path d="M5,7 L40,7 L40,13 Q22,11 5,14 Z" fill="url(#tbShine)" opacity=".7"/>
+              
+              <!-- Ombre bombée bas -->
+              <path d="M5,24 Q22,22 40,24 L40,27 Q40,28 39,28 L7,28 Q4,28 4,27 L4,26 Q5,26 5,24 Z"
+                    fill="rgba(0,0,0,.06)"/>
 
-              <!-- Reflet haut remorque -->
-              <rect x="5" y="8.5" width="16" height="3" rx="1" fill="#fff" opacity="0.25"/>
-              <!-- Ombre basse remorque -->
-              <rect x="4" y="22" width="18" height="2" rx="0.8" fill="#ddd" opacity="0.5"/>
+              <!-- Nervures verticales 3D -->
+              <line x1="10" y1="7" x2="10" y2="27" stroke="#e5e7eb" stroke-width=".4"/>
+              <line x1="17" y1="7" x2="17" y2="27" stroke="#e5e7eb" stroke-width=".4"/>
+              <line x1="24" y1="7" x2="24" y2="27" stroke="#e5e7eb" stroke-width=".4"/>
+              <line x1="31" y1="7" x2="31" y2="27" stroke="#e5e7eb" stroke-width=".4"/>
+              <line x1="38" y1="7" x2="38" y2="27" stroke="#e5e7eb" stroke-width=".4"/>
 
-              <!-- Rainures verticales -->
-              <line x1="8" y1="8" x2="8" y2="24" stroke="#eee" stroke-width="0.3"/>
-              <line x1="12" y1="8" x2="12" y2="24" stroke="#eee" stroke-width="0.3"/>
-              <line x1="16" y1="8" x2="16" y2="24" stroke="#eee" stroke-width="0.3"/>
-              <line x1="20" y1="8" x2="20" y2="24" stroke="#eee" stroke-width="0.3"/>
+              <!-- Feu arrière rouge 3D -->
+              <ellipse cx="4.5" cy="23" rx="1.8" ry="2.5" fill="url(#tlGlow)"/>
+              <rect x="3" y="21.5" width="2" height="3" rx=".8" fill="#ef4444" opacity=".85"/>
 
-              <!-- Feux arrière -->
-              <rect x="4" y="21" width="1.5" height="2.5" rx="0.5" fill="#e53935" opacity="0.7"/>
+              <!-- ===== CABINE ===== -->
+              <!-- Corps cabine 3D bombé -->
+              <path d="M42,12 Q42,10 44,10 L52,10 Q54,10 55,12 L62,22 Q63,24 63,26 L63,28 Q63,28 61,28 L44,28 Q42,28 42,26 Z"
+                    fill="url(#tc3d)" stroke="#374151" stroke-width=".5" filter="url(#ts3d)"/>
+              
+              <!-- Reflet bombé cabine -->
+              <path d="M43,11 L52,11 L61,22 L61,16 Q54,13 43,12 Z" fill="url(#tcShine)" opacity=".6"/>
 
-              <!-- === CABINE === -->
-              <!-- Face cabine -->
-              <path d="M27.5,10 L36,8 Q38,7.5 38,10 L38,24 Q38,25 36,25 L27.5,25 Z"
-                    fill="url(#wCab)" stroke="#3a3a3a" stroke-width="0.3"/>
-              <!-- Côté cabine -->
-              <path d="M38,10 L42,8.5 Q43,8.5 43,10 L43,24 Q43,25 42,25 L38,25 Z"
-                    fill="url(#wCabSide)" stroke="#2a2a2a" stroke-width="0.2"/>
-              <!-- Toit cabine -->
-              <path d="M27.5,8 L36,8 Q38,7.5 39,8 L42,8.5 L38,10 L27.5,10 Z"
-                    fill="url(#wCabTop)"/>
+              <!-- Contour cabine (effet profondeur) -->
+              <path d="M42,12 L42,28" stroke="#374151" stroke-width=".3" opacity=".5"/>
 
-              <!-- Vitre -->
-              <path d="M30,11 L36,9.5 Q37,9.3 37,10.5 L37,18 L30,18 Z"
-                    fill="url(#wGlass)" stroke="#455a64" stroke-width="0.25"/>
-              <!-- Reflet vitre -->
-              <path d="M31,11.5 L34,10.8 L34,15 L31,15.5 Z" fill="#cfd8dc" opacity="0.25"/>
+              <!-- ===== PARE-BRISE 3D ===== -->
+              <path d="M44,12 L52,12 L59,21 L44,21 Z"
+                    fill="url(#glass3d)" stroke="#60a5fa" stroke-width=".3" opacity=".85"/>
+              <!-- Reflet pare-brise -->
+              <path d="M45,13 L49,13 L54,19 L45,18 Z" fill="#fff" opacity=".35"/>
+              <!-- Ligne pare-brise -->
+              <line x1="44" y1="16.5" x2="58" y2="16.5" stroke="#93c5fd" stroke-width=".3" opacity=".4"/>
 
-              <!-- Phare -->
-              <rect x="40" y="15" width="2.2" height="1.8" rx="0.5" fill="#ffee58" opacity="0.9">
-                <animate attributeName="opacity" values="0.9;0.5;0.9" dur="2s" repeatCount="indefinite"/>
-              </rect>
-              <ellipse cx="41.1" cy="15.9" rx="0.8" ry="0.5" fill="#fff9c4"/>
-              <!-- Clignotant -->
-              <rect x="40" y="18" width="2.2" height="1" rx="0.3" fill="#ff9800" opacity="0.6"/>
+              <!-- ===== PHARE AVANT 3D ===== -->
+              <!-- Halo lumineux -->
+              <ellipse cx="63.5" cy="20" rx="3" ry="2.5" fill="url(#hlGlow)"/>
+              <!-- Phare principal -->
+              <ellipse cx="63" cy="20" rx="1.8" ry="1.4" fill="#fde68a"/>
+              <!-- Bord phare -->
+              <ellipse cx="63" cy="20" rx="1.8" ry="1.4" fill="none" stroke="#f59e0b" stroke-width=".3" opacity=".6"/>
 
-              <!-- Pare-choc -->
-              <rect x="38" y="23" width="5" height="1.5" rx="0.5" fill="#333"/>
-              <!-- Bande chrome -->
-              <rect x="39" y="23.3" width="3.5" height="0.4" rx="0.1" fill="#888" opacity="0.5"/>
+              <!-- ===== CHÂSSIS ===== -->
+              <rect x="8" y="27" width="53" height="1.5" rx=".5" fill="#9ca3af"/>
+              <!-- Ombre châssis -->
+              <rect x="8" y="28" width="53" height=".8" rx=".3" fill="rgba(0,0,0,.1)"/>
 
-              <!-- Rétroviseur -->
-              <rect x="26" y="11" width="1.8" height="3" rx="0.7" fill="#555"/>
-              <line x1="27.2" y1="12.5" x2="28.5" y2="12.5" stroke="#666" stroke-width="0.5"/>
+              <!-- ===== ROUES 3D ===== -->
+              <!-- Roue avant -->
+              <circle cx="56" cy="31.5" r="4" fill="url(#w3d)" stroke="#111827" stroke-width=".4"/>
+              <circle cx="56" cy="31.5" r="2.2" fill="#6b7280"/>
+              <circle cx="56" cy="31.5" r="1" fill="#9ca3af"/>
+              <circle cx="56" cy="31.5" r=".4" fill="#d1d5db"/>
+              <!-- Reflet pneu -->
+              <path d="M53,30 Q56,29 59,30" stroke="rgba(255,255,255,.15)" stroke-width=".5" fill="none"/>
 
-              <!-- Châssis -->
-              <rect x="8" y="23" width="34" height="1.5" rx="0.5" fill="#888"/>
+              <!-- Roue arrière -->
+              <circle cx="16" cy="31.5" r="4" fill="url(#w3d)" stroke="#111827" stroke-width=".4"/>
+              <circle cx="16" cy="31.5" r="2.2" fill="#6b7280"/>
+              <circle cx="16" cy="31.5" r="1" fill="#9ca3af"/>
+              <circle cx="16" cy="31.5" r=".4" fill="#d1d5db"/>
+              <!-- Reflet pneu -->
+              <path d="M13,30 Q16,29 19,30" stroke="rgba(255,255,255,.15)" stroke-width=".5" fill="none"/>
 
-              <!-- === ROUES === -->
-              <!-- Avant -->
-              <circle cx="35" cy="27.5" r="3.5" fill="url(#wTire)" stroke="#111" stroke-width="0.2"/>
-              <circle cx="35" cy="27.5" r="2" fill="url(#wRim)"/>
-              <circle cx="35" cy="27.5" r="0.7" fill="#888"/>
-              <circle cx="35" cy="27.5" r="0.3" fill="#aaa"/>
-              <!-- Arrière -->
-              <circle cx="13" cy="27.5" r="3.5" fill="url(#wTire)" stroke="#111" stroke-width="0.2"/>
-              <circle cx="13" cy="27.5" r="2" fill="url(#wRim)"/>
-              <circle cx="13" cy="27.5" r="0.7" fill="#888"/>
-              <circle cx="13" cy="27.5" r="0.3" fill="#aaa"/>
+              <!-- Bavettes anti-projections -->
+              <rect x="11" y="28" width="3" height="3" rx=".5" fill="#4b5563" opacity=".4"/>
+              <rect x="53" y="28" width="3" height="3" rx=".5" fill="#4b5563" opacity=".4"/>
 
-              <!-- Bavettes -->
-              <path d="M8,23 L8,27 Q8,28 9,28 L10,28 L10,23" fill="#666" opacity="0.5"/>
-              <path d="M31,23 L31,27 Q31,28 32,28 L33,28 L33,23" fill="#666" opacity="0.5"/>
-            </g>
-          </svg>
+              <!-- ===== BADGE STATUT ===== -->
+              <circle cx="60" cy="4" r="5" fill="${statusColor}" stroke="#fff" stroke-width="1.5" filter="url(#ts3d)"/>
+              ${isUrgent ? `<circle cx="60" cy="4" r="7.5" fill="none" stroke="${statusColor}" stroke-width="1" opacity=".4">
+                <animate attributeName="r" values="7;8.5;7" dur="1s" repeatCount="indefinite"/>
+                <animate attributeName="opacity" values=".4;.15;.4" dur="1s" repeatCount="indefinite"/>
+              </circle>` : ''}
+            </svg>
+          </div>
         </div>
       `,
-      className: 'truck-v2',
-      iconSize: [66, 38],
-      iconAnchor: [33, 19]
+      className: '',
+      iconSize: [72, 38],
+      iconAnchor: [36, 19],
+      tooltipAnchor: [0, -22]
     });
+  }
+
+  /**
+   * Calcule l'angle de rotation (bearing) entre deux points GPS.
+   * Retourne un angle en degrés (0 = Nord, 90 = Est, etc.)
+   */
+  private calculateBearing(lat1: number, lon1: number, lat2: number, lon2: number): number {
+    const toRad = (deg: number) => deg * Math.PI / 180;
+    const dLon = toRad(lon2 - lon1);
+    const y = Math.sin(dLon) * Math.cos(toRad(lat2));
+    const x = Math.cos(toRad(lat1)) * Math.sin(toRad(lat2))
+             - Math.sin(toRad(lat1)) * Math.cos(toRad(lat2)) 
+             * Math.cos(dLon);
+    return (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
+  }
+
+  /**
+   * Retourne la couleur du badge selon le statut de la mission
+   */
+  private getMissionStatusColor(): string {
+    const colors: any = {
+      'pending': '#FF9800',    // orange - en attente
+      'accepted': '#2196F3',   // bleu - accepté
+      'loading': '#FF9800',    // orange - chargement
+      'delivery': '#4CAF50',   // vert - livraison
+      'completed': '#9E9E9E',  // gris - terminé
+      'refused': '#F44336'     // rouge - refusé
+    };
+    return colors[this.missionStatus] || '#2196F3';
   }
 
   /**
@@ -1085,7 +1130,30 @@ export class GPSTrackingPage implements OnInit, OnDestroy {
   private readonly ROUTE_UPDATE_INTERVAL = 15000; // Route recalculée toutes les 15s
 
   /**
-   * Mettre à jour la position du camion EN TEMPS RÉEL - même petites distances
+   * Met à jour le marqueur camion existant SANS le recréer (mise à jour DOM uniquement)
+   * - Rotation du SVG selon le bearing
+   * - Classe moving/idle pour les animations
+   * - Couleur du badge de statut
+   */
+  private updateTruckMarkerDOM(bearing: number): void {
+    // Trouver le wrapper du camion dans le DOM
+    const truckSvg = document.querySelector('.truck-svg') as HTMLElement;
+    if (truckSvg) {
+      truckSvg.style.transform = `rotate(${bearing}deg)`;
+      truckSvg.style.transition = 'transform 0.6s cubic-bezier(0.25,0.46,0.45,0.94)';
+    }
+
+    // Mettre à jour classe moving/idle
+    const wrapper = document.querySelector('.truck-wrapper') as HTMLElement;
+    if (wrapper) {
+      const isMoving = this.speed > 2;
+      wrapper.classList.toggle('is-moving', isMoving);
+      wrapper.classList.toggle('is-idle', !isMoving);
+    }
+  }
+
+  /**
+   * Mettre à jour la position du camion EN TEMPS RÉEL - avec animation fluide interpolée (style Google Maps/Uber)
    */
   private updateTruckPosition(lat: number, lng: number) {
     if (!this.truckMarker || !this.map) return;
@@ -1094,40 +1162,94 @@ export class GPSTrackingPage implements OnInit, OnDestroy {
     if (this.truckMarker.options.opacity === 0) {
       this.truckMarker.setOpacity(1);
       this.truckMarker.setLatLng([lat, lng]);
-      this.truckMarker.bindPopup(`<b>Votre Camion</b><br>Position actuelle<br><small>Précision: ${this.accuracy.toFixed(0)}m</small>`);
+      
+      // Bulle info flottante style Uber/Google Maps
+      const statusColor = this.getMissionStatusColor();
+      const statusLabel = this.getStatusText();
+      
+      this.truckMarker.bindTooltip(`
+        <div class="truck-tooltip">
+          <div class="tooltip-header">
+            <span class="driver-name">🚛 ${this.tripReference || 'Votre Camion'}</span>
+            <span class="speed-badge">${this.speed > 0 ? Math.round(this.speed) + ' km/h' : 'STOP'}</span>
+          </div>
+          <div class="tooltip-status">
+            <span class="status-dot" style="background:${statusColor}"></span>
+            <span class="status-text">${statusLabel}</span>
+          </div>
+          <div class="tooltip-arrow"></div>
+        </div>
+      `, {
+        permanent: true,
+        direction: 'top',
+        offset: [0, -56],
+        className: 'truck-tooltip-wrapper',
+        opacity: 1
+      });
+      
       // Centrer la carte sur la position réelle
       this.map.setView([lat, lng], 17);
-      console.log('📍 Première position GPS obtenue → marqueur affiché');
+      console.log('📍 Première position GPS obtenue → marqueur 3D affiché avec tooltip');
+      
+      // Stocker position pour prochain calcul
+      this.previousPosition = { lat, lng };
+      return;
     }
 
-    const newPosition: [number, number] = [lat, lng];
+    // Positions suivantes → animer vers la nouvelle position (style Google Maps)
+    const currentLatLng = this.truckMarker.getLatLng();
+    const targetLatLng = L.latLng(lat, lng);
+    
+    // Calculer la durée d'animation basée sur la distance (plus c'est loin, plus c'est long)
+    const distance = this.map.distance(currentLatLng, targetLatLng);
+    const animationDuration = Math.min(Math.max(distance / 50, 500), 2000); // entre 500ms et 2s
 
-    // Calculate GPS direction and rotate truck to face movement direction
+    // Calculer le bearing pour la rotation
     if (this.previousPosition) {
-      const bearing = this.calculateRotationAngle(
+      const bearing = this.calculateBearing(
         this.previousPosition.lat,
         this.previousPosition.lng,
         lat,
         lng
       );
 
-      const truckElement = this.truckMarker?.getElement();
-      if (truckElement) {
-        // Truck points RIGHT by default (cabine à droite)
-        // bearing=0 (north) → rotate -90deg (face le haut)
-        // bearing=90 (east) → rotate 0deg (face la droite, position par défaut)
-        truckElement.style.transform = `rotate(${bearing - 90}deg)`;
-      }
+      // Mettre à jour le DOM du marqueur existant (rotation + animations)
+      this.updateTruckMarkerDOM(bearing);
     }
 
-    // Update speed badge
-    this.updateSpeedBadge();
+    // Animation fluide avec interpolation cubic-bezier
+    const startTime = Date.now();
+    
+    const animate = () => {
+      const elapsed = Date.now() - startTime;
+      const progress = Math.min(elapsed / animationDuration, 1);
+      
+      // Easing cubic-bezier (ease-in-out)
+      const eased = progress < 0.5
+        ? 4 * progress * progress * progress
+        : 1 - Math.pow(-2 * progress + 2, 3) / 2;
 
-    // Update marker position IMMÉDIATEMENT (sans animation brusque)
-    this.truckMarker.setLatLng(newPosition);
+      // Interpolation linéaire lat/lon
+      const currentLat = currentLatLng.lat + (targetLatLng.lat - currentLatLng.lat) * eased;
+      const currentLng = currentLatLng.lng + (targetLatLng.lng - currentLatLng.lng) * eased;
+
+      // Mettre à jour la position
+      this.truckMarker.setLatLng([currentLat, currentLng]);
+
+      // Continuer l'animation si pas terminé
+      if (progress < 1) {
+        requestAnimationFrame(animate);
+      } else {
+        // Animation terminée - s'assurer que la position finale est exacte
+        this.truckMarker.setLatLng([lat, lng]);
+      }
+    };
+
+    // Démarrer l'animation
+    requestAnimationFrame(animate);
 
     // Pan map SANS zoom excessif pour les petites distances
-    this.map.panTo(newPosition, {
+    this.map.panTo([lat, lng], {
       animate: true,
       duration: 0.8,
       noMoveStart: true
@@ -1146,23 +1268,23 @@ export class GPSTrackingPage implements OnInit, OnDestroy {
   }
 
   /**
-   * Calculate rotation angle between two GPS coordinates
+   * Calculate rotation angle between two GPS coordinates (ancien système - conservé pour compatibilité)
    */
   private calculateRotationAngle(lat1: number, lng1: number, lat2: number, lng2: number): number {
     const dLng = lng2 - lng1;
     const dLat = lat2 - lat1;
-    
+
     // Calculate bearing in radians
     const y = Math.sin(dLng * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180);
     const x = Math.cos(lat1 * Math.PI / 180) * Math.sin(lat2 * Math.PI / 180) -
               Math.sin(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.cos(dLng * Math.PI / 180);
-    
+
     // Convert to degrees
     let bearing = Math.atan2(y, x) * 180 / Math.PI;
-    
+
     // Normalize to 0-360
     bearing = (bearing + 360) % 360;
-    
+
     return bearing;
   }
 

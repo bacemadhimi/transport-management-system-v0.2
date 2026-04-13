@@ -66,6 +66,8 @@ export class App implements OnInit, OnDestroy {
   cancelledTripsCount = 0;
   notifications: TripNotification[] = [];
   unreadNotificationsCount = 0;
+  // IDs de notifications marquées comme lues (persisté dans localStorage)
+  private readNotificationIds: Set<string> = new Set();
   showNotificationsPanel = false;
   refreshNotificationInterval: any;
 
@@ -103,11 +105,14 @@ ngOnInit() {
     error: err => console.error('Error loading translations', err)
   });
 
+  // Charger les IDs de notifications lues depuis localStorage
+  this.loadReadNotificationIds();
+
   if (this.authService.isLoggedIn) {
     this.authService.loadLoggedInUser();
     this.initializeSignalR();
 
-    this.loadCompanyLogo(); 
+    this.loadCompanyLogo();
     this.loadNotificationsFromDatabase(0, this.pageSize);
   }
 
@@ -147,35 +152,34 @@ loadNotificationsFromDatabase(pageIndex: number = 0, pageSize: number = 20) {
 
         const allDbNotifications = (response.data.notifications as any[]).map((n: any) => ({
           ...n,
-
-          isRead: n.isRead === true || n.isRead === 1 || n.isRead === 'true',
+          isRead: n.isRead === true || n.isRead === 1 || n.isRead === 'true' || this.readNotificationIds.has(String(n.id)),
           timestamp: new Date(n.timestamp)
         })) as TripNotification[];
 
+        // Filtrer : ne garder QUE les notifications NON lues pour la liste principale
+        const unreadNotifications = allDbNotifications.filter((n: TripNotification) => !n.isRead);
 
         this.allNotifications = allDbNotifications;
 
-
-        // Show ALL notification types (not just TRIP_CANCELLED)
         if (pageIndex === 0) {
-          this.notifications = allDbNotifications;
+          this.notifications = unreadNotifications;
         } else {
           const existingIds = new Set(this.notifications.map((n: TripNotification) => n.id));
-          const uniqueNewNotifications = allDbNotifications.filter((n: TripNotification) => !existingIds.has(n.id));
+          const uniqueNewNotifications = unreadNotifications.filter((n: TripNotification) => !existingIds.has(n.id));
           this.notifications = [...this.notifications, ...uniqueNewNotifications];
         }
-
 
         this.unreadNotificationsCount = this.notifications.filter((n: TripNotification) => !n.isRead).length;
 
         this.totalNotifications = response.data.totalCount;
         this.hasMoreNotifications = this.notifications.length < this.totalNotifications;
 
-        console.log('📚 DB Load - All notifications:', this.notifications.length);
+        console.log('📚 DB Load - Unread notifications:', this.notifications.length);
+        console.log('📚 Total in DB:', allDbNotifications.length);
+        console.log('📚 Read IDs count:', this.readNotificationIds.size);
         console.log('📚 Unread count:', this.unreadNotificationsCount);
       } else {
         console.warn('⚠️ Invalid notification response:', response);
-        // Initialize with empty arrays on invalid response
         this.notifications = [];
         this.allNotifications = [];
         this.unreadNotificationsCount = 0;
@@ -183,7 +187,6 @@ loadNotificationsFromDatabase(pageIndex: number = 0, pageSize: number = 20) {
     },
     error: (err) => {
       console.error('❌ Error loading notifications from database:', err);
-      // Initialize with empty arrays on error
       this.notifications = [];
       this.allNotifications = [];
       this.unreadNotificationsCount = 0;
@@ -206,26 +209,25 @@ initializeSignalR() {
     (realtimeNotifications: TripNotification[]) => {
       console.log('📬 Raw real-time notifications:', realtimeNotifications);
 
-
       const processedNotifications = realtimeNotifications.map(n => ({
         ...n,
-        isRead: n.isRead === true,
+        // Marquer comme lue si déjà dans le set local ou si le backend dit lue
+        isRead: n.isRead === true || this.readNotificationIds.has(String(n.id)),
         timestamp: new Date(n.timestamp)
       }));
 
+      // Ne garder QUE les non lues pour la liste principale
+      const unreadRealtimeNotifications = processedNotifications.filter((n: TripNotification) => !n.isRead);
 
       this.allNotifications = [...this.allNotifications, ...processedNotifications];
 
-
-      // Add ALL notification types (not just TRIP_CANCELLED)
       const existingIds = new Set(this.notifications.map((n: TripNotification) => n.id));
-      const uniqueNewNotifications = processedNotifications.filter((n: TripNotification) => !existingIds.has(n.id));
+      const uniqueNewNotifications = unreadRealtimeNotifications.filter((n: TripNotification) => !existingIds.has(n.id));
 
       if (uniqueNewNotifications.length > 0) {
         this.notifications = [...uniqueNewNotifications, ...this.notifications];
-        console.log('✅ Added new real-time notifications:', uniqueNewNotifications.length);
+        console.log('✅ Added new real-time unread notifications:', uniqueNewNotifications.length);
       }
-
 
       this.unreadNotificationsCount = this.notifications.filter((n: TripNotification) => !n.isRead).length;
 
@@ -284,9 +286,13 @@ initializeSignalR() {
 async markAllNotificationsAsRead() {
   await this.signalRService.markAllAsRead();
 
-  this.notifications = this.notifications.map(n => ({ ...n, isRead: true }));
+  // Ajouter tous les IDs actuels au set de lues
+  this.notifications.forEach(n => this.readNotificationIds.add(String(n.id)));
+  this.saveReadNotificationIds();
+
+  this.notifications = [];
   this.unreadNotificationsCount = 0;
-  console.log('✅ All cancelled notifications marked as read');
+  console.log('✅ All notifications marked as read');
 }
 
 clearAllNotifications() {
@@ -302,6 +308,13 @@ async markNotificationAsRead(notification: TripNotification) {
     await this.signalRService.markAsRead(notification.id);
 
     notification.isRead = true;
+
+    // Ajouter au set local et sauvegarder
+    this.readNotificationIds.add(String(notification.id));
+    this.saveReadNotificationIds();
+
+    // Retirer de la liste des notifications non lues
+    this.notifications = this.notifications.filter(n => n.id !== notification.id);
     this.unreadNotificationsCount = this.notifications.filter((n: TripNotification) => !n.isRead).length;
   }
 }
@@ -379,6 +392,29 @@ async markNotificationAsRead(notification: TripNotification) {
 
     this.signalRService.disconnect();
   }
+
+  // ===== Gestion des notifications lues (localStorage) =====
+  private loadReadNotificationIds() {
+    try {
+      const stored = localStorage.getItem('readNotificationIds');
+      if (stored) {
+        const ids = JSON.parse(stored) as string[];
+        this.readNotificationIds = new Set(ids);
+        console.log('📖 Loaded read notification IDs:', this.readNotificationIds.size);
+      }
+    } catch (e) {
+      console.error('Error loading read notification IDs:', e);
+    }
+  }
+
+  private saveReadNotificationIds() {
+    try {
+      localStorage.setItem('readNotificationIds', JSON.stringify(Array.from(this.readNotificationIds)));
+    } catch (e) {
+      console.error('Error saving read notification IDs:', e);
+    }
+  }
+  // ============================================================
 
   toggleMaintenance() { this.maintenanceOpen = !this.maintenanceOpen; }
   toggleUserMenu() { this.userMenuOpen = !this.userMenuOpen; }

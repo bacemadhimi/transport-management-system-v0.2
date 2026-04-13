@@ -21670,45 +21670,30 @@ mat-error {
 }
 
 // ===== Destination Address Field Styling =====
-.destination-address-field {
-  .mat-mdc-form-field-flex {
-    min-height: 64px !important;
-  }
-
-  .mat-mdc-form-field-infix {
-    min-height: 56px !important;
-    padding-top: 16px !important;
-    padding-bottom: 16px !important;
-  }
-
-  .mat-mdc-input-element {
-    font-size: 15px !important;
-    line-height: 1.5 !important;
-  }
-
-  .mat-mdc-form-field-label-wrapper {
-    .mat-mdc-form-field-label {
-      font-size: 15px !important;
-    }
-  }
-
-  .mat-mdc-form-field-hint-wrapper {
-    font-size: 12px !important;
-  }
+.destination-address-field .mat-mdc-form-field {
+  width: 100%;
 }
 
 // Address suggestions styling
 .address-suggestions {
+  border: none;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  
   .suggestion-item {
     transition: all 0.2s ease;
+    border-bottom: none;
 
     &:hover {
       background: #f0f9ff !important;
-      transform: translateX(4px);
+      transform: none;
     }
 
     &:active {
       background: #e0f2fe !important;
+    }
+    
+    &:last-child {
+      border-radius: 0 0 12px 12px;
     }
   }
 }

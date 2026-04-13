@@ -10,8 +10,8 @@ const config: CapacitorConfig = {
   },
   android: {
     buildOptions: {
-      compileSdkVersion: 36,
-      targetSdkVersion: 36,
+      compileSdkVersion: 34,
+      targetSdkVersion: 34,
       minSdkVersion: 24
     }
   }

@@ -41,8 +41,11 @@ export class SignalRService {
   }
 
   private initializeConnection() {
+    // Remove '/api' suffix for SignalR hub URLs
+    const baseUrl = environment.apiUrl.replace('/api', '');
+    
     this.hubConnection = new signalR.HubConnectionBuilder()
-      .withUrl(`${environment.apiUrl}/triphub`, {  // ✅ Reverted to triphub (gps-tracking.service handles gpshub notifications)
+      .withUrl(`${baseUrl}/triphub`, {  // ✅ Reverted to triphub (gps-tracking.service handles gpshub notifications)
         accessTokenFactory: () => this.authService.getToken() || ''
       })
       .withAutomaticReconnect([0, 2000, 5000, 10000, 30000])

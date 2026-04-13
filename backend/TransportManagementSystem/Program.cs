@@ -102,6 +102,9 @@ builder.Services.AddSingleton<NotificationHubService>();
 // Chatbot Service
 builder.Services.AddScoped<IChatbotService, ChatbotService>();
 
+// AI Microservice Client
+builder.Services.AddSingleton<AiMicroserviceClient>();
+
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
@@ -187,7 +190,8 @@ app.UseRouting();
 
 app.UseCors("SignalRCors");
 
-app.UseHttpsRedirection();
+// UseHttpsRedirection disabled - mobile app uses HTTP only
+// app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
 
