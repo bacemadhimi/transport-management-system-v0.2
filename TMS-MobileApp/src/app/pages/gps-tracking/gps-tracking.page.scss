@@ -77,7 +77,6 @@
       --border-width: 0;
       box-shadow: 0 4px 20px rgba(255, 140, 0, 0.4) !important;
       min-height: 56px;
-      border-bottom: 1px solid #f1f5f9;
 
       // Override Ionic default colors
       --ion-color-primary: #ff8c00 !important;
@@ -87,7 +86,7 @@
       ion-buttons {
         display: flex;
         align-items: center;
-
+        
         ion-button {
           --color: white !important;
           --color-activated: white !important;
@@ -98,13 +97,13 @@
           --background-hover: rgba(255, 255, 255, 0.1) !important;
           --ripple-color: white !important;
           opacity: 1;
-          margin: 0 2px;
-          min-width: 40px;
-          min-height: 40px;
-
+          margin: 0 4px;
+          min-width: 44px;
+          min-height: 44px;
+          
           ion-icon {
-            font-size: 22px;
-            color: #ff8c00 !important;
+            font-size: 24px;
+            color: white !important;
             pointer-events: none;
           }
         }
@@ -122,8 +121,8 @@
 
       ion-title {
         font-weight: 600;
-        font-size: 17px;
-        letter-spacing: 0.2px;
+        font-size: 18px;
+        letter-spacing: 0.3px;
         text-align: center;
         color: white !important;
         --color: white !important;
@@ -171,11 +170,10 @@
 
     &.connected {
       color: #10b981;
-      border-color: rgba(16, 185, 129, 0.2);
 
-      .status-dot {
-        background: #10b981;
-        animation: pulse-dot 2s infinite;
+      ion-icon {
+        color: #10b981;
+        animation: pulse 2s infinite;
       }
     }
   }
@@ -414,15 +412,14 @@
     }
   }
 
-  // Map wrapper
   .map-wrapper {
     position: relative;
-    height: 55vh;
-    min-height: 350px;
-    max-height: 500px;
+    height: 60vh;
+    min-height: 400px;
+    max-height: 600px;
     width: calc(100% - 32px);
     margin: 16px;
-    border-radius: 20px;
+    border-radius: 16px;
     overflow: hidden;
     box-shadow: 0 4px 20px rgba(255, 140, 0, 0.3);
     border: 2px solid rgba(255, 140, 0, 0.4);
@@ -445,12 +442,11 @@
       transform: translateZ(0);
     }
 
-    // Overlay info card
     .map-overlay {
       position: absolute;
-      top: 14px;
-      left: 14px;
-      right: 14px;
+      top: 12px;
+      left: 12px;
+      right: 12px;
       z-index: 1000;
 
       .info-card {
@@ -463,17 +459,17 @@
         border: 1px solid rgba(255, 140, 0, 0.4);
 
         ion-card-content {
-          padding: 16px;
+          padding: 12px;
 
           .info-header {
             display: flex;
             justify-content: space-around;
-            margin-bottom: 12px;
+            margin-bottom: 8px;
 
             .info-item {
               display: flex;
               align-items: center;
-              gap: 10px;
+              gap: 8px;
 
               ion-icon {
                 font-size: 24px;
@@ -544,7 +540,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 6px;
+            gap: 4px;
             font-size: 11px;
             color: #999999;
             margin-top: 6px;
@@ -823,7 +819,6 @@
 
       ion-card-header {
         padding-bottom: 12px;
-        border-bottom: 1px solid #f1f5f9;
 
         ion-card-title {
           display: flex;
@@ -841,14 +836,12 @@
       }
 
       ion-card-content {
-        padding: 16px;
-
         .destination-details {
           .destination-row {
             display: flex;
             align-items: center;
             gap: 12px;
-            padding: 10px 0;
+            padding: 8px 0;
             font-size: 14px;
             color: #cccccc;
 
@@ -861,7 +854,6 @@
               font-size: 18px;
               color: #ff8c00;
               width: 20px;
-              flex-shrink: 0;
             }
           }
         }
@@ -978,19 +970,12 @@
     transform: scale(0.8);
     opacity: 0;
   }
-
-  .mission-status-section,
-  .destination-info {
-    margin-left: 16px;
-    margin-right: 16px;
+  50% {
+    transform: scale(1.05);
   }
-
-  .title-wrapper {
-    font-size: 14px;
-
-    .title-ref {
-      display: none;
-    }
+  100% {
+    transform: scale(1);
+    opacity: 1;
   }
 }
 
