@@ -139,6 +139,20 @@
         color: #64748b;
         margin: 2px 0;
         
+        &.destination-text {
+          display: flex;
+          align-items: center;
+          gap: 4px;
+          font-weight: 500;
+          color: #374151;
+          
+          ion-icon {
+            font-size: 14px;
+            color: #ff8c00;
+            flex-shrink: 0;
+          }
+        }
+        
         &.trip-details-text {
           display: flex;
           align-items: center;
@@ -147,6 +161,7 @@
           ion-icon {
             font-size: 14px;
             color: #ff8c00;
+            flex-shrink: 0;
           }
         }
       }

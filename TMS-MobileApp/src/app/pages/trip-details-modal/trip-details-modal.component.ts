@@ -42,6 +42,75 @@ export class TripDetailsModalComponent implements OnInit, OnDestroy {
     this.loadTripFromCache();
     this.cacheTripImages();
     console.log('Trip Details:', this.trip);
+    console.log('📍 Deliveries:', this.trip.deliveries);
+    console.log('📏 Distance:', this.getRealDistance());
+    console.log('📦 Delivery Count:', this.getRealDeliveriesCount());
+  }
+
+  /**
+   * Obtenir la VRAIE distance (estimée ou somme des distances des livraisons)
+   */
+  getRealDistance(): number {
+    if (this.trip.estimatedDistance && this.trip.estimatedDistance > 0) {
+      return this.trip.estimatedDistance;
+    }
+    // Utiliser any car les données peuvent venir du backend avec des champs additionnels
+    const tripAny = this.trip as any;
+    if (tripAny.deliveries && tripAny.deliveries.length > 0) {
+      const totalDistance = tripAny.deliveries.reduce((sum: number, d: any) => {
+        return sum + (d.distance || d.totalDistance || d.estimatedDistance || 0);
+      }, 0);
+      return totalDistance > 0 ? totalDistance : 0;
+    }
+    return 0;
+  }
+
+  /**
+   * Obtenir le VRAI nombre de livraisons
+   */
+  getRealDeliveriesCount(): number {
+    if (this.trip.deliveries && Array.isArray(this.trip.deliveries)) {
+      return this.trip.deliveries.length;
+    }
+    return 0;
+  }
+
+  /**
+   * Obtenir la VRAIE destination (nom du client ou adresse)
+   */
+  getRealDestination(): string {
+    const tripAny = this.trip as any;
+    if (tripAny.deliveries && tripAny.deliveries.length > 0) {
+      const lastDelivery = tripAny.deliveries[tripAny.deliveries.length - 1];
+      return lastDelivery.customerName || 
+             lastDelivery.customer?.companyName ||
+             lastDelivery.deliveryAddress || 
+             lastDelivery.address || 
+             `Livraison #${lastDelivery.sequence || tripAny.deliveries.length}`;
+    }
+    return tripAny.destination || 'Destination';
+  }
+
+  /**
+   * Obtenir la VRAIE date de fin (réelle ou estimée)
+   */
+  getRealEndDate(): string | Date | null {
+    const tripAny = this.trip as any;
+    return tripAny.actualEndDate || this.trip.estimatedEndDate || this.trip.estimatedStartDate || null;
+  }
+
+  /**
+   * Obtenir le VRAI temps (durée réelle ou estimée)
+   */
+  getRealDuration(): number | string {
+    const tripAny = this.trip as any;
+    if (tripAny.actualDuration && tripAny.actualDuration > 0) {
+      return tripAny.actualDuration;
+    }
+    if (this.trip.estimatedDuration && this.trip.estimatedDuration > 0) {
+      return this.trip.estimatedDuration;
+    }
+    return 'N/A';
   }
 
   ngOnDestroy() {

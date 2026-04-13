@@ -45,6 +45,17 @@
       </div>
     </div>
 
+    <!-- Destination Card -->
+    <div class="info-card-detail">
+      <div class="card-icon">
+        <ion-icon name="location-outline"></ion-icon>
+      </div>
+      <div class="card-content">
+        <span class="card-label">Destination</span>
+        <span class="card-value">{{ getRealDestination() }}</span>
+      </div>
+    </div>
+
     <!-- Start Date Card -->
     <div class="info-card-detail">
       <div class="card-icon">
@@ -63,29 +74,40 @@
       </div>
       <div class="card-content">
         <span class="card-label">Date de Fin</span>
-        <span class="card-value">{{ trip.estimatedEndDate ? (trip.estimatedEndDate | date:'dd MMMM yyyy à HH:mm') : 'Non disponible' }}</span>
+        <span class="card-value">{{ getRealEndDate() ? (getRealEndDate() | date:'dd MMMM yyyy à HH:mm') : 'Non disponible' }}</span>
       </div>
     </div>
 
     <!-- Distance Card -->
-    <div class="info-card-detail" *ngIf="trip.estimatedDistance">
+    <div class="info-card-detail">
       <div class="card-icon">
         <ion-icon name="navigate-outline"></ion-icon>
       </div>
       <div class="card-content">
-        <span class="card-label">Distance Estimée</span>
-        <span class="card-value">{{ trip.estimatedDistance }} km</span>
+        <span class="card-label">Distance</span>
+        <span class="card-value">{{ getRealDistance() }} km</span>
       </div>
     </div>
 
     <!-- Duration Card -->
-    <div class="info-card-detail" *ngIf="trip.estimatedDuration">
+    <div class="info-card-detail">
       <div class="card-icon">
         <ion-icon name="time-outline"></ion-icon>
       </div>
       <div class="card-content">
-        <span class="card-label">Durée Estimée</span>
-        <span class="card-value">{{ trip.estimatedDuration }} heures</span>
+        <span class="card-label">Durée</span>
+        <span class="card-value">{{ getRealDuration() }} {{ getRealDuration() === 'N/A' ? '' : 'heures' }}</span>
+      </div>
+    </div>
+
+    <!-- Deliveries Count Card -->
+    <div class="info-card-detail">
+      <div class="card-icon">
+        <ion-icon name="package-outline"></ion-icon>
+      </div>
+      <div class="card-content">
+        <span class="card-label">Nombre de Livraisons</span>
+        <span class="card-value">{{ getRealDeliveriesCount() }}</span>
       </div>
     </div>
 
@@ -208,7 +230,13 @@
       <h4>Données de Livraison</h4>
     </div>
 
-    <div *ngIf="trip.deliveries && trip.deliveries.length > 0; else noDeliveries">
+    <div *ngIf="getRealDeliveriesCount() > 0; else noDeliveries">
+      <div class="delivery-summary">
+        <p class="summary-text">
+          <ion-icon name="checkmark-circle-outline" class="success-icon-small"></ion-icon>
+          {{ getRealDeliveriesCount() }} livraison{{ getRealDeliveriesCount() > 1 ? 's' : '' }} associée{{ getRealDeliveriesCount() > 1 ? 's' : '' }} à ce trajet
+        </p>
+      </div>
       <ion-grid>
         <ion-row>
           <ion-col size="12" size-md="6" *ngFor="let d of trip.deliveries">

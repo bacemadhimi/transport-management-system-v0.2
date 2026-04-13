@@ -4,6 +4,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
+import { TripService } from '../../services/trip.service';
 import { TripDetailsModalComponent } from '../trip-details-modal/trip-details-modal.component';
 
 interface TripHistory {
@@ -13,11 +14,11 @@ interface TripHistory {
   date: string;
   distance: number;
   deliveriesCount: number;
+  destination: string;
+  driverName?: string;
+  truckImmatriculation?: string;
   estimatedStartDate: string;
   estimatedEndDate?: string;
-  driver?: { name: string };
-  truck?: { immatriculation: string };
-  deliveries?: any[];
 }
 
 @Component({
@@ -31,6 +32,7 @@ export class TripHistoryPage implements OnInit {
   private router = inject(Router);
   private modalController = inject(ModalController);
   private authService = inject(AuthService);
+  private tripService = inject(TripService);
   private toastController = inject(ToastController);
 
   history: TripHistory[] = [];
@@ -46,49 +48,105 @@ export class TripHistoryPage implements OnInit {
     this.loading = true;
     try {
       const user = this.authService.currentUser();
-      const userEmail = user?.email;
+      const token = localStorage.getItem('token');
       
-      // Charger depuis localStorage
-      const offlineTrips = localStorage.getItem('offlineTrips');
-      let allTrips: any[] = [];
-      
-      if (offlineTrips) {
-        allTrips = JSON.parse(offlineTrips);
+      if (!user || !token) {
+        await this.showToast('Veuillez vous connecter', 'danger');
+        this.loading = false;
+        return;
       }
-      
-      // Filtrer les trajets du conducteur connecté
-      if (userEmail) {
-        allTrips = allTrips.filter((trip: any) => 
-          trip.driver?.email === userEmail || 
-          trip.driverId === user?.id
-        );
-      }
-      
-      console.log('📊 Total trips loaded for history:', allTrips.length);
-      
-      // Mapper les trajets pour l'historique
-      this.history = allTrips.map((trip: any) => ({
-        id: trip.id,
-        tripReference: trip.tripReference || `TRIP-${trip.id}`,
-        status: trip.tripStatus || trip.status || 'Planned',
-        date: trip.actualEndDate || trip.estimatedEndDate || trip.estimatedStartDate,
-        distance: trip.estimatedDistance || 0,
-        deliveriesCount: trip.deliveries?.length || 0,
-        estimatedStartDate: trip.estimatedStartDate,
-        estimatedEndDate: trip.estimatedEndDate,
-        driver: trip.driver,
-        truck: trip.truck,
-        deliveries: trip.deliveries || []
-      }));
-      
-      console.log('✅ History trips:', this.history.length);
-      console.log('📋 Statuses in history:', this.history.map(t => t.status));
-      
-      this.applyFilter();
-      this.loading = false;
+
+      console.log('📡 Loading history from API...');
+
+      // Charger depuis l'API directement
+      this.tripService.getAllTrips().subscribe({
+        next: (trips: any[]) => {
+          console.log('📦 Trips received from API:', trips.length);
+          
+          // Log TRÈS détaillé pour voir la structure exacte
+          const firstTrip = trips[0];
+          console.log('🔍 Trip keys:', Object.keys(firstTrip));
+          console.log('🔍 Trip estimatedDistance:', firstTrip.estimatedDistance);
+          console.log('🔍 Trip deliveries:', firstTrip.deliveries);
+          console.log('🔍 Trip driver:', firstTrip.driver);
+          console.log('🔍 Trip full JSON:', JSON.stringify(firstTrip, null, 2).substring(0, 1000));
+
+          // Filtrer les trajets du conducteur
+          const driverId = (user as any).driverId || user.id;
+          const userEmail = user.email;
+          
+          const userTrips = trips.filter((trip: any) => {
+            const tripData = trip.data || trip; // Parfois dans data
+            return tripData.driverId === driverId || 
+                   tripData.driver?.id === driverId ||
+                   tripData.driver?.email === userEmail;
+          });
+
+          console.log('🚗 User trips:', userTrips.length);
+
+          // Mapper avec les VRAIES données
+          this.history = userTrips.map((trip: any) => {
+            const tripData = trip.data || trip;
+            
+            let destination = 'Destination';
+            let distance = 0;
+            let deliveriesCount = 0;
+            let driverName = '';
+            let truckImmat = '';
+
+            // Destination et livraisons
+            if (tripData.deliveries && tripData.deliveries.length > 0) {
+              const lastDelivery = tripData.deliveries[tripData.deliveries.length - 1];
+              destination = lastDelivery.customerName || 
+                           lastDelivery.customer?.companyName ||
+                           lastDelivery.deliveryAddress || 
+                           `Livraison #${lastDelivery.sequence}`;
+              deliveriesCount = tripData.deliveries.length;
+            } else if (tripData.destination) {
+              destination = tripData.destination;
+            } else if (tripData.dropoffLocation) {
+              destination = tripData.dropoffLocation.address || tripData.dropoffLocation.name || 'Destination';
+            }
+
+            // Distance
+            distance = tripData.estimatedDistance || 0;
+
+            // Chauffeur
+            driverName = tripData.driver?.name || tripData.driverName || '';
+
+            // Véhicule
+            truckImmat = tripData.truck?.immatriculation || tripData.truckImmatriculation || '';
+
+            return {
+              id: tripData.id,
+              tripReference: tripData.tripReference || `TRIP-${tripData.id}`,
+              status: tripData.tripStatus || tripData.status || 'Planned',
+              date: tripData.actualEndDate || tripData.estimatedEndDate || tripData.estimatedStartDate,
+              distance: distance,
+              deliveriesCount: deliveriesCount,
+              destination: destination,
+              driverName: driverName,
+              truckImmatriculation: truckImmat,
+              estimatedStartDate: tripData.estimatedStartDate,
+              estimatedEndDate: tripData.estimatedEndDate
+            };
+          });
+
+          console.log('✅ History loaded:', this.history.length);
+          console.log('📋 Sample:', this.history[0]);
+
+          this.applyFilter();
+          this.loading = false;
+        },
+        error: (err) => {
+          console.error('❌ Error loading history:', err);
+          this.showToast('Erreur de chargement', 'danger');
+          this.loading = false;
+        }
+      });
     } catch (error) {
-      console.error('❌ Error loading history:', error);
-      await this.showToast('Erreur de chargement de l\'historique', 'danger');
+      console.error('❌ Error:', error);
+      await this.showToast('Erreur inattendue', 'danger');
       this.loading = false;
     }
   }
@@ -180,15 +238,12 @@ export class TripHistoryPage implements OnInit {
     console.log('🔍 Applying filter:', this.filterStatus);
     
     if (this.filterStatus === 'all') {
-      // Tous les trajets
       this.filteredHistory = this.history;
     } else if (this.filterStatus === 'Completed') {
-      // Trajets avec livraisons terminées (Receipt ou Completed)
       this.filteredHistory = this.history.filter(trip =>
         trip.status === 'Receipt' || trip.status === 'Completed'
       );
     } else if (this.filterStatus === 'Cancelled') {
-      // Trajets annulés ou refusés
       this.filteredHistory = this.history.filter(trip =>
         trip.status === 'Cancelled' || trip.status === 'Refused'
       );
@@ -217,28 +272,18 @@ export class TripHistoryPage implements OnInit {
    * Voir les détails du trajet
    */
   async viewDetails(trip: TripHistory) {
-    // Récupérer le trajet complet
-    const offlineTrips = localStorage.getItem('offlineTrips');
-    if (offlineTrips) {
-      const trips = JSON.parse(offlineTrips);
-      const fullTrip = trips.find((t: any) => t.id === trip.id);
-
-      if (fullTrip) {
-        const modal = await this.modalController.create({
-          component: TripDetailsModalComponent,
-          componentProps: { trip: fullTrip },
-          cssClass: 'trip-details-modal'
-        });
-        await modal.present();
-
-        const { data } = await modal.onWillDismiss();
-        if (data?.action === 'updateStatus') {
-          this.loadHistory(); // Recharger si le statut a changé
-        }
-      }
-    } else {
-      await this.showToast('Détails du trajet non disponibles', 'warning');
-    }
+    // Sauvegarder pour le modal
+    localStorage.setItem('selectedTripId', trip.id.toString());
+    
+    this.router.navigate(['/trip-history']);
+    
+    const toast = await this.toastController.create({
+      message: 'Détails : ' + trip.tripReference,
+      duration: 2000,
+      color: 'primary',
+      position: 'top'
+    });
+    await toast.present();
   }
 
   /**
@@ -248,7 +293,8 @@ export class TripHistoryPage implements OnInit {
     this.router.navigate(['/gps-tracking'], {
       queryParams: {
         tripId: trip.id,
-        tripReference: trip.tripReference
+        tripReference: trip.tripReference,
+        destination: trip.destination
       }
     });
   }
