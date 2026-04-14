@@ -1,6 +1,6 @@
 ﻿import { Component, inject, signal, OnInit, OnDestroy, ViewChild, ElementRef, HostListener } from '@angular/core';
 import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
-import { RouterLink, RouterOutlet } from '@angular/router';
+import { NavigationEnd, Router, RouterLink, RouterOutlet } from '@angular/router';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
@@ -67,7 +67,7 @@ export class App implements OnInit, OnDestroy {
   // ✅ ADD: BreakpointObserver for mobile detection
   private breakpointObserver = inject(BreakpointObserver);
   private destroy$ = new Subject<void>();
-
+  private router = inject(Router);
   currentPage = 0;
   pageSize = 20;
   totalNotifications = 0;
@@ -118,29 +118,42 @@ export class App implements OnInit, OnDestroy {
     });
   }
 
-  // ✅ ENHANCED: Document click handler with mobile awareness
-  @HostListener('document:click', ['$event'])
-  onDocumentClick(event: MouseEvent): void {
-    const target = event.target as HTMLElement;
 
-    // Vérifier si le clic est dans un des menus ou sur le bouton qui l'ouvre
-    const clickedInsidePermission = this.isClickInsideMenu(target, 'permissions');
-    const clickedInsideNotification = this.isClickInsideMenu(target, 'notifications');
-    const clickedInsideLanguage = this.isClickInsideMenu(target, 'language');
-    const clickedInsideTheme = this.isClickInsideMenu(target, 'theme');
+@HostListener('document:click', ['$event'])
+onDocumentClick(event: MouseEvent): void {
+  const target = event.target as HTMLElement;
 
-    // Si le clic n'est dans aucun menu, tout fermer
-    if (!clickedInsidePermission && !clickedInsideNotification && 
-        !clickedInsideLanguage && !clickedInsideTheme) {
-      this.menuManager.closeAllMenus();
-      
-      // ✅ ADD: Remove body class on mobile when closing menus
-      if (this.isMobile) {
-        document.body.classList.remove('menu-open');
-      }
+  // Handle drawer closing on mobile when clicking outside
+  if (this.isMobile && this.drawer?.opened) {
+    const drawerElement = document.querySelector('mat-drawer');
+    const menuButton = target.closest('.hamburger-menu');
+    const logoButton = target.closest('.cursor-pointer');
+    
+    // Check if click is outside drawer and not on toggle buttons
+    if (drawerElement && 
+        !drawerElement.contains(target) && 
+        !menuButton && 
+        !logoButton) {
+      this.drawer.close();
+      document.body.classList.remove('menu-open');
     }
   }
 
+  // Existing menu close logic
+  const clickedInsidePermission = this.isClickInsideMenu(target, 'permissions');
+  const clickedInsideNotification = this.isClickInsideMenu(target, 'notifications');
+  const clickedInsideLanguage = this.isClickInsideMenu(target, 'language');
+  const clickedInsideTheme = this.isClickInsideMenu(target, 'theme');
+
+  if (!clickedInsidePermission && !clickedInsideNotification && 
+      !clickedInsideLanguage && !clickedInsideTheme) {
+    this.menuManager.closeAllMenus();
+    
+    if (this.isMobile) {
+      document.body.classList.remove('menu-open');
+    }
+  }
+}
   // ✅ ADD: Window resize handler
   @HostListener('window:resize', ['$event'])
   onResize(event: any) {
@@ -210,45 +223,62 @@ export class App implements OnInit, OnDestroy {
     }
   }
 
-  // ✅ ADD: Toggle drawer method for mobile
-  toggleDrawer() {
-    if (this.drawer) {
-      this.drawer.toggle();
-      if (this.isMobile) {
-        document.body.classList.toggle('menu-open', this.drawer.opened);
+toggleDrawer() {
+  if (this.drawer) {
+    this.drawer.toggle();
+    
+    // Update body class based on drawer state
+    if (this.isMobile) {
+      if (this.drawer.opened) {
+        document.body.classList.add('menu-open');
+        // Close any open dropdown menus when opening drawer
+        this.menuManager.closeAllMenus();
+      } else {
+        document.body.classList.remove('menu-open');
       }
     }
   }
+}
 
-  // ✅ ADD: Initialize mobile detection
-  private initializeMobileDetection() {
-    this.breakpointObserver
-      .observe([
-        Breakpoints.Handset,
-        Breakpoints.Tablet,
-        '(max-width: 768px)'
-      ])
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(result => {
-        this.isMobile = result.breakpoints['(max-width: 768px)'] || 
-                       result.breakpoints[Breakpoints.Handset];
-        this.isTablet = result.breakpoints[Breakpoints.Tablet];
-        
-        // Close drawer by default on mobile
-        if (this.isMobile && this.drawer) {
-          this.drawer.close();
-        }
-        
-        // Add/remove mobile class to body
-        if (this.isMobile) {
-          document.body.classList.add('is-mobile');
-        } else {
-          document.body.classList.remove('is-mobile');
-        }
-      });
+private setupRouterEvents() {
+  this.router.events.pipe(takeUntil(this.destroy$)).subscribe(event => {
+    if (event instanceof NavigationEnd && this.isMobile && this.drawer?.opened) {
+      this.drawer.close();
+      document.body.classList.remove('menu-open');
+    }
+  });
+}
+private initializeMobileDetection() {
+  this.breakpointObserver
+    .observe([
+      Breakpoints.Handset,
+      Breakpoints.Tablet,
+      '(max-width: 768px)'
+    ])
+    .pipe(takeUntil(this.destroy$))
+    .subscribe(result => {
+      const wasMobile = this.isMobile;
+      this.isMobile = result.breakpoints['(max-width: 768px)'] || 
+                     result.breakpoints[Breakpoints.Handset];
+      this.isTablet = result.breakpoints[Breakpoints.Tablet];
+      
+      // Close drawer when switching to mobile
+      if (this.isMobile && !wasMobile && this.drawer) {
+        this.drawer.close();
+        document.body.classList.remove('menu-open');
+      }
+      
+      // Add/remove mobile class to body
+      if (this.isMobile) {
+        document.body.classList.add('is-mobile');
+      } else {
+        document.body.classList.remove('is-mobile');
+        document.body.classList.remove('menu-open');
+      }
+    });
 
-    this.detectIOS();
-  }
+  this.detectIOS();
+}
 
   // ✅ ADD: iOS detection
   private detectIOS() {
@@ -268,7 +298,7 @@ export class App implements OnInit, OnDestroy {
   ngOnInit() {
     // ✅ ADD: Initialize mobile detection
     this.initializeMobileDetection();
-    
+    this.setupRouterEvents();
     this.httpService.getTranslations(this.currentLanguage).subscribe({
       next: data => this.translation.setTranslations(data),
       error: err => console.error('Error loading translations', err)

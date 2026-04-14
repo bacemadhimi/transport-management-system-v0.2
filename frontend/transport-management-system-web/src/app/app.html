@@ -464,7 +464,12 @@
 </header>
  
 <mat-drawer-container>
-  <mat-drawer #drawer class="w-[300px] bg-gradient-to-b from-white to-gray-50 shadow-xl" [mode]="'side'" [opened]="authService.isLoggedIn">
+ <mat-drawer 
+  #drawer 
+  class="w-[300px] bg-gradient-to-b from-white to-gray-50 shadow-xl" 
+  [mode]="isMobile ? 'over' : 'side'" 
+  [opened]="!isMobile && authService.isLoggedIn"
+  [disableClose]="!isMobile">
     <div class="p-0">
       <mat-nav-list class="sidebar-nav">
         
