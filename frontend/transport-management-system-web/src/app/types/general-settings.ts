@@ -30,6 +30,7 @@ export interface ITripSettings {
   notifyOnTripDelete: boolean;
   linkDriverToTruck: boolean;
   useGpsInTrips: boolean; // ✅ GPS tracking setting
+  tripAddressMode: 'MANUEL' | 'AUTOMATIQUE'; // ✅ Address mode setting
 }
 
 export type TripOrderType = 'chronological' | 'priority' | 'geographical' | 'optimized';

@@ -413,6 +413,32 @@ public class TripsController : ControllerBase
         var tripReference = $"LIV-{year}-{nextSequence:D3}";
         var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
 
+        // Check Trip Address Mode Setting
+        var tripAddressMode = await context.GeneralSettings
+            .FirstOrDefaultAsync(s => s.ParameterCode == "ModeAdresseTrip");
+        
+        bool isAutoMode = tripAddressMode != null && tripAddressMode.Value == "AUTOMATIQUE";
+
+        double? finalLatitude = model.DestinationLatitude;
+        double? finalLongitude = model.DestinationLongitude;
+        string finalAddress = model.DestinationAddress;
+
+        // AUTOMATIC MODE: Get destination from last delivery customer coordinates
+        if (isAutoMode && model.Deliveries?.Any() == true)
+        {
+            var lastDelivery = model.Deliveries.LastOrDefault();
+            if (lastDelivery != null && lastDelivery.CustomerId > 0)
+            {
+                var customer = await context.Customers.FindAsync(lastDelivery.CustomerId);
+                if (customer != null && customer.Latitude.HasValue && customer.Longitude.HasValue)
+                {
+                    finalLatitude = customer.Latitude;
+                    finalLongitude = customer.Longitude;
+                    finalAddress = customer.Address ?? customer.Name;
+                }
+            }
+        }
+
         var trip = new Trip
         {
             BookingId = $"TMS{nextNumber:D5}",
@@ -429,8 +455,8 @@ public class TripsController : ControllerBase
             EstimatedEndDate = model.EstimatedEndDate,
             TrajectId = model.TrajectId,
             // IMPORTANT: Save destination coordinates for GPS tracking on mobile
-            EndLatitude = model.DestinationLatitude,
-            EndLongitude = model.DestinationLongitude,
+            EndLatitude = finalLatitude,
+            EndLongitude = finalLongitude,
         };
 
         await tripRepository.AddAsync(trip);

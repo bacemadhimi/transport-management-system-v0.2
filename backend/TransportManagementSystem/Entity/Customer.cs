@@ -36,6 +36,13 @@ public class Customer
     [StringLength(100)]
     public string? Contact { get; set; }
 
+    // GPS Coordinates
+    public double? Latitude { get; set; }
+    public double? Longitude { get; set; }
+    
+    [StringLength(255)]
+    public string? Address { get; set; }
+
     // Navigation properties
     public ICollection<Order> Orders { get; set; } = new List<Order>();
 

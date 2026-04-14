@@ -160,6 +160,7 @@ hasAtLeastOneActiveEntity(): boolean {
     'ALLOW_EXCEED_MAX_CAPACITY': 'ALLOW_EXCEED_MAX_CAPACITY',
     'MAX_CAPACITY_PERCENTAGE': 'MAX_CAPACITY_PERCENTAGE',
     'USE_GPS_IN_TRIPS': 'USE_GPS_IN_TRIPS',
+    'MODE_ADRESSE_TRIP': 'MODE_ADRESSE_TRIP',
   };
 
   ngOnInit() {
@@ -194,6 +195,7 @@ hasAtLeastOneActiveEntity(): boolean {
       USE_GPS_IN_TRIPS: [true], // ✅ Checked by default
       ALLOW_EXCEED_MAX_CAPACITY: [false],
       MAX_CAPACITY_PERCENTAGE: [{ value: 100, disabled: true }, [Validators.min(1), Validators.max(200)]],
+      MODE_ADRESSE_TRIP: ['MANUEL'], // ✅ Default to MANUAL mode
     });
 
     this.geographicalLevelsForm = this.fb.group({
@@ -887,7 +889,8 @@ hasAtLeastOneActiveEntity(): boolean {
       'LINK_DRIVER_TO_TRUCK': 'Driver must match truck',
       'ALLOW_EXCEED_MAX_CAPACITY': 'Allow exceeding max capacity',
       'MAX_CAPACITY_PERCENTAGE': 'Maximum capacity percentage',
-      'USE_GPS_IN_TRIPS': 'Use GPS in trips (auto coordinates)'
+      'USE_GPS_IN_TRIPS': 'Use GPS in trips (auto coordinates)',
+      'MODE_ADRESSE_TRIP': 'Mode de gestion des destinations (MANUEL/AUTOMATIQUE)'
     };
     return descriptions[key] || key;
   }

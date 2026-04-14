@@ -16,6 +16,8 @@ import { IGeographicalEntity, IGeographicalLevel } from '../../../types/general-
 import Swal from 'sweetalert2';
 import { Subscription } from 'rxjs';
 import { Translation } from '../../../services/Translation';
+import { GpsAddressService } from '../../../services/gps-address.service';
+import { SettingsService } from '../../../services/settings.service';
 
 @Component({
   selector: 'app-customer-form',
@@ -43,6 +45,10 @@ export class CustomerFormComponent implements OnInit, AfterViewInit, OnDestroy {
   dialogRef = inject(MatDialogRef<CustomerFormComponent>);
   data = inject<{ customerId?: number }>(MAT_DIALOG_DATA, { optional: true }) ?? {};
   private cdr = inject(ChangeDetectorRef);
+  private gpsAddressService = inject(GpsAddressService);
+  private settingsService = inject(SettingsService);
+  isGeocoding = false;
+  isAutoAddressMode = false;
 
   @ViewChild('phoneInput') phoneInput!: ElementRef<HTMLInputElement>;
   private iti: any;
@@ -84,12 +90,28 @@ export class CustomerFormComponent implements OnInit, AfterViewInit, OnDestroy {
     phone: ['', [Validators.maxLength(20)]],
     email: ['', [Validators.email, Validators.maxLength(100)]],
     contact: ['', [Validators.maxLength(100)]],
+    address: ['', [Validators.maxLength(255)]],
+    latitude: ['', [Validators.maxLength(50)]],
+    longitude: ['', [Validators.maxLength(50)]],
     geographicalEntityIds: [[], [Validators.required, Validators.minLength(1)]]
   });
 
   ngOnInit() {
     this.loadGeographicalEntities();
     this.setupLevelControls();
+    
+    // Subscribe to settings to check address mode
+    this.subscriptions.push(
+      this.settingsService.tripSettings$.subscribe(settings => {
+        console.log('📌 Trip Address Mode received:', settings?.tripAddressMode);
+        this.isAutoAddressMode = settings?.tripAddressMode === 'AUTOMATIQUE';
+        this.cdr.markForCheck();
+        this.cdr.detectChanges();
+      })
+    );
+
+    // Force initial load of settings
+    this.settingsService.getTripSettings().subscribe();
 
     if (this.data.customerId) {
       this.loadCustomer(this.data.customerId);
@@ -376,7 +398,10 @@ export class CustomerFormComponent implements OnInit, AfterViewInit, OnDestroy {
           name: customer.name,
           phone: customer.phone || '',
           email: customer.email || '',
-          contact: customer.contact || ''
+          contact: customer.contact || '',
+          address: customer.address || '',
+          latitude: customer.latitude || '',
+          longitude: customer.longitude || ''
         });
 
         if (this.geographicalEntities.length > 0 && this.geographicalLevels.length > 0) {
@@ -477,6 +502,9 @@ export class CustomerFormComponent implements OnInit, AfterViewInit, OnDestroy {
       phoneCountry: this.iti ? this.iti.getSelectedCountryData().iso2 : 'tn',
       email: formValue.email || '',
       contact: formValue.contact || '',
+      address: formValue.address || '',
+      latitude: formValue.latitude || '',
+      longitude: formValue.longitude || '',
       geographicalEntities: this.selectedEntities.map(id => ({
         geographicalEntityId: id
       }))
@@ -556,4 +584,60 @@ export class CustomerFormComponent implements OnInit, AfterViewInit, OnDestroy {
 
   private translation = inject(Translation);
   t(key: string): string { return this.translation.t(key); }
+
+  geocodeAddress(): void {
+    const address = this.customerForm.get('address')?.value?.trim();
+
+    if (!address || address.length < 3) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Attention',
+        text: 'Veuillez entrer une adresse valide (au moins 3 caractères)',
+        timer: 2000,
+        showConfirmButton: false
+      });
+      return;
+    }
+
+    this.isGeocoding = true;
+
+    this.gpsAddressService.validateAndNormalizeAddress(address).subscribe({
+      next: (result: any) => {
+        if (result && result.lat && result.lng) {
+          this.customerForm.patchValue({
+            latitude: result.lat.toString(),
+            longitude: result.lng.toString()
+          });
+
+          Swal.fire({
+            icon: 'success',
+            title: '✅ Géocodage réussi !',
+            html: `Coordonnées récupérées automatiquement:<br><strong>Latitude: ${result.latitude}</strong><br><strong>Longitude: ${result.longitude}</strong>`,
+            timer: 2500,
+            showConfirmButton: false
+          });
+        } else {
+          Swal.fire({
+            icon: 'error',
+            title: 'Erreur',
+            text: 'Impossible de géocoder cette adresse. Veuillez préciser davantage.',
+            confirmButtonText: 'OK'
+          });
+        }
+
+        this.isGeocoding = false;
+      },
+      error: (error: any) => {
+        console.error('Geocoding error:', error);
+        Swal.fire({
+          icon: 'error',
+          title: 'Erreur de géocodage',
+          text: 'Une erreur est survenue lors de la géolocalisation. Veuillez réessayer.',
+          confirmButtonText: 'OK'
+        });
+
+        this.isGeocoding = false;
+      }
+    });
+  }
 }

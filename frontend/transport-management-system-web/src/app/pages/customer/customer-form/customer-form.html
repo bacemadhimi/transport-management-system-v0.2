@@ -58,6 +58,46 @@
         </mat-error>
       </mat-form-field>
 
+      <!-- Smart Address Search with Geocoding -->
+      <mat-form-field class="w-full" *ngIf="isAutoAddressMode">
+        <mat-label>🔍 Adresse (recherche intelligente)</mat-label>
+        <input 
+          matInput 
+          formControlName="address" 
+          placeholder="Commencez à taper l'adresse..." 
+          [readonly]="isSubmitting"
+          type="search"
+          autocomplete="off"
+          id="customer-address-search"
+        />
+        <button 
+          mat-icon-button 
+          matSuffix 
+          type="button" 
+          (click)="geocodeAddress()"
+          [disabled]="!customerForm.get('address')?.value || isSubmitting"
+          matTooltip="✅ Géocoder cette adresse pour obtenir les coordonnées GPS automatiquement"
+        >
+          <mat-icon>my_location</mat-icon>
+        </button>
+        <mat-hint>Tapez une adresse puis cliquez sur le bouton GPS pour obtenir automatiquement latitude et longitude</mat-hint>
+      </mat-form-field>
+
+      <!-- GPS Coordinates - Auto filled -->
+      <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;" *ngIf="isAutoAddressMode">
+        <mat-form-field class="w-full">
+          <mat-label>📍 Latitude</mat-label>
+          <input matInput formControlName="latitude" placeholder="Auto rempli par géocodage" [readonly]="true">
+        </mat-form-field>
+        <mat-form-field class="w-full">
+          <mat-label>📍 Longitude</mat-label>
+          <input matInput formControlName="longitude" placeholder="Auto rempli par géocodage" [readonly]="true">
+        </mat-form-field>
+      </div>
+      <p style="color: var(--text-muted); font-size: 12px; margin-top: -8px; margin-bottom: 16px;" *ngIf="isAutoAddressMode">
+        ✅ Ces coordonnées GPS seront utilisées automatiquement comme destination dans les voyages (Mode Automatique)
+      </p>
+
       <!-- Geographical Entities - Hierarchical Dropdowns (like truck form) -->
       <div class="form-row full-width" style="grid-column: span 2;">
         <div class="form-field-group" style="width: 100%;">
