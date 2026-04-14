@@ -1,6 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using TransportManagementSystem.Entity;
-using TransportManagementSystem.Entity.AI;
 using TransportManagementSystem.Entity.PlantIt;
 using TransportManagementSystem.Entity.PlantIt.TMS.Models;
 using TransportManagementSystem.Models;
@@ -85,12 +84,6 @@ namespace TransportManagementSystem.Data
         public DbSet<ResultatOptimisation> ResultatOptimisations { get; set; }
         public DbSet<TripAssignment> TripAssignments { get; set; }
         public DbSet<LocationGeographicalEntity> LocationGeographicalEntities { get; set; }
-
-        // DeliveryBrain v2.0 — nouvelles tables pour IA
-        public DbSet<FeedbackRAG> FeedbacksRAG { get; set; }
-        public DbSet<PreferencesChauffeur> PreferencesChauffeurs { get; set; }
-        public DbSet<HistoriqueOptimisation> HistoriqueOptimisations { get; set; }
-        public DbSet<TelemetrieGPS> TelemetrieGPS { get; set; }
 
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -296,24 +289,6 @@ namespace TransportManagementSystem.Data
                       .WithMany()
                       .HasForeignKey(m => m.TripId)
                       .OnDelete(DeleteBehavior.Restrict);
-
-            // ===== DeliveryBrain v2.0 configurations =====
-
-            // PreferencesChauffeur — DriverId unique (un profil par chauffeur)
-            modelBuilder.Entity<PreferencesChauffeur>()
-                .HasIndex(p => p.DriverId)
-                .IsUnique();
-
-            // TelemetrieGPS — index pour requêtes rapides par chauffeur
-            modelBuilder.Entity<TelemetrieGPS>()
-                .HasIndex(t => t.DriverId);
-
-            modelBuilder.Entity<TelemetrieGPS>()
-                .HasIndex(t => t.Timestamp);
-
-            // FeedbackRAG — index par chauffeur
-            modelBuilder.Entity<FeedbackRAG>()
-                .HasIndex(f => f.DriverId);
         }
 
         public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
