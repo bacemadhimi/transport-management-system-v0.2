@@ -71,6 +71,48 @@ export class HomePage implements OnInit, OnDestroy {
     await this.loadTrips();
     this.setupSignalR();
 
+    // ✅ Écouter les changements de statut en temps réel via SignalR - MISE À JOUR EN MÉMOIRE
+    this.subscriptions.push(
+      this.signalRService.tripStatusChanged$.subscribe((update: any) => {
+        if (update && (update.TripId || update.tripId)) {
+          const tripId = update.TripId || update.tripId;
+          const newStatus = update.NewStatus || update.newStatus || update.status;
+          console.log('🏠 Home page received TripStatusChanged:', tripId, '→', newStatus);
+          
+          // ✅ Mettre à jour DIRECTEMENT dans localStorage sans recharger l'API
+          const offlineTrips = localStorage.getItem('offlineTrips');
+          if (offlineTrips) {
+            try {
+              const trips = JSON.parse(offlineTrips);
+              const tripIndex = trips.findIndex((t: any) => t.id === tripId);
+              if (tripIndex !== -1) {
+                trips[tripIndex].tripStatus = newStatus;
+                localStorage.setItem('offlineTrips', JSON.stringify(trips));
+                console.log(`✅ Home: Trip ${tripId} status updated in localStorage to ${newStatus}`);
+                
+                // ✅ Recharger les trajets depuis localStorage (pas l'API)
+                this.loadTrips();
+              } else {
+                console.warn(`⚠️ Home: Trip ${tripId} not found in localStorage, reloading from API`);
+                this.loadTrips();
+              }
+            } catch (e) {
+              console.error('❌ Home: Error updating localStorage:', e);
+              this.loadTrips();
+            }
+          }
+        }
+      }),
+      this.chatService.unreadCount$.subscribe(count => {
+        this.unreadMessagesCount = count;
+      }),
+      // Subscribe to notification storage unread count for new trip assignments
+      this.notificationStorageService.unreadCount$.subscribe(count => {
+        this.notificationBadgeCount = count;
+        console.log('🔔 Notification badge updated:', count);
+      })
+    );
+
     // ===== ADDED: Connect to GPS Hub for real-time notifications =====
     const user = this.authService.currentUser();
     if (user && user.role === 'Driver') {
@@ -232,14 +274,20 @@ export class HomePage implements OnInit, OnDestroy {
 
   async loadTrips() {
     const userEmail = this.authService.currentUser()?.email;
-    
+
     if (this.isOnline) {
       this.trips$ = this.tripService.getAllTrips().pipe(
         map(trips => {
-          if (userEmail) {
-            return trips.filter(trip => trip.driver?.email === userEmail);
-          }
-          return trips;
+          let filteredTrips = userEmail
+            ? trips.filter(trip => trip.driver?.email === userEmail)
+            : trips;
+          // ✅ Trier par date: le plus récent en PREMIER
+          filteredTrips.sort((a, b) => {
+            const dateA = new Date(a.estimatedStartDate || 0).getTime();
+            const dateB = new Date(b.estimatedStartDate || 0).getTime();
+            return dateB - dateA;
+          });
+          return filteredTrips;
         }),
         catchError(error => {
           console.error('Error loading trips online, falling back to offline:', error);
@@ -251,7 +299,7 @@ export class HomePage implements OnInit, OnDestroy {
     }
 
     this.trips$.subscribe(trips => {
-      console.log('Trips loaded:', trips.length, 'mode:', this.isOnline ? 'online' : 'offline');
+      console.log('Trips loaded (sorted newest first):', trips.length, 'mode:', this.isOnline ? 'online' : 'offline');
       this.totalDistance = this.calculateTotalDistance(trips);
       this.saveTripsOffline(trips);
     });
@@ -265,6 +313,12 @@ export class HomePage implements OnInit, OnDestroy {
         if (userEmail) {
           trips = trips.filter(trip => trip.driver?.email === userEmail);
         }
+        // ✅ Trier par date: le plus récent en premier
+        trips.sort((a, b) => {
+          const dateA = new Date(a.estimatedStartDate || 0).getTime();
+          const dateB = new Date(b.estimatedStartDate || 0).getTime();
+          return dateB - dateA;
+        });
         return of(trips);
       }
     } catch (error) {

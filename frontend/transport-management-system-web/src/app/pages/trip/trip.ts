@@ -248,59 +248,73 @@ showCols = [
     label: 'Statut',
     sortable: true,
     format: (row: any): SafeHtml => {
-      const tripStatus = this.tripStatuses.find(t => t.value === row.tripStatus);
-      const status = tripStatus ? tripStatus.label : row.tripStatus || 'N/A';
+      // ✅ EXACTEMENT les MÊMES noms de statut que le mobile (français)
+      // Supporte les statuts backend ET les notifications françaises
+      const statusLabels: any = {
+        // Backend status values
+        'Pending': '⏳ En attente',
+        'Planned': '📋 Planifié',
+        'Accepted': '✅ Accepté',
+        'Loading': '📦 Chargement',
+        'LoadingInProgress': '📦 Chargement',
+        'InDelivery': '🚚 Livraison',
+        'DeliveryInProgress': '🚚 Livraison',
+        'Receipt': '🚚 Terminé',
+        'Completed': '🚚 Terminé',
+        'Cancelled': '❌ Annulé',
+        'Refused': '⛔ Refusé',
+        // French notification labels (also map to same display)
+        'En attente': '⏳ En attente',
+        'Planifié': '📋 Planifié',
+        'Accepté': '✅ Accepté',
+        'Chargement': '📦 Chargement',
+        'En cours de chargement': '📦 Chargement',
+        'Livraison': '🚚 Livraison',
+        'En cours de livraison': '🚚 Livraison',
+        'Terminé': '🚚 Terminé',
+        'Annulé': '❌ Annulé',
+        'Refusé': '⛔ Refusé'
+      };
+
+      const status = statusLabels[row.tripStatus] || row.tripStatus || 'N/A';
 
       let color = '#6c757d';
       let bgColor = '#f8f9fa';
-      let icon = '📋';
 
-      switch(row.tripStatus) {
-        case TripStatus.Planned:
-          color = '#3b82f6';
-          bgColor = '#dbeafe';
-          icon = '📅';
-          break;
-        case TripStatus.Accepted:
-          color = '#d97706';
-          bgColor = '#fef3c7';
-          icon = '✅';
-          break;
-        case TripStatus.LoadingInProgress:
-          color = '#f97316';
-          bgColor = '#ffedd5';
-          icon = '🚚';
-          break;
-        case TripStatus.DeliveryInProgress:
-          color = '#d563f1';
-          bgColor = '#e0e7ff';
-          icon = '🚚';
-          break;
-        case TripStatus.Receipt:
-          color = '#059669';
-          bgColor = '#d1fae5';
-          icon = '🏁';
-          break;
-        case TripStatus.Cancelled:
-          color = '#dc2626';
-          bgColor = '#fee2e2';
-          icon = '❌';
-          break;
+      // Support BOTH backend and French values for coloring
+      const rawStatus = row.tripStatus;
+      if (rawStatus === 'Pending' || rawStatus === 'Planned' || rawStatus === 'En attente' || rawStatus === 'Planifié') {
+        color = '#ff8c00';
+        bgColor = '#fff5e6';
+      } else if (rawStatus === 'Accepted' || rawStatus === 'Accepté') {
+        color = '#4caf50';
+        bgColor = '#e8f5e9';
+      } else if (rawStatus === 'Loading' || rawStatus === 'LoadingInProgress' || rawStatus === 'Chargement' || rawStatus === 'En cours de chargement') {
+        color = '#5856d6';
+        bgColor = '#f0edff';
+      } else if (rawStatus === 'InDelivery' || rawStatus === 'DeliveryInProgress' || rawStatus === 'Livraison' || rawStatus === 'En cours de livraison') {
+        color = '#ff9500';
+        bgColor = '#fff8e6';
+      } else if (rawStatus === 'Receipt' || rawStatus === 'Completed' || rawStatus === 'Terminé') {
+        color = '#4caf50';
+        bgColor = '#e8f5e9';
+      } else if (rawStatus === 'Cancelled' || rawStatus === 'Refused' || rawStatus === 'Annulé' || rawStatus === 'Refusé') {
+        color = '#f44336';
+        bgColor = '#ffebee';
       }
 
       return this.sanitizer.bypassSecurityTrustHtml(`
         <div style="display: flex; align-items: center; gap: 6px;">
-          <span style="font-size: 14px;">${icon}</span>
           <span style="
-            padding: 4px 12px;
-            border-radius: 12px;
-            font-size: 12px;
-            font-weight: 500;
+            padding: 6px 14px;
+            border-radius: 14px;
+            font-size: 13px;
+            font-weight: 600;
             color: ${color};
             background-color: ${bgColor};
-            border: 1px solid ${color}20;
+            border: 1px solid ${color}30;
             white-space: nowrap;
-            min-width: 120px;
+            min-width: 140px;
             text-align: center;
           ">
             ${status}
@@ -484,10 +498,36 @@ showCols = [
 
   private initializeSignalR(): void {
 
+    // ✅ Écouter TripStatusChanged en temps réel - MISE À JOUR DIRECTE SANS REFRESH
+    this.signalRService.onTripStatusChanged((update: any) => {
+      console.log('📊 Trip status changed REAL TIME:', update);
+      
+      // ✅ Utiliser TripId (nombre) pour la comparaison
+      const tripId = update.TripId || update.tripId;
+      const newStatus = update.NewStatus || update.newStatus || update.status;
+      
+      if (tripId && newStatus && this.pagedTripData?.data) {
+        // ✅ Comparaison stricte en convertissant les deux en nombres
+        const trip = this.pagedTripData.data.find(t => Number(t.id) === Number(tripId));
+        if (trip) {
+          console.log(`🔄 Updating trip ${tripId} status in memory: ${trip.tripStatus} → ${newStatus}`);
+          trip.tripStatus = newStatus;
+          
+          // ✅ Mettre à jour l'affichage immédiatement (trigger change detection)
+          this.pagedTripData = { ...this.pagedTripData };
+          
+          console.log(`✅ Trip ${trip.tripReference} display updated to ${newStatus} - NO refresh!`);
+        } else {
+          console.warn(`⚠️ Trip ${tripId} not found in current view, reloading...`);
+          this.getLatestData();
+        }
+      }
+    });
+
+    // Écouter aussi les notifications existantes
     this.signalRSubscription = this.signalRService.notifications$.subscribe({
       next: (notifications) => {
         if (notifications.length > 0) {
-
           notifications.forEach(notification => {
             this.updateTripStatusInTable(notification);
           });
@@ -505,55 +545,42 @@ showCols = [
 
     if (!this.pagedTripData?.data || !notification.tripId) return;
 
-
-    const tripIndex = this.pagedTripData.data.findIndex(t => t.id === notification.tripId);
+    const tripId = notification.tripId;
+    const tripIndex = this.pagedTripData.data.findIndex(t => t.id === tripId);
 
     if (tripIndex !== -1) {
-
+      // Trip found on current page - update directly
       const currentTrip = this.pagedTripData.data[tripIndex];
       const currentStatus = currentTrip.tripStatus;
 
-
-      let newStatus: TripStatus | undefined;
+      // ✅ Accepter le statut tel quel (français ou backend)
+      let newStatus: string = '';
 
       if (notification.type === 'STATUS_CHANGE' && notification.newStatus) {
-        newStatus = notification.newStatus as TripStatus;
+        newStatus = notification.newStatus;
       } else if (notification.type === 'TRIP_CANCELLED') {
-        newStatus = TripStatus.Cancelled;
+        newStatus = 'Cancelled';
       }
-
 
       if (!newStatus) return;
 
+      // ✅ TOUJOURS mettre à jour en mémoire SANS refresh
+      const updatedTrip = { ...currentTrip };
+      updatedTrip.tripStatus = newStatus as any;
 
-      const isValidTransition = isValidStatusTransition(currentStatus, newStatus);
+      const updatedData = [...this.pagedTripData.data];
+      updatedData[tripIndex] = updatedTrip;
 
-      console.log(`🔄 Status transition: ${currentStatus} → ${newStatus} - Valid: ${isValidTransition}`);
+      this.pagedTripData = {
+        ...this.pagedTripData,
+        data: updatedData
+      };
 
-
-      if (isValidTransition) {
-
-        const updatedTrip = { ...currentTrip };
-        updatedTrip.tripStatus = newStatus;
-
-        const updatedData = [...this.pagedTripData.data];
-        updatedData[tripIndex] = updatedTrip;
-
-
-        this.pagedTripData = {
-          ...this.pagedTripData,
-          data: updatedData
-        };
-
-        console.log(`✅ Trip ${notification.tripReference} status updated from ${currentStatus} to ${newStatus} in table`);
-      } else {
-        console.log(`⚠️ Invalid status transition: ${currentStatus} → ${newStatus} - Refreshing data from server`);
-
-        this.getLatestData();
-      }
+      console.log(`✅ Trip ${notification.tripReference} status updated: ${currentStatus} → ${newStatus} - NO refresh!`);
     } else {
-
-      console.log(`Trip ${notification.tripReference} not in current view - refreshing data`);
+      // ✅ Trip not on current page - mais on le met à jour quand même en rechargeant
+      // C'est le seul moyen car on n'a pas le trip en mémoire
+      console.log(`🔄 Trip ${notification.tripReference} not on current page - reloading to update...`);
       this.getLatestData();
     }
   }

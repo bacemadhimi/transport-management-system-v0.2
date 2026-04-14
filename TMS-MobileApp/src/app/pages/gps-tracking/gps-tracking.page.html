@@ -178,15 +178,15 @@
             Commencer la Livraison
           </ion-button>
 
-          <!-- COMPLETE button -->
+          <!-- COMPLETE button - QR Scanner -->
           <ion-button
             *ngIf="missionStatus === 'delivery'"
             expand="block"
             class="action-btn btn-complete"
             (click)="completeMission()"
           >
-            <ion-icon slot="start" name="checkmark-done-circle-outline"></ion-icon>
-            Terminer la Livraison
+            <ion-icon slot="start" name="qr-code-outline"></ion-icon>
+            📱 Scanner QR Code & Terminer
           </ion-button>
 
           <!-- COMPLETED message -->
@@ -229,6 +229,95 @@
         </div>
       </ion-card-content>
     </ion-card>
+  </div>
+
+  <!-- ✅ Modal Scanner QR Code intégré (identique à home page) -->
+  <div class="qr-scanner-overlay" *ngIf="showQRScanner" (click)="closeQRScanner()">
+    <div class="qr-scanner-modal" (click)="$event.stopPropagation()">
+      <div class="qr-header">
+        <ion-icon name="qr-code-outline"></ion-icon>
+        <h3>Scanner QR Code</h3>
+        <ion-button fill="clear" class="close-scanner" (click)="closeQRScanner()">
+          <ion-icon name="close-outline"></ion-icon>
+        </ion-button>
+      </div>
+
+      <div class="qr-content">
+        <p class="scanner-info">Scannez le QR Code du client pour valider la livraison</p>
+
+        <div class="scanner-frame">
+          <div class="scanner-animation" *ngIf="!scannedQRCode"></div>
+          <div class="scanner-success" *ngIf="scannedQRCode">
+            <ion-icon name="checkmark-circle"></ion-icon>
+            <span>QR Code scanné !</span>
+          </div>
+        </div>
+
+        <ion-button
+          expand="block"
+          class="scan-btn"
+          (click)="startQRScan()"
+          [disabled]="isScanning">
+          <ion-icon slot="start" [name]="isScanning ? 'sync-outline' : 'scan-outline'"></ion-icon>
+          {{ isScanning ? 'Scan en cours...' : 'Scanner le QR Code' }}
+        </ion-button>
+
+        <div class="manual-section">
+          <div class="divider"><span>ou</span></div>
+          <ion-item lines="none" class="manual-input">
+            <ion-label position="floating">Saisir manuellement le QR Code</ion-label>
+            <ion-input
+              [(ngModel)]="manualQRCode"
+              placeholder="Entrez le contenu du QR Code"
+              clearInput>
+            </ion-input>
+          </ion-item>
+        </div>
+
+        <div *ngIf="scannedQRCode || manualQRCode" class="data-preview">
+          <div class="preview-header">
+            <ion-icon name="checkmark-circle" class="success-icon"></ion-icon>
+            <span>Données du QR Code</span>
+          </div>
+          <div class="preview-content">
+            <div class="data-row">
+              <ion-icon name="document-text-outline"></ion-icon>
+              <span class="label">Contenu:</span>
+              <span class="value">{{ scannedQRCode?.content || manualQRCode }}</span>
+            </div>
+            <div class="data-row" *ngIf="scannedQRCode?.timestamp">
+              <ion-icon name="time-outline"></ion-icon>
+              <span class="label">Scanné le:</span>
+              <span class="value">{{ scannedQRCode?.timestamp | date:'HH:mm:ss' }}</span>
+            </div>
+          </div>
+          <ion-button
+            fill="clear"
+            size="small"
+            class="clear-btn"
+            (click)="clearQRScan()">
+            <ion-icon name="trash-outline"></ion-icon>
+            Effacer
+          </ion-button>
+        </div>
+
+        <div class="action-buttons">
+          <ion-button
+            fill="outline"
+            class="cancel-btn"
+            (click)="closeQRScanner()">
+            Annuler
+          </ion-button>
+          <ion-button
+            class="confirm-btn"
+            (click)="confirmDeliveryWithQR()"
+            [disabled]="!scannedQRCode && !manualQRCode">
+            <ion-icon slot="start" name="checkmark-done-outline"></ion-icon>
+            Confirmer Livraison
+          </ion-button>
+        </div>
+      </div>
+    </div>
   </div>
 
 </ion-content>
@@ -308,4 +397,58 @@
     0%, 100% { transform: translateY(0); }
     50% { transform: translateY(-3px); }
   }
+
+  /* ✅ QR Scanner styles (identiques à home page) */
+  .qr-scanner-overlay {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.85); z-index: 10000;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .qr-scanner-modal {
+    background: white; border-radius: 20px; padding: 24px;
+    width: 92%; max-width: 400px; text-align: center;
+    max-height: 90vh; overflow-y: auto;
+  }
+  .qr-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 20px;
+  }
+  .qr-header ion-icon { font-size: 28px; color: #ff8c00; margin-right: 10px; }
+  .qr-header h3 { flex: 1; font-size: 20px; color: #ff8c00; margin: 0; }
+  .close-scanner { --color: #666; --padding-start: 8px; }
+  .scanner-info { font-size: 14px; color: #666; margin-bottom: 16px; }
+  .scanner-frame {
+    width: 200px; height: 200px; margin: 0 auto 16px;
+    border: 3px solid #ff8c00; border-radius: 16px;
+    display: flex; align-items: center; justify-content: center;
+    background: #f5f5f5; position: relative; overflow: hidden;
+  }
+  .scanner-animation {
+    width: 100%; height: 4px; background: #ff8c00;
+    animation: scan-move 2s ease-in-out infinite;
+  }
+  @keyframes scan-move {
+    0%, 100% { transform: translateY(-80px); }
+    50% { transform: translateY(80px); }
+  }
+  .scanner-success { color: #4caf50; font-size: 16px; font-weight: 600; }
+  .scanner-success ion-icon { font-size: 48px; color: #4caf50; }
+  .scan-btn { margin: 12px 0; }
+  .manual-section { margin: 12px 0; }
+  .divider { text-align: center; margin: 8px 0; color: #999; font-size: 13px; }
+  .manual-input { --padding-start: 0; }
+  .data-preview {
+    background: #e8f5e9; border-radius: 12px; padding: 12px; margin: 12px 0;
+  }
+  .preview-header {
+    display: flex; align-items: center; gap: 8px; color: #4caf50; font-weight: 600; margin-bottom: 8px;
+  }
+  .preview-header .success-icon { color: #4caf50; font-size: 20px; }
+  .data-row { display: flex; align-items: center; gap: 8px; font-size: 13px; color: #333; margin: 4px 0; }
+  .data-row .label { font-weight: 600; min-width: 70px; }
+  .data-row .value { color: #555; word-break: break-all; }
+  .clear-btn { --color: #999; font-size: 13px; }
+  .action-buttons { display: flex; gap: 12px; margin-top: 12px; }
+  .cancel-btn { --border-color: #ccc; --color: #666; flex: 1; }
+  .confirm-btn { --background: linear-gradient(135deg, #4caf50, #45a049); --color: #fff; flex: 1; }
 </style>

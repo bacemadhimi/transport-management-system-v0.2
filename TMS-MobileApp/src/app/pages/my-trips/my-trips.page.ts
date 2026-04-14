@@ -1,9 +1,11 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { IonicModule, ToastController } from '@ionic/angular';
 import { Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { TripService } from '../../services/trip.service';
+import { SignalRService } from '../../services/signalr.service';
+import { Subscription } from 'rxjs';
 
 interface MyTrip {
   id: number;
@@ -29,20 +31,60 @@ interface MyTrip {
     IonicModule
   ]
 })
-export class MyTripsPage implements OnInit {
+export class MyTripsPage implements OnInit, OnDestroy {
   private authService = inject(AuthService);
   private router = inject(Router);
   private tripService = inject(TripService);
   private toastController = inject(ToastController);
+  private signalRService = inject(SignalRService);
 
   trips: MyTrip[] = [];
   activeTrips: MyTrip[] = [];
   historyTrips: MyTrip[] = [];
   loading: boolean = true;
   error: string | null = null;
+  private signalRSubscription?: Subscription;
 
   ngOnInit() {
     this.loadMyTrips();
+
+    // ✅ Écouter les changements de statut en temps réel via BehaviorSubject - MISE À JOUR EN MÉMOIRE
+    this.signalRSubscription = this.signalRService.tripStatusChanged$.subscribe((update: any) => {
+      if (update && (update.TripId || update.tripId)) {
+        const tripId = update.TripId || update.tripId;
+        const newStatus = update.NewStatus || update.newStatus || update.status;
+        console.log('🚗 My Trips received TripStatusChanged:', tripId, '→', newStatus);
+        
+        // ✅ Mettre à jour DIRECTEMENT dans localStorage
+        const offlineTrips = localStorage.getItem('offlineTrips');
+        if (offlineTrips) {
+          try {
+            const trips = JSON.parse(offlineTrips);
+            const tripIndex = trips.findIndex((t: any) => t.id === tripId);
+            if (tripIndex !== -1) {
+              trips[tripIndex].tripStatus = newStatus;
+              localStorage.setItem('offlineTrips', JSON.stringify(trips));
+              console.log(`✅ My Trips: Trip ${tripId} status updated in localStorage to ${newStatus}`);
+              
+              // ✅ Recharger depuis localStorage (pas l'API)
+              this.loadMyTrips();
+            } else {
+              console.warn(`⚠️ My Trips: Trip ${tripId} not found, reloading from API`);
+              this.loadMyTrips();
+            }
+          } catch (e) {
+            console.error('❌ My Trips: Error updating localStorage:', e);
+            this.loadMyTrips();
+          }
+        }
+      }
+    });
+  }
+
+  ngOnDestroy() {
+    if (this.signalRSubscription) {
+      this.signalRSubscription.unsubscribe();
+    }
   }
 
   async loadMyTrips() {
@@ -240,8 +282,8 @@ export class MyTripsPage implements OnInit {
       'Accepted': 'checkmark',
       'Loading': 'cube',
       'LoadingInProgress': 'cube',
-      'InDelivery': 'boat',
-      'DeliveryInProgress': 'boat'
+      'InDelivery': 'truck',
+      'DeliveryInProgress': 'truck'
     };
     return iconMap[status] || 'help';
   }

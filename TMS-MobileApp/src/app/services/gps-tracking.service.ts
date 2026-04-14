@@ -207,6 +207,15 @@ export class GPSTrackingService {
         this.statusUpdateSubject.next(update);
       });
 
+      // ✅ Écouter TripStatusChanged et relayer au reste de l'app
+      this.hubConnection.on('TripStatusChanged', (update: any) => {
+        console.log('📡 GPS Service received TripStatusChanged:', update);
+        // Stocker pour que les autres pages puissent l'utiliser
+        localStorage.setItem('lastTripStatusChanged', JSON.stringify(update));
+        // Émettre l'événement
+        this.statusUpdateSubject.next(update);
+      });
+
       // Écouter les positions GPS
       this.hubConnection.on('ReceivePosition', (position: any) => {
         console.log('📍 Position received:', position);

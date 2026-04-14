@@ -1,90 +1,202 @@
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using TransportManagementSystem.Data;
-using TransportManagementSystem.Entity;
-using TransportManagementSystem.Models;
-using TransportManagementSystem.Services;
+using Microsoft.Extensions.Caching.Memory;
+using System.Text.Json;
 
 namespace TransportManagementSystem.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-[Authorize]
 public class GeocodingController : ControllerBase
 {
-    private readonly IGeocodingService _geocodingService;
-    private readonly IRepository<Location> _locationRepository;
+    private readonly IHttpClientFactory _httpClientFactory;
+    private readonly IMemoryCache _cache;
+    private readonly ILogger<GeocodingController> _logger;
 
     public GeocodingController(
-        IGeocodingService geocodingService,
-        IRepository<Location> locationRepository)
+        IHttpClientFactory httpClientFactory,
+        IMemoryCache cache,
+        ILogger<GeocodingController> logger)
     {
-        _geocodingService = geocodingService;
-        _locationRepository = locationRepository;
+        _httpClientFactory = httpClientFactory;
+        _cache = cache;
+        _logger = logger;
     }
 
     /// <summary>
-    /// Return multiple suggestions from Nominatim (3..5), with cache-first behavior.
+    /// Recherche d'adresses via Nominatim (proxy backend)
+    /// GET /api/geocoding/search?q=tunis&limit=5
     /// </summary>
-    [HttpGet("suggest")]
-    public async Task<IActionResult> Suggest([FromQuery] string query, [FromQuery] int limit = 5)
+    [HttpGet("search")]
+    public async Task<IActionResult> Search([FromQuery] string q, [FromQuery] int limit = 5)
     {
-        if (string.IsNullOrWhiteSpace(query))
-            return BadRequest(new { message = "Query is required" });
+        _logger.LogInformation("🔍 Geocoding search request: q={Query}, limit={Limit}", q, limit);
 
-        var suggestions = await _geocodingService.SearchSuggestionsAsync(query, limit);
-
-        var data = suggestions.Select(s => new GeocodingSuggestionDto
+        if (string.IsNullOrWhiteSpace(q) || q.Length < 2)
         {
-            DisplayName = s.DisplayName,
-            AddressText = s.Address,
-            Latitude = s.Latitude,
-            Longitude = s.Longitude,
-            FromCache = false
-        }).ToList();
+            return BadRequest(new { error = "Query must be at least 2 characters" });
+        }
 
-        return Ok(data);
+        // Check cache first (24h cache)
+        var cacheKey = $"geocode_search_{q.ToLowerInvariant()}_{limit}";
+        if (_cache.TryGetValue(cacheKey, out var cachedResult))
+        {
+            _logger.LogDebug("Cache hit for search: {Query}", q);
+            return Ok(cachedResult);
+        }
+
+        try
+        {
+            var client = _httpClientFactory.CreateClient();
+            client.DefaultRequestHeaders.Clear();
+            client.DefaultRequestHeaders.Add("User-Agent", "TMS-App/1.0");
+            client.Timeout = TimeSpan.FromSeconds(10);
+
+            var url = $"https://nominatim.openstreetmap.org/search?q={Uri.EscapeDataString(q)}&format=json&limit={limit}&addressdetails=1&countrycodes=tn&accept-language=fr";
+            _logger.LogInformation("🌐 Calling Nominatim: {Url}", url);
+
+            var response = await client.GetAsync(url);
+            _logger.LogInformation("📥 Nominatim response status: {Status}", response.StatusCode);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                _logger.LogWarning("⚠️ Nominatim search failed with status: {Status}", response.StatusCode);
+                return StatusCode(502, new { error = "Geocoding service unavailable", status = response.StatusCode.ToString() });
+            }
+
+            var content = await response.Content.ReadAsStringAsync();
+            _logger.LogInformation("📦 Nominatim response length: {Length} chars", content.Length);
+
+            var results = JsonSerializer.Deserialize<List<JsonElement>>(content);
+
+            _logger.LogInformation("✅ Returning {Count} results for query: {Query}", results?.Count ?? 0, q);
+
+            // Cache for 24 hours
+            _cache.Set(cacheKey, results, TimeSpan.FromHours(24));
+
+            return Ok(results);
+        }
+        catch (HttpRequestException ex)
+        {
+            _logger.LogError(ex, "❌ HTTP error calling Nominatim: {Message}", ex.Message);
+            return StatusCode(502, new { error = "Network error calling Nominatim", details = ex.Message });
+        }
+        catch (TaskCanceledException ex)
+        {
+            _logger.LogError(ex, "⏰ Timeout calling Nominatim");
+            return StatusCode(504, new { error = "Geocoding service timeout" });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "❌ Unexpected error in geocoding search");
+            return StatusCode(500, new { error = "Internal geocoding error", details = ex.Message });
+        }
     }
 
     /// <summary>
-    /// Confirm selected suggestion and persist as validated location.
+    /// Géocodage d'une adresse (retourne 1 résultat)
+    /// GET /api/geocoding/geocode?address=tunis
     /// </summary>
-    [HttpPost("confirm")]
-    public async Task<IActionResult> Confirm([FromBody] ConfirmGeocodingSelectionDto dto)
+    [HttpGet("geocode")]
+    public async Task<IActionResult> Geocode([FromQuery] string address)
     {
-        if (string.IsNullOrWhiteSpace(dto.Name) || string.IsNullOrWhiteSpace(dto.AddressText))
-            return BadRequest(new { message = "Name and AddressText are required" });
+        _logger.LogInformation("🔍 Geocode request: address={Address}", address);
 
-        if (!dto.ZoneId.HasValue)
-            return BadRequest(new { message = "ZoneId is required" });
-
-        if (dto.Latitude < -90 || dto.Latitude > 90 || dto.Longitude < -180 || dto.Longitude > 180)
-            return BadRequest(new { message = "Invalid latitude/longitude" });
-
-        var location = new Location
+        if (string.IsNullOrWhiteSpace(address) || address.Length < 2)
         {
-            Name = dto.Name,
-            AddressText = dto.DisplayName ?? dto.AddressText,
-            Latitude = dto.Latitude,
-            Longitude = dto.Longitude,
-            IsValidated = true,
-            IsActive = dto.IsActive ?? true,
-            // ZoneId = dto.ZoneId.Value, // Temporarily commented - ZoneId property doesn't exist
-            CreatedAt = DateTime.UtcNow,
-            UpdatedAt = DateTime.UtcNow
-        };
+            return BadRequest(new { error = "Address must be at least 2 characters" });
+        }
 
-        await _locationRepository.AddAsync(location);
-        await _locationRepository.SaveChangesAsync();
-
-        return Ok(new ApiResponse(true, "Location validated and saved", new
+        var cacheKey = $"geocode_{address.ToLowerInvariant()}";
+        if (_cache.TryGetValue(cacheKey, out var cachedResult))
         {
-            location.Id,
-            location.Name,
-            location.AddressText,
-            location.Latitude,
-            location.Longitude,
-            location.IsValidated
-        }));
+            _logger.LogDebug("Cache hit for geocode: {Address}", address);
+            return Ok(cachedResult);
+        }
+
+        try
+        {
+            var client = _httpClientFactory.CreateClient();
+            client.DefaultRequestHeaders.Clear();
+            client.DefaultRequestHeaders.Add("User-Agent", "TMS-App/1.0");
+            client.Timeout = TimeSpan.FromSeconds(10);
+
+            var url = $"https://nominatim.openstreetmap.org/search?q={Uri.EscapeDataString(address)}&format=json&limit=1&addressdetails=1&countrycodes=tn&accept-language=fr";
+            _logger.LogInformation("🌐 Calling Nominatim: {Url}", url);
+
+            var response = await client.GetAsync(url);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                _logger.LogWarning("⚠️ Nominatim geocode failed with status: {Status}", response.StatusCode);
+                return StatusCode(502, new { error = "Geocoding service unavailable" });
+            }
+
+            var content = await response.Content.ReadAsStringAsync();
+            var results = JsonSerializer.Deserialize<List<JsonElement>>(content);
+
+            var result = results?.Count > 0 ? results[0] : (object)new { };
+
+            _logger.LogInformation("✅ Returning geocode result for: {Address}", address);
+
+            _cache.Set(cacheKey, result, TimeSpan.FromHours(24));
+
+            return Ok(result);
+        }
+        catch (HttpRequestException ex)
+        {
+            _logger.LogError(ex, "❌ HTTP error calling Nominatim geocode");
+            return StatusCode(502, new { error = "Network error", details = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "❌ Unexpected error in geocoding");
+            return StatusCode(500, new { error = "Internal geocoding error", details = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Reverse geocoding (coordonnées → adresse)
+    /// GET /api/geocoding/reverse?lat=36.8&lon=10.18
+    /// </summary>
+    [HttpGet("reverse")]
+    public async Task<IActionResult> Reverse([FromQuery] double lat, [FromQuery] double lon)
+    {
+        _logger.LogInformation("🔍 Reverse geocode request: lat={Lat}, lon={Lon}", lat, lon);
+
+        var cacheKey = $"geocode_reverse_{lat:F6}_{lon:F6}";
+        if (_cache.TryGetValue(cacheKey, out var cachedResult))
+        {
+            _logger.LogDebug("Cache hit for reverse: {Lat},{Lon}", lat, lon);
+            return Ok(cachedResult);
+        }
+
+        try
+        {
+            var client = _httpClientFactory.CreateClient();
+            client.DefaultRequestHeaders.Clear();
+            client.DefaultRequestHeaders.Add("User-Agent", "TMS-App/1.0");
+            client.Timeout = TimeSpan.FromSeconds(10);
+
+            var url = $"https://nominatim.openstreetmap.org/reverse?lat={lat:F6}&lon={lon:F6}&format=json&addressdetails=1&accept-language=fr";
+
+            var response = await client.GetAsync(url);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                return StatusCode(502, new { error = "Geocoding service unavailable" });
+            }
+
+            var content = await response.Content.ReadAsStringAsync();
+            var result = JsonSerializer.Deserialize<JsonElement>(content);
+
+            _cache.Set(cacheKey, result, TimeSpan.FromHours(24));
+
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "❌ Error in reverse geocoding");
+            return StatusCode(500, new { error = "Internal geocoding error", details = ex.Message });
+        }
     }
 }

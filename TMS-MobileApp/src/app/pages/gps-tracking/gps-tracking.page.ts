@@ -6,6 +6,10 @@ import { AuthService } from '../../services/auth.service';
 import { ActivatedRoute, Router } from '@angular/router';
 import { environment } from '../../../environments/environment';
 import * as L from 'leaflet';
+import { FormsModule } from '@angular/forms';
+import { BarcodeScannerService, ScannedBarcode } from '../../services/barcode-scanner.service';
+import { TripService } from '../../services/trip.service';
+import { SignalRService } from '../../services/signalr.service';
 
 @Component({
   selector: 'app-gps-tracking',
@@ -14,7 +18,8 @@ import * as L from 'leaflet';
   standalone: true,
   imports: [
     CommonModule,
-    IonicModule
+    IonicModule,
+    FormsModule
   ]
 })
 export class GPSTrackingPage implements OnInit, OnDestroy {
@@ -53,6 +58,13 @@ export class GPSTrackingPage implements OnInit, OnDestroy {
   private instructionRepeatCount: number = 0;
   private navigationCheckInterval: any = null;
 
+  // ✅ QR Code Scanner variables
+  showQRScanner: boolean = false;
+  isScanning: boolean = false;
+  scannedQRCode: ScannedBarcode | null = null;
+  manualQRCode: string = '';
+  currentTripForQR: any = null;
+
   constructor(
     private gpsService: GPSTrackingService,
     private authService: AuthService,
@@ -60,7 +72,10 @@ export class GPSTrackingPage implements OnInit, OnDestroy {
     private router: Router,
     private alertController: AlertController,
     private toastController: ToastController,
-    private loadingController: LoadingController
+    private loadingController: LoadingController,
+    private barcodeScanner: BarcodeScannerService,
+    private tripService: TripService,
+    private signalRService: SignalRService
   ) {}
 
   ngOnInit() {
@@ -1684,10 +1699,137 @@ export class GPSTrackingPage implements OnInit, OnDestroy {
   }
 
   /**
-   * Complete mission directly
+   * Complete mission - QR Scanner first
    */
   async completeMission() {
-    await this.updateMissionStatus('completed');
+    // ✅ Ouvrir le scanner QR Code avant de terminer
+    this.openQRScannerForTrip({
+      id: this.tripId,
+      tripReference: this.tripReference,
+      tripStatus: 'DeliveryInProgress'
+    });
+  }
+
+  // ==================== QR CODE SCANNER METHODS ====================
+
+  openQRScannerForTrip(trip: any) {
+    this.currentTripForQR = trip;
+    this.showQRScanner = true;
+    this.scannedQRCode = null;
+    this.manualQRCode = '';
+    setTimeout(() => {
+      this.startQRScan();
+    }, 500);
+  }
+
+  closeQRScanner() {
+    this.showQRScanner = false;
+    this.currentTripForQR = null;
+    this.scannedQRCode = null;
+    this.manualQRCode = '';
+    this.isScanning = false;
+  }
+
+  clearQRScan() {
+    this.scannedQRCode = null;
+    this.manualQRCode = '';
+  }
+
+  async startQRScan() {
+    if (this.isScanning) return;
+    this.isScanning = true;
+
+    try {
+      if (!this.barcodeScanner.isNative()) {
+        await this.showToast('Mode Web - Saisie manuelle du QR Code', 'warning');
+        const result = await this.manualQRCodeInputDialog();
+        if (result) {
+          this.scannedQRCode = result;
+          await this.showToast('✅ QR Code saisi avec succès', 'success');
+        }
+        return;
+      }
+
+      const result = await this.barcodeScanner.scanBarcode();
+      if (result) {
+        if (result.formatType === '2D') {
+          this.scannedQRCode = result;
+          await this.showToast(`✅ QR Code scanné: ${result.content.substring(0, 30)}...`, 'success');
+        } else {
+          await this.showToast('❌ Veuillez scanner un QR Code (code 2D)', 'danger');
+        }
+      } else {
+        await this.showToast('❌ Aucun code détecté', 'warning');
+      }
+    } catch (error) {
+      console.error('Error scanning QR code:', error);
+      await this.showToast('❌ Erreur lors du scan', 'danger');
+    } finally {
+      this.isScanning = false;
+    }
+  }
+
+  private async manualQRCodeInputDialog(): Promise<ScannedBarcode | null> {
+    return new Promise((resolve) => {
+      const alert = document.createElement('div');
+      alert.style.cssText = `position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.8);z-index:10000;display:flex;align-items:center;justify-content:center;`;
+      const dialog = document.createElement('div');
+      dialog.style.cssText = `background:white;border-radius:20px;padding:24px;width:90%;max-width:350px;text-align:center;`;
+      dialog.innerHTML = `
+        <h3 style="margin:0 0 10px;color:#ff8c00;">Saisie QR Code</h3>
+        <p style="margin:0 0 20px;color:#666;">Entrez le contenu du QR Code</p>
+        <input id="qrInput" type="text" placeholder="Contenu du QR Code..." style="width:100%;padding:12px;border:2px solid #ff8c00;border-radius:12px;margin-bottom:20px;box-sizing:border-box;font-size:14px;">
+        <div style="display:flex;gap:12px;">
+          <button id="cancelBtn" style="flex:1;padding:12px;background:#e0e0e0;border:none;border-radius:12px;cursor:pointer;font-size:14px;">Annuler</button>
+          <button id="confirmBtn" style="flex:1;padding:12px;background:linear-gradient(135deg,#ff8c00,#ffcc00);color:white;border:none;border-radius:12px;cursor:pointer;font-weight:600;font-size:14px;">Valider</button>
+        </div>
+      `;
+      alert.appendChild(dialog);
+      document.body.appendChild(alert);
+      const input = dialog.querySelector('#qrInput') as HTMLInputElement;
+      const confirmBtn = dialog.querySelector('#confirmBtn');
+      const cancelBtn = dialog.querySelector('#cancelBtn');
+      const cleanup = () => alert.remove();
+      const handleConfirm = () => {
+        const value = input.value.trim();
+        if (value) {
+          resolve({ content: value, format: 'QR_CODE', formatType: '2D', timestamp: new Date() });
+        } else { resolve(null); }
+        cleanup();
+      };
+      const handleCancel = () => { resolve(null); cleanup(); };
+      confirmBtn?.addEventListener('click', handleConfirm);
+      cancelBtn?.addEventListener('click', handleCancel);
+      input.addEventListener('keypress', (e) => { if (e.key === 'Enter') handleConfirm(); });
+      input.focus();
+    });
+  }
+
+  async confirmDeliveryWithQR() {
+    let qrData = this.scannedQRCode;
+    if (!qrData && this.manualQRCode.trim()) {
+      qrData = { content: this.manualQRCode.trim(), format: 'QR_CODE', formatType: '2D', timestamp: new Date() };
+    }
+    if (!qrData) {
+      await this.showToast('Veuillez scanner ou saisir un QR Code', 'warning');
+      return;
+    }
+
+    const alert = await this.alertController.create({
+      header: 'Confirmation de livraison',
+      message: `<div style="text-align:left;"><p><strong>Contenu du QR Code:</strong></p><p style="background:#f5f5f5;padding:8px;border-radius:8px;word-break:break-all;">${qrData.content}</p><p><strong>Format:</strong> ${this.barcodeScanner.getFormatName(qrData.format)}</p><p><strong>Date:</strong> ${qrData.timestamp.toLocaleString()}</p><p style="color:#4caf50;margin-top:12px;">✓ Voulez-vous confirmer la livraison ?</p></div>`,
+      buttons: [
+        { text: 'Annuler', role: 'cancel' },
+        {
+          text: 'Confirmer',
+          handler: async () => {
+            await this.updateMissionStatus('completed');
+            this.closeQRScanner();
+          }
+        }
+      ]
+    });
+    await alert.present();
   }
 
   /**
@@ -1711,7 +1853,7 @@ export class GPSTrackingPage implements OnInit, OnDestroy {
       case 'pending': return 'time';
       case 'accepted': return 'checkmark-circle';
       case 'loading': return 'cube';
-      case 'delivery': return 'boat';
+      case 'delivery': return 'truck';
       case 'completed': return 'checkmark-done-circle';
       case 'refused': return 'close-circle';
       default: return 'help-circle';

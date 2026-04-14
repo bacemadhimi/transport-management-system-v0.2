@@ -496,7 +496,7 @@ public class GPSHub : Hub
 
             trip.TripStatus = TripStatus.Accepted;
             await _context.SaveChangesAsync();
-            
+
             _logger.LogInformation($"🔔 [AcceptTrip] Trip status updated to Accepted");
 
             var notificationData = new
@@ -507,8 +507,14 @@ public class GPSHub : Hub
                 DriverName = trip.Driver?.Name,
                 TruckImmatriculation = trip.Truck?.Immatriculation,
                 Status = "Acceptée",
-                Timestamp = DateTime.UtcNow
+                Timestamp = DateTime.UtcNow,
+                NewStatus = "Accepted",
+                OldStatus = "Planned"
             };
+
+            // ✅ Envoyer TripStatusChanged pour synchronisation temps réel (mobile ET web)
+            await Clients.All.SendAsync("TripStatusChanged", notificationData);
+            _logger.LogInformation($"📡 [AcceptTrip] TripStatusChanged broadcasted: {tripId} → Accepted");
 
             // ALSO send TripAccepted event for web compatibility (like sauvegarde-gps branch)
             await Clients.All.SendAsync("TripAccepted", new
@@ -618,8 +624,14 @@ public class GPSHub : Hub
                 Reason = reason,
                 ReasonCode = reasonCode,
                 Status = "Refusée",
-                Timestamp = DateTime.UtcNow
+                Timestamp = DateTime.UtcNow,
+                NewStatus = "Refused",
+                OldStatus = "Planned"
             };
+
+            // ✅ Envoyer TripStatusChanged pour synchronisation temps réel (mobile ET web)
+            await Clients.All.SendAsync("TripStatusChanged", notificationData);
+            _logger.LogInformation($"📡 [RejectTrip] TripStatusChanged broadcasted: {tripId} → Refused");
 
             // ALSO send TripRejected event for web compatibility (like sauvegarde-gps branch)
             await Clients.All.SendAsync("TripRejected", new
