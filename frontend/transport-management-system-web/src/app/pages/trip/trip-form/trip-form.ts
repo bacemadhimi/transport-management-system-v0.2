@@ -9303,22 +9303,21 @@ private searchInEnrichedPOI(query: string, resultsDropdown: Element | null): voi
 }
 
 /**
- * Fallback to Nominatim if not found in enriched POI database
+ * Fallback to backend geocoding if not found in enriched POI database
  */
 private searchWithNominatimFallback(query: string, resultsDropdown: Element | null): void {
-  const proxyUrl = 'https://corsproxy.io/?';
   const searchQuery = `${query}, Tunisia`;
-  const nominatimUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery)}&limit=20&addressdetails=1&accept-language=fr`;
-  const fullUrl = proxyUrl + encodeURIComponent(nominatimUrl);
+  const baseUrl = window.location.origin;
+  const apiUrl = `${baseUrl}/api/geocoding/search`;
 
-  console.log('🗺️ Nominatim fallback:', searchQuery);
+  console.log('🗺️ Backend geocoding fallback:', searchQuery);
 
-  fetch(fullUrl)
+  fetch(`${apiUrl}?q=${encodeURIComponent(searchQuery)}&limit=20`)
     .then(response => response.json())
-    .then(results => {
+    .then((results: any[]) => {
       if (results && results.length > 0) {
-        console.log(`✅ Nominatim found ${results.length} results`);
-        
+        console.log(`✅ Backend found ${results.length} results`);
+
         const tunisiaResults = results.filter((r: any) => {
           const lat = parseFloat(r.lat);
           const lon = parseFloat(r.lon);
@@ -9335,7 +9334,7 @@ private searchWithNominatimFallback(query: string, resultsDropdown: Element | nu
       }
     })
     .catch(error => {
-      console.error('❌ Error searching:', error);
+      console.error('❌ Backend geocoding error:', error);
       this.showErrorMessage(resultsDropdown);
     });
 }
@@ -9347,28 +9346,21 @@ private searchWithNominatimFallback(query: string, resultsDropdown: Element | nu
 private searchStoreInCity(storeName: string, cityName: string, resultsDropdown: Element | null): void {
   console.log(`🏪 Searching for ${storeName} in ${cityName}`);
 
-  const proxyUrl = 'https://corsproxy.io/?';
-  
-  // Map store to category
   const category = 'shop=supermarket';
   const [key, value] = category.split('=');
+  const baseUrl = window.location.origin;
+  const apiUrl = `${baseUrl}/api/geocoding/search`;
+  const searchQuery = `${storeName} ${cityName} Tunisia`;
 
-  // Search all supermarkets in Tunisia
-  const nominatimUrl = `https://nominatim.openstreetmap.org/search?format=json&country=tn&${key}=${value}&limit=100&addressdetails=1&accept-language=fr`;
-  const fullUrl = proxyUrl + encodeURIComponent(nominatimUrl);
-
-  fetch(fullUrl)
+  fetch(`${apiUrl}?q=${encodeURIComponent(searchQuery)}&limit=100`)
     .then(response => response.json())
-    .then(results => {
+    .then((results: any[]) => {
       if (results && results.length > 0) {
-        console.log(`✅ Found ${results.length} ${value} in Tunisia`);
-        
-        // Filter to only show those in the requested city
+        console.log(`✅ Backend found ${results.length} results`);
+
         const filteredResults = results.filter((r: any) => {
           const displayName = r.display_name.toLowerCase();
           const address = r.address || {};
-          
-          // Check multiple fields for city name
           const cityFields = [
             displayName,
             address.city || '',
@@ -9378,7 +9370,7 @@ private searchStoreInCity(storeName: string, cityName: string, resultsDropdown: 
             address.county || '',
             address.state || ''
           ].join(' ').toLowerCase();
-          
+
           return cityFields.includes(cityName);
         });
 
@@ -9386,7 +9378,7 @@ private searchStoreInCity(storeName: string, cityName: string, resultsDropdown: 
           console.log(`📍 Found ${filteredResults.length} ${storeName} in ${cityName}`);
           this.displaySearchResults(filteredResults.slice(0, 20));
         } else {
-          console.log(`⚠️ No ${storeName} found in ${cityName}, showing all ${value} in Tunisia`);
+          console.log(`⚠️ No ${storeName} found in ${cityName}, showing all`);
           this.displaySearchResults(results.slice(0, 20));
         }
       } else {
@@ -9394,7 +9386,7 @@ private searchStoreInCity(storeName: string, cityName: string, resultsDropdown: 
       }
     })
     .catch(error => {
-      console.error('Error searching store in city:', error);
+      console.error('❌ Backend geocoding error:', error);
       this.showErrorMessage(resultsDropdown);
     });
 }
@@ -9448,29 +9440,27 @@ private searchByCategory(query: string, resultsDropdown: Element | null): void {
 
   // Check if query contains a city name
   const cities = ['tunis', 'sfax', 'sousse', 'ariana', 'benarous', 'manouba', 'nabeul', 'bizerte', 'gafsa', 'gabes', 'tataouine', 'medenine', 'kef', 'kasserine', 'beja', 'jendouba', 'siliana', 'zaghouan', 'mahdia', 'monastir', 'tozeur', 'kebili', 'sidibouzid', 'tajerouine', 'kairouan', 'sidi bouzid'];
-  
+
   const queryParts = lowerQuery.split(' ');
   const cityInQuery = cities.find(c => queryParts.some(p => p.includes(c) || c.includes(p)));
 
-  // Use CORS proxy
-  const proxyUrl = 'https://corsproxy.io/?';
-  const nominatimUrl = `https://nominatim.openstreetmap.org/search?format=json&country=tn&${key}=${value}&limit=50&addressdetails=1&accept-language=fr`;
-  const fullUrl = proxyUrl + encodeURIComponent(nominatimUrl);
+  const baseUrl = window.location.origin;
+  const apiUrl = `${baseUrl}/api/geocoding/search`;
+  const searchQuery = `${value} ${cityInQuery || 'Tunisia'}`;
 
-  console.log(`🗺️ Category search: ${key}=${value}`);
+  console.log(`🗺️ Category search via backend: ${key}=${value}`);
 
-  fetch(fullUrl)
+  fetch(`${apiUrl}?q=${encodeURIComponent(searchQuery)}&limit=50`)
     .then(response => response.json())
-    .then(results => {
+    .then((results: any[]) => {
       if (results && results.length > 0) {
         console.log(`✅ Category search found ${results.length} results`);
-        
-        // Filter by city if present in query
+
         let filteredResults = results;
-        
+
         if (cityInQuery) {
           console.log(`📍 Filtering results for city: ${cityInQuery}`);
-          filteredResults = results.filter((r: any) => 
+          filteredResults = results.filter((r: any) =>
             r.display_name.toLowerCase().includes(cityInQuery)
           );
         }
@@ -9487,7 +9477,7 @@ private searchByCategory(query: string, resultsDropdown: Element | null): void {
       }
     })
     .catch(error => {
-      console.error('Error in category search:', error);
+      console.error('❌ Backend category search error:', error);
       this.showErrorMessage(resultsDropdown);
     });
 }
