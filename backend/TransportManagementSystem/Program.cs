@@ -102,6 +102,11 @@ builder.Services.AddMemoryCache();
 // Notification Hub Service
 builder.Services.AddSingleton<NotificationHubService>();
 
+// AI Microservice Client (DeliveryBrain v2.0)
+builder.Services.AddHttpClient<TransportManagementSystem.Services.AiMicroserviceClient>();
+builder.Services.Configure<TransportManagementSystem.Models.AI.AiServiceOptions>(
+    builder.Configuration.GetSection("AiService"));
+
 // Chatbot Service
 builder.Services.AddScoped<IChatbotService, ChatbotService>();
 
