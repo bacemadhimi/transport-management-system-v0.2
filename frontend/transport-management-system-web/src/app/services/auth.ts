@@ -1,4 +1,5 @@
-﻿import { HttpClient } from '@angular/common/http';
+﻿// src/app/services/auth.ts
+import { HttpClient } from '@angular/common/http';
 import { inject, Injectable, signal, NgZone } from '@angular/core';
 import { environment } from '../../environments/environment.development';
 import { IAuthToken } from '../types/auth';
@@ -7,6 +8,7 @@ import { IUser } from '../types/user';
 import { Observable, tap } from 'rxjs';
 import { JwtHelperService } from '@auth0/angular-jwt';
 import { LogoService } from './logo.service';
+import { GoogleAuthService } from './google-auth.service';
 
 @Injectable({ providedIn: 'root' })
 export class Auth {
@@ -15,11 +17,11 @@ export class Auth {
   router = inject(Router);
   private ngZone = inject(NgZone);
   private jwtHelper = new JwtHelperService();
- private logoService = inject(LogoService);
+  private logoService = inject(LogoService);
+  private googleAuthService = inject(GoogleAuthService);
 
   private logoutTimer: any;
   private tokenCheckInterval: any;
-
 
   login(email: string, password: string) {
     return this.http.post<IAuthToken>(`${environment.apiUrl}/api/Auth/login`, { email, password })
@@ -34,15 +36,72 @@ export class Auth {
       );
   }
 
+  // MÉTHODE CORRIGÉE : Login avec Google
+  loginWithGoogle(): Observable<IAuthToken> {
+    return new Observable(observer => {
+      // Définir cleanup d'abord
+      const cleanup = () => {
+        window.removeEventListener('google-auth-success', successHandler as EventListener);
+        window.removeEventListener('google-auth-error', errorHandler as EventListener);
+      };
+
+      const successHandler = (event: Event) => {
+        const customEvent = event as CustomEvent;
+        const googleData = customEvent.detail;
+        console.log('🔐 Google auth success, sending to backend...');
+        
+        // Envoyer les données Google à votre backend
+        this.http.post<IAuthToken>(`${environment.apiUrl}/api/Auth/google-login`, {
+          email: googleData.email,
+          name: googleData.name,
+          picture: googleData.picture,
+          googleToken: googleData.accessToken,
+          idToken: googleData.idToken
+        }).subscribe({
+          next: (authToken) => {
+            console.log('✅ Backend auth success');
+            this.saveToken(authToken);
+            this.setLogoutTimer(authToken.token);
+            this.startTokenCheck();
+            this.logoService.refresh();
+            this.loadLoggedInUser();
+            
+            observer.next(authToken);
+            observer.complete();
+            cleanup();
+          },
+          error: (error) => {
+            console.error('❌ Backend Google auth error:', error);
+            observer.error(error);
+            cleanup();
+          }
+        });
+      };
+
+      const errorHandler = (event: Event) => {
+        const customEvent = event as CustomEvent;
+        console.error('❌ Google auth error:', customEvent.detail);
+        observer.error(customEvent.detail);
+        cleanup();
+      };
+
+      window.addEventListener('google-auth-success', successHandler as EventListener);
+      window.addEventListener('google-auth-error', errorHandler as EventListener);
+
+      // Déclencher le login Google
+      this.googleAuthService.login();
+    });
+  }
+
   saveToken(authToken: IAuthToken) {
     localStorage.setItem("authLila", JSON.stringify(authToken));
     localStorage.setItem('token', authToken.token);
   }
 
   logout() {
-    console.log('Logging out - token expired');
+    console.log('Logging out - user initiated or token expired');
 
-
+    // Nettoyer les timers
     if (this.logoutTimer) {
       clearTimeout(this.logoutTimer);
       this.logoutTimer = null;
@@ -53,23 +112,32 @@ export class Auth {
       this.tokenCheckInterval = null;
     }
 
+    // Déconnexion de Google si l'utilisateur s'est connecté via Google
+    try {
+      // Optionnel : déconnecter de Google aussi
+      if (typeof google !== 'undefined' && google?.accounts) {
+        google.accounts.id.disableAutoSelect();
+      }
+    } catch (e) {
+      console.warn('Could not sign out from Google', e);
+    }
+
+    // Nettoyer le localStorage
     localStorage.removeItem('authLila');
     localStorage.removeItem('token');
+    localStorage.removeItem('google_user_data');
     this.user.set(null);
 
-
+    // Rediriger vers la page de login
     this.ngZone.run(() => {
       this.router.navigateByUrl('/login', { replaceUrl: true });
     });
   }
 
-
   private startTokenCheck() {
-
     if (this.tokenCheckInterval) {
       clearInterval(this.tokenCheckInterval);
     }
-
 
     this.ngZone.runOutsideAngular(() => {
       this.tokenCheckInterval = setInterval(() => {
@@ -83,7 +151,6 @@ export class Auth {
   private checkTokenExpiration() {
     const token = localStorage.getItem('token');
     const currentUrl = this.router.url;
-
 
     if (currentUrl.includes('/login')) {
       return;
@@ -100,14 +167,11 @@ export class Auth {
         this.logout();
       }
     } else if (!currentUrl.includes('/login')) {
-
       this.logout();
     }
   }
 
-
   private setLogoutTimer(token: string) {
-
     if (this.logoutTimer) {
       clearTimeout(this.logoutTimer);
     }
@@ -116,16 +180,13 @@ export class Auth {
     if (!expirationDate) return;
 
     const expiresIn = expirationDate.getTime() - new Date().getTime();
-
     console.log(`Token expires in ${Math.floor(expiresIn / 1000)} seconds`);
-
 
     this.logoutTimer = setTimeout(() => {
       console.log('Token expiration timer triggered');
       this.logout();
     }, expiresIn);
   }
-
 
   checkTokenOnInit() {
     const token = localStorage.getItem('token');
@@ -157,7 +218,7 @@ export class Auth {
     try {
       if (this.jwtHelper.isTokenExpired(token)) {
         console.log('Token expired in getter');
-        this.logout();
+        // Ne pas appeler logout() ici pour éviter les boucles infinies
         return false;
       }
       return true;
@@ -171,7 +232,6 @@ export class Auth {
     const token = localStorage.getItem('authLila');
     return token ? JSON.parse(token) : null;
   }
-
 
   hasRole(role: string): boolean {
     const roles = this.authDetail?.roles ?? [];
@@ -190,7 +250,7 @@ export class Auth {
     return perms.some(p => p.startsWith(entity + '_'));
   }
 
-
+  // Méthodes d'accès spécifiques
   hasAccueilAccess(): boolean { return this.hasEntityAccess('ACCUEIL'); }
   hasChauffeurAccess(): boolean { return this.hasEntityAccess('CHAUFFEUR'); }
   hasConvoyeurAccess(): boolean { return this.hasEntityAccess('CONVOYEUR'); }
@@ -243,30 +303,49 @@ export class Auth {
     return this.http.post(`${environment.apiUrl}/api/auth/change-password`, data);
   }
 
-  loginWithGoogle(): Observable<any> {
-    return this.http.post(`${environment.apiUrl}/auth/google`, {});
-  }
-   getToken(): string | null {
+  getToken(): string | null {
     return localStorage.getItem('token');
   }
+
   isTokenValid(): boolean {
-  const token = this.getToken();
-  if (!token) return false;
-  
-  try {
-    return !this.jwtHelper.isTokenExpired(token);
-  } catch {
-    return false;
+    const token = this.getToken();
+    if (!token) return false;
+    
+    try {
+      return !this.jwtHelper.isTokenExpired(token);
+    } catch {
+      return false;
+    }
+  }
+
+  ensureAuthentication(): boolean {
+    if (!this.isLoggedIn || !this.isTokenValid()) {
+      console.warn('Token invalide ou expiré, redirection vers login');
+      this.logout();
+      return false;
+    }
+    return true;
+  }
+
+  // Méthode utilitaire pour savoir si l'utilisateur s'est connecté via Google
+  isGoogleLogin(): boolean {
+    const googleData = localStorage.getItem('google_user_data');
+    return !!googleData;
+  }
+
+  // Méthode pour rafraîchir le token
+  refreshToken(): Observable<IAuthToken> {
+    const currentToken = this.getToken();
+    return this.http.post<IAuthToken>(`${environment.apiUrl}/api/Auth/refresh-token`, {
+      token: currentToken
+    }).pipe(
+      tap((authToken) => {
+        this.saveToken(authToken);
+        this.setLogoutTimer(authToken.token);
+      })
+    );
   }
 }
 
-
-ensureAuthentication(): boolean {
-  if (!this.isLoggedIn || !this.isTokenValid()) {
-    console.warn('Token invalide ou expiré, redirection vers login');
-    this.logout();
-    return false;
-  }
-  return true;
-}
-}
+// Déclaration pour l'objet global google
+declare const google: any;
