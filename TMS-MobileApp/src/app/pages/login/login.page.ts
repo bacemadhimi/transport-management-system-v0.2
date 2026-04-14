@@ -32,7 +32,7 @@ export class LoginPage implements AfterViewInit {
 
   // Platform-aware API URL detection at runtime
   apiUrl = Capacitor.isNativePlatform()
-    ? 'http://192.168.68.186:5191/api/Auth/login'
+    ? 'http://51.178.65.32:45880/api/Auth/login'
     : 'http://localhost:5191/api/Auth/login';
 
   isLoading = false;
