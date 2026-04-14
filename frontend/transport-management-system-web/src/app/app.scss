@@ -1,6 +1,9 @@
-/* Theme CSS Variables */
+/* ============================================
+   THEME CSS VARIABLES
+   ============================================ */
 :root {
   --primary-color: #3b82f6;
+  --primary-color-rgb: 59, 130, 246;
   --primary-gradient: linear-gradient(135deg, #1d4ed8 0%, #3b82f6 100%);
   --primary-dark: #1d4ed8;
   --sidebar-active: #3b82f6;
@@ -29,48 +32,20 @@
 }
 
 /* Theme variations - will be applied via JS */
-body.theme-blue {
-  --bg-main: linear-gradient(135deg, #f3f4f6 0%, #dbeafe 100%);
-}
+body.theme-blue { --bg-main: linear-gradient(135deg, #f3f4f6 0%, #dbeafe 100%); }
+body.theme-green { --bg-main: linear-gradient(135deg, #f3f4f6 0%, #d1fae5 100%); --icon-availability: #10b981; }
+body.theme-purple { --bg-main: linear-gradient(135deg, #f3f4f6 0%, #ede9fe 100%); }
+body.theme-orange { --bg-main: linear-gradient(135deg, #f3f4f6 0%, #ffedd5 100%); }
+body.theme-rose { --bg-main: linear-gradient(135deg, #f3f4f6 0%, #ffe4e6 100%); }
+body.theme-indigo { --bg-main: linear-gradient(135deg, #f3f4f6 0%, #e0e7ff 100%); }
+body.theme-gray { --bg-main: linear-gradient(135deg, #f3f4f6 0%, #f3f4f6 100%); }
+body.theme-slate { --bg-main: linear-gradient(135deg, #f3f4f6 0%, #f1f5f9 100%); }
+body.theme-teal { --bg-main: linear-gradient(135deg, #f3f4f6 0%, #ccfbf1 100%); }
+body.theme-brown { --bg-main: linear-gradient(135deg, #f3f4f6 0%, #fef3c7 100%); }
 
-body.theme-green {
-  --bg-main: linear-gradient(135deg, #f3f4f6 0%, #d1fae5 100%);
-  --icon-availability: #10b981;
-}
-
-body.theme-purple {
-  --bg-main: linear-gradient(135deg, #f3f4f6 0%, #ede9fe 100%);
-}
-
-body.theme-orange {
-  --bg-main: linear-gradient(135deg, #f3f4f6 0%, #ffedd5 100%);
-}
-
-body.theme-rose {
-  --bg-main: linear-gradient(135deg, #f3f4f6 0%, #ffe4e6 100%);
-}
-
-body.theme-indigo {
-  --bg-main: linear-gradient(135deg, #f3f4f6 0%, #e0e7ff 100%);
-}
-
-body.theme-gray {
-  --bg-main: linear-gradient(135deg, #f3f4f6 0%, #f3f4f6 100%);
-}
-
-body.theme-slate {
-  --bg-main: linear-gradient(135deg, #f3f4f6 0%, #f1f5f9 100%);
-}
-
-body.theme-teal {
-  --bg-main: linear-gradient(135deg, #f3f4f6 0%, #ccfbf1 100%);
-}
-
-body.theme-brown {
-  --bg-main: linear-gradient(135deg, #f3f4f6 0%, #fef3c7 100%);
-}
-
-/* Smooth transitions for theme changes */
+/* ============================================
+   GLOBAL STYLES & TRANSITIONS
+   ============================================ */
 * {
   transition: background-color 0.3s ease, 
               border-color 0.3s ease, 
@@ -78,6 +53,10 @@ body.theme-brown {
               color 0.3s ease,
               background-image 0.3s ease;
 }
+
+/* ============================================
+   MENU & SIDEBAR STYLES
+   ============================================ */
 
 /* Menu Group Headers */
 .menu-group-header {
@@ -108,7 +87,7 @@ body.theme-brown {
   background-color: var(--bg-light);
 }
 
-/* menu Language */
+/* Language menu */
 .flag-icon {
   color: green;
   cursor: pointer;
@@ -190,10 +169,10 @@ body.theme-brown {
   transition: all 0.3s ease;
 }
 
-/* Active Menu Item - Using Theme Variables */
+/* Active Menu Item */
 .active-menu-item {
   background: linear-gradient(135deg, var(--sidebar-active) 0%, var(--sidebar-active-dark) 100%) !important;
-  box-shadow: 0 6px 20px rgba(var(--primary-color-rgb, 59, 130, 246), 0.4);
+  box-shadow: 0 6px 20px rgba(var(--primary-color-rgb), 0.4);
   border-left: 5px solid var(--primary-dark);
   transform: translateX(0);
 }
@@ -211,7 +190,7 @@ body.theme-brown {
 
 .active-menu-item:hover {
   background: linear-gradient(135deg, var(--sidebar-active) 0%, var(--sidebar-active-dark) 100%) !important;
-  box-shadow: 0 8px 25px rgba(var(--primary-color-rgb, 59, 130, 246), 0.5);
+  box-shadow: 0 8px 25px rgba(var(--primary-color-rgb), 0.5);
 }
 
 /* Expansion Panels */
@@ -333,17 +312,18 @@ body.theme-brown {
   border-bottom: 2px solid var(--border-color);
 }
 
-/* Toolbar improvements - Using Theme Variables */
+/* ============================================
+   TOOLBAR & MAIN CONTENT
+   ============================================ */
+
 .bg-blue-600\! {
   background: var(--primary-gradient) !important;
 }
 
-/* Main content background - THIS IS THE BLUE YOU WANT TO CHANGE */
 .bg-gradient-to-br.from-gray-50.to-blue-50 {
   background: var(--bg-main) !important;
 }
 
-/* Update main content background */
 main.min-h-screen {
   background: var(--bg-main) !important;
 }
@@ -353,7 +333,10 @@ main.min-h-screen {
   transform-origin: top right;
 }
 
-/* Scrollbar styling for sidebar */
+/* ============================================
+   SCROLLBAR STYLES
+   ============================================ */
+
 mat-drawer::-webkit-scrollbar {
   width: 8px;
 }
@@ -373,144 +356,6 @@ mat-drawer::-webkit-scrollbar-thumb:hover {
   background: linear-gradient(to bottom, #94a3b8, #64748b);
 }
 
-/* Notification badge animation */
-@keyframes pulse {
-  0%, 100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.7;
-  }
-}
-
-.animate-pulse {
-  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-}
-
-/* Smooth transitions */
-.mat-list-item, .mat-expansion-panel-header, button {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
-}
-
-/* Custom hover button class using theme variables */
-.hover-button:hover {
-  background-color: var(--primary-dark) !important;
-  transform: translateY(-1px);
-}
-
-/* Theme picker button */
-.theme-picker-btn {
-  background-color: var(--primary-color);
-}
-
-.theme-picker-btn:hover {
-  background-color: var(--primary-dark) !important;
-}
-
-/* Settings dropdown enhancements */
-.shadow-2xl {
-  box-shadow: 0 20px 50px -12px rgba(0, 0, 0, 0.25);
-}
-
-.border-gray-100 {
-  border-color: var(--border-color);
-}
-
-/* Language selector flags */
-img[alt*="English"], img[alt*="French"] {
-  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
-  transition: filter 0.3s ease;
-}
-
-button:hover img[alt*="English"], 
-button:hover img[alt*="French"] {
-  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.2));
-}
-
-/* Active language state */
-.active-language {
-  background-color: rgba(var(--primary-color-rgb), 0.1) !important;
-}
-
-/* Theme active state */
-.theme-active {
-  background-color: rgba(var(--primary-color-rgb), 0.1) !important;
-}
-
-/* Icon colors for dropdown menu */
-.icon-overtime {
-  color: var(--icon-overtime) !important;
-}
-
-.icon-availability {
-  color: var(--icon-availability) !important;
-}
-
-.icon-truck {
-  color: var(--icon-truck) !important;
-}
-
-.icon-dayoff {
-  color: var(--icon-dayoff) !important;
-}
-
-.icon-sync {
-  color: var(--icon-sync) !important;
-}
-
-.icon-settings {
-  color: var(--icon-settings) !important;
-}
-
-/* Make sure text-white stays white */
-.text-white {
-  color: white !important;
-}
-
-/* Email hover state */
-.hover\:text-gray-200:hover {
-  color: #e5e7eb !important;
-}
-
-/* Card backgrounds */
-.mat-card, .card {
-  background-color: var(--bg-card) !important;
-  border-color: var(--border-color) !important;
-}
-
-/* Table styles */
-table {
-  background-color: var(--bg-card) !important;
-}
-
-.mat-table {
-  background-color: var(--bg-card) !important;
-}
-
-.mat-row, .mat-header-row {
-  border-bottom-color: var(--border-color) !important;
-}
-
-/* Dialog/Modal backgrounds */
-.mat-dialog-container {
-  background-color: var(--bg-card) !important;
-}
-
-/* Settings button active state */
-button.active {
-  background-color: rgba(255, 255, 255, 0.2);
-}
-
-/* Rotate animation */
-.rotate-90 {
-  transform: rotate(90deg);
-}
-
-/* Custom scrollbar for dropdown */
-.max-h-96 {
-  max-height: 24rem;
-}
-
 .max-h-96::-webkit-scrollbar {
   width: 4px;
 }
@@ -528,42 +373,179 @@ button.active {
   background: #94a3b8;
 }
 
-/* Theme-aware hover class */
-.hover-theme-light:hover {
+/* ============================================
+   ANIMATIONS
+   ============================================ */
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* ============================================
+   BUTTONS & INTERACTIVE ELEMENTS
+   ============================================ */
+
+.mat-list-item, .mat-expansion-panel-header, button {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.hover-button:hover {
+  background-color: var(--primary-dark) !important;
+  transform: translateY(-1px);
+}
+
+.theme-picker-btn {
+  background-color: var(--primary-color);
+}
+
+.theme-picker-btn:hover {
+  background-color: var(--primary-dark) !important;
+}
+
+button.active {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+/* ============================================
+   CARDS, TABLES & DIALOGS
+   ============================================ */
+
+.mat-card, .card {
+  background-color: var(--bg-card) !important;
+  border-color: var(--border-color) !important;
+}
+
+table {
+  background-color: var(--bg-card) !important;
+}
+
+.mat-table {
+  background-color: var(--bg-card) !important;
+}
+
+.mat-row, .mat-header-row {
+  border-bottom-color: var(--border-color) !important;
+}
+
+.mat-dialog-container {
+  background-color: var(--bg-card) !important;
+}
+
+.shadow-2xl {
+  box-shadow: 0 20px 50px -12px rgba(0, 0, 0, 0.25);
+}
+
+.border-gray-100 {
+  border-color: var(--border-color);
+}
+
+.border-gray-200 {
+  border-color: #e5e7eb;
+}
+
+/* ============================================
+   LANGUAGE & THEME SELECTORS
+   ============================================ */
+
+img[alt*="English"], img[alt*="French"] {
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+  transition: filter 0.3s ease;
+}
+
+button:hover img[alt*="English"], 
+button:hover img[alt*="French"] {
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.2));
+}
+
+.active-language {
   background-color: rgba(var(--primary-color-rgb), 0.1) !important;
 }
 
-/* Theme-aware text color on hover */
-.group:hover .group-hover\:text-theme {
-  color: var(--primary-color) !important;
+.theme-active {
+  background-color: rgba(var(--primary-color-rgb), 0.1) !important;
 }
 
-/* Icon colors using theme */
+/* ============================================
+   ICON COLORS
+   ============================================ */
+
+.icon-overtime { color: var(--icon-overtime) !important; }
+.icon-availability { color: var(--icon-availability) !important; }
+.icon-truck { color: var(--icon-truck) !important; }
+.icon-dayoff { color: var(--icon-dayoff) !important; }
+.icon-sync { color: var(--icon-sync) !important; }
+.icon-settings { color: var(--icon-settings) !important; }
+
 [style*="var(--primary-color)"] {
   transition: all 0.3s ease;
 }
 
-/* Ensure proper contrast for admin badge */
+/* ============================================
+   UTILITY CLASSES
+   ============================================ */
+
+.text-white {
+  color: white !important;
+}
+
+.hover\:text-gray-200:hover {
+  color: #e5e7eb !important;
+}
+
+.rotate-90 {
+  transform: rotate(90deg);
+}
+
+.max-h-96 {
+  max-height: 24rem;
+}
+
+.hover-theme-light:hover {
+  background-color: rgba(var(--primary-color-rgb), 0.1) !important;
+}
+
+.group:hover .group-hover\:text-theme {
+  color: var(--primary-color) !important;
+}
+
 [style*="var(--primary-color)"][style*="white"] {
   font-weight: 500;
   box-shadow: 0 2px 4px rgba(var(--primary-color-rgb), 0.3);
 }
 
-/* Dropdown border using theme light version */
-.border-gray-200 {
-  border-color: #e5e7eb;
-}
-
-/* Footer text using theme text color */
 [style*="var(--text-muted)"] {
   opacity: 0.8;
 }
-/* Notifications Panel Theme Styles */
+
+/* ============================================
+   NOTIFICATIONS PANEL
+   ============================================ */
+
 .theme-notifications-panel {
   box-shadow: 0 20px 50px -12px rgba(var(--primary-color-rgb), 0.25);
 }
 
-/* Notification Item Styles */
 .notification-item {
   position: relative;
   transition: all 0.3s ease;
@@ -583,7 +565,10 @@ button.active {
   background-color: rgba(var(--primary-color-rgb), 0.1) !important;
 }
 
-/* Status badges with theme */
+.notification-item:first-child {
+  animation: slideIn 0.3s ease-out;
+}
+
 .status-badge {
   padding: 4px 8px;
   border-radius: 9999px;
@@ -602,7 +587,6 @@ button.active {
   color: white;
 }
 
-/* Notification icon containers */
 .notification-icon-container {
   transition: all 0.3s ease;
 }
@@ -611,47 +595,11 @@ button.active {
   transform: scale(1.1);
 }
 
-/* Custom scrollbar with theme colors */
-.theme-notifications-panel::-webkit-scrollbar {
-  width: 4px;
-}
-
-.theme-notifications-panel::-webkit-scrollbar-track {
-  background: var(--bg-light);
-}
-
-.theme-notifications-panel::-webkit-scrollbar-thumb {
-  background: var(--primary-color);
-  border-radius: 4px;
-}
-
-.theme-notifications-panel::-webkit-scrollbar-thumb:hover {
-  background: var(--primary-dark);
-}
-
-/* Animation for new notifications */
-@keyframes slideIn {
-  from {
-    opacity: 0;
-    transform: translateX(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-
-.notification-item:first-child {
-  animation: slideIn 0.3s ease-out;
-}
-
-/* Time stamp */
 .notification-time {
   color: var(--text-muted);
   font-size: 0.75rem;
 }
 
-/* Trip reference link */
 .trip-reference {
   color: var(--primary-color);
   text-decoration: none;
@@ -663,7 +611,6 @@ button.active {
   text-decoration: underline;
 }
 
-/* Empty state */
 .notifications-empty {
   display: flex;
   flex-direction: column;
@@ -681,7 +628,6 @@ button.active {
   opacity: 0.5;
 }
 
-/* Footer button */
 .footer-button {
   color: var(--primary-color);
   transition: all 0.3s ease;
@@ -690,6 +636,24 @@ button.active {
 .footer-button:hover {
   color: var(--primary-dark);
 }
+
+.theme-notifications-panel::-webkit-scrollbar {
+  width: 4px;
+}
+
+.theme-notifications-panel::-webkit-scrollbar-track {
+  background: var(--bg-light);
+}
+
+.theme-notifications-panel::-webkit-scrollbar-thumb {
+  background: var(--primary-color);
+  border-radius: 4px;
+}
+
+.theme-notifications-panel::-webkit-scrollbar-thumb:hover {
+  background: var(--primary-dark);
+}
+
 /* ============================================
    MOBILE RESPONSIVE STYLES
    ============================================ */
@@ -699,7 +663,6 @@ button.active {
   display: none;
 }
 
-/* Mobile-first approach - Default styles for mobile */
 @media (max-width: 768px) {
   /* Show hamburger menu on mobile */
   .hamburger-menu {
@@ -735,20 +698,6 @@ button.active {
     height: 36px !important;
   }
 
-  /* Hide permissions menu on very small screens */
-  @media (max-width: 480px) {
-    .mat-toolbar [data-menu="permissions"] {
-      display: none !important;
-    }
-  }
-
-  /* Hide theme picker on very small screens */
-  @media (max-width: 400px) {
-    .mat-toolbar [data-menu="theme"] {
-      display: none !important;
-    }
-  }
-
   /* Dropdown/Panel Mobile Styles */
   .absolute.right-0.top-12,
   .absolute.right-0.top-10 {
@@ -765,6 +714,7 @@ button.active {
   /* Drawer/Sidebar Mobile Styles */
   mat-drawer {
     width: 280px !important;
+    z-index: 1000 !important;
   }
 
   /* When drawer is closed on mobile */
@@ -785,7 +735,20 @@ button.active {
 
   /* Body class when menu is open */
   body.menu-open {
-    overflow: hidden;
+    overflow: hidden !important;
+  }
+
+  /* Add overlay when drawer is open */
+  body.menu-open::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 999;
+    animation: fadeIn 0.3s ease;
   }
 
   /* Notification panel mobile */
@@ -799,9 +762,27 @@ button.active {
   }
 }
 
+/* Very small screen adjustments */
+@media (max-width: 480px) {
+  .mat-toolbar [data-menu="permissions"] {
+    display: none !important;
+  }
+}
+
+@media (max-width: 400px) {
+  .mat-toolbar [data-menu="theme"] {
+    display: none !important;
+  }
+}
+
+/* ============================================
+   DEVICE-SPECIFIC STYLES
+   ============================================ */
+
 /* iOS specific styles */
 body.ios-device {
   /* Add iOS-specific fixes if needed */
+  -webkit-tap-highlight-color: transparent;
 }
 
 /* Touch-friendly improvements */
@@ -814,33 +795,18 @@ body.ios-device {
     min-height: 48px !important;
   }
 }
-/* Mobile drawer overlay effect */
-@media (max-width: 768px) {
-  /* Add overlay when drawer is open */
-  body.menu-open::before {
-    content: '';
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.5);
-    z-index: 999;
-    animation: fadeIn 0.3s ease;
-  }
-  
-  /* Ensure drawer is above overlay */
-  mat-drawer {
-    z-index: 1000 !important;
-  }
-  
-  /* Prevent body scroll when menu is open */
-  body.menu-open {
-    overflow: hidden !important;
-  }
-}
 
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+/* ============================================
+   MOBILE SAFE AREA SUPPORT (iOS)
+   ============================================ */
+@supports (padding: max(0px)) {
+  @media (max-width: 768px) {
+    mat-toolbar {
+      padding-top: max(0px, env(safe-area-inset-top)) !important;
+    }
+    
+    mat-drawer {
+      padding-top: max(0px, env(safe-area-inset-top)) !important;
+    }
+  }
 }
