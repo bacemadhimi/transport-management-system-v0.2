@@ -269,40 +269,32 @@ export class LoginPage implements AfterViewInit {
       }, 1500);
 
     } catch (error: any) {
-      this.isLoading = false;
-      console.log('API login failed, attempting offline fallback...');
-    
-      let errorMessage = 'Login failed\n\n';
+  this.isLoading = false;
+  console.log('API login failed:', error);
 
-if (error.status === 0) {
-    errorMessage += 'Network error: Cannot reach server\n\n';
-    errorMessage += `Error message: ${error.message || 'No message'}\n`;
-    errorMessage += `URL called: ${this.apiUrl}\n`;
-    errorMessage += `App origin: ${window.location.origin}\n`;
-    errorMessage += `Platform: ${this.platform}\n`;
-    
-} else if (error.status === 404) {
-    errorMessage += `API endpoint not found (404)\n\n`;
-    errorMessage += `URL called: ${this.apiUrl}\n`;
-    errorMessage += `App origin: ${window.location.origin}\n`;
-    errorMessage += `Message: ${error.message}`;
-    
-} else if (error.status === 405) {
-    errorMessage += `Method not allowed (405)\n\n`;
-    errorMessage += `URL called: ${this.apiUrl}\n`;
-    errorMessage += `App origin: ${window.location.origin}\n`;
-    errorMessage += `Message: ${error.message}`;
-    
-} else {
-    errorMessage += `Status: ${error.status}\n`;
-    errorMessage += `Message: ${error.message}\n`;
-    errorMessage += `URL called: ${this.apiUrl}\n`;
-    errorMessage += `App origin: ${window.location.origin}`;
+  let errorMessage = '';
+
+  if (error.status === 400) {
+    errorMessage = 'Identifiants incorrects. Veuillez vérifier votre email et mot de passe.';
+   
+    await this.showAlert('Échec de connexion', errorMessage);
+    return;
+  } else if (error.status === 0) {
+    errorMessage = 'Impossible de contacter le serveur. Tentative de connexion hors ligne...';
+  } else if (error.status === 404) {
+    errorMessage = 'Service indisponible. Tentative de connexion hors ligne...';
+  } else if (error.status === 405) {
+    errorMessage = 'Erreur de méthode HTTP. Tentative de connexion hors ligne...';
+  } else {
+    errorMessage = `Erreur inattendue (${error.status}). Tentative de connexion hors ligne...`;
+  }
+
+
+  await this.showAlert('Connexion', errorMessage);
+  
+
+  await this.handleOfflineLogin(email, password);
 }
-
-await this.showAlert('Login Error', errorMessage);
-      await this.handleOfflineLogin(email, password);
-    }
   }
 
   private async handleOfflineLogin(email: string, password: string) {

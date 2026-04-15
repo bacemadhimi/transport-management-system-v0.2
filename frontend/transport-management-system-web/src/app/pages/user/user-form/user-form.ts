@@ -344,7 +344,7 @@ private loadUserData(): void {
 
 
 private createDataUrl(base64: string): string {
-  if (!base64) return '/default-avatar.png';
+  if (!base64) return 'default-avatar.png';
 
 
   let mimeType = 'image/jpeg';
@@ -389,7 +389,7 @@ private isPureBase64(str: string): boolean {
 }
 
 onImageError(event: any): void {
-  event.target.src = '/default-avatar.png';
+  event.target.src = 'default-avatar.png';
   event.target.onerror = null;
 }
 
