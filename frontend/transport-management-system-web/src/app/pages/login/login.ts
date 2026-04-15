@@ -116,14 +116,13 @@ export class Login implements OnInit {
 
 onGoogleLogin() {
   this.isLoading = true;
-
+  this.loginError = null;
 
   this.authService.loginWithGoogle().subscribe({
     next: (result) => {
       this.authService.saveToken(result);
-      this.isLoading = false;
+      this.isLoading = false; 
       this.redirectByRole(result.roles);
-
       this.snackBar.open(
         'Connexion avec Google réussie',
         'Fermer',
