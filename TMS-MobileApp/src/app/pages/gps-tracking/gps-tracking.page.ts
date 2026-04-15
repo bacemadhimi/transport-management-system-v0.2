@@ -36,6 +36,13 @@ export class GPSTrackingPage implements OnInit, OnDestroy {
     this.isDetailsExpanded = !this.isDetailsExpanded;
   }
 
+  // ✅ FONCTION RÉDUIRE/DÉVELOPPER CARTE INFO (vitesse/distance)
+  isInfoCardExpanded: boolean = true;
+
+  toggleInfoCard() {
+    this.isInfoCardExpanded = !this.isInfoCardExpanded;
+  }
+
   currentLocation: { lat: number, lng: number } | null = null;
   destination: { lat: number, lng: number, address: string } | null = null;
   isTracking: boolean = false;
@@ -184,6 +191,12 @@ export class GPSTrackingPage implements OnInit, OnDestroy {
 
         console.log('📦 Trip data received:', trip);
         console.log('📊 Trip status from API:', trip.tripStatus);
+
+        // ✅ CHARGER les données réelles du véhicule et chauffeur assignés
+        this.truckImmatriculation = trip.truckImmatriculation || trip.vehiclePlate || trip.truck?.immatriculation || 'Non défini';
+        this.driverName = trip.driverName || trip.driver?.name || trip.assignedDriver || 'Non défini';
+        console.log('🚛 Véhicule assigné:', this.truckImmatriculation);
+        console.log('👤 Chauffeur assigné:', this.driverName);
 
         // ✅ SYNCHRONISER le statut de mission depuis l'API
         this.syncMissionStatusFromAPI(trip.tripStatus);
@@ -735,53 +748,45 @@ export class GPSTrackingPage implements OnInit, OnDestroy {
           <div class="truck-svg">
             <svg viewBox="0 0 72 38" xmlns="http://www.w3.org/2000/svg" width="72" height="38">
               <defs>
-                <!-- Filtre d'ombre 3D -->
                 <filter id="ts3d" x="-10%" y="-10%" width="130%" height="140%">
                   <feDropShadow dx="0" dy="2.5" stdDeviation="2" flood-color="#000" flood-opacity=".3"/>
                 </filter>
-                <!-- Gradient 3D remorque blanc bombé -->
                 <linearGradient id="tb3d" x1="0" y1="0" x2="0.15" y2="1">
                   <stop offset="0%" stop-color="#ffffff"/>
                   <stop offset="30%" stop-color="#f8f9fa"/>
                   <stop offset="70%" stop-color="#e5e7eb"/>
                   <stop offset="100%" stop-color="#d1d5db"/>
                 </linearGradient>
-                <!-- Reflet haut remorque (effet bombé) -->
                 <linearGradient id="tbShine" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stop-color="#ffffff" stop-opacity="0.9"/>
                   <stop offset="50%" stop-color="#ffffff" stop-opacity="0.3"/>
                   <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
                 </linearGradient>
-                <!-- Gradient 3D cabine sombre bombée -->
+                <!-- CABINE NOIRE 3D -->
                 <linearGradient id="tc3d" x1="0" y1="0" x2="0.2" y2="1">
-                  <stop offset="0%" stop-color="#6b7280"/>
-                  <stop offset="40%" stop-color="#4b5563"/>
-                  <stop offset="100%" stop-color="#1f2937"/>
+                  <stop offset="0%" stop-color="#4b5563"/>
+                  <stop offset="40%" stop-color="#1f2937"/>
+                  <stop offset="100%" stop-color="#111827"/>
                 </linearGradient>
-                <!-- Reflet cabine (effet bombé) -->
                 <linearGradient id="tcShine" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stop-color="#9ca3af" stop-opacity="0.5"/>
-                  <stop offset="100%" stop-color="#9ca3af" stop-opacity="0"/>
+                  <stop offset="0%" stop-color="#6b7280" stop-opacity="0.5"/>
+                  <stop offset="100%" stop-color="#6b7280" stop-opacity="0"/>
                 </linearGradient>
-                <!-- Gradient pare-brise 3D -->
                 <linearGradient id="glass3d" x1="0" y1="0" x2="0.3" y2="1">
                   <stop offset="0%" stop-color="#bfdbfe"/>
                   <stop offset="60%" stop-color="#93c5fd"/>
                   <stop offset="100%" stop-color="#60a5fa" stop-opacity="0.6"/>
                 </linearGradient>
-                <!-- Gradient roues 3D -->
                 <radialGradient id="w3d" cx="40%" cy="30%" r="60%">
                   <stop offset="0%" stop-color="#4b5563"/>
                   <stop offset="50%" stop-color="#1f2937"/>
                   <stop offset="100%" stop-color="#111827"/>
                 </radialGradient>
-                <!-- Gradient phare -->
                 <radialGradient id="hlGlow" cx="50%" cy="50%" r="50%">
                   <stop offset="0%" stop-color="#fde68a" stop-opacity="1"/>
                   <stop offset="60%" stop-color="#fbbf24" stop-opacity="0.5"/>
                   <stop offset="100%" stop-color="#f59e0b" stop-opacity="0"/>
                 </radialGradient>
-                <!-- Gradient feu arrière -->
                 <radialGradient id="tlGlow" cx="50%" cy="50%" r="50%">
                   <stop offset="0%" stop-color="#fca5a5"/>
                   <stop offset="60%" stop-color="#ef4444"/>
@@ -789,86 +794,54 @@ export class GPSTrackingPage implements OnInit, OnDestroy {
                 </radialGradient>
               </defs>
 
-              <!-- Ombre portée au sol -->
               <ellipse cx="36" cy="35.5" rx="30" ry="2.5" fill="rgba(0,0,0,.18)"/>
 
-              <!-- ===== REMORQUE ===== -->
-              <!-- Corps principal 3D bombé -->
               <path d="M4,8 Q4,6 6,6 L40,6 Q42,6 42,8 L42,26 Q42,28 40,28 L6,28 Q4,28 4,26 Z"
                     fill="url(#tb3d)" stroke="#d1d5db" stroke-width=".5" filter="url(#ts3d)"/>
-              
-              <!-- Reflet bombé haut -->
               <path d="M5,7 L40,7 L40,13 Q22,11 5,14 Z" fill="url(#tbShine)" opacity=".7"/>
-              
-              <!-- Ombre bombée bas -->
               <path d="M5,24 Q22,22 40,24 L40,27 Q40,28 39,28 L7,28 Q4,28 4,27 L4,26 Q5,26 5,24 Z"
                     fill="rgba(0,0,0,.06)"/>
-
-              <!-- Nervures verticales 3D -->
               <line x1="10" y1="7" x2="10" y2="27" stroke="#e5e7eb" stroke-width=".4"/>
               <line x1="17" y1="7" x2="17" y2="27" stroke="#e5e7eb" stroke-width=".4"/>
               <line x1="24" y1="7" x2="24" y2="27" stroke="#e5e7eb" stroke-width=".4"/>
               <line x1="31" y1="7" x2="31" y2="27" stroke="#e5e7eb" stroke-width=".4"/>
               <line x1="38" y1="7" x2="38" y2="27" stroke="#e5e7eb" stroke-width=".4"/>
-
-              <!-- Feu arrière rouge 3D -->
               <ellipse cx="4.5" cy="23" rx="1.8" ry="2.5" fill="url(#tlGlow)"/>
               <rect x="3" y="21.5" width="2" height="3" rx=".8" fill="#ef4444" opacity=".85"/>
 
-              <!-- ===== CABINE ===== -->
-              <!-- Corps cabine 3D bombé -->
+              <!-- CABINE NOIRE -->
               <path d="M42,12 Q42,10 44,10 L52,10 Q54,10 55,12 L62,22 Q63,24 63,26 L63,28 Q63,28 61,28 L44,28 Q42,28 42,26 Z"
                     fill="url(#tc3d)" stroke="#374151" stroke-width=".5" filter="url(#ts3d)"/>
-              
-              <!-- Reflet bombé cabine -->
               <path d="M43,11 L52,11 L61,22 L61,16 Q54,13 43,12 Z" fill="url(#tcShine)" opacity=".6"/>
-
-              <!-- Contour cabine (effet profondeur) -->
               <path d="M42,12 L42,28" stroke="#374151" stroke-width=".3" opacity=".5"/>
 
-              <!-- ===== PARE-BRISE 3D ===== -->
               <path d="M44,12 L52,12 L59,21 L44,21 Z"
                     fill="url(#glass3d)" stroke="#60a5fa" stroke-width=".3" opacity=".85"/>
-              <!-- Reflet pare-brise -->
               <path d="M45,13 L49,13 L54,19 L45,18 Z" fill="#fff" opacity=".35"/>
-              <!-- Ligne pare-brise -->
               <line x1="44" y1="16.5" x2="58" y2="16.5" stroke="#93c5fd" stroke-width=".3" opacity=".4"/>
 
-              <!-- ===== PHARE AVANT 3D ===== -->
-              <!-- Halo lumineux -->
               <ellipse cx="63.5" cy="20" rx="3" ry="2.5" fill="url(#hlGlow)"/>
-              <!-- Phare principal -->
               <ellipse cx="63" cy="20" rx="1.8" ry="1.4" fill="#fde68a"/>
-              <!-- Bord phare -->
               <ellipse cx="63" cy="20" rx="1.8" ry="1.4" fill="none" stroke="#f59e0b" stroke-width=".3" opacity=".6"/>
 
-              <!-- ===== CHÂSSIS ===== -->
               <rect x="8" y="27" width="53" height="1.5" rx=".5" fill="#9ca3af"/>
-              <!-- Ombre châssis -->
               <rect x="8" y="28" width="53" height=".8" rx=".3" fill="rgba(0,0,0,.1)"/>
 
-              <!-- ===== ROUES 3D ===== -->
-              <!-- Roue avant -->
               <circle cx="56" cy="31.5" r="4" fill="url(#w3d)" stroke="#111827" stroke-width=".4"/>
               <circle cx="56" cy="31.5" r="2.2" fill="#6b7280"/>
               <circle cx="56" cy="31.5" r="1" fill="#9ca3af"/>
               <circle cx="56" cy="31.5" r=".4" fill="#d1d5db"/>
-              <!-- Reflet pneu -->
               <path d="M53,30 Q56,29 59,30" stroke="rgba(255,255,255,.15)" stroke-width=".5" fill="none"/>
 
-              <!-- Roue arrière -->
               <circle cx="16" cy="31.5" r="4" fill="url(#w3d)" stroke="#111827" stroke-width=".4"/>
               <circle cx="16" cy="31.5" r="2.2" fill="#6b7280"/>
               <circle cx="16" cy="31.5" r="1" fill="#9ca3af"/>
               <circle cx="16" cy="31.5" r=".4" fill="#d1d5db"/>
-              <!-- Reflet pneu -->
               <path d="M13,30 Q16,29 19,30" stroke="rgba(255,255,255,.15)" stroke-width=".5" fill="none"/>
 
-              <!-- Bavettes anti-projections -->
               <rect x="11" y="28" width="3" height="3" rx=".5" fill="#4b5563" opacity=".4"/>
               <rect x="53" y="28" width="3" height="3" rx=".5" fill="#4b5563" opacity=".4"/>
 
-              <!-- ===== BADGE STATUT ===== -->
               <circle cx="60" cy="4" r="5" fill="${statusColor}" stroke="#fff" stroke-width="1.5" filter="url(#ts3d)"/>
               ${isUrgent ? `<circle cx="60" cy="4" r="7.5" fill="none" stroke="${statusColor}" stroke-width="1" opacity=".4">
                 <animate attributeName="r" values="7;8.5;7" dur="1s" repeatCount="indefinite"/>
@@ -945,7 +918,7 @@ export class GPSTrackingPage implements OnInit, OnDestroy {
   }
 
   /**
-   * Créer l'icône de destination - Style Épingle Pro (Comme Google Maps/Uber)
+   * Créer l'icône de destination - Style Épingle 3D ROUGE MAT mélangé ORANGÉ FONCÉ
    */
   private createDestinationIcon(): L.DivIcon {
     return L.divIcon({
@@ -954,52 +927,81 @@ export class GPSTrackingPage implements OnInit, OnDestroy {
           position: relative;
           width: 50px;
           height: 65px;
-          filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3));
+          filter: drop-shadow(0 6px 12px rgba(0,0,0,0.4));
         ">
           <!-- Pin shadow -->
           <div style="
             position: absolute;
-            bottom: 8px;
-            left: 5px;
-            width: 40px;
-            height: 10px;
-            background: radial-gradient(ellipse at center, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0) 70%);
+            bottom: 6px;
+            left: 3px;
+            width: 44px;
+            height: 12px;
+            background: radial-gradient(ellipse at center, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0) 70%);
             border-radius: 50%;
-            filter: blur(1px);
+            filter: blur(2px);
           "></div>
 
-          <!-- Pin marker -->
+          <!-- Pin marker 3D -->
           <svg width="50" height="65" viewBox="0 0 50 65">
-            <!-- Pin shadow base -->
-            <ellipse cx="25" cy="58" rx="18" ry="5" fill="rgba(0,0,0,0.2)"/>
-
-            <!-- Pin body -->
-            <path d="M 25 2 
-                     C 12 2 2 12 2 25 
-                     C 2 42 25 62 25 62 
-                     C 25 62 48 42 48 25 
-                     C 48 12 38 2 25 2 Z" 
-                  fill="url(#pinGradient)" 
-                  stroke="#c0275a" 
-                  stroke-width="2"/>
-
-            <!-- Pin highlight -->
-            <ellipse cx="20" cy="18" rx="8" ry="10" fill="rgba(255,255,255,0.3)"/>
-
-            <!-- Center circle -->
-            <circle cx="25" cy="25" r="10" fill="white" opacity="0.9"/>
-
-            <!-- Location icon -->
-            <circle cx="25" cy="25" r="6" fill="#f5576c"/>
-
-            <!-- Gradient -->
             <defs>
-              <linearGradient id="pinGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" style="stop-color:#f5576c;stop-opacity:1" />
-                <stop offset="50%" style="stop-color:#d63384;stop-opacity:1" />
-                <stop offset="100%" style="stop-color:#c0275a;stop-opacity:1" />
+              <!-- Gradient 3D ROUGE MAT mélangé ORANGÉ FONCÉ -->
+              <linearGradient id="pinGrad3d" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" style="stop-color:#c0392b;stop-opacity:1" />
+                <stop offset="30%" style="stop-color:#a93226;stop-opacity:1" />
+                <stop offset="60%" style="stop-color:#d35400;stop-opacity:1" />
+                <stop offset="100%" style="stop-color:#a04000;stop-opacity:1" />
               </linearGradient>
+              <!-- Reflet 3D haut -->
+              <linearGradient id="pinShine" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" style="stop-color:#ffffff;stop-opacity:0.5" />
+                <stop offset="100%" style="stop-color:#ffffff;stop-opacity:0" />
+              </linearGradient>
+              <!-- Ombre 3D bas -->
+              <radialGradient id="pinShadow" cx="50%" cy="80%" r="50%">
+                <stop offset="0%" style="stop-color:#000000;stop-opacity:0.3" />
+                <stop offset="100%" style="stop-color:#000000;stop-opacity:0" />
+              </radialGradient>
             </defs>
+
+            <!-- Ombre au sol -->
+            <ellipse cx="25" cy="60" rx="16" ry="4" fill="rgba(0,0,0,0.25)"/>
+
+            <!-- Corps épingle 3D -->
+            <path d="M 25 2
+                     C 12 2 2 12 2 25
+                     C 2 42 25 62 25 62
+                     C 25 62 48 42 48 25
+                     C 48 12 38 2 25 2 Z"
+                  fill="url(#pinGrad3d)"
+                  stroke="#7b241c"
+                  stroke-width="2.5"/>
+
+            <!-- Reflet 3D haut gauche -->
+            <path d="M 10 10 Q 15 5 25 5 Q 35 5 40 10 Q 30 8 25 8 Q 18 8 10 10 Z"
+                  fill="url(#pinShine)" opacity="0.6"/>
+
+            <!-- Ombre 3D bas -->
+            <path d="M 8 35 Q 25 55 42 35 Q 40 40 25 58 Q 10 40 8 35 Z"
+                  fill="url(#pinShadow)" opacity="0.5"/>
+
+            <!-- Bordure intérieure effet 3D -->
+            <path d="M 25 6
+                     C 14 6 6 14 6 25
+                     C 6 40 25 58 25 58
+                     C 25 58 44 40 44 25
+                     C 44 14 36 6 25 6 Z"
+                  fill="none"
+                  stroke="rgba(255,255,255,0.2)"
+                  stroke-width="1"/>
+
+            <!-- Cercle central 3D -->
+            <circle cx="25" cy="25" r="12" fill="#ffffff" opacity="0.95"/>
+            <circle cx="25" cy="25" r="12" fill="url(#pinShine)" opacity="0.4"/>
+            <circle cx="25" cy="25" r="12" fill="none" stroke="rgba(0,0,0,0.1)" stroke-width="1"/>
+
+            <!-- Icône location centrale -->
+            <circle cx="25" cy="25" r="7" fill="url(#pinGrad3d)"/>
+            <circle cx="25" cy="25" r="3" fill="#ffffff"/>
           </svg>
         </div>
       `,
@@ -1718,6 +1720,31 @@ export class GPSTrackingPage implements OnInit, OnDestroy {
       tripReference: this.tripReference,
       tripStatus: 'DeliveryInProgress'
     });
+  }
+
+  /**
+   * Navigate to destination using external GPS app
+   */
+  navigateToDestination() {
+    if (!this.destination) {
+      this.showToast('Destination non définie', 'warning');
+      return;
+    }
+
+    const lat = this.destination.lat;
+    const lng = this.destination.lng;
+
+    // Ouvrir l'app de navigation par défaut
+    const url = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
+    window.open(url, '_system');
+  }
+
+  /**
+   * Reset mission to pending state
+   */
+  resetMission() {
+    this.missionStatus = 'pending';
+    this.showToast('Mission réinitialisée', 'success');
   }
 
   // ==================== QR CODE SCANNER METHODS ====================
