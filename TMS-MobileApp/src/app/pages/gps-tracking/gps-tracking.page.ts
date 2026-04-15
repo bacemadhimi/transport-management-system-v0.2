@@ -29,6 +29,13 @@ export class GPSTrackingPage implements OnInit, OnDestroy {
   destinationMarker!: L.Marker;
   routePolyline?: L.Polyline;
 
+  // ✅ FONCTION RÉDUIRE/DÉVELOPPER LES DÉTAILS
+  isDetailsExpanded: boolean = true;
+
+  toggleDetails() {
+    this.isDetailsExpanded = !this.isDetailsExpanded;
+  }
+
   currentLocation: { lat: number, lng: number } | null = null;
   destination: { lat: number, lng: number, address: string } | null = null;
   isTracking: boolean = false;
@@ -65,9 +72,12 @@ export class GPSTrackingPage implements OnInit, OnDestroy {
   manualQRCode: string = '';
   currentTripForQR: any = null;
 
+  currentTime: Date = new Date();
+  private timeInterval: any;
+
   constructor(
     private gpsService: GPSTrackingService,
-    private authService: AuthService,
+    public authService: AuthService,
     private route: ActivatedRoute,
     private router: Router,
     private alertController: AlertController,

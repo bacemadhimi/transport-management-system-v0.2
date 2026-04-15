@@ -84,11 +84,6 @@
         <p>Anciens trajets</p>
       </ion-card>
 
-      <ion-card class="action-card" button (click)="navigateToGPSTracking()">
-        <ion-icon name="location" class="action-icon"></ion-icon>
-        <h3>Suivi GPS</h3>
-        <p>Carte en temps réel</p>
-      </ion-card>
 
       <ion-card class="action-card" button (click)="navigateToChatbot()">
         <ion-icon name="sparkles" class="action-icon"></ion-icon>
@@ -286,17 +281,40 @@
           <!-- Status Update Section -->
           <div class="status-update-section" *ngIf="trip.tripStatus !== 'Receipt' && trip.tripStatus !== 'Cancelled'">
             
-            <!-- Accepter la Mission -->
-            <ion-button 
-              expand="block" 
-              class="btn-orange"
-              *ngIf="trip.tripStatus === 'Pending' || trip.tripStatus === 'Planned'" 
-              [disabled]="trip.updating"
-              (click)="$event.stopPropagation(); updateTripStatus(trip, 'Accepted')">
-              <ion-spinner *ngIf="trip.updating" slot="start" name="crescent"></ion-spinner>
-              <ion-icon slot="start" name="checkmark-circle-outline"></ion-icon>
-              ✅ Accepter la Mission
-            </ion-button>
+            <!-- Boutons Actions Mission -->
+            <div class="trip-action-buttons" *ngIf="trip.tripStatus === 'Pending' || trip.tripStatus === 'Planned'">
+              
+              <!-- Voir Détail -->
+              <ion-button 
+                fill="solid"
+                class="btn-view-details"
+                [disabled]="trip.updating"
+                (click)="$event.stopPropagation(); viewTripDetails(trip)">
+                Voir Détails
+              </ion-button>
+              
+              <!-- Accepter la Mission -->
+              <ion-button 
+                fill="solid"
+                class="btn-accept"
+                [disabled]="trip.updating"
+                (click)="$event.stopPropagation(); updateTripStatus(trip, 'Accepted')">
+                <ion-spinner *ngIf="trip.updating" slot="start" name="crescent"></ion-spinner>
+                <ion-icon slot="start" name="checkmark-outline"></ion-icon>
+                Accepter
+              </ion-button>
+              
+              <!-- Refuser la Mission -->
+              <ion-button 
+                fill="solid"
+                class="btn-refuse"
+                [disabled]="trip.updating"
+                (click)="$event.stopPropagation(); refuseTrip(trip)">
+                <ion-icon slot="start" name="close-outline"></ion-icon>
+                Refuser
+              </ion-button>
+              
+            </div>
             
             <!-- Commencer le Chargement -->
             <ion-button 
