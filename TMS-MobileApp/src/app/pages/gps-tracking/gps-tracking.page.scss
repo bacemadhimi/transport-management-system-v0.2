@@ -1,6 +1,8 @@
-/* GPS Tracking Page Styles - Professional Modern Design */
+/* GPS Tracking Page Styles - PROFESSIONAL MODERN DESIGN - VERSION UPGRADED */
 .gps-tracking-content {
-  --background: #f8fafc;
+  --background: #f0f2f5;
+  padding: 0;
+  margin: 0;
 
   // Header toolbar styling
   ion-header {
@@ -108,21 +110,17 @@
   // Map wrapper
   .map-wrapper {
     position: relative;
-    height: 55vh;
-    min-height: 350px;
-    max-height: 500px;
-    width: calc(100% - 32px);
-    margin: 16px;
-    border-radius: 20px;
+    height: 48vh;
+    width: 100%;
     overflow: hidden;
-    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
-    border: 1px solid #e5e7eb;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+    border-bottom-left-radius: 24px;
+    border-bottom-right-radius: 24px;
+    z-index: 10;
     background: #f2efe9;
     display: block;
     visibility: visible;
     opacity: 1;
-    -webkit-transform: translateZ(0);
-    transform: translateZ(0);
 
     #map {
       width: 100%;
@@ -132,8 +130,8 @@
       visibility: visible;
       opacity: 1;
       background: #f2efe9;
-      -webkit-transform: translateZ(0);
-      transform: translateZ(0);
+      border-bottom-left-radius: 24px;
+      border-bottom-right-radius: 24px;
     }
 
     // Overlay info card
@@ -274,6 +272,146 @@
     }
   }
 
+/* ✅ CARTE DETAILS VOYAGE - STYLE PROFESSIONNEL */
+.trip-details-card {
+  margin: -20px 16px 16px 16px !important;
+  border-radius: 20px !important;
+  box-shadow: 0 12px 32px rgba(0,0,0,0.08) !important;
+  border: none !important;
+  z-index: 20;
+  position: relative;
+  background: white;
+  overflow: hidden;
+}
+
+.trip-details-card ion-card-header {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 16px 20px;
+  border-radius: 0;
+}
+
+.trip-details-card ion-card-title {
+  font-size: 17px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: white;
+}
+
+.trip-details-card ion-card-title ion-icon {
+  font-size: 22px;
+}
+
+.trip-details-card ion-card-content {
+  padding: 16px 20px 20px 20px;
+  overflow: hidden;
+  max-height: 1000px;
+  transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1), padding 0.4s ease;
+}
+
+.trip-details-card ion-card-content.collapsed {
+  max-height: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+.trip-details-card ion-card-header {
+  cursor: pointer;
+  user-select: none;
+}
+
+.trip-details-card ion-card-title {
+  display: flex;
+  align-items: center;
+}
+
+.trip-detail-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.trip-detail-row:last-child {
+  border-bottom: none;
+}
+
+.detail-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #667eea15 0%, #764ba215 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.detail-icon ion-icon {
+  font-size: 20px;
+  color: #667eea;
+}
+
+.detail-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.detail-label {
+  font-size: 13px;
+  color: #888;
+  font-weight: 500;
+}
+
+.detail-value {
+  font-size: 15px;
+  color: #2d3748;
+  font-weight: 600;
+}
+
+.status-text {
+  padding: 4px 10px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  display: inline-block;
+}
+
+.status-pending {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.status-accepted {
+  background: #cce5ff;
+  color: #004085;
+}
+
+.status-loading {
+  background: #d1ecf1;
+  color: #0c5460;
+}
+
+.status-delivery {
+  background: #d4edda;
+  color: #155724;
+}
+
+.status-completed {
+  background: #e2e3e5;
+  color: #383d41;
+}
+
+.status-refused {
+  background: #f8d7da;
+  color: #721c24;
+}
+
   // Mission Status Section
   .mission-status-section {
     margin: 0 16px 16px;
@@ -373,48 +511,51 @@
           gap: 10px;
 
           .action-btn {
-            --border-radius: 14px;
+            --border-radius: 16px;
             --padding-top: 14px;
             --padding-bottom: 14px;
-            font-size: 14px;
             font-weight: 600;
-            letter-spacing: 0.2px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            font-size: 15px;
+            margin-bottom: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
             transition: all 0.2s ease;
+            letter-spacing: 0.2px;
 
             ion-icon {
               font-size: 18px;
               margin-right: 6px;
             }
 
+            &:active {
+              transform: scale(0.98);
+              box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+            }
+
             &.btn-accept {
-              --background: linear-gradient(135deg, #10b981, #059669);
-              --background-activated: linear-gradient(135deg, #059669, #047857);
+              --background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+              --background-hover: linear-gradient(135deg, #218838 0%, #1abc9c 100%);
               color: white;
             }
 
             &.btn-reject {
               --background: transparent;
-              --border-color: #ef4444;
-              --color: #ef4444;
-              border: 1.5px solid #ef4444;
+              --border-color: #dc3545;
+              --color: #dc3545;
+              --border-width: 2px;
             }
 
             &.btn-loading {
-              --background: linear-gradient(135deg, #3b82f6, #2563eb);
-              --background-activated: linear-gradient(135deg, #2563eb, #1d4ed8);
-              color: white;
+              --background: linear-gradient(135deg, #ffc107 0%, #fd7e14 100%);
+              --color: #212529;
             }
 
             &.btn-delivery {
-              --background: linear-gradient(135deg, #8b5cf6, #7c3aed);
-              --background-activated: linear-gradient(135deg, #7c3aed, #6d28d9);
+              --background: linear-gradient(135deg, #007bff 0%, #00d2ff 100%);
               color: white;
             }
 
             &.btn-complete {
-              --background: linear-gradient(135deg, #10b981, #059669);
-              --background-activated: linear-gradient(135deg, #059669, #047857);
+              --background: linear-gradient(135deg, #6f42c1 0%, #8a2be2 100%);
               color: white;
             }
           }

@@ -66,7 +66,7 @@
     <!-- Overlay info card -->
     <div class="map-overlay">
       <ion-card class="info-card">
-        <ion-card-content>
+    <ion-card-content [class.collapsed]="!isDetailsExpanded">
           <div class="info-header">
             <div class="info-item">
               <div class="info-icon-wrapper">
@@ -109,6 +109,104 @@
     </div>
   </div>
 
+  <!-- ✅ SECTION DETAILS COMPLETS DU VOYAGE -->
+    <ion-card class="trip-details-card">
+      <ion-card-header (click)="toggleDetails()">
+        <ion-card-title>
+          <ion-icon name="information-circle"></ion-icon>
+          Détails de la Mission
+          <ion-icon 
+            [name]="isDetailsExpanded ? 'chevron-up' : 'chevron-down'" 
+            slot="end" 
+            style="margin-left: auto; font-size: 22px; transition: transform 0.3s ease;">
+          </ion-icon>
+        </ion-card-title>
+      </ion-card-header>
+    <ion-card-content [class.collapsed]="!isDetailsExpanded">
+      
+      <div class="trip-detail-row">
+        <div class="detail-icon">
+          <ion-icon name="calendar"></ion-icon>
+        </div>
+        <div class="detail-content">
+          <div class="detail-label">Référence</div>
+          <div class="detail-value">{{ tripReference }}</div>
+        </div>
+      </div>
+
+      <div class="trip-detail-row">
+        <div class="detail-icon">
+          <ion-icon name="location"></ion-icon>
+        </div>
+        <div class="detail-content">
+          <div class="detail-label">Destination</div>
+          <div class="detail-value">{{ destinationAddress }}</div>
+        </div>
+      </div>
+
+      <div class="trip-detail-row">
+        <div class="detail-icon">
+          <ion-icon name="car"></ion-icon>
+        </div>
+        <div class="detail-content">
+          <div class="detail-label">Véhicule</div>
+          <div class="detail-value">{{ truckImmatriculation || 'Non défini' }}</div>
+        </div>
+      </div>
+
+      <div class="trip-detail-row">
+        <div class="detail-icon">
+          <ion-icon name="person"></ion-icon>
+        </div>
+        <div class="detail-content">
+          <div class="detail-label">Chauffeur</div>
+          <div class="detail-value">{{ driverName || authService.currentUser()?.name || 'Non défini' }}</div>
+        </div>
+      </div>
+
+      <div class="trip-detail-row">
+        <div class="detail-icon">
+          <ion-icon name="time"></ion-icon>
+        </div>
+        <div class="detail-content">
+          <div class="detail-label">Heure Actuelle</div>
+          <div class="detail-value">{{ currentTime | date:'HH:mm:ss' }}</div>
+        </div>
+      </div>
+
+      <div class="trip-detail-row">
+        <div class="detail-icon">
+          <ion-icon name="navigate"></ion-icon>
+        </div>
+        <div class="detail-content">
+          <div class="detail-label">Distance Restante</div>
+          <div class="detail-value">{{ getDistanceRemaining() }} km</div>
+        </div>
+      </div>
+
+      <div class="trip-detail-row">
+        <div class="detail-icon">
+          <ion-icon name="speedometer"></ion-icon>
+        </div>
+        <div class="detail-content">
+          <div class="detail-label">Vitesse Actuelle</div>
+          <div class="detail-value">{{ speed | number:'1.0-0' }} km/h</div>
+        </div>
+      </div>
+
+      <div class="trip-detail-row">
+        <div class="detail-icon">
+          <ion-icon name="flag"></ion-icon>
+        </div>
+        <div class="detail-content">
+          <div class="detail-label">Statut Actuel</div>
+          <div class="detail-value status-text status-{{ missionStatus }}">{{ getStatusText() }}</div>
+        </div>
+      </div>
+
+    </ion-card-content>
+  </ion-card>
+
   <!-- Mission Status Section -->
   <div class="mission-status-section">
     <ion-card class="mission-card">
@@ -116,9 +214,8 @@
         <div class="mission-header">
           <div class="mission-title">
             <ion-icon name="clipboard"></ion-icon>
-            <span>État de la Mission</span>
+            <span>Actions Mission</span>
           </div>
-          <span class="mission-ref" *ngIf="tripReference">{{ tripReference }}</span>
         </div>
       </ion-card-header>
       <ion-card-content>
