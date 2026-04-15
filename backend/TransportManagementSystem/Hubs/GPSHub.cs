@@ -311,14 +311,27 @@ public class GPSHub : Hub
                         ? t.Deliveries.OrderByDescending(d => d.Id).FirstOrDefault().Geolocation
                         : null,
                     // Include last delivery location coordinates if available
-                    LastDeliveryLocationLat = t.Deliveries.OrderByDescending(d => d.Id).FirstOrDefault(d => d.Location != null && d.Location.Latitude.HasValue) != null
-                        ? t.Deliveries.OrderByDescending(d => d.Id).FirstOrDefault(d => d.Location != null && d.Location.Latitude.HasValue).Location.Latitude
-                        : (double?)null,
-                    LastDeliveryLocationLng = t.Deliveries.OrderByDescending(d => d.Id).FirstOrDefault(d => d.Location != null && d.Location.Latitude.HasValue) != null
-                        ? t.Deliveries.OrderByDescending(d => d.Id).FirstOrDefault(d => d.Location != null && d.Location.Latitude.HasValue).Location.Longitude
-                        : (double?)null
-                })
-                .ToListAsync();
+                    LastDeliveryLocationLat = t.Deliveries
+                    .OrderByDescending(d => d.Id)
+                    .Select(d => d.Location.LocationGeographicalEntities
+                        .Select(lge => lge.GeographicalEntity)
+                        .Where(ge => ge != null && ge.Latitude.HasValue && ge.Longitude.HasValue)
+                        .OrderByDescending(ge => ge.LevelId)
+                        .Select(ge => ge.Latitude)
+                        .FirstOrDefault())
+                    .FirstOrDefault(),
+
+                                    LastDeliveryLocationLng = t.Deliveries
+                    .OrderByDescending(d => d.Id)
+                    .Select(d => d.Location.LocationGeographicalEntities
+                        .Select(lge => lge.GeographicalEntity)
+                        .Where(ge => ge != null && ge.Latitude.HasValue && ge.Longitude.HasValue)
+                        .OrderByDescending(ge => ge.LevelId)
+                        .Select(ge => ge.Longitude)
+                        .FirstOrDefault())
+                    .FirstOrDefault(),
+                                })
+                                .ToListAsync();
 
             await Clients.Caller.SendAsync("ActiveTrips", activeTrips);
             
