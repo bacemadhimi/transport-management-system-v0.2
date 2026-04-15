@@ -205,6 +205,67 @@ public void InsertData()
                 var superAdminGroup = dbContext.UserGroups.First(r => r.Name == "SuperAdmin");
                 var adminGroup = dbContext.UserGroups.First(r => r.Name == "Admin");
 
+                //  Seed Locations
+                if (!dbContext.Locations.Any())
+                {
+                    var now = DateTime.UtcNow;
+                    var rnd = new Random();
+
+                    var locations = new List<Location>
+    {
+        new Location
+        {
+            Name = "Warehouse Central",
+            Address = "123 Rue Centrale, Tunis",
+            Latitude = 36.8065,
+            Longitude = 10.1815,
+            IsActive = true,
+            CreatedAt = now,
+            UpdatedAt = now
+        },
+        new Location
+        {
+            Name = "Depot Nord",
+            Address = "45 Avenue du Nord, Ariana",
+            Latitude = 36.8665,
+            Longitude = 10.1955,
+            IsActive = true,
+            CreatedAt = now,
+            UpdatedAt = now
+        },
+        new Location
+        {
+            Name = "Port Tunis",
+            Address = "Port de Tunis, Tunis",
+            Latitude = 36.8580,
+            Longitude = 10.3265,
+            IsActive = true,
+            CreatedAt = now,
+            UpdatedAt = now
+        }
+    };
+
+                 
+                    for (int i = 1; i <= 10; i++)
+                    {
+                        locations.Add(new Location
+                        {
+                            Name = $"Location Test {i}",
+                            Address = $"Adresse Test {i}",
+                            Latitude = 36.8 + rnd.NextDouble() * 0.1,
+                            Longitude = 10.1 + rnd.NextDouble() * 0.1,
+                            IsActive = i % 2 == 0,
+                            CreatedAt = now,
+                            UpdatedAt = now
+                        });
+                    }
+
+                    dbContext.Locations.AddRange(locations);
+                    dbContext.SaveChanges();
+
+                    Console.WriteLine($"✔ {locations.Count} Locations seedées !");
+                }
+
                 //  Seed Users
                 if (!dbContext.Users.Any())
                 {
