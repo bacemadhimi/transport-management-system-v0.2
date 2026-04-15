@@ -6,7 +6,7 @@ import { Capacitor } from '@capacitor/core';
 function getApiUrl(): string {
   return Capacitor.isNativePlatform()
     ? 'http://51.178.65.32:45880'
-    : 'http://localhost:5191';
+    : 'http://51.178.65.32:45880';
 }
 
 export const environment = {
