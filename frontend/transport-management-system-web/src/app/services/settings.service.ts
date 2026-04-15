@@ -148,7 +148,8 @@ export class SettingsService {
       notifyOnTripEdit: this.getBooleanValue(settingsMap, 'NOTIFY_ON_TRIP_EDIT', false),
       notifyOnTripDelete: this.getBooleanValue(settingsMap, 'NOTIFY_ON_TRIP_DELETE', false),
       linkDriverToTruck: this.getBooleanValue(settingsMap, 'LINK_DRIVER_TO_TRUCK', true),
-      useGpsInTrips: this.getBooleanValue(settingsMap, 'USE_GPS_IN_TRIPS', true) // ✅ True by default
+       useGpsInTrips: this.getBooleanValue(settingsMap, 'USE_GPS_IN_TRIPS', true), // ✅ True by default
+       tripAddressMode: this.getStringValue(settingsMap, 'MODE_ADRESSE_TRIP', 'MANUEL') as 'MANUEL' | 'AUTOMATIQUE'
     };
   }
 

@@ -197,7 +197,7 @@
           </div>
 
           <!-- ===== ADDED: Smart Address Search for Final Destination ===== -->
-          <div class="destination-address-section" *ngIf="useGpsInTrips" style="margin-top: 24px; padding: 24px; background: linear-gradient(135deg, #667eea15 0%, #764ba215 100%); border-radius: 12px; border: 1px solid #e2e8f0; grid-column: 1 / -1;">
+          <div class="destination-address-section" *ngIf="useGpsInTrips && tripAddressMode === 'MANUEL'" style="margin-top: 24px; padding: 24px; background: linear-gradient(135deg, #667eea15 0%, #764ba215 100%); border-radius: 12px; border: 1px solid #e2e8f0; grid-column: 1 / -1;">
             <div class="destination-header" style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
               <div style="background: linear-gradient(135deg, #667eea, #764ba2); padding: 10px; border-radius: 10px; display: flex; align-items: center; justify-content: center;">
                 <mat-icon style="color: white; font-size: 24px; width: 24px; height: 24px;">location_on</mat-icon>

@@ -198,6 +198,7 @@ export class TripForm implements OnInit {
   driverTruckMap: Map<number, number> = new Map();
   linkDriverToTruck = false;
   useGpsInTrips = true; // ✅ GPS tracking enabled by default
+  tripAddressMode: string = 'MANUEL';
 
   private translation = inject(Translation);
   t(key: string): string { return this.translation.t(key); }
@@ -7497,10 +7498,11 @@ if (!this.allowMixingOrderTypes && this.deliveries.length > 0) {
 private loadTripSettings(): void {
   this.settingsService.getTripSettings().subscribe({
     next: (settings) => {
-      this.tripSettings = settings;
-      this.updateTruckFieldBasedOnSettings();
-      this.linkDriverToTruck = settings.linkDriverToTruck || false;
-      this.useGpsInTrips = settings.useGpsInTrips !== false; // ✅ Default to true
+    this.tripSettings = settings;
+    this.updateTruckFieldBasedOnSettings();
+    this.linkDriverToTruck = settings.linkDriverToTruck || false;
+    this.useGpsInTrips = settings.useGpsInTrips !== false; // ✅ Default to true
+    this.tripAddressMode = settings.tripAddressMode || 'MANUEL';
       
       // ✅ Update validation for distance/duration based on GPS setting
       this.updateGpsFieldsValidation();
