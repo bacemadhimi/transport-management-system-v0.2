@@ -636,3 +636,311 @@
     }
   }
 }
+
+.table-scroll-wrapper {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.availability-table {
+  border-collapse: collapse !important;
+  width: max-content !important;
+  min-width: 100% !important;
+  table-layout: auto !important;
+  
+  th, td {
+    padding: 8px 6px !important;
+    text-align: center !important;
+    vertical-align: middle !important;
+    border-bottom: 1px solid #e0e0e0 !important;
+    white-space: nowrap !important;
+  }
+  
+  // Sticky column - KEEP IT SIMPLE
+  .sticky-col {
+    position: sticky !important;
+    left: 0 !important;
+    background: white !important;
+    z-index: 10 !important;
+    box-shadow: 2px 0 4px rgba(0,0,0,0.05) !important;
+    text-align: left !important;
+  }
+  
+  th.sticky-col {
+    background: #f5f5f5 !important;
+    z-index: 11 !important;
+  }
+  
+  // Date header - single line
+  .date-header {
+    background: #f5f5f5 !important;
+    
+    .date-cell {
+      display: inline-block !important;
+      white-space: nowrap !important;
+      
+      .date-label {
+        display: inline !important;
+        margin-right: 4px !important;
+        font-size: 0.75rem !important;
+        font-weight: 600 !important;
+      }
+      
+      .day-label {
+        display: inline !important;
+        font-size: 0.7rem !important;
+        color: #666 !important;
+      }
+    }
+  }
+  
+  // Truck info
+  .truck-info {
+    line-height: 1.3 !important;
+    
+    .truck-name {
+      font-size: 0.8rem !important;
+      font-weight: 600 !important;
+    }
+    
+    .truck-phone {
+      font-size: 0.65rem !important;
+      color: #666 !important;
+    }
+  }
+  
+  // Availability cell
+  .availability-cell {
+    .availability-emoji {
+      font-size: 1.1rem !important;
+    }
+  }
+}
+
+// Dark mode
+@media (prefers-color-scheme: dark) {
+  .availability-table {
+    .sticky-col {
+      background: #1e1e1e !important;
+    }
+    
+    th.sticky-col {
+      background: #2d2d2d !important;
+    }
+    
+    .date-header {
+      background: #2d2d2d !important;
+      
+      .day-label {
+        color: #aaa !important;
+      }
+    }
+    
+    .truck-info {
+      .truck-name {
+        color: #fff !important;
+      }
+      .truck-phone {
+        color: #aaa !important;
+      }
+    }
+  }
+}
+
+// Mobile responsive
+@media (max-width: 768px) {
+  .availability-page {
+    padding: 8px !important;
+  }
+  
+  .availability-header__left {
+    flex-direction: column !important;
+    width: 100% !important;
+    gap: 8px !important;
+    
+    .availability-search {
+      width: 100% !important;
+    }
+    
+    .week-navigation {
+      flex-wrap: wrap !important;
+      
+      .today-btn {
+        width: 100% !important;
+        margin-top: 4px !important;
+      }
+    }
+  }
+  
+  .availability-header__right .availability-stats {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 6px !important;
+    
+    .stat-badge {
+      padding: 6px 4px !important;
+      font-size: 0.7rem !important;
+      
+      .stat-hint {
+        display: none !important;
+      }
+    }
+  }
+  
+  .instructions {
+    padding: 8px !important;
+    font-size: 0.75rem !important;
+  }
+  
+  .pagination-controls {
+    flex-direction: column !important;
+    padding: 8px !important;
+    
+    .pagination-info {
+      font-size: 0.75rem !important;
+      text-align: center !important;
+    }
+  }
+  
+  .availability-table {
+    th, td {
+      padding: 6px 4px !important;
+    }
+    
+    .sticky-col {
+      padding-left: 8px !important;
+    }
+    
+    .date-header .date-cell {
+      .date-label {
+        font-size: 0.65rem !important;
+      }
+      .day-label {
+        font-size: 0.6rem !important;
+      }
+    }
+    
+    .truck-info {
+      .truck-name {
+        font-size: 0.75rem !important;
+      }
+      .truck-phone {
+        font-size: 0.6rem !important;
+      }
+    }
+    
+    .availability-cell .availability-emoji {
+      font-size: 1rem !important;
+    }
+  }
+}
+
+@media (max-width: 480px) {
+  .availability-table {
+    th, td {
+      padding: 5px 3px !important;
+    }
+    
+    .sticky-col {
+      padding-left: 6px !important;
+    }
+    
+    .date-header .date-cell {
+      .date-label {
+        font-size: 0.6rem !important;
+      }
+      .day-label {
+        font-size: 0.55rem !important;
+        margin-left: 2px !important;
+      }
+    }
+    
+    .truck-info {
+      .truck-name {
+        font-size: 0.7rem !important;
+      }
+      .truck-phone {
+        font-size: 0.55rem !important;
+      }
+    }
+  }
+}
+
+// Cell colors
+.availability-table {
+  td.available-cell {
+    background: white !important;
+  }
+  
+  td.unavailable-cell {
+    background: rgba(244, 67, 54, 0.08) !important;
+  }
+  
+  td.weekend-cell {
+    background: rgba(100, 116, 139, 0.06) !important;
+    cursor: not-allowed !important;
+  }
+  
+  td.holiday-cell {
+    background: rgba(251, 146, 60, 0.08) !important;
+    cursor: not-allowed !important;
+  }
+}
+
+// Dark mode cell colors
+@media (prefers-color-scheme: dark) {
+  .availability-table {
+    td.available-cell {
+      background: #1e1e1e !important;
+    }
+  }
+}
+
+// Theme variable support
+.availability-table {
+  .sticky-col {
+    background: var(--bg-card, white) !important;
+  }
+  
+  th.sticky-col {
+    background: var(--bg-light, #f5f5f5) !important;
+  }
+  
+  .date-header {
+    background: var(--bg-light, #f5f5f5) !important;
+  }
+}
+
+// Empty state fix
+.empty-state {
+  padding: 40px 16px !important;
+  text-align: center !important;
+  
+  mat-icon {
+    font-size: 48px !important;
+    width: 48px !important;
+    height: 48px !important;
+    color: var(--text-muted, #999) !important;
+    margin-bottom: 12px !important;
+  }
+  
+  p {
+    font-size: 0.9rem !important;
+    color: var(--text-muted, #999) !important;
+  }
+}
+
+// Touch optimizations
+@media (hover: none) and (pointer: coarse) {
+  .availability-table td {
+    min-height: 44px !important;
+  }
+  
+  .availability-cell {
+    min-height: 44px !important;
+  }
+  
+  button, .stat-badge {
+    min-height: 44px !important;
+  }
+}
