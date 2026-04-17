@@ -845,7 +845,7 @@
         }
       }
     }
-  }
+  
 
   // ═══════════════════════════════════════════
   // QR SCANNER - Professional Modal
@@ -1050,7 +1050,7 @@
     0%, 100% { transform: translateY(-70px); }
     50% { transform: translateY(70px); }
   }
-}
+
 
 // ═══════════════════════════════════════════
 // VOICE NAVIGATION BUTTON STYLES
@@ -1301,9 +1301,7 @@
     height: 42vh;
     min-height: 300px;
   }
-  50% {
-    opacity: 0.5;
-  }
+
 }
 
   .mission-status-section,
@@ -1315,11 +1313,7 @@
   .trip-details-card {
     margin: 12px !important;
   }
-  100% {
-    transform: scale(1);
-    opacity: 1;
-  }
-}
+
 
 // Responsive
 @media (max-width: 480px) {
