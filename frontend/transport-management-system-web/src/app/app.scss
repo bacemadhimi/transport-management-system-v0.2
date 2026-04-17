@@ -672,18 +672,18 @@ button:hover img[alt*="French"] {
   /* Toolbar adjustments */
   mat-toolbar {
     padding: 0 8px !important;
-    height: 64px !important;
-    flex-wrap: wrap;
+    height: 56px !important;
+    flex-wrap: nowrap !important;
   }
 
-  /* Hide email on mobile */
-  .mat-toolbar span[routerLink="/profile"] {
+  /* Hide email text on mobile - keep avatar */
+  .mat-toolbar > div:last-child > span[routerLink="/profile"] {
     display: none !important;
   }
 
-  /* Reduce gap between items */
+  /* Reduce gap between header items */
   .mat-toolbar .flex.gap-4 {
-    gap: 0.5rem !important;
+    gap: 2px !important;
   }
 
   /* Make avatar smaller */
@@ -694,32 +694,112 @@ button:hover img[alt*="French"] {
 
   /* Logo adjustments */
   .mat-toolbar .w-10.h-10 {
-    width: 36px !important;
-    height: 36px !important;
+    width: 32px !important;
+    height: 32px !important;
   }
 
-  /* Dropdown/Panel Mobile Styles */
-  .absolute.right-0.top-12,
-  .absolute.right-0.top-10 {
+  /* ===== FIX: Keep theme picker visible on mobile ===== */
+  /* DO NOT hide theme picker - let it be controlled by the menu manager */
+  .mat-toolbar [data-menu="theme"] {
+    display: block !important;
+  }
+
+  /* Only hide on very small screens */
+  @media (max-width: 420px) {
+    .mat-toolbar [data-menu="theme"] {
+      display: none !important;
+    }
+  }
+
+  /* Hide permissions button on very small screens */
+  @media (max-width: 480px) {
+    .mat-toolbar [data-menu="permissions"] {
+      display: none !important;
+    }
+  }
+
+  /* Hide language selector on very small screens */
+  @media (max-width: 360px) {
+    .mat-toolbar [data-menu="language"] {
+      display: none !important;
+    }
+  }
+
+  /* ===== DROPDOWN/PANEL MOBILE FIXES ===== */
+  
+  /* Permissions menu */
+  .absolute.right-0.top-12.w-96 {
     position: fixed !important;
-    top: 64px !important;
-    left: 0 !important;
-    right: 0 !important;
-    width: 100% !important;
-    max-width: 100% !important;
-    border-radius: 0 !important;
-    max-height: calc(100vh - 64px) !important;
+    top: 56px !important;
+    left: 8px !important;
+    right: 8px !important;
+    width: auto !important;
+    max-width: none !important;
+    max-height: calc(100vh - 70px) !important;
+    overflow-y: auto !important;
+    border-radius: 16px !important;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2) !important;
+    z-index: 1050 !important;
   }
 
-  /* Drawer/Sidebar Mobile Styles */
+  /* Notifications panel */
+  .absolute.right-0.top-12.w-96.facebook-style-panel {
+    position: fixed !important;
+    top: 56px !important;
+    left: 8px !important;
+    right: 8px !important;
+    width: auto !important;
+    max-width: none !important;
+    max-height: calc(100vh - 70px) !important;
+    overflow-y: auto !important;
+    border-radius: 16px !important;
+    z-index: 1050 !important;
+  }
+
+  /* Theme picker - ENSURE IT'S VISIBLE */
+  .absolute.right-0.top-10.w-80 {
+    position: fixed !important;
+    top: 56px !important;
+    left: 8px !important;
+    right: 8px !important;
+    width: auto !important;
+    max-width: none !important;
+    max-height: calc(100vh - 70px) !important;
+    overflow-y: auto !important;
+    border-radius: 16px !important;
+    z-index: 1050 !important;
+  }
+
+  /* Language menu */
+  .absolute.right-0.top-10.w-40 {
+    position: fixed !important;
+    top: 56px !important;
+    right: 8px !important;
+    left: auto !important;
+    width: 160px !important;
+    border-radius: 12px !important;
+    z-index: 1050 !important;
+  }
+
+  /* ===== DRAWER/SIDEBAR MOBILE STYLES ===== */
+  
   mat-drawer {
     width: 280px !important;
-    z-index: 1000 !important;
+    max-width: 85vw !important;
+    z-index: 1100 !important;
   }
 
   /* When drawer is closed on mobile */
   mat-drawer:not(.mat-drawer-opened) {
     transform: translateX(-100%) !important;
+    visibility: hidden !important;
+  }
+
+  /* When drawer is open - ensure it stays open */
+  mat-drawer.mat-drawer-opened {
+    transform: translateX(0) !important;
+    visibility: visible !important;
+    box-shadow: 4px 0 20px rgba(0, 0, 0, 0.15) !important;
   }
 
   /* Drawer content area */
@@ -733,55 +813,115 @@ button:hover img[alt*="French"] {
     padding: 12px !important;
   }
 
-  /* Body class when menu is open */
+  /* ===== FIX: Prevent drawer from closing when interacting with it ===== */
+  mat-drawer.mat-drawer-opened,
+  mat-drawer.mat-drawer-opened * {
+    pointer-events: auto !important;
+  }
+
+  /* ===== BODY CLASS FOR MENU OPEN STATE ===== */
   body.menu-open {
     overflow: hidden !important;
   }
 
-  /* Add overlay when drawer is open */
-  body.menu-open::before {
-    content: '';
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.5);
-    z-index: 999;
-    animation: fadeIn 0.3s ease;
+  /* ===== THEME GRID ON MOBILE ===== */
+  .grid.grid-cols-3 {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 8px !important;
   }
 
-  /* Notification panel mobile */
+  /* ===== NOTIFICATIONS PANEL ===== */
   .facebook-style-panel {
-    border-radius: 0 !important;
-    box-shadow: none !important;
+    border-radius: 16px !important;
   }
 
   .notification-item {
-    padding: 12px !important;
+    padding: 14px !important;
+  }
+
+  /* ===== SIDEBAR ITEM TOUCH OPTIMIZATION ===== */
+  .sidebar-item {
+    min-height: 52px !important;
+    margin: 4px 12px !important;
+  }
+
+  .sidebar-expansion-panel .mat-expansion-panel-header {
+    min-height: 52px !important;
+  }
+
+  .submenu-item {
+    min-height: 46px !important;
+  }
+
+  /* ===== GENERAL SETTINGS MENU VISIBILITY ===== */
+  /* Ensure the general settings link is always visible when menu is open */
+  a[routerLink="/general-settings"] {
+    display: flex !important;
+  }
+
+  /* Make sure all menu items are scrollable */
+  .py-2.max-h-96 {
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch;
+    max-height: calc(100vh - 180px) !important;
   }
 }
 
-/* Very small screen adjustments */
+/* ===== VERY SMALL SCREEN ADJUSTMENTS ===== */
 @media (max-width: 480px) {
-  .mat-toolbar [data-menu="permissions"] {
-    display: none !important;
+  mat-toolbar {
+    height: 52px !important;
+  }
+
+  .absolute.right-0.top-12.w-96,
+  .absolute.right-0.top-12.w-96.facebook-style-panel,
+  .absolute.right-0.top-10.w-80,
+  .absolute.right-0.top-10.w-40 {
+    top: 52px !important;
+    max-height: calc(100vh - 60px) !important;
+  }
+
+  /* Make notification badge smaller */
+  .absolute.-top-1.-right-1 {
+    min-width: 16px !important;
+    height: 16px !important;
+    font-size: 10px !important;
+    padding: 0 4px !important;
   }
 }
 
-@media (max-width: 400px) {
-  .mat-toolbar [data-menu="theme"] {
-    display: none !important;
+@media (max-width: 360px) {
+  mat-drawer {
+    width: 260px !important;
   }
 }
 
-/* ============================================
-   DEVICE-SPECIFIC STYLES
-   ============================================ */
+/* ===== LANDSCAPE MODE FIXES ===== */
+@media (max-height: 500px) and (orientation: landscape) {
+  mat-toolbar {
+    height: 48px !important;
+  }
+
+  .absolute.right-0.top-12.w-96,
+  .absolute.right-0.top-12.w-96.facebook-style-panel,
+  .absolute.right-0.top-10.w-80 {
+    top: 48px !important;
+    max-height: calc(100vh - 55px) !important;
+  }
+
+  mat-drawer {
+    .sidebar-nav {
+      max-height: 100vh;
+      overflow-y: auto;
+      padding-bottom: 20px;
+    }
+  }
+}
+
+/* ===== DEVICE-SPECIFIC STYLES ===== */
 
 /* iOS specific styles */
 body.ios-device {
-  /* Add iOS-specific fixes if needed */
   -webkit-tap-highlight-color: transparent;
 }
 
@@ -794,19 +934,274 @@ body.ios-device {
   .mat-expansion-panel-header {
     min-height: 48px !important;
   }
+  
+  button[mat-icon-button] {
+    width: 44px !important;
+    height: 44px !important;
+  }
 }
 
-/* ============================================
-   MOBILE SAFE AREA SUPPORT (iOS)
-   ============================================ */
+/* ===== MOBILE SAFE AREA SUPPORT (iOS) ===== */
 @supports (padding: max(0px)) {
   @media (max-width: 768px) {
     mat-toolbar {
-      padding-top: max(0px, env(safe-area-inset-top)) !important;
+      padding-top: max(8px, env(safe-area-inset-top)) !important;
     }
     
     mat-drawer {
       padding-top: max(0px, env(safe-area-inset-top)) !important;
     }
+    
+    mat-drawer-content {
+      padding-top: max(0px, env(safe-area-inset-top)) !important;
+    }
   }
+}
+
+/* ===== FIX: ENSURE DROPDOWNS DON'T GET CUT OFF ===== */
+.cdk-overlay-container {
+  z-index: 2000 !important;
+}
+
+.cdk-overlay-backdrop {
+  z-index: 1000 !important;
+}
+
+/* Ensure fixed position elements are above backdrop */
+[style*="position: fixed"],
+.absolute[class*="top-"] {
+  z-index: 1050 !important;
+}
+/* ============================================
+   FIX: EXPANSION PANEL & SUBMENU VISIBILITY
+   ============================================ */
+
+/* Ensure expansion panels are always interactive */
+.sidebar-expansion-panel {
+  pointer-events: auto !important;
+  visibility: visible !important;
+  display: block !important;
+}
+
+.sidebar-expansion-panel .mat-expansion-panel-header {
+  pointer-events: auto !important;
+  cursor: pointer !important;
+}
+
+/* Ensure submenu items are visible */
+.submenu-list {
+  display: block !important;
+  visibility: visible !important;
+}
+
+.submenu-item {
+  display: flex !important;
+  visibility: visible !important;
+}
+
+/* Fix expansion arrow rotation */
+.sidebar-expansion-panel .expansion-arrow {
+  transition: transform 0.3s ease !important;
+}
+
+.sidebar-expansion-panel.mat-expanded .expansion-arrow {
+  transform: rotate(90deg) !important;
+}
+
+/* ============================================
+   FIX: HEADER DROPDOWN MENUS VISIBILITY
+   ============================================ */
+
+/* Ensure all dropdown menus are visible when opened */
+.absolute.right-0.top-12.w-96,
+.absolute.right-0.top-10.w-80,
+.absolute.right-0.top-10.w-40,
+.facebook-style-panel {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+}
+
+/* Theme picker specific */
+.absolute.right-0.top-10.w-80 {
+  .grid.grid-cols-3 {
+    display: grid !important;
+  }
+  
+  button {
+    pointer-events: auto !important;
+  }
+}
+
+/* Permissions/Settings menu */
+.absolute.right-0.top-12.w-96 {
+  a {
+    display: flex !important;
+    pointer-events: auto !important;
+    cursor: pointer !important;
+  }
+  
+  .menu-group-header,
+  .px-4.py-2 {
+    display: block !important;
+  }
+}
+
+
+@media (max-width: 768px) {
+
+  .mat-toolbar [data-menu="theme"] {
+    display: inline-flex !important;
+  }
+  
+  
+  .mat-toolbar [data-menu="permissions"] {
+    display: inline-flex !important;
+  }
+  
+  
+  @media (max-width: 420px) {
+    .mat-toolbar [data-menu="theme"] {
+      display: none !important;
+    }
+  }
+  
+  @media (max-width: 360px) {
+    .mat-toolbar [data-menu="permissions"] {
+      display: none !important;
+    }
+  }
+}
+
+mat-drawer {
+  .sidebar-nav {
+    display: block !important;
+    visibility: visible !important;
+  }
+  
+  mat-nav-list {
+    display: block !important;
+  }
+  
+  .menu-section-header {
+    display: block !important;
+    visibility: visible !important;
+  }
+  
+  .menu-divider {
+    display: block !important;
+  }
+}
+mat-toolbar {
+  z-index: 1000 !important;
+  position: relative !important;
+}
+
+
+.absolute[class*="top-"] {
+  z-index: 1100 !important;
+}
+
+
+mat-drawer {
+  z-index: 1200 !important;
+}
+
+
+.mat-drawer-backdrop {
+  z-index: 1150 !important;
+}
+
+
+.cdk-overlay-container {
+  z-index: 2000 !important;
+}
+
+
+.mat-toolbar button,
+.mat-toolbar [data-menu],
+.sidebar-item,
+.submenu-item,
+.mat-expansion-panel-header,
+.absolute a,
+.absolute button {
+  pointer-events: auto !important;
+  cursor: pointer !important;
+}
+
+
+.mat-drawer-backdrop {
+  pointer-events: auto !important;
+}
+
+
+body.menu-open mat-drawer,
+body.menu-open mat-drawer * {
+  pointer-events: auto !important;
+}
+
+
+a[routerLink="/general-settings"] {
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.75rem !important;
+  padding: 0.75rem 1rem !important;
+  margin: 0.25rem 0.5rem !important;
+  border-radius: 0.5rem !important;
+  color: #374151 !important;
+  text-decoration: none !important;
+  transition: all 0.2s ease !important;
+  
+  &:hover {
+    background-color: rgba(var(--primary-color-rgb), 0.1) !important;
+  }
+  
+  mat-icon {
+    font-size: 1.5rem !important;
+    width: 1.5rem !important;
+    height: 1.5rem !important;
+  }
+  
+  span {
+    flex: 1 !important;
+    font-weight: 500 !important;
+  }
+}
+
+@media (max-width: 768px) {
+  
+  mat-drawer {
+    padding-top: env(safe-area-inset-top, 0px) !important;
+  }
+  
+  
+  .sidebar-item,
+  .submenu-item,
+  .mat-expansion-panel-header {
+    min-height: 52px !important;
+  }
+  
+
+  .absolute .py-2.max-h-96 {
+    max-height: calc(100vh - 150px) !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+}
+
+[class*="menu"],
+[class*="dropdown"],
+[class*="panel"],
+.mat-drawer,
+.mat-drawer *,
+.mat-expansion-panel,
+.mat-expansion-panel * {
+  visibility: visible !important;
+}
+
+/* Only hide when explicitly closed by Angular */
+[hidden],
+[style*="display: none"] {
+  display: none !important;
 }

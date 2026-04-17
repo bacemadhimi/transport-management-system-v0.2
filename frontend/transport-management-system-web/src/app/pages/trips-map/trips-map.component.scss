@@ -1078,3 +1078,914 @@
     }
   }
 }
+
+@media (max-width: 768px) {
+  .map-section .map-card .card-body .map-container-wrapper {
+    .map-region-filters {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      right: 10px;
+      max-width: none !important;
+      flex-wrap: nowrap !important;
+      overflow-x: auto !important;
+      overflow-y: hidden;
+      padding-bottom: 6px;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: thin;
+      z-index: 15;
+      
+      &::-webkit-scrollbar {
+        height: 3px;
+      }
+      
+      &::-webkit-scrollbar-track {
+        background: rgba(0, 0, 0, 0.05);
+        border-radius: 3px;
+      }
+      
+      &::-webkit-scrollbar-thumb {
+        background: rgba(102, 126, 234, 0.5);
+        border-radius: 3px;
+      }
+
+      .region-filter-btn {
+        flex-shrink: 0;
+        white-space: nowrap;
+        padding: 6px 14px !important;
+        font-size: 12px !important;
+        
+        i {
+          font-size: 11px !important;
+        }
+      }
+    }
+  }
+}
+
+
+@media (max-width: 768px) {
+  .entity-stats-section .table-wrapper .entity-table {
+    min-width: 650px;
+    
+    th:first-child,
+    td:first-child {
+      position: sticky;
+      left: 0;
+      background: white;
+      box-shadow: 2px 0 4px rgba(0, 0, 0, 0.05);
+      z-index: 2;
+      font-weight: 600;
+    }
+    
+    th:first-child {
+      background: #f8fafc;
+      z-index: 3;
+    }
+    
+    td:first-child {
+      background: white;
+      
+      &:hover {
+        background: #f8fafc;
+      }
+    }
+  }
+}
+
+
+@media (hover: none) and (pointer: coarse) {
+  .filter-select,
+  .filter-input,
+  button,
+  .region-filter-btn,
+  .help-toggle,
+  .btn-outline,
+  .btn-primary,
+  .btn-icon {
+    min-height: 44px !important;
+  }
+
+  .entity-table td {
+    min-height: 44px;
+    padding: 12px !important;
+  }
+
+  .map-actions .btn-icon {
+    min-width: 44px !important;
+    min-height: 44px !important;
+  }
+
+
+  .date-inputs .filter-input {
+    min-height: 44px;
+  }
+}
+
+
+@media (max-width: 480px) {
+  .filters-section .filters-bar .filters-left .filter-group.date-range {
+    .date-inputs {
+      flex-direction: column !important;
+      gap: 6px !important;
+      width: 100%;
+
+      .date-separator {
+        display: none !important;
+      }
+
+      .filter-input {
+        width: 100% !important;
+      }
+    }
+  }
+
+  .filters-right {
+    flex-direction: column !important;
+
+    button {
+      width: 100% !important;
+    }
+  }
+
+
+  .map-card .card-body .map-container-wrapper .map-stats {
+    display: none !important;
+  }
+}
+
+
+@media (max-height: 500px) and (orientation: landscape) {
+  .map-section .map-card .card-body .map-container-wrapper {
+    height: 280px !important;
+
+    #tripsMap {
+      height: 280px !important;
+      min-height: 280px !important;
+    }
+  }
+
+  .stats-cards {
+    grid-template-columns: repeat(5, 1fr) !important;
+    
+    .stat-card {
+      padding: 8px !important;
+      
+      .stat-icon {
+        width: 36px !important;
+        height: 36px !important;
+        font-size: 18px !important;
+      }
+      
+      .stat-content {
+        .stat-value {
+          font-size: 18px !important;
+        }
+        
+        .stat-label {
+          display: none !important;
+        }
+      }
+    }
+  }
+
+  .page-header {
+    padding: 12px !important;
+    margin-bottom: 12px !important;
+    
+    .page-title {
+      font-size: 20px !important;
+    }
+    
+    .page-subtitle {
+      font-size: 12px !important;
+    }
+  }
+
+  .filters-section {
+    margin-bottom: 12px !important;
+  }
+
+  .entity-stats-section {
+    max-height: 180px;
+    
+    .table-wrapper {
+      max-height: 160px !important;
+    }
+  }
+
+  .help-section,
+  .page-footer {
+    display: none !important;
+  }
+}
+
+
+@supports (padding: max(0px)) {
+  @media (max-width: 768px) {
+    .trips-stats-container {
+      padding-left: max(12px, env(safe-area-inset-left)) !important;
+      padding-right: max(12px, env(safe-area-inset-right)) !important;
+      padding-bottom: max(12px, env(safe-area-inset-bottom)) !important;
+    }
+
+    .map-region-filters {
+      left: max(10px, env(safe-area-inset-left)) !important;
+      right: max(10px, env(safe-area-inset-right)) !important;
+    }
+  }
+}
+
+
+@media (max-width: 768px) {
+  .map-card .card-body .map-container-wrapper {
+    .map-legend {
+      display: block !important;
+      position: absolute;
+      bottom: 10px;
+      left: 10px;
+      right: auto;
+      max-width: 200px;
+      padding: 10px !important;
+      min-width: auto !important;
+      
+      h4 {
+        margin: 0 0 6px 0 !important;
+        font-size: 11px !important;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        
+        &::after {
+          content: '▼';
+          font-size: 10px;
+          margin-left: 8px;
+        }
+      }
+      
+      .legend-grid {
+        display: none !important;
+        gap: 8px !important;
+      }
+      
+      &.legend-expanded {
+        .legend-grid {
+          display: grid !important;
+        }
+        
+        h4::after {
+          content: '▲';
+        }
+      }
+    }
+  }
+}
+
+
+@media (min-width: 769px) and (max-width: 1024px) {
+  .filters-bar {
+    .filters-left {
+      gap: 16px !important;
+      
+      .filter-group {
+        gap: 8px !important;
+        
+        label {
+          font-size: 12px !important;
+        }
+        
+        .filter-select,
+        .filter-input {
+          padding: 6px 10px !important;
+          font-size: 12px !important;
+        }
+      }
+    }
+    
+    .filters-right button {
+      padding: 6px 14px !important;
+      font-size: 12px !important;
+    }
+  }
+}
+
+
+@media (max-width: 480px) {
+  .entity-table .progress-mini {
+    min-width: 60px !important;
+    gap: 6px !important;
+    
+    .progress-bar-mini {
+      height: 4px !important;
+    }
+    
+    span {
+      font-size: 10px !important;
+      min-width: 35px !important;
+    }
+  }
+}
+
+@media (max-width: 480px) {
+  .alert {
+    padding: 10px 12px !important;
+    font-size: 12px !important;
+    
+    .btn-close {
+      padding: 4px !important;
+    }
+  }
+}
+
+
+@media (max-width: 768px) {
+  .help-section {
+    .help-content {
+      max-height: 300px;
+      overflow-y: auto;
+    }
+  }
+}
+
+
+.map-container-wrapper {
+  min-height: 300px !important;
+  
+  #tripsMap {
+    min-height: 300px !important;
+  }
+}
+
+
+.map-loading-overlay .loading-content {
+  flex-wrap: wrap;
+  text-align: center;
+  justify-content: center;
+}
+
+
+@media (max-width: 480px) {
+  .map-error-overlay .error-content {
+    flex-direction: column !important;
+    text-align: center;
+    padding: 16px !important;
+    
+    .btn-sm {
+      width: 100% !important;
+    }
+  }
+}
+// Fix map container sizing and visibility
+.map-container-wrapper {
+  position: relative;
+  width: 100%;
+  min-height: 400px;
+  background: #e9ecef;
+  
+  #tripsMap {
+    width: 100% !important;
+    height: 100% !important;
+    min-height: 400px !important;
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    z-index: 1 !important;
+    background: #e9ecef !important;
+    
+    // Ensure Leaflet tiles are visible
+    ::ng-deep .leaflet-tile,
+    ::ng-deep .leaflet-tile-loaded {
+      visibility: visible !important;
+      opacity: 1 !important;
+    }
+    
+    ::ng-deep .leaflet-container {
+      background: #e9ecef !important;
+      width: 100% !important;
+      height: 100% !important;
+    }
+    
+    ::ng-deep .leaflet-control-attribution {
+      font-size: 10px !important;
+      background: rgba(255, 255, 255, 0.8) !important;
+      padding: 2px 5px !important;
+    }
+  }
+}
+
+// Mobile responsive fixes
+@media (max-width: 768px) {
+  .trips-stats-container {
+    padding: 8px !important;
+  }
+
+  .page-header {
+    padding: 12px !important;
+    margin-bottom: 12px !important;
+    
+    .page-title {
+      font-size: 18px !important;
+      flex-direction: row !important;
+      flex-wrap: wrap;
+      
+      i {
+        font-size: 20px !important;
+      }
+    }
+    
+    .page-subtitle {
+      font-size: 12px !important;
+    }
+  }
+
+  // Filters bar - mobile optimized
+  .filters-section {
+    margin-bottom: 12px !important;
+    
+    .filters-bar {
+      padding: 12px !important;
+      gap: 10px !important;
+      
+      .filters-left {
+        gap: 10px !important;
+        
+        .filter-group {
+          flex-wrap: wrap;
+          width: 100%;
+          
+          label {
+            font-size: 11px !important;
+            min-width: 60px;
+          }
+          
+          .filter-select {
+            flex: 1;
+            padding: 8px 10px !important;
+            font-size: 13px !important;
+          }
+          
+          &.date-range {
+            width: 100%;
+            
+            .date-inputs {
+              flex: 1;
+              display: flex;
+              gap: 4px;
+              
+              .filter-input {
+                flex: 1;
+                min-width: 0;
+                padding: 8px 6px !important;
+                font-size: 12px !important;
+              }
+              
+              .date-separator {
+                font-size: 12px;
+              }
+            }
+          }
+        }
+        
+        .current-month-indicator {
+          width: 100%;
+          text-align: center;
+          font-size: 11px !important;
+          padding: 6px 10px !important;
+        }
+      }
+      
+      .filters-right {
+        flex-wrap: wrap;
+        gap: 6px !important;
+        
+        button {
+          flex: 1;
+          min-width: 90px;
+          padding: 8px 8px !important;
+          font-size: 11px !important;
+          white-space: nowrap;
+        }
+      }
+    }
+  }
+
+  // Stats cards - 2 per row
+  .stats-cards {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 8px !important;
+    margin-bottom: 12px !important;
+    
+    .stat-card {
+      padding: 12px 8px !important;
+      gap: 8px !important;
+      
+      .stat-icon {
+        width: 40px !important;
+        height: 40px !important;
+        font-size: 20px !important;
+      }
+      
+      .stat-content {
+        .stat-value {
+          font-size: 20px !important;
+        }
+        
+        .stat-label {
+          font-size: 10px !important;
+        }
+      }
+    }
+  }
+
+  // Map section - mobile
+  .map-section .map-card {
+    border-radius: 12px !important;
+    
+    .card-header {
+      padding: 10px 12px !important;
+      gap: 8px !important;
+      
+      .header-left {
+        gap: 10px !important;
+        
+        h3 {
+          font-size: 14px !important;
+          
+          i {
+            font-size: 16px !important;
+          }
+        }
+        
+        .map-status-badge {
+          padding: 3px 8px !important;
+          
+          .live-text {
+            font-size: 9px !important;
+          }
+        }
+      }
+      
+      .map-actions {
+        gap: 6px !important;
+        
+        .btn-icon {
+          width: 36px !important;
+          height: 36px !important;
+          border-radius: 8px !important;
+        }
+      }
+    }
+    
+    .card-body .map-container-wrapper {
+      height: 350px !important;
+      min-height: 350px !important;
+      
+      #tripsMap {
+        min-height: 350px !important;
+      }
+      
+      // Region filters - horizontal scroll
+      .map-region-filters {
+        top: 8px !important;
+        left: 8px !important;
+        right: 8px !important;
+        flex-wrap: nowrap !important;
+        overflow-x: auto !important;
+        overflow-y: hidden;
+        padding-bottom: 4px;
+        gap: 4px !important;
+        -webkit-overflow-scrolling: touch;
+        
+        &::-webkit-scrollbar {
+          height: 2px;
+        }
+        
+        .region-filter-btn {
+          flex-shrink: 0;
+          padding: 5px 10px !important;
+          font-size: 10px !important;
+          white-space: nowrap;
+          
+          i {
+            font-size: 9px !important;
+            margin-right: 3px;
+          }
+        }
+      }
+      
+      // Hide legend on mobile
+      .map-legend {
+        display: none !important;
+      }
+      
+      // Map stats repositioned
+      .map-stats {
+        top: auto !important;
+        bottom: 8px !important;
+        right: 8px !important;
+        left: auto !important;
+        padding: 6px 10px !important;
+        min-width: 120px !important;
+        
+        .stats-row {
+          gap: 12px !important;
+          
+          .stat-item {
+            .stat-value {
+              font-size: 14px !important;
+            }
+            
+            .stat-label {
+              font-size: 8px !important;
+            }
+          }
+        }
+      }
+      
+      // Loading overlay
+      .map-loading-overlay .loading-content {
+        padding: 10px 16px !important;
+        
+        .spinner-small {
+          width: 18px !important;
+          height: 18px !important;
+        }
+        
+        span {
+          font-size: 12px !important;
+        }
+      }
+    }
+  }
+
+  // Entity table - scrollable with sticky first column
+  .entity-stats-section {
+    border-radius: 12px !important;
+    margin-bottom: 12px !important;
+    
+    h3 {
+      padding: 12px !important;
+      font-size: 14px !important;
+    }
+    
+    .table-wrapper {
+      max-height: 300px !important;
+      
+      .entity-table {
+        min-width: 550px !important;
+        
+        th, td {
+          padding: 8px 10px !important;
+          font-size: 11px !important;
+          white-space: nowrap;
+        }
+        
+        th {
+          font-size: 10px !important;
+        }
+        
+        // Sticky first column
+        th:first-child,
+        td:first-child {
+          position: sticky;
+          left: 0;
+          background: white;
+          box-shadow: 2px 0 4px rgba(0, 0, 0, 0.05);
+          z-index: 2;
+        }
+        
+        th:first-child {
+          background: #f8fafc;
+          z-index: 3;
+        }
+        
+        .progress-mini {
+          min-width: 60px !important;
+          gap: 5px !important;
+          
+          .progress-bar-mini {
+            height: 4px !important;
+          }
+          
+          span {
+            font-size: 10px !important;
+            min-width: 35px !important;
+          }
+        }
+      }
+    }
+  }
+
+  // Help section
+  .help-section {
+    margin-top: 12px !important;
+    
+    .help-toggle {
+      width: 100%;
+      justify-content: center;
+      padding: 10px 12px !important;
+      font-size: 12px !important;
+    }
+    
+    .help-content {
+      padding: 12px !important;
+      
+      h4 {
+        font-size: 13px !important;
+        margin-bottom: 10px !important;
+      }
+      
+      ul li {
+        font-size: 11px !important;
+        margin-bottom: 6px !important;
+      }
+    }
+  }
+
+  // Footer
+  .page-footer {
+    margin-top: 16px !important;
+    padding: 12px !important;
+    
+    .footer-content {
+      flex-direction: column !important;
+      gap: 4px !important;
+      
+      .footer-text {
+        font-size: 10px !important;
+        
+        i {
+          font-size: 11px !important;
+        }
+      }
+      
+      .footer-separator {
+        display: none !important;
+      }
+    }
+  }
+}
+
+// Very small screens (iPhone SE, etc.)
+@media (max-width: 480px) {
+  .stats-cards {
+    grid-template-columns: 1fr !important;
+  }
+  
+  .map-section .map-card .card-body .map-container-wrapper {
+    height: 300px !important;
+    min-height: 300px !important;
+    
+    #tripsMap {
+      min-height: 300px !important;
+    }
+    
+    .map-stats {
+      display: none !important;
+    }
+  }
+  
+  .filters-section .filters-bar .filters-left .filter-group.date-range .date-inputs {
+    flex-direction: column !important;
+    
+    .date-separator {
+      display: none !important;
+    }
+  }
+  
+  .filters-right {
+    flex-direction: column !important;
+    
+    button {
+      width: 100% !important;
+    }
+  }
+}
+
+// Landscape mode
+@media (max-height: 500px) and (orientation: landscape) {
+  .page-header {
+    padding: 8px !important;
+    margin-bottom: 8px !important;
+    
+    .page-title {
+      font-size: 16px !important;
+    }
+    
+    .page-subtitle {
+      display: none !important;
+    }
+  }
+  
+  .stats-cards {
+    grid-template-columns: repeat(5, 1fr) !important;
+    
+    .stat-card {
+      padding: 6px !important;
+      
+      .stat-icon {
+        width: 30px !important;
+        height: 30px !important;
+        font-size: 16px !important;
+      }
+      
+      .stat-content {
+        .stat-value {
+          font-size: 16px !important;
+        }
+        
+        .stat-label {
+          display: none !important;
+        }
+      }
+    }
+  }
+  
+  .map-section .map-card .card-body .map-container-wrapper {
+    height: 220px !important;
+    min-height: 220px !important;
+    
+    #tripsMap {
+      min-height: 220px !important;
+    }
+  }
+  
+  .entity-stats-section,
+  .help-section,
+  .page-footer {
+    display: none !important;
+  }
+}
+
+// Touch device optimizations
+@media (hover: none) and (pointer: coarse) {
+  button,
+  .filter-select,
+  .filter-input,
+  .region-filter-btn,
+  .help-toggle,
+  .btn-icon {
+    min-height: 44px !important;
+  }
+  
+  .entity-table td {
+    min-height: 44px;
+  }
+}
+
+// Fix Leaflet map rendering issues
+::ng-deep {
+  .leaflet-container {
+    font: 12px/1.5 "Helvetica Neue", Arial, Helvetica, sans-serif !important;
+  }
+  
+  .leaflet-control-zoom {
+    border: none !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+    
+    a {
+      width: 32px !important;
+      height: 32px !important;
+      line-height: 32px !important;
+      border-radius: 4px !important;
+      
+      @media (max-width: 768px) {
+        width: 36px !important;
+        height: 36px !important;
+        line-height: 36px !important;
+      }
+    }
+  }
+  
+  .leaflet-control-attribution {
+    font-size: 9px !important;
+    
+    @media (max-width: 768px) {
+      font-size: 8px !important;
+      padding: 2px 4px !important;
+    }
+  }
+  
+  // Fix marker popups on mobile
+  .leaflet-popup-content {
+    font-size: 12px !important;
+    margin: 10px !important;
+    max-width: 200px !important;
+    
+    @media (max-width: 768px) {
+      font-size: 11px !important;
+      margin: 8px !important;
+    }
+  }
+  
+  .leaflet-popup-close-button {
+    padding: 6px !important;
+    
+    @media (max-width: 768px) {
+      padding: 8px !important;
+    }
+  }
+}
