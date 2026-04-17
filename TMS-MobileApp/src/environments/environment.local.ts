@@ -5,10 +5,8 @@ const LOCAL_IP = '192.168.76.186';
 const LOCAL_PORT = '5191';
 
 function getApiUrl(): string {
-  if (Capacitor.isNativePlatform()) {
-    return `http://${LOCAL_IP}:${LOCAL_PORT}`;
-  }
-  return 'http://localhost:5191';
+
+  return 'http://51.178.65.32:45880';
 }
 
 export const environment = {

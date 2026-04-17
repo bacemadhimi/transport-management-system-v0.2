@@ -60,12 +60,14 @@ public class WeatherController : ControllerBase
     public async Task<IActionResult> GetWeatherByLocation(int locationId)
     {
         var location = await _dbContext.Locations
+            .Include(l => l.LocationGeographicalEntities)
+                .ThenInclude(lg => lg.GeographicalEntity)
             .FirstOrDefaultAsync(l => l.Id == locationId);
 
         if (location == null)
             return NotFound(new { message = $"Location with ID {locationId} not found" });
 
-        // Get coordinates from the location directly
+        // Get coordinates from the lowest level geographical entity
         var coordinates = await GetLowestLevelCoordinatesFromLocation(location);
 
         if (coordinates != null)
@@ -86,12 +88,14 @@ public class WeatherController : ControllerBase
     public async Task<IActionResult> GetForecastByLocation(int locationId)
     {
         var location = await _dbContext.Locations
+            .Include(l => l.LocationGeographicalEntities)
+                .ThenInclude(lg => lg.GeographicalEntity)
             .FirstOrDefaultAsync(l => l.Id == locationId);
 
         if (location == null)
             return NotFound(new { message = $"Location with ID {locationId} not found" });
 
-        // Get coordinates from the location directly
+        // Get coordinates from the lowest level geographical entity
         var coordinates = await GetLowestLevelCoordinatesFromLocation(location);
 
         if (coordinates != null)
@@ -112,9 +116,13 @@ public class WeatherController : ControllerBase
     public async Task<IActionResult> GetWeatherForTrip([FromQuery] int startLocationId, [FromQuery] int endLocationId)
     {
         var startLocation = await _dbContext.Locations
+            .Include(l => l.LocationGeographicalEntities)
+                .ThenInclude(lg => lg.GeographicalEntity)
             .FirstOrDefaultAsync(l => l.Id == startLocationId);
 
         var endLocation = await _dbContext.Locations
+            .Include(l => l.LocationGeographicalEntities)
+                .ThenInclude(lg => lg.GeographicalEntity)
             .FirstOrDefaultAsync(l => l.Id == endLocationId);
 
         if (startLocation == null)
@@ -138,18 +146,37 @@ public class WeatherController : ControllerBase
     // ==================== HELPER METHODS ====================
 
     /// <summary>
-    /// Get coordinates from location directly
+    /// Get coordinates from the lowest level (highest level number) geographical entity
     /// </summary>
     private async Task<GeoPoint?> GetLowestLevelCoordinatesFromLocation(Location location)
     {
-        if (location.Latitude == null || location.Longitude == null)
+        if (location.LocationGeographicalEntities == null || !location.LocationGeographicalEntities.Any())
             return null;
 
-        return new GeoPoint
-        {
-            Latitude = location.Latitude.Value,
-            Longitude = location.Longitude.Value
-        };
+        // Get all geographical entities with coordinates
+        var entitiesWithCoordinates = location.LocationGeographicalEntities
+            .Select(lg => lg.GeographicalEntity)
+            .Where(ge => ge != null && ge.IsActive && ge.Latitude != null && ge.Longitude != null)
+            .ToList();
+
+        if (!entitiesWithCoordinates.Any())
+            return null;
+
+        // Find the entity with the highest level number (lowest level / most granular)
+        var lowestLevelEntity = entitiesWithCoordinates
+            .OrderByDescending(ge =>
+            {
+                // Get the level number for this entity
+                var level = _dbContext.GeographicalLevels
+                    .FirstOrDefault(l => l.Id == ge.LevelId);
+                return level?.LevelNumber ?? 0;
+            })
+            .FirstOrDefault();
+
+        if (lowestLevelEntity == null)
+            return null;
+
+        return new GeoPoint(lowestLevelEntity.Latitude.Value, lowestLevelEntity.Longitude.Value);
     }
 
     /// <summary>

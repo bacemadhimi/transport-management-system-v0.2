@@ -15,6 +15,8 @@
   // HEADER - Professional Dark Orange Header
   // ═══════════════════════════════════════════
   ion-header {
+    background: linear-gradient(135deg, #ff8c00 0%, #ff6b00 100%) !important;
+    
     ion-toolbar {
       --background: linear-gradient(135deg, #d35400 0%, #e67e22 50%, #d35400 100%);
       --color: #ffffff;
@@ -54,7 +56,7 @@
       ion-buttons {
         display: flex;
         align-items: center;
-
+        
         ion-button {
           --color: #ffffff;
           opacity: 0.9;
@@ -66,6 +68,16 @@
           ion-icon {
             color: #ffffff !important;
             font-size: 22px;
+          }
+        }
+
+        ion-back-button {
+          --color: white !important;
+          --color-activated: white !important;
+          --color-focused: white !important;
+          
+          ion-icon {
+            color: white !important;
           }
         }
       }
@@ -108,6 +120,51 @@
         background: #10b981;
         animation: pulse-green 2s infinite;
       }
+
+      h3 {
+        margin: 0;
+        font-size: 18px;
+        font-weight: 700;
+        color: #ffffff;
+      }
+    }
+
+    .admin-stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-bottom: 12px;
+
+      .stat-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 12px;
+        background: linear-gradient(135deg, rgba(255, 140, 0, 0.15), rgba(255, 204, 0, 0.1));
+        border-radius: 12px;
+        border: 1px solid rgba(255, 140, 0, 0.2);
+
+        .stat-value {
+          font-size: 24px;
+          font-weight: 800;
+          color: #ff8c00;
+          line-height: 1;
+        }
+
+        .stat-label {
+          font-size: 11px;
+          color: #cccccc;
+          margin-top: 4px;
+          text-align: center;
+        }
+      }
+    }
+
+    ion-note {
+      display: block;
+      text-align: center;
+      font-size: 12px;
+      color: #999999;
     }
   }
 
@@ -438,7 +495,7 @@
   // MISSION STATUS SECTION - Professional Cards
   // ═══════════════════════════════════════════
   .mission-status-section {
-    margin: 0 16px 16px;
+    margin: 16px;
 
     .mission-card {
       --background: #ffffff;
@@ -746,10 +803,31 @@
           color: #d35400;
         }
       }
+    }
 
       ion-card-content {
         padding: 16px 18px;
       }
+    }
+
+    // Delivery Button - Orange/Gold Gradient
+    &.delivery-btn {
+      --background: linear-gradient(135deg, #ff9500 0%, #ff7a00 100%);
+      --background-activated: linear-gradient(135deg, #e08500 0%, #e06a00 100%);
+      color: white;
+
+      &::after {
+        content: '';
+        position: absolute;
+        bottom: -2px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 80%;
+        height: 3px;
+        background: linear-gradient(90deg, transparent, #ffcc00, transparent);
+        border-radius: 2px;
+      }
+    }
 
       .destination-row {
         display: flex;
@@ -1223,6 +1301,10 @@
     height: 42vh;
     min-height: 300px;
   }
+  50% {
+    opacity: 0.5;
+  }
+}
 
   .mission-status-section,
   .destination-info {
@@ -1233,12 +1315,40 @@
   .trip-details-card {
     margin: 12px !important;
   }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
 
-  .title-wrapper {
-    font-size: 14px;
+// Responsive
+@media (max-width: 480px) {
+  .gps-tracking-content {
+    .map-wrapper {
+      height: 50vh;
+      min-height: 300px;
+    }
 
-    .title-ref {
-      display: none;
+    .info-card .info-header {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 8px;
+    }
+
+    .admin-stats {
+      grid-template-columns: repeat(3, 1fr) !important;
+      gap: 8px !important;
+    }
+
+    .voice-nav-btn .voice-btn-container {
+      width: 40px !important;
+      height: 40px !important;
+    }
+  }
+
+  .stats-bar {
+    .stat-card {
+      min-width: calc(50% - 8px);
     }
   }
 }

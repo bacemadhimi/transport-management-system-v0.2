@@ -157,3 +157,474 @@ body {
   }
 }
 @import 'leaflet/dist/leaflet.css'; 
+/* ============================================
+   MOBILE RESPONSIVE STYLES
+   ============================================ */
+
+/* Base responsive setup */
+* {
+  box-sizing: border-box;
+}
+
+/* Mobile-first approach - Default styles for mobile */
+
+/* Header/Toolbar Mobile Optimizations */
+@media (max-width: 768px) {
+  /* Toolbar adjustments */
+  mat-toolbar {
+    padding: 0 8px !important;
+    height: 64px !important;
+    flex-wrap: wrap;
+  }
+
+  /* Hide email on very small screens */
+  .mat-toolbar span[routerLink="/profile"] {
+    display: none;
+  }
+
+  /* Reduce gap between items */
+  .mat-toolbar .flex.gap-4 {
+    gap: 0.5rem !important;
+  }
+
+  /* Make avatar smaller */
+  .mat-toolbar img.w-8.h-8 {
+    width: 32px !important;
+    height: 32px !important;
+  }
+
+  /* Logo adjustments */
+  .mat-toolbar .w-10.h-10 {
+    width: 36px !important;
+    height: 36px !important;
+  }
+
+  /* Hide some buttons on very small screens */
+  @media (max-width: 480px) {
+    .mat-toolbar [data-menu="permissions"] {
+      display: none;
+    }
+  }
+
+  @media (max-width: 400px) {
+    .mat-toolbar [data-menu="theme"] {
+      display: none;
+    }
+  }
+
+  /* Dropdown/Panel Mobile Styles */
+  .absolute.right-0.top-12,
+  .absolute.right-0.top-10 {
+    position: fixed !important;
+    top: 64px !important;
+    left: 0 !important;
+    right: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    border-radius: 0 !important;
+    max-height: calc(100vh - 64px) !important;
+  }
+
+  /* Permissions menu mobile */
+  [data-menu="permissions"] .absolute.w-96 {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  /* Notifications panel mobile */
+  .w-96[style*="max-height: 500px"] {
+    width: 100% !important;
+    max-width: 100% !important;
+    max-height: calc(100vh - 64px) !important;
+  }
+
+  /* Language selector mobile */
+  [data-menu="language"] .w-40 {
+    width: 100% !important;
+    max-width: 200px !important;
+    right: 0 !important;
+  }
+
+  /* Theme picker mobile */
+  [data-menu="theme"] .w-80 {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+}
+
+/* Drawer/Sidebar Mobile Styles */
+@media (max-width: 768px) {
+  /* Sidebar drawer */
+  mat-drawer {
+    width: 280px !important;
+  }
+
+  /* When drawer is closed on mobile */
+  mat-drawer:not(.mat-drawer-opened) {
+    transform: translateX(-100%) !important;
+  }
+
+  /* Drawer content area */
+  mat-drawer-content {
+    margin-left: 0 !important;
+    width: 100% !important;
+  }
+
+  /* Sidebar items adjustments */
+  .sidebar-item {
+    height: 44px !important;
+    margin: 2px 8px !important;
+  }
+
+  .sidebar-item .sidebar-text {
+    font-size: 14px !important;
+  }
+
+  .sidebar-item .sidebar-icon {
+    font-size: 20px !important;
+    margin-right: 12px !important;
+  }
+
+  /* Expansion panel mobile */
+  .sidebar-expansion-panel .mat-expansion-panel-header {
+    height: 44px !important;
+    padding: 0 12px !important;
+  }
+
+  /* Submenu items mobile */
+  .submenu-item {
+    height: 40px !important;
+    margin: 2px 6px !important;
+    padding-left: 8px !important;
+  }
+
+  .submenu-item .submenu-text {
+    font-size: 13px !important;
+  }
+
+  .submenu-item .submenu-icon {
+    font-size: 18px !important;
+  }
+
+  /* Menu section header mobile */
+  .menu-section-header {
+    padding: 16px 16px 8px !important;
+    font-size: 11px !important;
+  }
+
+  /* Divider mobile */
+  .menu-divider {
+    margin: 12px 16px !important;
+  }
+}
+
+/* Main Content Mobile Styles */
+@media (max-width: 768px) {
+  main.min-h-screen {
+    padding: 12px !important;
+  }
+
+  /* Card styles for mobile */
+  .mat-card, 
+  .card {
+    margin: 8px 0 !important;
+    padding: 12px !important;
+  }
+
+  /* Table responsive wrapper */
+  .table-responsive {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    margin: 0 -12px;
+    padding: 0 12px;
+  }
+
+  /* Make tables scrollable horizontally */
+  table {
+    min-width: 600px;
+  }
+
+  /* Form fields full width on mobile */
+  mat-form-field {
+    width: 100% !important;
+  }
+
+  /* Grid adjustments */
+  .grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .grid-cols-2,
+  .grid-cols-3,
+  .grid-cols-4 {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Flex column on mobile */
+  .flex-row-mobile {
+    flex-direction: column !important;
+  }
+
+  /* Gap adjustments */
+  .gap-4 {
+    gap: 0.75rem !important;
+  }
+
+  /* Button adjustments */
+  button {
+    min-width: 44px !important;
+    min-height: 44px !important;
+  }
+
+  /* Make buttons full width when needed */
+  .btn-full-mobile {
+    width: 100% !important;
+  }
+}
+
+/* Extra small devices */
+@media (max-width: 480px) {
+  /* Toolbar icons only */
+  .mat-toolbar {
+    justify-content: space-between;
+  }
+
+  /* Hide theme picker on very small */
+  .theme-picker-btn {
+    display: none;
+  }
+
+  /* Adjust notification badge */
+  .absolute.-top-1.-right-1 {
+    min-width: 16px !important;
+    height: 16px !important;
+    font-size: 10px !important;
+    padding: 0 4px !important;
+  }
+
+  /* Smaller padding for main content */
+  main.min-h-screen {
+    padding: 8px !important;
+  }
+
+  /* Dialog full screen on mobile */
+  .mat-dialog-container {
+    padding: 16px !important;
+  }
+
+  .cdk-overlay-pane {
+    max-width: 100vw !important;
+    width: 100% !important;
+  }
+}
+
+/* Tablet Styles */
+@media (min-width: 769px) and (max-width: 1024px) {
+  /* Sidebar width on tablet */
+  mat-drawer {
+    width: 260px !important;
+  }
+
+  /* Toolbar spacing */
+  .mat-toolbar .flex.gap-4 {
+    gap: 0.75rem !important;
+  }
+
+  /* Grid adjustments for tablet */
+  .grid-cols-2,
+  .grid-cols-3,
+  .grid-cols-4 {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+
+  /* Main content padding */
+  main.min-h-screen {
+    padding: 16px !important;
+  }
+}
+
+/* Touch-friendly improvements */
+@media (hover: none) and (pointer: coarse) {
+  /* Increase tap target size */
+  button,
+  [role="button"],
+  .clickable,
+  mat-list-item,
+  .mat-expansion-panel-header {
+    min-height: 48px !important;
+  }
+
+  /* Add active state feedback */
+  button:active,
+  [role="button"]:active,
+  .clickable:active {
+    opacity: 0.7;
+  }
+
+  /* Remove hover effects that don't work well on touch */
+  .hover\:scale-105:hover {
+    transform: none !important;
+  }
+
+  .hover\:shadow-md:hover {
+    box-shadow: none !important;
+  }
+
+  /* Larger spacing for touch */
+  .notification-item {
+    padding: 16px !important;
+  }
+
+  /* Larger checkbox/radio */
+  mat-checkbox,
+  mat-radio-button {
+    min-height: 48px;
+    display: flex;
+    align-items: center;
+  }
+}
+
+/* Safe area support for notched devices */
+@supports (padding: max(0px)) {
+  mat-toolbar {
+    padding-left: max(16px, env(safe-area-inset-left)) !important;
+    padding-right: max(16px, env(safe-area-inset-right)) !important;
+  }
+
+  main.min-h-screen {
+    padding-left: max(16px, env(safe-area-inset-left)) !important;
+    padding-right: max(16px, env(safe-area-inset-right)) !important;
+    padding-bottom: max(16px, env(safe-area-inset-bottom)) !important;
+  }
+
+  mat-drawer {
+    padding-top: env(safe-area-inset-top) !important;
+  }
+}
+
+/* Notification panel mobile specific */
+@media (max-width: 768px) {
+  .facebook-style-panel {
+    border-radius: 0 !important;
+    box-shadow: none !important;
+  }
+
+  .notification-item {
+    padding: 12px !important;
+  }
+
+  .notification-item .w-10.h-10 {
+    width: 36px !important;
+    height: 36px !important;
+  }
+
+  .notification-item mat-icon {
+    font-size: 20px !important;
+  }
+
+  /* Filter tabs mobile */
+  .facebook-style-panel .flex.gap-4 {
+    justify-content: space-around;
+  }
+
+  .facebook-style-panel button {
+    flex: 1;
+    text-align: center;
+  }
+}
+
+/* Theme picker mobile */
+@media (max-width: 768px) {
+  [data-menu="theme"] .grid.grid-cols-3 {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+
+  [data-menu="theme"] .w-80 {
+    padding: 12px !important;
+  }
+}
+
+/* Loading states and performance */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Print styles */
+@media print {
+  mat-toolbar,
+  mat-drawer,
+  button,
+  .no-print {
+    display: none !important;
+  }
+
+  mat-drawer-content {
+    margin-left: 0 !important;
+  }
+
+  main.min-h-screen {
+    padding: 0 !important;
+    background: white !important;
+  }
+}
+
+/* High contrast mode support */
+@media (forced-colors: active) {
+  .active-menu-item,
+  .active-submenu-item {
+    border: 2px solid currentColor !important;
+  }
+
+  button,
+  [role="button"] {
+    border: 1px solid currentColor;
+  }
+}
+
+/* Fix for iOS input zoom */
+@media (max-width: 768px) {
+  input,
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}
+
+/* Scroll lock for mobile when menu open */
+body.menu-open {
+  overflow: hidden;
+}
+
+/* Drawer overlay for mobile */
+@media (max-width: 768px) {
+  .mat-drawer-backdrop {
+    background: rgba(0, 0, 0, 0.5);
+  }
+}
+
+/* Animation for mobile menu toggle */
+@media (max-width: 768px) {
+  .menu-icon-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Hamburger menu icon */
+  .hamburger-menu {
+    display: block;
+  }
+}
+
+@media (min-width: 769px) {
+  .hamburger-menu {
+    display: none;
+  }
+}

@@ -506,7 +506,13 @@
   "EXPORT_CSV": "Exporter CSV",
   "EXPORT_PDF": "Exporter PDF",
   "CATEGORY_REQUIRED": "Catégorie requise",
-  "TRAVEL_MANAGEMENT": "Gestion des voyages"
+  "TRAVEL_MANAGEMENT": "Gestion des voyages",
+  "SUPPORTED_FORMATS": "Formats pris en charge",
+  "WAREHOUSE": "Entrepôt",
+  "CLIENT_MANAGEMENT": "Gestion des clients",
+  "CUSTOMERS_LIST": "Liste des clients",
+  "CLIENTS": "Clients",
+  "ADDED_SUCCESS": "Ajouté avec succès"
 
 
 

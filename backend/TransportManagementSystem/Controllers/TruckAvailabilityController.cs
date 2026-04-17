@@ -30,6 +30,7 @@ public class TruckAvailabilityController : ControllerBase
             var end = DateTime.ParseExact(endDate, "yyyy-MM-dd", null);
 
             var trucks = await _context.Trucks
+                .Include(t => t.MarqueTruck)
                 .Where(t => t.IsEnable)
                 .OrderBy(t => t.Immatriculation)
                 .ToListAsync();
@@ -54,6 +55,7 @@ public class TruckAvailabilityController : ControllerBase
                 {
                     TruckId = truck.Id,
                     Immatriculation = truck.Immatriculation,
+                    MarqueName = truck.MarqueTruck?.Name ?? "N/A", 
                     MarqueTruckId = truck.MarqueTruckId,
                     Availability = new Dictionary<string, AvailabilityDayDto>()
                 };

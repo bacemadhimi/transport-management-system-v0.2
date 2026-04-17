@@ -305,27 +305,27 @@ get showCols() {
   }
 
  getLoadingUnitImage(unit: string): string {
-  if (!unit) return '/palette.jpg';
+  if (!unit) return 'palette.jpg';
 
   const unitLower = unit.toLowerCase();
 
   switch (unitLower) {
     case 'palettes':
     case 'palette':
-      return '/palette.jpg';
+      return 'palette.jpg';
     case 'cartons':
     case 'carton':
-      return '/carton.webp';
+      return 'carton.webp';
     case 'tonnes':
     case 'tonne':
-      return '/tonne.png';
+      return 'tonne.png';
     case 'kg':
-      return '/kg.png';
+      return 'kg.png';
     case 'bouteilles':
     case 'bouteille':
-      return '/b.png';
+      return 'b.png';
     default:
-      return '/palette.jpg';
+      return 'palette.jpg';
   }
 }
 
