@@ -1,4 +1,4 @@
-﻿import { Component, EventEmitter, HostListener, Inject, Input, OnInit, Output, Optional, ViewChild, inject } from '@angular/core';
+import { Component, EventEmitter, HostListener, Inject, Input, OnInit, Output, Optional, ViewChild, inject } from '@angular/core';
 import { AbstractControl, FormArray, FormBuilder, FormControl, FormGroup, FormsModule, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialog, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
@@ -3205,20 +3205,30 @@ private async checkCapacityBeforeAddingOrders(selectedWeight: number): Promise<b
 
   getTripStatusLabel(status: string): string {
     switch (status) {
-      case TripStatus.Planned:
+      case 'Planned':
         return 'Planifié';
-      case TripStatus.Accepted:
+      case 'Accepted':
         return 'Accepté';
-      case TripStatus.LoadingInProgress:
+      case 'LoadingInProgress':
         return 'Chargement en cours';
-      case TripStatus.DeliveryInProgress:
+      case 'DeliveryInProgress':
         return 'Livraison en cours';
-      case TripStatus.Receipt:
+      case 'Completed':
+        return 'Terminé';
+      case 'Receipt':
         return 'Réception';
-      case TripStatus.Cancelled:
+      case 'Cancelled':
         return 'Annulé';
+      case 'Pending':
+        return 'En attente';
+      case 'Loading':
+        return 'En chargement';
+      case 'Delivery':
+        return 'En livraison';
+      case 'InDelivery':
+        return 'En cours de livraison';
       default:
-        return 'Planifié';
+        return status || 'Planifié'; // Retourne le statut tel quel s'il n'est pas reconnu, sinon 'Planifié'
     }
   }
 
