@@ -1,4 +1,4 @@
-﻿import { IGeographicalEntity } from './general-settings';
+import { IGeographicalEntity } from './general-settings';
 
 export interface ICustomer {
   id: number;
@@ -11,10 +11,12 @@ export interface ICustomer {
   address?: string;
   deliveryAddress?: string;
   sourceSystem?: string;
-
+  
+  // GPS Coordinates (for automatic mode)
+  latitude?: number;
+  longitude?: number;
 
   geographicalEntities?: IGeographicalEntityWithDetails[];
-
 
   createdAt?: Date;
   updatedAt?: Date;

@@ -712,11 +712,16 @@ export class LiveGPSTrackingPage implements OnInit, OnDestroy {
 
           if (!this.truckMarkers.has(trip.id)) {
             const truckIcon = this.createTruckIcon();
-            const marker = L.marker(newPosition, { icon: truckIcon, zIndexOffset: 1000 })
-              .addTo(this.map)
-              .bindPopup(this.getTruckPopupContent(trip));
-            this.truckMarkers.set(trip.id, marker);
-            console.log('✅ Marker created for trip', trip.tripReference);
+            // ✅ SAFETY CHECK: Ensure map is initialized before adding marker
+            if (this.map) {
+              const marker = L.marker(newPosition, { icon: truckIcon, zIndexOffset: 1000 })
+                .addTo(this.map)
+                .bindPopup(this.getTruckPopupContent(trip));
+              this.truckMarkers.set(trip.id, marker);
+              console.log('✅ Marker created for trip', trip.tripReference);
+            } else {
+              console.warn('⚠️ Map not initialized yet, skipping marker creation for trip', trip.tripReference);
+            }
           } else {
             const marker = this.truckMarkers.get(trip.id)!;
             marker.setLatLng(newPosition);
@@ -742,6 +747,12 @@ export class LiveGPSTrackingPage implements OnInit, OnDestroy {
   // Draw route from truck position to destination
   private async drawRouteToDestination(trip: ActiveTrip) {
     try {
+      // ✅ SAFETY CHECK: Ensure map is initialized
+      if (!this.map) {
+        console.warn('⚠️ Map not initialized yet, skipping route drawing for trip', trip.tripReference);
+        return;
+      }
+
       if (!trip.currentLatitude || !trip.currentLongitude || !trip.destinationLat || !trip.destinationLng) {
         return;
       }
@@ -895,6 +906,12 @@ export class LiveGPSTrackingPage implements OnInit, OnDestroy {
 
   // ✅ NEW: Draw straight line as fallback when OSRM fails
   private drawStraightLine(trip: ActiveTrip) {
+    // ✅ SAFETY CHECK: Ensure map is initialized before drawing line
+    if (!this.map) {
+      console.warn('⚠️ Map not initialized yet, skipping route drawing for trip', trip.tripReference);
+      return;
+    }
+
     // Remove existing route if any
     const existingRoute = this.routePolylines.get(trip.id);
     if (existingRoute) {
@@ -1169,5 +1186,4 @@ export class LiveGPSTrackingPage implements OnInit, OnDestroy {
     toast.textContent = message;
     document.body.appendChild(toast);
     setTimeout(() => toast.remove(), 3000);
-  }
-}
+  }}
