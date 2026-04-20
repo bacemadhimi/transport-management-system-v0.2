@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
@@ -70,6 +70,9 @@ namespace TransportManagementSystem.Controllers
                 Email = c.Email,
                 Matricule = c.Matricule,
                 Contact = c.Contact,
+                Address = c.Address,
+                Latitude = c.Latitude,
+                Longitude = c.Longitude,
                 SourceSystem = c.SourceSystem.ToString(),
                 GeographicalEntities = c.CustomerGeographicalEntities?
                     .Where(cg => cg.GeographicalEntity != null && cg.GeographicalEntity.IsActive)
@@ -109,6 +112,9 @@ namespace TransportManagementSystem.Controllers
                 Email = c.Email,
                 Matricule = c.Matricule,
                 Contact = c.Contact,
+                Address = c.Address,
+                Latitude = c.Latitude,
+                Longitude = c.Longitude,
                 SourceSystem = c.SourceSystem.ToString(),
                 GeographicalEntities = c.CustomerGeographicalEntities?
                     .Where(cg => cg.GeographicalEntity != null && cg.GeographicalEntity.IsActive)
@@ -147,6 +153,9 @@ namespace TransportManagementSystem.Controllers
                 Email = customer.Email,
                 Matricule = customer.Matricule,
                 Contact = customer.Contact,
+                Address = customer.Address,
+                Latitude = customer.Latitude,
+                Longitude = customer.Longitude,
                 SourceSystem = customer.SourceSystem.ToString(),
                 GeographicalEntities = customer.CustomerGeographicalEntities?
                     .Where(cg => cg.GeographicalEntity != null && cg.GeographicalEntity.IsActive)
@@ -199,6 +208,9 @@ namespace TransportManagementSystem.Controllers
                 Email = model.Email,
                 Matricule = model.Matricule,
                 Contact = model.Contact,
+                Address = model.Address,
+                Latitude = model.Latitude,
+                Longitude = model.Longitude,
                 CustomerGeographicalEntities = new List<CustomerGeographicalEntity>()
             };
 
@@ -233,6 +245,9 @@ namespace TransportManagementSystem.Controllers
                 Email = createdCustomer.Email,
                 Matricule = createdCustomer.Matricule,
                 Contact = createdCustomer.Contact,
+                Address = createdCustomer.Address,
+                Latitude = createdCustomer.Latitude,
+                Longitude = createdCustomer.Longitude,
                 SourceSystem = createdCustomer.SourceSystem.ToString(),
                 GeographicalEntities = createdCustomer.CustomerGeographicalEntities?
                     .Where(cg => cg.GeographicalEntity != null && cg.GeographicalEntity.IsActive)
@@ -292,6 +307,9 @@ namespace TransportManagementSystem.Controllers
             customer.Email = model.Email;
             customer.Matricule = model.Matricule;
             customer.Contact = model.Contact;
+            customer.Address = model.Address;
+            customer.Latitude = model.Latitude;
+            customer.Longitude = model.Longitude;
             customer.UpdatedAt = DateTime.UtcNow;
 
             // Update geographical entities
@@ -332,6 +350,9 @@ namespace TransportManagementSystem.Controllers
                 Email = updatedCustomer.Email,
                 Matricule = updatedCustomer.Matricule,
                 Contact = updatedCustomer.Contact,
+                Address = updatedCustomer.Address,
+                Latitude = updatedCustomer.Latitude,
+                Longitude = updatedCustomer.Longitude,
                 SourceSystem = updatedCustomer.SourceSystem.ToString(),
                 GeographicalEntities = updatedCustomer.CustomerGeographicalEntities?
                     .Where(cg => cg.GeographicalEntity != null && cg.GeographicalEntity.IsActive)

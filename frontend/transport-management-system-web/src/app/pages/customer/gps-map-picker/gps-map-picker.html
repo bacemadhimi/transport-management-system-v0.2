@@ -1,0 +1,41 @@
+<div class="gps-map-picker-container">
+  <mat-card>
+    <mat-card-header>
+      <mat-card-title>
+        <mat-icon>map</mat-icon>
+        Sélectionner une position GPS
+      </mat-card-title>
+      <mat-card-subtitle>
+        Cliquez sur la carte ou déplacez le marqueur pour définir les coordonnées
+      </mat-card-subtitle>
+    </mat-card-header>
+
+    <mat-card-content>
+      <!-- Map Container -->
+      <div #mapContainer class="map-container"></div>
+
+      <!-- Coordinates Display -->
+      <div class="coordinates-display">
+        <mat-icon>location_on</mat-icon>
+        <span>{{ getCurrentCoordinatesText() }}</span>
+      </div>
+    </mat-card-content>
+
+    <mat-card-actions align="end">
+      <button mat-button (click)="onCancel()" type="button">
+        <mat-icon>cancel</mat-icon>
+        Annuler
+      </button>
+      <button 
+        mat-raised-button 
+        color="primary" 
+        (click)="onConfirm()" 
+        [disabled]="!selectedCoords"
+        type="button"
+      >
+        <mat-icon>check</mat-icon>
+        Utiliser cette position
+      </button>
+    </mat-card-actions>
+  </mat-card>
+</div>

@@ -1,0 +1,96 @@
+<ion-header [translucent]="true">
+  <ion-toolbar color="primary">
+    <ion-title>Transport Management</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true">
+  <ion-header collapse="condense">
+    <ion-toolbar color="primary">
+      <ion-title size="large">Home</ion-title>
+    </ion-toolbar>
+  </ion-header>
+
+  <div id="container">
+    <ion-card>
+      <ion-card-header>
+        <ion-card-title>Recent Trips</ion-card-title>
+      </ion-card-header>
+      <ion-card-content>
+        <ion-list>
+          <ion-item *ngFor="let trip of recentTrips">
+            <ion-label>
+              <h2>{{ trip.fromLocation }} to {{ trip.toLocation }}</h2>
+              <p>Status: <span [class]="getStatusClass(trip.status)">{{ trip.status }}</span></p>
+              <p>Scheduled: {{ trip.scheduledDate | date:'short' }}</p>
+            </ion-label>
+            <ion-button 
+              slot="end" 
+              fill="clear"
+              *ngIf="trip.status === 'Pending'"
+              (click)="acceptTrip(trip)"
+              color="success">
+              Accept
+            </ion-button>
+            <ion-button 
+              slot="end" 
+              fill="clear"
+              *ngIf="trip.status === 'Pending'"
+              (click)="refuseTrip(trip)"
+              color="danger">
+              Refuse
+            </ion-button>
+            <ion-button 
+              slot="end" 
+              fill="clear"
+              *ngIf="trip.status === 'Accepted'"
+              (click)="startTrip(trip)"
+              color="primary">
+              Start
+            </ion-button>
+            <ion-button 
+              slot="end" 
+              fill="clear"
+              *ngIf="trip.status === 'In Progress'"
+              (click)="startLoading(trip)"
+              color="warning">
+              Load
+            </ion-button>
+            <ion-button 
+              slot="end" 
+              fill="clear"
+              *ngIf="trip.status === 'Loading'"
+              (click)="startDelivery(trip)"
+              color="secondary">
+              Deliver
+            </ion-button>
+          </ion-item>
+        </ion-list>
+        
+        <ion-button 
+          expand="block" 
+          (click)="navigateToGpsTracking()"
+          color="tertiary"
+          *ngIf="recentTrips.length > 0">
+          Go to GPS Tracking
+        </ion-button>
+        
+        <p *ngIf="recentTrips.length === 0">No recent trips available</p>
+      </ion-card-content>
+    </ion-card>
+  </div>
+</ion-content>
+
+<style>
+  #container {
+    padding: 16px;
+  }
+
+  .status-completed { color: green; font-weight: bold; }
+  .status-pending { color: orange; font-weight: bold; }
+  .status-accepted { color: blue; font-weight: bold; }
+  .status-in-progress { color: purple; font-weight: bold; }
+  .status-loading { color: brown; font-weight: bold; }
+  .status-delivering { color: teal; font-weight: bold; }
+  .status-rejected { color: red; font-weight: bold; }
+</style>
