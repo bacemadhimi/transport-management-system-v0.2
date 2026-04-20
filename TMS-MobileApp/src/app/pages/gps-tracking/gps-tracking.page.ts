@@ -1497,6 +1497,21 @@ export class GPSTrackingPage implements OnInit, OnDestroy {
     localStorage.setItem(`missionStatus_${this.tripId}`, this.missionStatus);
   }
 
+  /**
+   * Reset mission to pending state
+   */
+  resetMission() {
+    this.missionStatus = 'pending';
+    
+    // ✅ Sauvegarder dans localStorage pour persister après refresh
+    if (this.tripId) {
+      localStorage.setItem(`missionStatus_${this.tripId}`, this.missionStatus);
+      console.log('💾 Mission status reset saved to localStorage:', this.missionStatus);
+    }
+    
+    this.showToast('🔄 Mission réinitialisée', 'success');
+  }
+
   async updateMissionStatus(newStatus: string) {
     if (!this.tripId) {
       await this.showToast('Trip ID non disponible', 'danger');
@@ -1739,12 +1754,8 @@ export class GPSTrackingPage implements OnInit, OnDestroy {
     window.open(url, '_system');
   }
 
-  /**
-   * Reset mission to pending state
-   */
-  resetMission() {
-    this.missionStatus = 'pending';
-    this.showToast('Mission réinitialisée', 'success');
+  openUrl(url: string) {
+    window.open(url, '_system');
   }
 
   // ==================== QR CODE SCANNER METHODS ====================
