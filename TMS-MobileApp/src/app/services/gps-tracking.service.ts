@@ -702,13 +702,19 @@ export class GPSTrackingService {
    * Mettre à jour le statut
    */
   private async updateTripStatus(tripId: number, status: string, notes?: string): Promise<void> {
-    if (!this.hubConnection) return;
+    if (!this.hubConnection) {
+      console.error('❌ [UpdateTripStatus] hubConnection is NULL!');
+      return;
+    }
 
     try {
+      console.log(`📊📊📊 [UpdateTripStatus] Calling SignalR - TripId: ${tripId}, Status: '${status}', Notes: ${notes}`);
+      console.log(`📊 HubConnection state: ${this.hubConnection.state}`);
+      
       await this.hubConnection.invoke('UpdateTripStatus', tripId, status, notes);
-      console.log(`📊 Trip ${tripId} status: ${status}`);
+      console.log(`✅✅✅ [UpdateTripStatus] SignalR call completed successfully!`);
     } catch (error) {
-      console.error('Error updating status:', error);
+      console.error('❌❌❌ [UpdateTripStatus] Error updating status:', error);
       throw error;
     }
   }
