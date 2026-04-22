@@ -544,6 +544,11 @@
                   &.average {
                     background: linear-gradient(90deg, #f6c23e 0%, #fd7e14 100%);
                   }
+                  
+                  &.no-data {
+                    background: linear-gradient(90deg, #858796 0%, #6c757d 100%);
+                    width: 100% !important;
+                  }
                 }
               }
               

@@ -217,11 +217,12 @@
             </td>
             <td>
               <div class="progress-bar-container">
-                <div class="progress-bar" [style.width.%]="driver.completionRate" 
+                <div class="progress-bar" [style.width.%]="driver.completionRate > 0 ? driver.completionRate : 5" 
                      [class.excellent]="driver.completionRate >= 90"
                      [class.good]="driver.completionRate >= 70 && driver.completionRate < 90"
-                     [class.average]="driver.completionRate < 70">
-                  {{ driver.completionRate }}%
+                     [class.average]="driver.completionRate >= 30 && driver.completionRate < 70"
+                     [class.no-data]="driver.completionRate === 0">
+                  {{ driver.completionRate > 0 ? driver.completionRate + '%' : 'N/A' }}
                 </div>
               </div>
             </td>
