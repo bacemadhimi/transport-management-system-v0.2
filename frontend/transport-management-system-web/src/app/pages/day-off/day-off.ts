@@ -8,19 +8,20 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatCardModule } from '@angular/material/card';
 import { MatInputModule } from '@angular/material/input';
 import { MatFormFieldModule } from '@angular/material/form-field';
-import { debounceTime } from 'rxjs';
+import { debounceTime, distinctUntilChanged } from 'rxjs';
 import { PagedData } from '../../types/paged-data';
 import { IDayOff } from '../../types/dayoff';
 import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatNativeDateModule } from '@angular/material/core';
 import { DayOffForm } from './day-off-form/day-off-form';
 import { Auth } from '../../services/auth';
 import { CommonModule } from '@angular/common';
+import Swal from 'sweetalert2';
+import { MatIconModule } from '@angular/material/icon';
 
 @Component({
   selector: 'app-dayoff',
@@ -36,28 +37,29 @@ import { CommonModule } from '@angular/common';
     MatInputModule,
     MatFormFieldModule,
     MatDatepickerModule,
-    MatNativeDateModule
+    MatNativeDateModule,
+    MatIconModule
   ],
   templateUrl: './day-off.html',
   styleUrls: ['./day-off.scss']
 })
 export class DayOff implements OnInit {
-      constructor(public auth: Auth) {}
+  constructor(public auth: Auth) {}
 
-      getActions(row: any, actions: string[]) {
-        const permittedActions: string[] = [];
+  getActions(row: any, actions: string[]) {
+    const permittedActions: string[] = [];
 
-        for (const a of actions) {
-          if (a === 'Modifier' && this.auth.hasPermission('DAYOFF_EDIT')) {
-            permittedActions.push(a);
-          }
-          if (a === 'Supprimer' && this.auth.hasPermission('DAYOFF_DISABLE')) {
-            permittedActions.push(a);
-          }
-        }
-
-        return permittedActions;
+    for (const a of actions) {
+      if (a === 'Modifier' && this.auth.hasPermission('DAYOFF_EDIT')) {
+        permittedActions.push(a);
       }
+      if (a === 'Supprimer' && this.auth.hasPermission('DAYOFF_DISABLE')) {
+        permittedActions.push(a);
+      }
+    }
+
+    return permittedActions;
+  }
 
   httpService = inject(Http);
   pagedDayOffData!: PagedData<IDayOff>;
@@ -78,25 +80,22 @@ export class DayOff implements OnInit {
   readonly dialog = inject(MatDialog);
 
   showCols = [
-
     { key: 'name', label: 'Nom' },
     { key: 'country', label: 'Pays' },
     {
-    key: 'date',
-    label: 'Date',
-    format: (row: any) => {
-      if (!row || !row.date) return '-';
-
-      const date = new Date(row.date);
-      if (isNaN(date.getTime())) return '-';
-
-      return date.toLocaleDateString('fr-FR', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric'
-      });
-    }
-  },
+      key: 'date',
+      label: 'Date',
+      format: (row: any) => {
+        if (!row || !row.date) return '-';
+        const date = new Date(row.date);
+        if (isNaN(date.getTime())) return '-';
+        return date.toLocaleDateString('fr-FR', {
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric'
+        });
+      }
+    },
     { key: 'description', label: 'Description' },
     {
       key: 'Action',
@@ -110,26 +109,32 @@ export class DayOff implements OnInit {
   ngOnInit() {
     this.getLatestData();
 
-    this.searchControl.valueChanges.pipe(debounceTime(250))
-      .subscribe((value: string | null) => {
-        this.filter.search = value;
-        this.filter.pageIndex = 0;
-        this.getLatestData();
-      });
+    this.searchControl.valueChanges.pipe(
+      debounceTime(250),
+      distinctUntilChanged()
+    ).subscribe((value: string | null) => {
+      this.filter.search = value;
+      this.filter.pageIndex = 0;
+      this.getLatestData();
+    });
 
-    this.countryControl.valueChanges.pipe(debounceTime(250))
-      .subscribe((value: string | null) => {
-        this.filter.country = value;
-        this.filter.pageIndex = 0;
-        this.getLatestData();
-      });
+    this.countryControl.valueChanges.pipe(
+      debounceTime(250),
+      distinctUntilChanged()
+    ).subscribe((value: string | null) => {
+      this.filter.country = value;
+      this.filter.pageIndex = 0;
+      this.getLatestData();
+    });
 
-    this.yearControl.valueChanges.pipe(debounceTime(250))
-      .subscribe((value: number | null) => {
-        this.filter.year = value;
-        this.filter.pageIndex = 0;
-        this.getLatestData();
-      });
+    this.yearControl.valueChanges.pipe(
+      debounceTime(250),
+      distinctUntilChanged()
+    ).subscribe((value: number | null) => {
+      this.filter.year = value;
+      this.filter.pageIndex = 0;
+      this.getLatestData();
+    });
   }
 
   getLatestData() {
@@ -160,6 +165,7 @@ export class DayOff implements OnInit {
   edit(dayOff: IDayOff) {
     const ref = this.dialog.open(DayOffForm, {
       panelClass: 'm-auto',
+      width: '500px',
       data: { dayOffId: dayOff.id }
     });
 
@@ -167,17 +173,46 @@ export class DayOff implements OnInit {
   }
 
   delete(dayOff: IDayOff) {
-    if (confirm(`Voulez-vous vraiment supprimer le jour férié "${dayOff.name}"?`)) {
-      this.httpService.deleteDayOff(dayOff.id).subscribe(() => {
-        alert("Jour férié supprimé avec succès");
-        this.getLatestData();
-      });
-    }
+    Swal.fire({
+      title: 'Confirmation',
+      text: `Voulez-vous vraiment supprimer le jour férié "${dayOff.name}" ?`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#3085d6',
+      confirmButtonText: 'Oui, supprimer',
+      cancelButtonText: 'Annuler'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        this.httpService.deleteDayOff(dayOff.id).subscribe({
+          next: () => {
+            Swal.fire({
+              icon: 'success',
+              title: 'Succès',
+              text: 'Jour férié supprimé avec succès',
+              timer: 2000,
+              showConfirmButton: false
+            });
+            this.getLatestData();
+          },
+          error: (err) => {
+            console.error('Error deleting day off:', err);
+            Swal.fire({
+              icon: 'error',
+              title: 'Erreur',
+              text: err?.error?.message || 'Impossible de supprimer le jour férié',
+              confirmButtonText: 'OK'
+            });
+          }
+        });
+      }
+    });
   }
 
   openDialog(): void {
     const ref = this.dialog.open(DayOffForm, {
       panelClass: 'm-auto',
+      width: '500px',
       data: {}
     });
 
@@ -243,9 +278,16 @@ export class DayOff implements OnInit {
 
   exportPDF() {
     const doc = new jsPDF();
+    
+    doc.setFontSize(16);
+    doc.text('Liste des Jours Fériés', 14, 22);
+    doc.setFontSize(10);
+    doc.text(`Généré le: ${new Date().toLocaleDateString('fr-FR')}`, 14, 30);
+
     const rows = this.pagedDayOffData?.data || [];
 
     autoTable(doc, {
+      startY: 35,
       head: [['ID', 'Nom', 'Pays', 'Date', 'Description']],
       body: rows.map(d => [
         d.id.toString(),
@@ -253,7 +295,10 @@ export class DayOff implements OnInit {
         d.country,
         new Date(d.date).toLocaleDateString('fr-FR'),
         d.description || ''
-      ])
+      ]),
+      theme: 'grid',
+      styles: { fontSize: 8 },
+      headStyles: { fillColor: [41, 128, 185] }
     });
 
     doc.save('jours-feries.pdf');
