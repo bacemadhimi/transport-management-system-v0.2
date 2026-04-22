@@ -1,0 +1,281 @@
+<div class="driver-statistics-container">
+  <!-- Header -->
+  <div class="page-header">
+    <div class="header-content">
+      <h1>📊 Statistiques par Chauffeur</h1>
+      <p>Analyse détaillée des performances et de l'activité des chauffeurs</p>
+    </div>
+  </div>
+
+  <!-- Filters Section -->
+  <div class="filters-section">
+    <div class="filter-row">
+      <div class="filter-group">
+        <label for="startDate">Date de début</label>
+        <input 
+          type="date" 
+          id="startDate" 
+          [(ngModel)]="startDate" 
+          (change)="onDateFilterChange()"
+          class="form-control"
+        >
+      </div>
+      
+      <div class="filter-group">
+        <label for="endDate">Date de fin</label>
+        <input 
+          type="date" 
+          id="endDate" 
+          [(ngModel)]="endDate" 
+          (change)="onDateFilterChange()"
+          class="form-control"
+        >
+      </div>
+      
+      <div class="filter-group driver-filter-group">
+        <label for="driverSelect">Chauffeur</label>
+        <mat-form-field appearance="outline" class="driver-select-field">
+          <mat-label>Sélectionner un chauffeur</mat-label>
+          <mat-select 
+            [(ngModel)]="selectedDriverId" 
+            (selectionChange)="onDriverSelect($event.value)"
+            [compareWith]="compareDrivers"
+            panelClass="driver-statistics-select-panel">
+            
+            <mat-option *ngFor="let driver of driverStatistics" [value]="driver.driverId">
+              <div class="driver-option-content">
+                <span class="driver-name">{{ driver.driverName }}</span>
+                <span class="driver-details">{{ driver.licenseNumber }} | {{ driver.phoneNumber }}</span>
+              </div>
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
+      </div>
+      
+      <div class="filter-actions">
+        <button (click)="loadDriverStatistics()" class="btn btn-primary">
+          🔄 Actualiser
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  <div *ngIf="isLoading" class="loading-state">
+    <div class="spinner"></div>
+    <p>Chargement des statistiques...</p>
+  </div>
+
+  <!-- Vue Détaillée du Chauffeur Sélectionné -->
+  <div *ngIf="!isLoading && selectedDriverId && selectedDriverDetails" class="driver-details-view">
+    <button (click)="backToDriversList()" class="btn btn-back">
+      ← Retour à la liste des chauffeurs
+    </button>
+
+    <div class="details-content">
+      <!-- En-tête du chauffeur -->
+      <div class="driver-header">
+        <div class="driver-info-main">
+          <h2>{{ selectedDriverDetails.driverName }}</h2>
+          <div class="driver-contact-info">
+            <span>📞 {{ selectedDriverDetails.phoneNumber }}</span>
+            <span>📧 {{ selectedDriverDetails.email || 'N/A' }}</span>
+            <span>🎫 {{ selectedDriverDetails.licenseNumber }}</span>
+          </div>
+          <div class="status-badge" [class.status-active]="selectedDriverDetails.status === 'Disponible'">
+            {{ selectedDriverDetails.status }}
+          </div>
+        </div>
+      </div>
+
+      <!-- Cartes de statistiques principales -->
+      <div class="stats-cards-grid">
+        <div class="stat-card">
+          <div class="stat-icon">🚗</div>
+          <div class="stat-content">
+            <div class="stat-label">Trajets Totaux</div>
+            <div class="stat-value">{{ selectedDriverDetails.summary.totalTrips }}</div>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-icon">📏</div>
+          <div class="stat-content">
+            <div class="stat-label">Distance Totale</div>
+            <div class="stat-value">{{ selectedDriverDetails.summary.totalDistanceKm | number:'1.0-0' }} km</div>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-icon">⏱️</div>
+          <div class="stat-content">
+            <div class="stat-label">Heures de Conduite</div>
+            <div class="stat-value">{{ selectedDriverDetails.summary.totalDrivingHours | number:'1.1-1' }} h</div>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-icon">✅</div>
+          <div class="stat-content">
+            <div class="stat-label">Taux de Complétion</div>
+            <div class="stat-value">{{ selectedDriverDetails.summary.completionRate }}%</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Graphiques et indicateurs -->
+      <div class="charts-section">
+        <div class="chart-container full-width" *ngIf="selectedDriverDetails.monthlyStats.length > 0">
+          <h3>📊 Évolution Mensuelle</h3>
+          <canvas id="monthlyTrendChart"></canvas>
+        </div>
+
+        <div class="performance-indicators">
+          <h3>📈 Indicateurs de Performance</h3>
+          <div class="indicators-grid">
+            <div class="indicator-item">
+              <div class="indicator-label">Efficacité</div>
+              <div class="indicator-value">{{ selectedDriverDetails.performanceIndicators.efficiencyScore }}/100</div>
+            </div>
+            <div class="indicator-item">
+              <div class="indicator-label">Livraisons à Temps</div>
+              <div class="indicator-value">{{ selectedDriverDetails.performanceIndicators.onTimeDeliveryRate }}%</div>
+            </div>
+            <div class="indicator-item">
+              <div class="indicator-label">Utilisation Véhicule</div>
+              <div class="indicator-value">{{ selectedDriverDetails.performanceIndicators.vehicleUtilizationRate }}%</div>
+            </div>
+            <div class="indicator-item">
+              <div class="indicator-label">Tendance</div>
+              <div class="indicator-value trend" 
+                   [style.color]="getTrendColor(selectedDriverDetails.performanceIndicators.performanceTrend)">
+                {{ getTrendIcon(selectedDriverDetails.performanceIndicators.performanceTrend) }} 
+                {{ selectedDriverDetails.performanceIndicators.trendPercentage }}%
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Trajets récents -->
+      <div class="recent-trips" *ngIf="selectedDriverDetails.recentTrips.length > 0">
+        <h3>🕒 Derniers Trajets</h3>
+        <div class="trips-list">
+          <div *ngFor="let trip of selectedDriverDetails.recentTrips" class="trip-item">
+            <div class="trip-date">{{ trip.startDate | date:'dd/MM/yyyy' }}</div>
+            <div class="trip-reference">{{ trip.tripReference }}</div>
+            <div class="trip-distance">{{ trip.distance | number:'1.0-0' }} km</div>
+            <div class="trip-duration">{{ trip.duration | number:'1.1-1' }} h</div>
+            <div class="trip-status" [class]="'status-' + getStatusClass(trip.status)">
+              {{ getStatusLabel(trip.status) }}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tableau des Chauffeurs (affiché seulement si aucun chauffeur sélectionné) -->
+  <div *ngIf="!isLoading && !selectedDriverId && driverStatistics.length > 0" class="statistics-table">
+    <div class="table-header">
+      <h2>Statistiques des Chauffeurs</h2>
+      <div class="header-stats">
+        <span class="total-count">{{ driverStatistics.length }} chauffeur(s)</span>
+      </div>
+    </div>
+    
+    <div class="table-responsive">
+      <table class="stats-table">
+        <thead>
+          <tr>
+            <th>Chauffeur</th>
+            <th>Permis</th>
+            <th>Trajets</th>
+            <th>Distance Totale</th>
+            <th>Heures Conduite</th>
+            <th>Taux Complétion</th>
+            <th>% Temps Arrêt</th>
+            <th>Productivité</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let driver of paginatedStatistics">
+            <td class="driver-info">
+              <div class="driver-name">{{ driver.driverName }}</div>
+              <div class="driver-phone">{{ driver.phoneNumber }}</div>
+            </td>
+            <td>{{ driver.licenseNumber }}</td>
+            <td>
+              <span class="badge badge-info">{{ driver.totalTrips }}</span>
+            </td>
+            <td>
+              <strong>{{ driver.totalDistanceKm | number:'1.0-0' }} km</strong>
+            </td>
+            <td>
+              <strong>{{ driver.totalDrivingHours | number:'1.1-1' }} h</strong>
+            </td>
+            <td>
+              <div class="progress-bar-container">
+                <div class="progress-bar" [style.width.%]="driver.completionRate" 
+                     [class.excellent]="driver.completionRate >= 90"
+                     [class.good]="driver.completionRate >= 70 && driver.completionRate < 90"
+                     [class.average]="driver.completionRate < 70">
+                  {{ driver.completionRate }}%
+                </div>
+              </div>
+            </td>
+            <td>
+              <span [class.high-stop-time]="driver.stopTimePercentage > 30">
+                {{ driver.stopTimePercentage }}%
+              </span>
+            </td>
+            <td>
+              <div class="productivity-score" 
+                   [class.excellent]="driver.productivityScore >= 80"
+                   [class.good]="driver.productivityScore >= 60 && driver.productivityScore < 80"
+                   [class.average]="driver.productivityScore < 60">
+                {{ driver.productivityScore }}/100
+              </div>
+            </td>
+            <td>
+              <button (click)="viewDriverDetails(driver.driverId)" class="btn btn-sm btn-details">
+                👁️ Voir Détails
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    <div class="pagination" *ngIf="totalPages > 1">
+      <button 
+        [disabled]="currentPage === 1" 
+        (click)="onPageChange(currentPage - 1)"
+        class="btn btn-pagination"
+      >
+        ← Précédent
+      </button>
+      
+      <span class="page-info">
+        Page {{ currentPage }} sur {{ totalPages }}
+      </span>
+      
+      <button 
+        [disabled]="currentPage === totalPages" 
+        (click)="onPageChange(currentPage + 1)"
+        class="btn btn-pagination"
+      >
+        Suivant →
+      </button>
+    </div>
+  </div>
+
+  <!-- Empty State -->
+  <div *ngIf="!isLoading && !selectedDriverId && driverStatistics.length === 0" class="empty-state">
+    <div class="empty-icon">📭</div>
+    <h3>Aucun chauffeur trouvé</h3>
+    <p>Il n'y a pas de chauffeurs dans la base de données</p>
+  </div>
+</div>
