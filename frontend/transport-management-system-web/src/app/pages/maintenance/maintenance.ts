@@ -1,5 +1,4 @@
-﻿
-import { Component, OnInit, inject } from '@angular/core';
+﻿import { Component, OnInit, inject } from '@angular/core';
 import { Http } from '../../services/http';
 import { Table } from '../../components/table/table';
 import { MatButtonModule } from '@angular/material/button';
@@ -9,10 +8,9 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatCardModule } from '@angular/material/card';
 import { MatInputModule } from '@angular/material/input';
 import { MatFormFieldModule } from '@angular/material/form-field';
-import { debounceTime } from 'rxjs';
+import { debounceTime, distinctUntilChanged } from 'rxjs';
 import { PagedData } from '../../types/paged-data';
 import { Router } from '@angular/router';
-
 import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
 import jsPDF from 'jspdf';
@@ -21,6 +19,8 @@ import { MaintenanceForm } from './maintenance-form/maintenance-form';
 import { IMaintenance } from '../../types/maintenance';
 import { Auth } from '../../services/auth';
 import { CommonModule } from '@angular/common';
+import Swal from 'sweetalert2';
+import { IMarque } from '../../types/marque';
 
 @Component({
   selector: 'app-maintenance',
@@ -40,26 +40,16 @@ import { CommonModule } from '@angular/common';
   styleUrls: ['./maintenance.scss']
 })
 export class Maintenance implements OnInit {
-      constructor(public auth: Auth) {}
-
-      getActions(row: any, actions: string[]) {
-        const permittedActions: string[] = [];
-
-        for (const a of actions) {
-          if (a === 'Modifier' && this.auth.hasPermission('TRUCK_MAINTENANCE_EDIT')) {
-            permittedActions.push(a);
-          }
-          if (a === 'Supprimer' && this.auth.hasPermission('TRUCK_MAINTENANCE_DISABLE')) {
-            permittedActions.push(a);
-          }
-        }
-
-        return permittedActions;
-      }
+  constructor(public auth: Auth) {}
 
   httpService = inject(Http);
   pagedMaintenanceData!: PagedData<IMaintenance>;
   totalData!: number;
+  router = inject(Router);
+  readonly dialog = inject(MatDialog);
+
+  marques: IMarque[] = [];
+  marqueMap: Map<number, string> = new Map();
 
   filter: any = {
     pageIndex: 0,
@@ -67,15 +57,41 @@ export class Maintenance implements OnInit {
   };
 
   searchControl = new FormControl('');
-  router = inject(Router);
-  readonly dialog = inject(MatDialog);
+
+  getActions(row: any, actions: string[]) {
+    const permittedActions: string[] = [];
+
+    for (const a of actions) {
+      if (a === 'Modifier' && this.auth.hasPermission('TRUCK_MAINTENANCE_EDIT')) {
+        permittedActions.push(a);
+      }
+      if (a === 'Supprimer' && this.auth.hasPermission('TRUCK_MAINTENANCE_DISABLE')) {
+        permittedActions.push(a);
+      }
+    }
+
+    return permittedActions;
+  }
+
+  getMarqueName(marqueId?: number): string {
+    if (!marqueId) return 'N/A';
+    return this.marqueMap.get(marqueId) || `Marque #${marqueId}`;
+  }
+
+  getTruckDisplayName(row: IMaintenance): string {
+    if (row.truck) {
+      const truck = row.truck as any;
+      const brandName = this.getMarqueName(truck.marqueTruckId || truck.typeTruck?.marqueTruckId);
+      return `${brandName} - ${truck.immatriculation}`;
+    }
+    return `Camion #${row.trip?.truckId || 'N/A'}`;
+  }
 
   showCols = [
-
     {
       key: 'truck',
       label: 'Camion',
-      format: (row: IMaintenance) => row.truck ? `${row.truck.brand} - ${row.truck.immatriculation}` : `Camion #${row.trip?.truckId || 'N/A'}`
+      format: (row: IMaintenance) => this.getTruckDisplayName(row)
     },
     {
       key: 'trip',
@@ -85,7 +101,7 @@ export class Maintenance implements OnInit {
     {
       key: 'mechanic',
       label: 'Mécanicien',
-      format: (row: IMaintenance) => row.mechanic ? `${row.mechanic.name} ` : `Mécanicien #${row.mechanicId}`
+      format: (row: IMaintenance) => row.mechanic ? `${row.mechanic.name}` : `Mécanicien #${row.mechanicId}`
     },
     {
       key: 'vendor',
@@ -132,13 +148,17 @@ export class Maintenance implements OnInit {
       }
     },
     { key: 'odometerReading', label: 'Compteur KM' },
-    { key: 'totalCost', label: 'Coût Total (€)' },
+    { 
+      key: 'totalCost', 
+      label: 'Coût Total (€)',
+      format: (row: IMaintenance) => row.totalCost ? row.totalCost.toFixed(2) + ' €' : 'N/A'
+    },
     { key: 'partsName', label: 'Pièces' },
     { key: 'quantity', label: 'Quantité' },
     {
       key: 'notificationType',
       label: 'Notification',
-      format: (row: IMaintenance) => row.notificationType
+      format: (row: IMaintenance) => row.notificationType || 'N/A'
     },
     {
       key: 'Action',
@@ -147,13 +167,41 @@ export class Maintenance implements OnInit {
   ];
 
   ngOnInit() {
+    this.loadMarques();
     this.getLatestData();
-    this.searchControl.valueChanges.pipe(debounceTime(250))
-      .subscribe((value: string | null) => {
-        this.filter.search = value;
-        this.filter.pageIndex = 0;
-        this.getLatestData();
-      });
+    this.searchControl.valueChanges.pipe(
+      debounceTime(250),
+      distinctUntilChanged()
+    ).subscribe((value: string | null) => {
+      this.filter.search = value;
+      this.filter.pageIndex = 0;
+      this.getLatestData();
+    });
+  }
+
+  private loadMarques(): void {
+    this.httpService.getMarqueTrucks().subscribe({
+      next: (response) => {
+        let marquesData: IMarque[];
+
+        if (response && typeof response === 'object' && 'data' in response) {
+          marquesData = (response as any).data;
+        } else if (Array.isArray(response)) {
+          marquesData = response;
+        } else {
+          marquesData = [];
+        }
+
+        this.marques = marquesData;
+        this.marqueMap.clear();
+        this.marques.forEach(marque => {
+          this.marqueMap.set(marque.id, marque.name);
+        });
+      },
+      error: (error) => {
+        console.error('Error loading marques:', error);
+      }
+    });
   }
 
   getLatestData() {
@@ -180,13 +228,42 @@ export class Maintenance implements OnInit {
   }
 
   delete(maintenance: IMaintenance) {
-    const truckInfo = maintenance.truck ? `${maintenance.truck.brand} - ${maintenance.truck.immatriculation}` : `Maintenance #${maintenance.id}`;
-    if (confirm(`Voulez-vous vraiment supprimer la maintenance pour ${truckInfo}?`)) {
-      this.httpService.deleteMaintenance(maintenance.id).subscribe(() => {
-        alert("Maintenance supprimée avec succès");
-        this.getLatestData();
-      });
-    }
+    const truckInfo = this.getTruckDisplayName(maintenance);
+    
+    Swal.fire({
+      title: 'Confirmation',
+      text: `Voulez-vous vraiment supprimer la maintenance pour ${truckInfo} ?`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#3085d6',
+      confirmButtonText: 'Oui, supprimer',
+      cancelButtonText: 'Annuler'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        this.httpService.deleteMaintenance(maintenance.id).subscribe({
+          next: () => {
+            Swal.fire({
+              icon: 'success',
+              title: 'Succès',
+              text: 'Maintenance supprimée avec succès',
+              timer: 2000,
+              showConfirmButton: false
+            });
+            this.getLatestData();
+          },
+          error: (err) => {
+            console.error('Error deleting maintenance:', err);
+            Swal.fire({
+              icon: 'error',
+              title: 'Erreur',
+              text: err?.error?.message || 'Impossible de supprimer la maintenance',
+              confirmButtonText: 'OK'
+            });
+          }
+        });
+      }
+    });
   }
 
   openDialog(): void {
@@ -218,7 +295,7 @@ export class Maintenance implements OnInit {
       ['ID', 'Camion', 'Mission', 'Mécanicien', 'Fournisseur', 'Statut', 'Date Début', 'Date Fin', 'Compteur KM', 'Coût Total (€)', 'Détails Service', 'Pièces', 'Quantité', 'Notification', 'Membres'],
       ...rows.map(m => [
         m.id,
-        m.truck ? `${m.truck.brand} - ${m.truck.immatriculation}` : `Camion #${m.trip?.truckId || 'N/A'}`,
+        this.getTruckDisplayName(m),
         m.trip ? `Mission #${m.trip.id} - ${m.trip.destination}` : `Mission #${m.tripId}`,
         m.mechanic ? `${m.mechanic.name} (${m.mechanic.specialization})` : `Mécanicien #${m.mechanicId}`,
         m.vendor ? m.vendor.name : `Fournisseur #${m.vendorId}`,
@@ -247,7 +324,7 @@ export class Maintenance implements OnInit {
   exportExcel() {
     const data = this.pagedMaintenanceData?.data.map(m => ({
       ID: m.id,
-      Camion: m.truck ? `${m.truck.brand} - ${m.truck.immatriculation}` : `Camion #${m.trip?.truckId || 'N/A'}`,
+      Camion: this.getTruckDisplayName(m),
       Mission: m.trip ? `Mission #${m.trip.id} - ${m.trip.destination}` : `Mission #${m.tripId}`,
       Mécanicien: m.mechanic ? `${m.mechanic.name} (${m.mechanic.specialization})` : `Mécanicien #${m.mechanicId}`,
       Fournisseur: m.vendor ? m.vendor.name : `Fournisseur #${m.vendorId}`,
@@ -284,7 +361,6 @@ export class Maintenance implements OnInit {
   exportPDF() {
     const doc = new jsPDF();
 
-
     doc.setFontSize(16);
     doc.text('Rapport des Maintenances', 14, 22);
     doc.setFontSize(10);
@@ -297,19 +373,18 @@ export class Maintenance implements OnInit {
       head: [['ID', 'Camion', 'Mission', 'Mécanicien', 'Statut', 'Date Début', 'Date Fin', 'Coût (€)']],
       body: rows.map(m => [
         m.id,
-        m.truck ? `${m.truck.brand}\n${m.truck.immatriculation}` : `Camion #${m.trip?.truckId || 'N/A'}`,
+        this.getTruckDisplayName(m),
         m.trip ? `Mission #${m.trip.id}` : `#${m.tripId}`,
         m.mechanic ? m.mechanic.name : `Méc #${m.mechanicId}`,
         m.status,
         m.startDate ? new Date(m.startDate).toLocaleDateString('fr-FR') : 'N/A',
         m.endDate ? new Date(m.endDate).toLocaleDateString('fr-FR') : 'N/A',
-        m.totalCost.toFixed(2)
+        m.totalCost ? m.totalCost.toFixed(2) : '0.00'
       ]),
       theme: 'grid',
       styles: { fontSize: 8 },
       headStyles: { fillColor: [41, 128, 185] }
     });
-
 
     const totalCost = rows.reduce((sum, m) => sum + (m.totalCost || 0), 0);
     const activeMaintenances = rows.filter(m => m.status === 'En cours' || m.status === 'Planifié').length;
