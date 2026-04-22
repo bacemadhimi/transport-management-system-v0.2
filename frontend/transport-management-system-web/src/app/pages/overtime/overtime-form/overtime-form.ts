@@ -87,8 +87,8 @@ export class OvertimeForm implements OnInit {
   }
 
   loadDrivers() {
-    this.httpService.getDriversList({ pageIndex: 0, pageSize: 1000 }).subscribe(result => {
-      this.drivers = result.data;
+    this.httpService.getDrivers().subscribe(result => {
+      this.drivers = result;
     });
   }
 
