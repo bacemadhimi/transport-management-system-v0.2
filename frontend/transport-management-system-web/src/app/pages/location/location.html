@@ -1,20 +1,12 @@
 <div class="locations-page">
   <div class="locations-header">
-    <!-- <h1 class="locations-title">La liste des lieux</h1> -->
+    
     <h1 class="locations-title">{{ t('LOCATIONS_LIST_TITLE') }}</h1>
 
     <div class="locations-header__actions">
       <div class="locations-header__left">
-        <mat-form-field appearance="outline" class="locations-search">
-          <!-- <mat-label>Chercher location</mat-label> -->
-           <mat-label>{{ t('SEARCH_LOCATION') }}</mat-label>
-          <input
-            matInput
-            type="text"
-            [formControl]="searchControl"
-            [placeholder]="t('LOCATION_NAME_PLACEHOLDER')"
-          />
-          <mat-icon matSuffix>search</mat-icon>
+        <mat-form-field appearance="outline" floatLabel="always" class="locations-search">
+          <input matInput type="text" [formControl]="searchControl" [placeholder]="t('LOCATION_NAME_PLACEHOLDER')" />
         </mat-form-field>
 
         <div class="export-actions" aria-label="Export actions">
@@ -42,9 +34,8 @@
       </div>
 
       <div class="locations-header__right">
-        <button *ngIf="auth.hasPermission('ORDER_ADD')"  mat-flat-button class="locations-add-btn" (click)="add()" type="button">
-          <mat-icon>add</mat-icon>
-               {{ t('ADD_LOCATION') }}
+        <button *ngIf="auth.hasPermission('ORDER_ADD')" mat-flat-button class="locations-add-btn" (click)="add()" type="button">
+          {{ t('ADD_LOCATION') }}
         </button>
       </div>
     </div>

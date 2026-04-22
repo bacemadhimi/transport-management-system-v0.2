@@ -1,18 +1,12 @@
-<!-- maintenance.html -->
 <div class="maintenance-page">
   <div class="maintenance-header">
-    <h1 class="maintenance-title">La liste des maintenances</h1>
+    
+    <h1 class="maintenance-title">{{ t('MAINTENANCE_LIST_TITLE') }}</h1>
 
     <div class="maintenance-header__actions">
       <div class="maintenance-header__left">
-        <mat-form-field appearance="outline" class="maintenance-search">
-          <mat-label>Chercher maintenance</mat-label>
-          <input
-            matInput
-            type="text"
-            [formControl]="searchControl"
-            placeholder="Camion, mécanicien, fournisseur, statut"
-          />
+        <mat-form-field appearance="outline" floatLabel="always" class="maintenance-search">
+          <input matInput type="text" [formControl]="searchControl" [placeholder]="t('SEARCH_MAINTENANCE_PLACEHOLDER')" />
         </mat-form-field>
 
         <div class="export-actions" aria-label="Export actions">
@@ -40,8 +34,8 @@
       </div>
 
       <div class="maintenance-header__right">
-        <button *ngIf="auth.hasPermission('TRUCK_MAINTENANCE_ADD')"  mat-flat-button class="maintenance-add-btn" (click)="add()" type="button">
-          Ajouter
+        <button *ngIf="auth.hasPermission('TRUCK_MAINTENANCE_ADD')" mat-flat-button class="maintenance-add-btn" (click)="add()" type="button">
+          {{ t('ADD_MAINTENANCE') }}
         </button>
       </div>
     </div>

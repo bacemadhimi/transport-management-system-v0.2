@@ -1,21 +1,44 @@
 <div class="marque-page">
   <div class="marque-header">
-    <h1 class="marque-title">La liste des marques de camions</h1>
-
+    
+    <h1 class="marque-title">{{ t('MARQUE_LIST_TITLE') }}</h1>
+    
     <div class="marque-header__actions">
-      <mat-form-field appearance="outline" class="marque-search">
-        <mat-label>Chercher marque</mat-label>
-        <input
-          matInput
-          type="text"
-          [formControl]="searchControl"
-          placeholder="Nom de la marque"
-        />
-      </mat-form-field>
+      <div class="marque-header__left">
+        <mat-form-field appearance="outline" floatLabel="always" class="marque-search">
+          <input matInput type="text" [formControl]="searchControl" [placeholder]="t('SEARCH_MARQUE_PLACEHOLDER')" />
+        </mat-form-field>
 
-      <button *ngIf="auth.hasPermission('MARQUE_ADD')" mat-flat-button class="marque-add-btn" (click)="add()" type="button">
-        Ajouter
-      </button>
+        <div class="export-actions" aria-label="Export actions">
+          <button mat-icon-button class="export-btn export-excel" (click)="exportExcel()" title="Export Excel">
+            <svg viewBox="0 0 24 24" class="export-icon" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <rect x="2" y="3" width="20" height="18" rx="2" fill="#107C10"></rect>
+              <text x="12" y="16" text-anchor="middle" font-size="10" font-weight="700" fill="#fff">XLS</text>
+            </svg>
+          </button>
+
+          <button mat-icon-button class="export-btn export-csv" (click)="exportCSV()" title="Export CSV">
+            <svg viewBox="0 0 24 24" class="export-icon" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <rect x="2" y="3" width="20" height="18" rx="2" fill="#1E90FF"></rect>
+              <text x="12" y="16" text-anchor="middle" font-size="9" font-weight="700" fill="#fff">CSV</text>
+            </svg>
+          </button>
+
+          <button mat-icon-button class="export-btn export-pdf" (click)="exportPDF()" title="Export PDF">
+            <svg viewBox="0 0 24 24" class="export-icon" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <rect x="2" y="3" width="20" height="18" rx="2" fill="#D32F2F"></rect>
+              <text x="12" y="16" text-anchor="middle" font-size="9" font-weight="700" fill="#fff">PDF</text>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="marque-header__right">
+        <button *ngIf="auth.hasPermission('MARQUE_ADD')" mat-flat-button class="marque-add-btn" (click)="add()" type="button">
+          {{ t('ADD_MARQUE') }}
+        </button>
+      </div>
+
     </div>
   </div>
 

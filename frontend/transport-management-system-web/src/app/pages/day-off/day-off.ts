@@ -20,6 +20,7 @@ import { MatNativeDateModule } from '@angular/material/core';
 import { DayOffForm } from './day-off-form/day-off-form';
 import { Auth } from '../../services/auth';
 import { CommonModule } from '@angular/common';
+import { Translation } from '../../services/Translation';
 import Swal from 'sweetalert2';
 import { MatIconModule } from '@angular/material/icon';
 
@@ -46,24 +47,12 @@ import { MatIconModule } from '@angular/material/icon';
 export class DayOff implements OnInit {
   constructor(public auth: Auth) {}
 
-  getActions(row: any, actions: string[]) {
-    const permittedActions: string[] = [];
-
-    for (const a of actions) {
-      if (a === 'Modifier' && this.auth.hasPermission('DAYOFF_EDIT')) {
-        permittedActions.push(a);
-      }
-      if (a === 'Supprimer' && this.auth.hasPermission('DAYOFF_DISABLE')) {
-        permittedActions.push(a);
-      }
-    }
-
-    return permittedActions;
-  }
-
   httpService = inject(Http);
   pagedDayOffData!: PagedData<IDayOff>;
   totalData!: number;
+
+  private translation = inject(Translation);
+  t(key: string): string { return this.translation.t(key); }
 
   filter: any = {
     pageIndex: 0,
@@ -79,29 +68,46 @@ export class DayOff implements OnInit {
 
   readonly dialog = inject(MatDialog);
 
-  showCols = [
-    { key: 'name', label: 'Nom' },
-    { key: 'country', label: 'Pays' },
-    {
-      key: 'date',
-      label: 'Date',
-      format: (row: any) => {
-        if (!row || !row.date) return '-';
-        const date = new Date(row.date);
-        if (isNaN(date.getTime())) return '-';
-        return date.toLocaleDateString('fr-FR', {
-          day: '2-digit',
-          month: '2-digit',
-          year: 'numeric'
-        });
+  get showCols() {
+    return [
+      { key: 'name', label: this.t('NAME') },
+      { key: 'country', label: this.t('COUNTRY') },
+      {
+        key: 'date',
+        label: this.t('DATE'),
+        format: (row: any) => {
+          if (!row || !row.date) return '-';
+          const date = new Date(row.date);
+          if (isNaN(date.getTime())) return '-';
+          return date.toLocaleDateString('fr-FR', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric'
+          });
+        }
+      },
+      { key: 'description', label: this.t('DESCRIPTION') },
+      {
+        key: 'Action',
+        format: () => [this.t('ACTION_EDIT'), this.t('ACTION_DELETE')]
       }
-    },
-    { key: 'description', label: 'Description' },
-    {
-      key: 'Action',
-      format: () => ["Modifier", "Supprimer"]
+    ];
+  }
+
+  getActions(row: any, actions: string[]) {
+    const permittedActions: string[] = [];
+
+    for (const a of actions) {
+      if (a === this.t('ACTION_EDIT') && this.auth.hasPermission('DAYOFF_EDIT')) {
+        permittedActions.push(a);
+      }
+      if (a === this.t('ACTION_DELETE') && this.auth.hasPermission('DAYOFF_DISABLE')) {
+        permittedActions.push(a);
+      }
     }
-  ];
+
+    return permittedActions;
+  }
 
   currentYear = new Date().getFullYear();
   yearOptions = Array.from({length: 10}, (_, i) => this.currentYear - 5 + i);
@@ -174,22 +180,22 @@ export class DayOff implements OnInit {
 
   delete(dayOff: IDayOff) {
     Swal.fire({
-      title: 'Confirmation',
-      text: `Voulez-vous vraiment supprimer le jour férié "${dayOff.name}" ?`,
+      title: this.t('CONFIRMATION'),
+      text: `${this.t('DAYOFF_DELETE_CONFIRM')} "${dayOff.name}" ?`,
       icon: 'warning',
       showCancelButton: true,
       confirmButtonColor: '#d33',
       cancelButtonColor: '#3085d6',
-      confirmButtonText: 'Oui, supprimer',
-      cancelButtonText: 'Annuler'
+      confirmButtonText: this.t('YES_DELETE'),
+      cancelButtonText: this.t('CANCEL')
     }).then((result) => {
       if (result.isConfirmed) {
         this.httpService.deleteDayOff(dayOff.id).subscribe({
           next: () => {
             Swal.fire({
               icon: 'success',
-              title: 'Succès',
-              text: 'Jour férié supprimé avec succès',
+              title: this.t('SUCCESS'),
+              text: this.t('DAYOFF_DELETE_SUCCESS'),
               timer: 2000,
               showConfirmButton: false
             });
@@ -199,9 +205,9 @@ export class DayOff implements OnInit {
             console.error('Error deleting day off:', err);
             Swal.fire({
               icon: 'error',
-              title: 'Erreur',
-              text: err?.error?.message || 'Impossible de supprimer le jour férié',
-              confirmButtonText: 'OK'
+              title: this.t('ERROR'),
+              text: err?.error?.message || this.t('DAYOFF_DELETE_ERROR'),
+              confirmButtonText: this.t('OK')
             });
           }
         });
@@ -225,14 +231,21 @@ export class DayOff implements OnInit {
   }
 
   onRowClick(event: any) {
-    if (event.btn === "Modifier") this.edit(event.rowData);
-    if (event.btn === "Supprimer") this.delete(event.rowData);
+    const editLabel = this.t('ACTION_EDIT');
+    const deleteLabel = this.t('ACTION_DELETE');
+    
+    if (event.btn === editLabel) {
+      this.edit(event.rowData);
+    }
+    if (event.btn === deleteLabel) {
+      this.delete(event.rowData);
+    }
   }
 
   exportCSV() {
     const rows = this.pagedDayOffData?.data || [];
     const csvContent = [
-      ['ID', 'Nom', 'Pays', 'Date', 'Description'],
+      ['ID', this.t('NAME'), this.t('COUNTRY'), this.t('DATE'), this.t('DESCRIPTION')],
       ...rows.map(d => [
         d.id,
         d.name,
@@ -252,10 +265,10 @@ export class DayOff implements OnInit {
   exportExcel() {
     const data = this.pagedDayOffData?.data.map(d => ({
       ID: d.id,
-      Nom: d.name,
-      Pays: d.country,
-      Date: new Date(d.date).toLocaleDateString('fr-FR'),
-      Description: d.description || ''
+      [this.t('NAME')]: d.name,
+      [this.t('COUNTRY')]: d.country,
+      [this.t('DATE')]: new Date(d.date).toLocaleDateString('fr-FR'),
+      [this.t('DESCRIPTION')]: d.description || ''
     })) || [];
 
     const worksheet = XLSX.utils.json_to_sheet(data);
@@ -280,15 +293,15 @@ export class DayOff implements OnInit {
     const doc = new jsPDF();
     
     doc.setFontSize(16);
-    doc.text('Liste des Jours Fériés', 14, 22);
+    doc.text(this.t('DAYOFF_LIST_TITLE'), 14, 22);
     doc.setFontSize(10);
-    doc.text(`Généré le: ${new Date().toLocaleDateString('fr-FR')}`, 14, 30);
+    doc.text(`${this.t('GENERATED_ON')}: ${new Date().toLocaleDateString('fr-FR')}`, 14, 30);
 
     const rows = this.pagedDayOffData?.data || [];
 
     autoTable(doc, {
       startY: 35,
-      head: [['ID', 'Nom', 'Pays', 'Date', 'Description']],
+      head: [['ID', this.t('NAME'), this.t('COUNTRY'), this.t('DATE'), this.t('DESCRIPTION')]],
       body: rows.map(d => [
         d.id.toString(),
         d.name,

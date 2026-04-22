@@ -14,12 +14,14 @@
 }
 
 .locations-page {
-  max-width: 1200px;
+  max-width: none;
+  width: 100%;
+  padding: 24px;
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.06);
+  border: 1px solid #eef2f6;
+  border-radius: 12px;
+  background: #fff;
   margin: 0 auto;
-  background: var(--card-bg);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow);
-  padding: 1.75rem 2rem;
 }
 
 .locations-header {
@@ -46,40 +48,7 @@
   flex: 1 1 auto;
 }
 
-
-
-.export-actions {
-  display: flex;
-  gap: 0.5rem;
-  margin-top: 0.6rem;
-}
-
-.export-btn {
-  width: 48px;
-  height: 48px;
-  border-radius: 0.75rem;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 8px 20px rgba(15,23,42,0.06);
-  border: 1px solid rgba(15,23,42,0.04);
-  transition: transform 0.12s ease, box-shadow 0.12s ease;
-  background: #fff;
-}
-
-.export-btn:hover { transform: translateY(-2px); box-shadow: 0 14px 30px rgba(15,23,42,0.12); }
-
-.export-icon { width: 28px; height: 28px; display: block; }
-
-.export-excel .export-icon rect { fill: #107C10; }
-.export-csv .export-icon rect { fill: #1E90FF; }
-.export-pdf .export-icon rect { fill: #D32F2F; }
-
-.locations-header__actions { display: flex; justify-content: space-between; gap: 1rem; align-items: flex-start; }
-.locations-header__left { display: flex; flex-direction: column; align-items: flex-start; flex: 1 1 auto; }
-.locations-header__right { display: flex; align-items: center; }
-
-
+/* rounded pill search */
 ::ng-deep .locations-search .mdc-text-field {
   border-radius: 999px;
   background: #edf3ff;
@@ -120,6 +89,67 @@
   outline-offset: 3px;
 }
 
+.export-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.6rem;
+}
+
+.export-btn {
+  width: 48px;
+  height: 48px;
+  border-radius: 0.75rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06);
+  border: 1px solid rgba(15, 23, 42, 0.04);
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+  background: #fff;
+}
+
+.export-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 30px rgba(15, 23, 42, 0.12);
+}
+
+.export-icon {
+  width: 28px;
+  height: 28px;
+  display: block;
+}
+
+.export-excel .export-icon rect {
+  fill: #107C10;
+}
+
+.export-csv .export-icon rect {
+  fill: #1E90FF;
+}
+
+.export-pdf .export-icon rect {
+  fill: #D32F2F;
+}
+
+.locations-header__actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+.locations-header__left {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  flex: 1 1 auto;
+}
+
+.locations-header__right {
+  display: flex;
+  align-items: center;
+}
+
 @media (max-width: 640px) {
   :host {
     padding: 1rem;
@@ -138,8 +168,9 @@
     width: 100%;
     text-align: center;
   }
+}
 
-  .bold-label {
+.bold-label {
   font-weight: bold !important;
   color: #666;
   font-size: 12px;
@@ -157,16 +188,14 @@
   }
 }
 
-
 .location-form-card {
-  min-width: 800px; 
+  min-width: 800px;
   
   @media (max-width: 900px) {
     min-width: auto;
     width: 100%;
   }
 }
-
 
 .dialog-overlay {
   .mat-mdc-dialog-container {
@@ -179,14 +208,9 @@
   }
 }
 
-
 @media (min-width: 1200px) {
   .wide-dialog {
     width: 1000px !important;
     max-width: 90vw !important;
   }
 }
-}
-
-
-

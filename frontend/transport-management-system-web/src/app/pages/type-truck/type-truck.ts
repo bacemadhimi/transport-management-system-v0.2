@@ -70,7 +70,7 @@ export class TypeTruck implements OnInit {
         key: 'unit', 
         label: this.t('UNIT_LABEL'),
         format: (row: ITypeTruck) => {
-          return this.t(this.loadingUnit.toUpperCase()) || this.loadingUnit;
+          return this.loadingUnit;
         }
       },
       {
