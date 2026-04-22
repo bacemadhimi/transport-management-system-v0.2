@@ -155,6 +155,18 @@ export class GPSTrackingPage implements OnInit, OnDestroy {
   }
 
   /**
+   * Ensure map is correctly sized on mobile devices
+   */
+  ngAfterViewInit() {
+    setTimeout(() => {
+      if (this.map) {
+        this.map.invalidateSize(true);
+        console.log('✅ Map size invalidated in ngAfterViewInit for mobile');
+      }
+    }, 1000);
+  }
+
+  /**
    * Fetch trip details to get destination address - with multiple fallbacks
    */
   private async fetchTripDetails() {
