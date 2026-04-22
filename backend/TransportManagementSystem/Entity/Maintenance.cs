@@ -24,7 +24,7 @@ namespace TransportManagementSystem.Entity
         [Required]
         [ForeignKey("Mechanic")]
         public int MechanicId { get; set; }
-        public Mechanic Mechanic { get; set; }
+        public virtual Employee? Mechanic { get; set; }
 
         [Required]
         public string Status { get; set; }

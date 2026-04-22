@@ -491,7 +491,14 @@ public void InsertData()
                                 ParameterType = "EMPLOYEE_CATEGORY",
                                 ParameterCode = "CONVOYEUR",
                                 Description = "Convoyeur",
-                            }
+                            },
+                            
+                            new GeneralSettings
+                            {
+                                ParameterType = "EMPLOYEE_CATEGORY",
+                                ParameterCode = "MECHANIC",
+                                Description = "Mechanic",
+                            },
                         };
                                     
                 dbContext.GeneralSettings.AddRange(employeeCategories);
