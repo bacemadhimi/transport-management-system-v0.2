@@ -15,6 +15,7 @@
     id: number;
     immatriculation: string;
     brand: string;
+    marqueTruckId?: number; 
   };
 
   driver?: {

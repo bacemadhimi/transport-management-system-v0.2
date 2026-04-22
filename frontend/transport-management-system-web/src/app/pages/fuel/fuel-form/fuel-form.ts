@@ -12,6 +12,7 @@ import Swal from 'sweetalert2';
 import { MatSelectModule } from '@angular/material/select';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatNativeDateModule } from '@angular/material/core';
+import { IMarque } from '../../../types/marque'; // ✅ Add this import
 
 @Component({
   selector: 'app-fuel-form',
@@ -56,7 +57,12 @@ export class FuelForm implements OnInit {
   statuses = ['Disponible', 'En mission', 'Indisponible'];
   fuelTypes = ['Diesel', 'Essence', 'GPL', 'AdBlue'];
 
+  
+  marques: IMarque[] = [];
+  marqueMap: Map<number, string> = new Map();
+
   ngOnInit() {
+    this.loadMarques(); 
     this.loadTrucks();
     this.loadDrivers();
     this.loadFuelVendors();
@@ -66,10 +72,52 @@ export class FuelForm implements OnInit {
     }
   }
 
+  
+  private loadMarques(): void {
+    this.httpService.getMarqueTrucks().subscribe({
+      next: (response) => {
+        let marquesData: IMarque[];
+
+        if (response && typeof response === 'object' && 'data' in response) {
+          marquesData = (response as any).data;
+        } else if (Array.isArray(response)) {
+          marquesData = response;
+        } else {
+          marquesData = [];
+        }
+
+        this.marques = marquesData;
+
+        this.marqueMap.clear();
+        this.marques.forEach(marque => {
+          this.marqueMap.set(marque.id, marque.name);
+        });
+
+        console.log('✅ Marques loaded for FuelForm:', this.marques.length);
+      },
+      error: (error) => {
+        console.error('Error loading marques:', error);
+      }
+    });
+  }
+
+
+  getMarqueName(marqueId?: number): string {
+    if (!marqueId) return 'N/A';
+    return this.marqueMap.get(marqueId) || `Marque #${marqueId}`;
+  }
+
+  getTruckDisplayName(truck: any): string {
+    if (!truck) return 'N/A';
+    const brandName = this.getMarqueName(truck.marqueTruckId || truck.typeTruck?.marqueTruckId);
+    return `${brandName} - ${truck.immatriculation}`;
+  }
+
   private loadTrucks() {
     this.httpService.getTrucks().subscribe({
       next: (trucks) => {
         this.trucks = trucks;
+        console.log('✅ Trucks loaded:', trucks.length);
       },
       error: (error) => {
         console.error('Error loading trucks:', error);

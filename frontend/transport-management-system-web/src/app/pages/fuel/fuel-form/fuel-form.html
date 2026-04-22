@@ -7,16 +7,16 @@
 
     <!-- Camion -->
     <mat-form-field class="w-full">
-      <mat-label>Camion</mat-label>
-      <mat-select formControlName="truckId">
-        <mat-option *ngFor="let truck of trucks" [value]="truck.id">
-          {{ truck.immatriculation }} - {{ truck.brand }}
-        </mat-option>
-      </mat-select>
-      <mat-error *ngIf="fuelForm.get('truckId')?.hasError('required')">
-        La sélection d'un camion est obligatoire
-      </mat-error>
-    </mat-form-field>
+  <mat-label>Camion</mat-label>
+  <mat-select formControlName="truckId" required>
+    <mat-option *ngFor="let truck of trucks" [value]="truck.id">
+      {{ getTruckDisplayName(truck) }}
+    </mat-option>
+  </mat-select>
+  <mat-error *ngIf="fuelForm.get('truckId')?.hasError('required')">
+    Le camion est requis
+  </mat-error>
+</mat-form-field>
 
     <!-- Chauffeur -->
     <mat-form-field class="w-full">
