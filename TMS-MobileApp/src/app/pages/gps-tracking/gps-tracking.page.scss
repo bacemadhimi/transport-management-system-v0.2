@@ -676,6 +676,13 @@
           box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
         }
 
+        .btn-reset {
+          --border-color: #f59e0b;
+          --color: #d97706;
+          border-width: 2px;
+          margin-bottom: 12px;
+        }
+
         .trip-completed {
           text-align: center;
           padding: 24px;

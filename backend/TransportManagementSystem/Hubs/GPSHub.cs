@@ -351,6 +351,8 @@ public class GPSHub : Hub
     {
         try
         {
+            _logger.LogInformation($"📊 [UpdateTripStatus] START - TripId: {tripId}, Status: '{status}', Notes: {notes}");
+
             var trip = await _context.Trips
                 .Include(t => t.Driver)
                 .Include(t => t.Truck)
@@ -358,12 +360,17 @@ public class GPSHub : Hub
 
             if (trip == null)
             {
+                _logger.LogWarning($"⚠️ [UpdateTripStatus] Trip {tripId} not found");
                 await Clients.Caller.SendAsync("Error", "Trip non trouvé");
                 return;
             }
 
-            if (Enum.TryParse<TripStatus>(status, out var newStatus))
+            _logger.LogInformation($"📊 [UpdateTripStatus] Trip found: {trip.TripReference}, Current status: {trip.TripStatus}");
+
+            if (Enum.TryParse<TripStatus>(status, true, out var newStatus))
             {
+                _logger.LogInformation($"✅ [UpdateTripStatus] Status parsed successfully: '{status}' → {newStatus}");
+
                 var oldStatus = trip.TripStatus;
                 trip.TripStatus = newStatus;
 
@@ -472,8 +479,15 @@ public class GPSHub : Hub
                     notes = notes
                 });
 
-                // Also broadcast to AllTrips group for real-time tracking
-                await Clients.Group("AllTrips").SendAsync("TripStatusChanged", notificationData);
+                // Also broadcast to ALL clients for real-time tracking (consistent with AcceptTrip/RejectTrip)
+                await Clients.All.SendAsync("TripStatusChanged", notificationData);
+                
+                _logger.LogInformation($"✅ [UpdateTripStatus] COMPLETE - TripId: {tripId}, Status: {newStatus}");
+            }
+            else
+            {
+                _logger.LogWarning($"❌ [UpdateTripStatus] Failed to parse status: '{status}' for trip {tripId}");
+                await Clients.Caller.SendAsync("Error", $"Statut invalide: {status}");
             }
         }
         catch (Exception ex)

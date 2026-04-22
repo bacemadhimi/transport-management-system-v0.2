@@ -230,6 +230,18 @@
         </div>
 
         <div class="status-actions">
+          <!-- RESET button - Visible during all active states, disappears when completed -->
+          <ion-button
+            *ngIf="missionStatus !== 'completed'"
+            expand="block"
+            class="action-btn btn-reset"
+            fill="outline"
+            (click)="resetMission()"
+          >
+            <ion-icon slot="start" name="refresh-outline"></ion-icon>
+            🔄 Réinitialiser le voyage
+          </ion-button>
+
           <!-- ACCEPT button -->
           <ion-button
             *ngIf="missionStatus === 'pending'"
@@ -297,7 +309,7 @@
             Scanner QR Code
           </ion-button>
 
-          <!-- COMPLETED message -->
+          <!-- COMPLETED message - NO BUTTON HERE -->
           <div class="trip-completed" *ngIf="missionStatus === 'completed'">
             <div class="completed-icon">
               <ion-icon name="checkmark-circle"></ion-icon>
@@ -306,12 +318,6 @@
               <h4>Statut : Terminé</h4>
               <p>Voyage terminé avec succès! Bien joué!</p>
             </div>
-            <ion-button
-              expand="block"
-              class="btn-completed"
-              (click)="resetMission()">
-              Terminer le Voyage
-            </ion-button>
           </div>
         </div>
       </ion-card-content>
