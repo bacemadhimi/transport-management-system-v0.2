@@ -22,6 +22,7 @@ import { environment } from '../environments/environment';
 import { IGeneralSettings } from './types/general-settings';
 import { LogoService } from './services/logo.service';
 import { MenuManagerService, MenuType } from './services/menu-manager.service';
+import { RefreshService } from './services/refresh.service';
 
 @Component({
   selector: 'app-root',
@@ -92,6 +93,7 @@ export class App implements OnInit, OnDestroy {
   private notificationsSubscription!: Subscription;
   private cancelledTripsSubscription!: Subscription;
   private connectionStatusSubscription!: Subscription;
+  private refreshService = inject(RefreshService);
 
   // Getters pour l'état des menus
   get showPermissions(): boolean {
@@ -111,6 +113,7 @@ export class App implements OnInit, OnDestroy {
   }
 
   constructor(private themeService: ThemeService) {
+    
     this.themes = this.themeService.getThemes();
     this.currentTheme = this.themeService.getCurrentTheme();
     this.logoService.logo$.subscribe(logo => {
@@ -295,31 +298,40 @@ private initializeMobileDetection() {
     return this.notifications;
   }
 
-  ngOnInit() {
-    // ✅ ADD: Initialize mobile detection
-    this.initializeMobileDetection();
-    this.setupRouterEvents();
-    this.httpService.getTranslations(this.currentLanguage).subscribe({
-      next: data => this.translation.setTranslations(data),
-      error: err => console.error('Error loading translations', err)
-    });
-    this.loadReadNotificationIds();
-    if (this.authService.isLoggedIn) {
-      this.authService.loadLoggedInUser();
-      this.initializeSignalR();
-      this.loadCompanyLogo();
-      this.loadNotificationsFromDatabase(0, this.pageSize);
-    }
-
+ngOnInit() {
+  this.refreshService.refresh$.subscribe(() => {
+  console.log('🔄 Refresh triggered from service');
+  this.refreshAllDataAfterLogin();
+});
+  this.initializeMobileDetection();
+  this.setupRouterEvents();
+  this.httpService.getTranslations(this.currentLanguage).subscribe({
+    next: data => this.translation.setTranslations(data),
+    error: err => console.error('Error loading translations', err)
+  });
+  this.loadReadNotificationIds();
+  
+  if (this.authService.isLoggedIn) {
+    this.authService.loadLoggedInUser();
+    this.loadCompanyLogo();
+    
+   
+    this.loadNotificationsFromDatabase(0, this.pageSize);
     this.loadCancelledTrips();
-
-    this.refreshNotificationInterval = setInterval(() => {
-      if (!this.signalRService['connectionStatusSubject'].value) {
-        this.loadCancelledTrips();
-        this.refreshNotifications();
-      }
-    }, 30000);
+    
+  
+    setTimeout(() => {
+      this.initializeSignalR();
+    }, 500);
   }
+
+  this.refreshNotificationInterval = setInterval(() => {
+    if (!this.signalRService['connectionStatusSubject']?.value) {
+      this.loadCancelledTrips();
+      this.refreshNotifications();
+    }
+  }, 30000);
+}
 
   loadCompanyLogo() {
     this.httpService.getAllSettingsByType('COMPANY').subscribe({
@@ -341,47 +353,60 @@ private initializeMobileDetection() {
     });
   }
 
-  loadNotificationsFromDatabase(pageIndex: number = 0, pageSize: number = 20) {
-    this.http.get(`${environment.apiUrl}/api/notifications?pageIndex=${pageIndex}&pageSize=${pageSize}`).subscribe({
-      next: (response: any) => {
-        if (response.success) {
-          const allDbNotifications = (response.data.notifications as any[]).map((n: any) => ({
-            ...n,
-            isRead: n.isRead === true || n.isRead === 1 || n.isRead === 'true'|| this.readNotificationIds.has(String(n.id)),
-            timestamp: new Date(n.timestamp)
-          })) as TripNotification[];
-          const unreadNotifications = allDbNotifications.filter((n: TripNotification) => !n.isRead); 
-          this.allNotifications = allDbNotifications;
+loadNotificationsFromDatabase(pageIndex: number = 0, pageSize: number = 20) {
+  const token = localStorage.getItem('token');
+  
+  console.log('🔑 loadNotificationsFromDatabase - Token:', token ? 'PRESENT' : 'MISSING');
+  
+  if (!token) {
+    console.log('⏸️ Skipping notifications load - no token available, retrying...');
+    setTimeout(() => this.loadNotificationsFromDatabase(pageIndex, pageSize), 500);
+    return;
+  }
 
-          if (pageIndex === 0) {
-            this.notifications = unreadNotifications;
-          } else {
-            const existingIds = new Set(this.notifications.map((n: TripNotification) => n.id));
-            const uniqueNewNotifications = unreadNotifications.filter((n: TripNotification) => !existingIds.has(n.id));
-            this.notifications = [...this.notifications, ...uniqueNewNotifications];
-          }
+ 
+  this.httpService.getNotifications({ pageIndex, pageSize }).subscribe({
+    next: (response: any) => {
+      console.log('✅ Notifications loaded successfully');
+      if (response.success) {
+        const allDbNotifications = (response.data.notifications as any[]).map((n: any) => ({
+          ...n,
+          isRead: n.isRead === true || n.isRead === 1 || n.isRead === 'true' || this.readNotificationIds.has(String(n.id)),
+          timestamp: new Date(n.timestamp)
+        })) as TripNotification[];
+        
+        const unreadNotifications = allDbNotifications.filter((n: TripNotification) => !n.isRead); 
+        this.allNotifications = allDbNotifications;
 
-          this.unreadNotificationsCount = this.notifications.filter((n: TripNotification) => !n.isRead).length;
-          this.totalNotifications = response.data.totalCount;
-          this.hasMoreNotifications = this.notifications.length < this.totalNotifications;
-
-          console.log('📚 DB Load - All notifications:', this.notifications.length);
-          console.log('📚 Unread count:', this.unreadNotificationsCount);
+        if (pageIndex === 0) {
+          this.notifications = unreadNotifications;
         } else {
-          console.warn('⚠️ Invalid notification response:', response);
-          this.notifications = [];
-          this.allNotifications = [];
-          this.unreadNotificationsCount = 0;
+          const existingIds = new Set(this.notifications.map((n: TripNotification) => n.id));
+          const uniqueNewNotifications = unreadNotifications.filter((n: TripNotification) => !existingIds.has(n.id));
+          this.notifications = [...this.notifications, ...uniqueNewNotifications];
         }
-      },
-      error: (err) => {
-        console.error('❌ Error loading notifications from database:', err);
+
+        this.unreadNotificationsCount = this.notifications.filter((n: TripNotification) => !n.isRead).length;
+        this.totalNotifications = response.data.totalCount;
+        this.hasMoreNotifications = this.notifications.length < this.totalNotifications;
+
+        console.log('📚 DB Load - All notifications:', this.notifications.length);
+        console.log('📚 Unread count:', this.unreadNotificationsCount);
+      }
+    },
+    error: (err) => {
+      console.error('❌ Error loading notifications:', err.status, err.message);
+      if (err.status === 401 && pageIndex === 0) {
+        console.log('🔄 Retrying once after 1 second...');
+        setTimeout(() => this.loadNotificationsFromDatabase(pageIndex, pageSize), 1000);
+      } else {
         this.notifications = [];
         this.allNotifications = [];
         this.unreadNotificationsCount = 0;
       }
-    });
-  }
+    }
+  });
+}
 
   loadMoreNotifications() {
     this.currentPage++;
@@ -393,57 +418,66 @@ private initializeMobileDetection() {
     this.loadNotificationsFromDatabase(0, this.pageSize);
   }
 
-  initializeSignalR() {
-    this.notificationsSubscription = this.signalRService.notifications$.subscribe(
-      (realtimeNotifications: TripNotification[]) => {
-        console.log('📬 Raw real-time notifications:', realtimeNotifications);
+initializeSignalR() {
+  
+  this.notificationsSubscription = this.signalRService.notifications$.subscribe(
+    (realtimeNotifications: TripNotification[]) => {
+      console.log('📬 Raw real-time notifications:', realtimeNotifications);
 
-        const processedNotifications = realtimeNotifications.map(n => ({
-          ...n,
-          isRead: n.isRead === true || this.readNotificationIds.has(String(n.id)),
-          timestamp: new Date(n.timestamp)
-        }));
-        const unreadRealtimeNotifications = processedNotifications.filter((n: TripNotification) => !n.isRead);
-        this.allNotifications = [...this.allNotifications, ...processedNotifications];
+      const processedNotifications = realtimeNotifications.map(n => ({
+        ...n,
+        isRead: n.isRead === true || this.readNotificationIds.has(String(n.id)),
+        timestamp: new Date(n.timestamp)
+      }));
+      const unreadRealtimeNotifications = processedNotifications.filter((n: TripNotification) => !n.isRead);
+      this.allNotifications = [...this.allNotifications, ...processedNotifications];
 
-        const existingIds = new Set(this.notifications.map((n: TripNotification) => n.id));
-        const uniqueNewNotifications = unreadRealtimeNotifications.filter((n: TripNotification) => !existingIds.has(n.id));
+      const existingIds = new Set(this.notifications.map((n: TripNotification) => n.id));
+      const uniqueNewNotifications = unreadRealtimeNotifications.filter((n: TripNotification) => !existingIds.has(n.id));
 
-        if (uniqueNewNotifications.length > 0) {
-          this.notifications = [...uniqueNewNotifications, ...this.notifications];
-          console.log('✅ Added new real-time notifications:', uniqueNewNotifications.length);
-        }
-
-        this.unreadNotificationsCount = this.notifications.filter((n: TripNotification) => !n.isRead).length;
-
-        console.log('📋 Current notifications:', this.notifications.length);
-        console.log('📋 Unread count:', this.unreadNotificationsCount);
+      if (uniqueNewNotifications.length > 0) {
+        this.notifications = [...uniqueNewNotifications, ...this.notifications];
+        console.log('✅ Added new real-time notifications:', uniqueNewNotifications.length);
       }
-    );
-  }
 
-  loadCancelledTrips() {
-    if (!this.authService.isLoggedIn) {
-      this.cancelledTripsCount = 0;
-      this.cancelledTrips = [];
-      return;
+      this.unreadNotificationsCount = this.notifications.filter((n: TripNotification) => !n.isRead).length;
+
+      console.log('📋 Current notifications:', this.notifications.length);
+      console.log('📋 Unread count:', this.unreadNotificationsCount);
     }
+  );
 
-    this.httpService.getTripsList({ pageIndex: 0, pageSize: 1000 }).subscribe({
-      next: (res: any) => {
-        const tripsData = res?.data?.data || res?.data || res || [];
-        this.cancelledTrips = Array.isArray(tripsData) 
-          ? tripsData.filter((t: any) => t.tripStatus === 'Cancelled') 
-          : [];
-        this.cancelledTripsCount = this.cancelledTrips.length;
-      },
-      error: (err) => {
-        console.error('Erreur loading cancelled trips:', err);
-        this.cancelledTrips = [];
-        this.cancelledTripsCount = 0;
-      }
-    });
+  setTimeout(() => {
+    console.log('🔄 Refreshing notifications after SignalR init...');
+    this.refreshNotifications();
+    this.loadCancelledTrips();
+  }, 1500);
+}
+
+loadCancelledTrips() {
+  if (!this.authService.isLoggedIn || !this.authService.getToken()) {
+    this.cancelledTripsCount = 0;
+    this.cancelledTrips = [];
+    return;
   }
+
+  this.httpService.getTripsList({ pageIndex: 0, pageSize: 1000 }).subscribe({
+    next: (res: any) => {
+      const tripsData = res?.data?.data || res?.data || res || [];
+      this.cancelledTrips = Array.isArray(tripsData) 
+        ? tripsData.filter((t: any) => t.tripStatus === 'Cancelled') 
+        : [];
+      this.cancelledTripsCount = this.cancelledTrips.length;
+    },
+    error: (err) => {
+      if (err.status !== 401) {
+        console.error('Erreur loading cancelled trips:', err);
+      }
+      this.cancelledTrips = [];
+      this.cancelledTripsCount = 0;
+    }
+  });
+}
 
   openNotification() {
     if (this.cancelledTripsCount === 0) {
@@ -553,21 +587,23 @@ private initializeMobileDetection() {
     element.style.color = 'var(--primary-color)';
   }
 
-  ngOnDestroy() {
-    if (this.refreshNotificationInterval) {
-      clearInterval(this.refreshNotificationInterval);
-    }
-
-    this.notificationsSubscription?.unsubscribe();
-    this.cancelledTripsSubscription?.unsubscribe();
-    this.connectionStatusSubscription?.unsubscribe();
-    
-    // ✅ ADD: Complete destroy subject
-    this.destroy$.next();
-    this.destroy$.complete();
-
-    this.signalRService.disconnect();
+ngOnDestroy() {
+  if (this.refreshNotificationInterval) {
+    clearInterval(this.refreshNotificationInterval);
   }
+
+  this.notificationsSubscription?.unsubscribe();
+  this.cancelledTripsSubscription?.unsubscribe();
+  this.connectionStatusSubscription?.unsubscribe();
+  
+  // Complete destroy subject
+  this.destroy$.next();
+  this.destroy$.complete();
+
+  if (!this.authService.isLoggedIn) {
+    this.signalRService.cleanupOnLogout();
+  }
+}
 
   toggleMaintenance() { 
     this.maintenanceOpen = !this.maintenanceOpen; 
@@ -577,16 +613,35 @@ private initializeMobileDetection() {
     this.userMenuOpen = !this.userMenuOpen; 
   }
 
-  logout() {
-    this.signalRService.disconnect();
-    this.authService.logout();
-    this.menuManager.closeAllMenus();
-    
-    // ✅ ADD: Remove body class on mobile
-    if (this.isMobile) {
-      document.body.classList.remove('menu-open');
-    }
+logout() {
+ 
+  this.signalRService.cleanupOnLogout();
+  
+  
+  localStorage.removeItem('readNotificationIds');
+  
+  
+  this.notifications = [];
+  this.allNotifications = [];
+  this.unreadNotificationsCount = 0;
+  this.cancelledTrips = [];
+  this.cancelledTripsCount = 0;
+  
+  
+  if (this.refreshNotificationInterval) {
+    clearInterval(this.refreshNotificationInterval);
+    this.refreshNotificationInterval = null;
   }
+  
+ 
+  this.authService.logout();
+  this.menuManager.closeAllMenus();
+  
+  
+  if (this.isMobile) {
+    document.body.classList.remove('menu-open');
+  }
+}
 
   changeLanguage(lang: string) {
     this.currentLanguage = lang;
@@ -641,4 +696,32 @@ private initializeMobileDetection() {
       console.error('Error saving read notification IDs:', e);
     }
   }
+  
+public refreshAllDataAfterLogin(): void {
+  console.log('🔄 Refreshing all data after login...');
+  
+  // Reset pagination
+  this.currentPage = 0;
+  
+  // Reset notifications arrays
+  this.notifications = [];
+  this.allNotifications = [];
+  this.unreadNotificationsCount = 0;
+  
+  // Load fresh data
+  this.loadCompanyLogo();
+  this.loadNotificationsFromDatabase(0, this.pageSize);
+  this.loadCancelledTrips();
+  
+  // Ensure SignalR is initialized
+  if (this.authService.isLoggedIn) {
+    // Small delay to ensure token is fully saved
+    setTimeout(() => {
+      if (!this.notificationsSubscription || this.notificationsSubscription.closed) {
+        console.log('🔄 Initializing SignalR subscription...');
+        this.initializeSignalR();
+      }
+    }, 500);
+  }
+}
 }

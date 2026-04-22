@@ -54,7 +54,7 @@ export class SignalRService {
 
   private unreadCountSubject = new BehaviorSubject<number>(0);
   public unreadCount$ = this.unreadCountSubject.asObservable();
-
+  private isInitialized = false; 
   // Connect method for GPS tracking
   public async connect(): Promise<void> {
     if (this.hubConnection) {
@@ -104,10 +104,15 @@ export class SignalRService {
     await this.invokeGetActiveTrips();
   }
 
-  constructor() {
+constructor() {
+
+  if (this.authService.getToken()) {
     this.initializeConnection();
     this.loadInitialNotifications();
+  } else {
+    console.log('⏸️ SignalR initialization skipped - no auth token');
   }
+}
 
   private async loadInitialNotifications() {
     try {
@@ -132,6 +137,7 @@ export class SignalRService {
 
     this.startConnection();
     this.registerHandlers();
+    this.isInitialized = true; 
   }
 
   private startConnection() {
@@ -159,13 +165,19 @@ export class SignalRService {
           this.startNotificationPolling();
         }, 1000);
       })
-      .catch(err => {
-        console.error('❌❌❌=================================');
-        console.error('❌ Error establishing SignalR connection: ', err);
-        console.error('❌ Hub URL:', `${environment.apiUrl}/gpshub`);
-        console.error('❌❌❌=================================');
-        this.connectionStatusSubject.next(false);
+.catch(err => {
+        // Check if error is 401 (unauthorized)
+        const errorStr = JSON.stringify(err).toLowerCase();
+        if (errorStr.includes('401') || errorStr.includes('unauthorized') || errorStr.includes('403')) {
+          console.log('⏸️ SignalR connection failed - Unauthorized');
+          this.connectionStatusSubject.next(false);
+          this.isInitialized = false;
+          this.hubConnection = null!;
+          return; 
+        }
 
+        console.error('❌ Error establishing SignalR connection: ', err);
+        this.connectionStatusSubject.next(false);
         setTimeout(() => this.startConnection(), 5000);
       });
 
@@ -642,4 +654,30 @@ private addNotification(notification: TripNotification, pageSize: number = 20) {
     this.disconnect();
     setTimeout(() => this.startConnection(), 1000);
   }
+public initializeAfterLogin(): void {
+    const token = this.authService.getToken();
+    if (token && !this.isInitialized) {
+      console.log('🔄 Initializing SignalR after login...');
+      this.initializeConnection();
+      this.loadInitialNotifications();
+    }
+  }
+  
+public cleanupOnLogout(): void {
+  console.log('🧹 Cleaning up SignalR on logout...');
+  this.stopNotificationPolling();
+  
+  if (this.hubConnection) {
+    this.hubConnection.stop()
+      .then(() => console.log('✅ SignalR connection stopped on logout'))
+      .catch(err => console.error('Error stopping SignalR:', err));
+    
+    this.hubConnection = null!;
+  }
+  
+  this.isInitialized = false;
+  this.notificationsSubject.next([]);
+  this.unreadCountSubject.next(0);
+  this.connectionStatusSubject.next(false);
+}
 }
