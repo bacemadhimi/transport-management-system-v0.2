@@ -8,7 +8,7 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatCardModule } from '@angular/material/card';
 import { MatInputModule } from '@angular/material/input';
 import { MatFormFieldModule } from '@angular/material/form-field';
-import { debounceTime } from 'rxjs';
+import { debounceTime, distinctUntilChanged } from 'rxjs';
 import { PagedData } from '../../types/paged-data';
 import { Router } from '@angular/router';
 import { IFuel } from '../../types/fuel';
@@ -19,7 +19,9 @@ import autoTable from 'jspdf-autotable';
 import { FuelForm } from './fuel-form/fuel-form';
 import { Auth } from '../../services/auth';
 import { CommonModule } from '@angular/common';
-import { IMarque } from '../../types/marque'; 
+import { IMarque } from '../../types/marque';
+import Swal from 'sweetalert2';
+import { MatIconModule } from '@angular/material/icon';
 
 @Component({
   selector: 'app-fuel',
@@ -33,7 +35,8 @@ import { IMarque } from '../../types/marque';
     MatSelectModule,
     MatCardModule,
     MatInputModule,
-    MatFormFieldModule
+    MatFormFieldModule,
+    MatIconModule
   ],
   templateUrl: './fuel.html',
   styleUrls: ['./fuel.scss']
@@ -44,7 +47,8 @@ export class Fuel implements OnInit {
   httpService = inject(Http);
   pagedFuelData!: PagedData<IFuel>;
   totalData!: number;
-  
+  router = inject(Router);
+  readonly dialog = inject(MatDialog);
   
   marques: IMarque[] = [];
   marqueMap: Map<number, string> = new Map();
@@ -55,23 +59,6 @@ export class Fuel implements OnInit {
   };
 
   searchControl = new FormControl('');
-  router = inject(Router);
-  readonly dialog = inject(MatDialog);
-
- 
-  getMarqueName(marqueId?: number): string {
-    if (!marqueId) return 'N/A';
-    return this.marqueMap.get(marqueId) || `Marque #${marqueId}`;
-  }
-
-  
-  getTruckDisplayName(row: IFuel): string {
-    if (row.truck) {
-      const brandName = this.getMarqueName(row.truck.marqueTruckId);
-      return `${brandName} - ${row.truck.immatriculation}`;
-    }
-    return `Camion #${row.truckId}`;
-  }
 
   getActions(row: any, actions: string[]) {
     const permittedActions: string[] = [];
@@ -88,57 +75,78 @@ export class Fuel implements OnInit {
     return permittedActions;
   }
 
-  showCols = [
-    {
-      key: 'truck',
-      label: 'Camion',
-      format: (row: IFuel) => this.getTruckDisplayName(row) 
-    },
-    {
-      key: 'driver',
-      label: 'Chauffeur',
-      format: (row: IFuel) => row.driver ? row.driver.name : `Chauffeur #${row.driverId}`
-    },
-    {
-      key: 'fillDate',
-      label: 'Date Remplissage',
-      format: (row: IFuel) => {
-        if (!row.fillDate) return 'N/A';
-        const date = new Date(row.fillDate);
-        return date.toLocaleDateString('fr-FR', {
-          day: '2-digit',
-          month: '2-digit',
-          year: 'numeric'
-        });
-      }
-    },
-    { key: 'quantity', label: 'Quantité (L)' },
-    { key: 'odometerReading', label: 'Compteur KM' },
-    { key: 'amount', label: 'Montant (€)' },
-    { key: 'fuelTank', label: 'Type Carburant' },
-    {
-      key: 'fuelVendor',
-      label: 'Fournisseur',
-      format: (row: IFuel) => row.fuelVendor ? row.fuelVendor.name : `Fournisseur #${row.fuelVendorId}`
-    },
-    {
-      key: 'Action',
-      format: () => ["Modifier", "Supprimer"]
-    }
-  ];
-
-  ngOnInit() {
-    this.loadMarques(); 
-    this.getLatestData();
-    this.searchControl.valueChanges.pipe(debounceTime(250))
-      .subscribe((value: string | null) => {
-        this.filter.search = value;
-        this.filter.pageIndex = 0;
-        this.getLatestData();
-      });
+  getMarqueName(marqueId?: number): string {
+    if (!marqueId) return 'N/A';
+    return this.marqueMap.get(marqueId) || `Marque #${marqueId}`;
   }
 
-  
+  getTruckDisplayName(row: IFuel): string {
+    if (row.truck) {
+      const truck = row.truck as any;
+      const brandName = this.getMarqueName(truck.marqueTruckId || truck.typeTruck?.marqueTruckId);
+      return `${brandName} - ${truck.immatriculation}`;
+    }
+    return `Camion #${row.truckId}`;
+  }
+
+  get showCols() {
+    return [
+      {
+        key: 'truck',
+        label: 'Camion',
+        format: (row: IFuel) => this.getTruckDisplayName(row)
+      },
+      {
+        key: 'driver',
+        label: 'Chauffeur',
+        format: (row: IFuel) => row.driver ? row.driver.name : `Chauffeur #${row.driverId}`
+      },
+      {
+        key: 'fillDate',
+        label: 'Date Remplissage',
+        format: (row: IFuel) => {
+          if (!row.fillDate) return 'N/A';
+          const date = new Date(row.fillDate);
+          return date.toLocaleDateString('fr-FR', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric'
+          });
+        }
+      },
+      { key: 'quantity', label: 'Quantité (L)' },
+      { key: 'odometerReading', label: 'Compteur KM' },
+      { 
+        key: 'amount', 
+        label: 'Montant (€)',
+        format: (row: IFuel) => row.amount ? row.amount.toFixed(2) + ' €' : 'N/A'
+      },
+      { key: 'fuelTank', label: 'Type Carburant' },
+      {
+        key: 'fuelVendor',
+        label: 'Fournisseur',
+        format: (row: IFuel) => row.fuelVendor ? row.fuelVendor.name : `Fournisseur #${row.fuelVendorId}`
+      },
+      {
+        key: 'Action',
+        format: () => ["Modifier", "Supprimer"]
+      }
+    ];
+  }
+
+  ngOnInit() {
+    this.loadMarques();
+    this.getLatestData();
+    this.searchControl.valueChanges.pipe(
+      debounceTime(250),
+      distinctUntilChanged()
+    ).subscribe((value: string | null) => {
+      this.filter.search = value;
+      this.filter.pageIndex = 0;
+      this.getLatestData();
+    });
+  }
+
   private loadMarques(): void {
     this.httpService.getMarqueTrucks().subscribe({
       next: (response) => {
@@ -153,18 +161,10 @@ export class Fuel implements OnInit {
         }
 
         this.marques = marquesData;
-
         this.marqueMap.clear();
         this.marques.forEach(marque => {
           this.marqueMap.set(marque.id, marque.name);
         });
-
-        console.log('✅ Marques loaded for Fuel:', this.marques.length);
-        
-        // Refresh table data after marques are loaded to update display
-        if (this.pagedFuelData) {
-          this.pagedFuelData = { ...this.pagedFuelData };
-        }
       },
       error: (error) => {
         console.error('Error loading marques:', error);
@@ -194,13 +194,41 @@ export class Fuel implements OnInit {
   }
 
   delete(fuel: IFuel) {
-    const truckInfo = this.getTruckDisplayName(fuel); 
-    if (confirm(`Voulez-vous vraiment supprimer le remplissage de carburant pour ${truckInfo}?`)) {
-      this.httpService.deleteFuel(fuel.id).subscribe(() => {
-        alert("Remplissage de carburant supprimé avec succès");
-        this.getLatestData();
-      });
-    }
+    const truckInfo = this.getTruckDisplayName(fuel);
+    
+    Swal.fire({
+      title: 'Confirmation',
+      text: `Voulez-vous vraiment supprimer le remplissage de carburant pour ${truckInfo} ?`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#3085d6',
+      confirmButtonText: 'Oui, supprimer',
+      cancelButtonText: 'Annuler'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        this.httpService.deleteFuel(fuel.id).subscribe({
+          next: () => {
+            Swal.fire({
+              icon: 'success',
+              title: 'Succès',
+              text: 'Remplissage de carburant supprimé avec succès',
+              timer: 2000,
+              showConfirmButton: false
+            });
+            this.getLatestData();
+          },
+          error: (err) => {
+            Swal.fire({
+              icon: 'error',
+              title: 'Erreur',
+              text: err?.message || 'Impossible de supprimer le remplissage',
+              confirmButtonText: 'OK'
+            });
+          }
+        });
+      }
+    });
   }
 
   openDialog(): void {
@@ -230,7 +258,7 @@ export class Fuel implements OnInit {
       ['ID', 'Camion', 'Chauffeur', 'Date Remplissage', 'Quantité (L)', 'Compteur KM', 'Montant (€)', 'Type Carburant', 'Fournisseur', 'Commentaire'],
       ...rows.map(f => [
         f.id,
-        this.getTruckDisplayName(f), 
+        this.getTruckDisplayName(f),
         f.driver ? f.driver.name : `Chauffeur #${f.driverId}`,
         f.fillDate ? new Date(f.fillDate).toLocaleDateString('fr-FR') : 'N/A',
         f.quantity,
@@ -254,7 +282,7 @@ export class Fuel implements OnInit {
   exportExcel() {
     const data = this.pagedFuelData?.data.map(f => ({
       ID: f.id,
-      Camion: this.getTruckDisplayName(f), 
+      Camion: this.getTruckDisplayName(f),
       Chauffeur: f.driver ? f.driver.name : `Chauffeur #${f.driverId}`,
       'Date Remplissage': f.fillDate ? new Date(f.fillDate).toLocaleDateString('fr-FR') : 'N/A',
       'Quantité (L)': f.quantity,
@@ -298,7 +326,7 @@ export class Fuel implements OnInit {
       head: [['ID', 'Camion', 'Chauffeur', 'Date', 'Quantité (L)', 'KM', 'Montant (€)', 'Type', 'Fournisseur']],
       body: rows.map(f => [
         f.id,
-        this.getTruckDisplayName(f), 
+        this.getTruckDisplayName(f),
         f.driver ? f.driver.name : `Chauffeur #${f.driverId}`,
         f.fillDate ? new Date(f.fillDate).toLocaleDateString('fr-FR') : 'N/A',
         f.quantity,

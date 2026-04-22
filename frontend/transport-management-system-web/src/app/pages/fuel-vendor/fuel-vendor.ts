@@ -5,12 +5,11 @@ import { IFuelVendor } from '../../types/fuel-vendor';
 import { MatButtonModule } from '@angular/material/button';
 import { FormControl, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { MatDialog } from '@angular/material/dialog';
-
 import { MatSelectModule } from '@angular/material/select';
 import { MatCardModule } from '@angular/material/card';
 import { MatInputModule } from '@angular/material/input';
 import { MatFormFieldModule } from '@angular/material/form-field';
-import { debounceTime } from 'rxjs';
+import { debounceTime, distinctUntilChanged } from 'rxjs';
 import { PagedData } from '../../types/paged-data';
 import { FuelVendorForm } from './fuel-vendor-form/fuel-vendor-form';
 import * as XLSX from 'xlsx';
@@ -19,6 +18,7 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { Auth } from '../../services/auth';
 import { CommonModule } from '@angular/common';
+import Swal from 'sweetalert2';
 
 @Component({
   selector: 'app-fuel-vendor',
@@ -38,22 +38,22 @@ import { CommonModule } from '@angular/common';
   styleUrls: ['./fuel-vendor.scss']
 })
 export class FuelVendor implements OnInit {
-      constructor(public auth: Auth) {}
+  constructor(public auth: Auth) {}
 
-      getActions(row: any, actions: string[]) {
-        const permittedActions: string[] = [];
+  getActions(row: any, actions: string[]) {
+    const permittedActions: string[] = [];
 
-        for (const a of actions) {
-          if (a === 'Modifier' && this.auth.hasPermission('FUEL_VENDOR_EDIT')) {
-            permittedActions.push(a);
-          }
-          if (a === 'Supprimer' && this.auth.hasPermission('FUEL_VENDOR_DISABLE')) {
-            permittedActions.push(a);
-          }
-        }
-
-        return permittedActions;
+    for (const a of actions) {
+      if (a === 'Modifier' && this.auth.hasPermission('FUEL_VENDOR_EDIT')) {
+        permittedActions.push(a);
       }
+      if (a === 'Supprimer' && this.auth.hasPermission('FUEL_VENDOR_DISABLE')) {
+        permittedActions.push(a);
+      }
+    }
+
+    return permittedActions;
+  }
 
   httpService = inject(Http);
   pagedFuelVendorData!: PagedData<IFuelVendor>;
@@ -68,7 +68,6 @@ export class FuelVendor implements OnInit {
   readonly dialog = inject(MatDialog);
 
   showCols = [
-
     { key: 'name', label: 'Nom du Fournisseur' },
     {
       key: 'Action',
@@ -79,12 +78,14 @@ export class FuelVendor implements OnInit {
   ngOnInit() {
     this.getLatestData();
 
-    this.searchControl.valueChanges.pipe(debounceTime(250))
-      .subscribe((value: string | null) => {
-        this.filter.search = value;
-        this.filter.pageIndex = 0;
-        this.getLatestData();
-      });
+    this.searchControl.valueChanges.pipe(
+      debounceTime(250),
+      distinctUntilChanged()
+    ).subscribe((value: string | null) => {
+      this.filter.search = value;
+      this.filter.pageIndex = 0;
+      this.getLatestData();
+    });
   }
 
   getLatestData() {
@@ -109,12 +110,40 @@ export class FuelVendor implements OnInit {
   }
 
   delete(vendor: IFuelVendor) {
-    if (confirm(`Voulez-vous vraiment supprimer le fournisseur "${vendor.name}"?`)) {
-      this.httpService.deleteFuelVendor(vendor.id).subscribe(() => {
-        alert("Fournisseur supprimé avec succès");
-        this.getLatestData();
-      });
-    }
+    Swal.fire({
+      title: 'Confirmation',
+      text: `Voulez-vous vraiment supprimer le fournisseur "${vendor.name}" ?`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#3085d6',
+      confirmButtonText: 'Oui, supprimer',
+      cancelButtonText: 'Annuler'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        this.httpService.deleteFuelVendor(vendor.id).subscribe({
+          next: () => {
+            Swal.fire({
+              icon: 'success',
+              title: 'Succès',
+              text: 'Fournisseur supprimé avec succès',
+              timer: 2000,
+              showConfirmButton: false
+            });
+            this.getLatestData();
+          },
+          error: (err) => {
+            console.error('Error deleting fuel vendor:', err);
+            Swal.fire({
+              icon: 'error',
+              title: 'Erreur',
+              text: err?.error?.message || 'Impossible de supprimer le fournisseur',
+              confirmButtonText: 'OK'
+            });
+          }
+        });
+      }
+    });
   }
 
   openDialog(): void {

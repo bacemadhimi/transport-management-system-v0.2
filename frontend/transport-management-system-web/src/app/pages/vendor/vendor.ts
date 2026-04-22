@@ -10,10 +10,11 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatCardModule } from '@angular/material/card';
 import { MatInputModule } from '@angular/material/input';
 import { MatFormFieldModule } from '@angular/material/form-field';
-import { debounceTime } from 'rxjs';
+import { debounceTime, distinctUntilChanged } from 'rxjs';
 import { PagedData } from '../../types/paged-data';
 import { Auth } from '../../services/auth';
 import { CommonModule } from '@angular/common';
+import Swal from 'sweetalert2';
 
 @Component({
   selector: 'app-vendor',
@@ -33,22 +34,22 @@ import { CommonModule } from '@angular/common';
   styleUrls: ['./vendor.scss']
 })
 export class Vendor implements OnInit {
-      constructor(public auth: Auth) {}
+  constructor(public auth: Auth) {}
 
-      getActions(row: any, actions: string[]) {
-        const permittedActions: string[] = [];
+  getActions(row: any, actions: string[]) {
+    const permittedActions: string[] = [];
 
-        for (const a of actions) {
-          if (a === 'Modifier' && this.auth.hasPermission('VENDOR_EDIT')) {
-            permittedActions.push(a);
-          }
-          if (a === 'Supprimer' && this.auth.hasPermission('VENDOR_DISABLE')) {
-            permittedActions.push(a);
-          }
-        }
-
-        return permittedActions;
+    for (const a of actions) {
+      if (a === 'Modifier' && this.auth.hasPermission('VENDOR_EDIT')) {
+        permittedActions.push(a);
       }
+      if (a === 'Supprimer' && this.auth.hasPermission('VENDOR_DISABLE')) {
+        permittedActions.push(a);
+      }
+    }
+
+    return permittedActions;
+  }
 
   httpService = inject(Http);
   pagedvendorData!: PagedData<IVendor>;
@@ -63,7 +64,6 @@ export class Vendor implements OnInit {
   readonly dialog = inject(MatDialog);
 
   showCols = [
-
     { key: 'name', label: 'Nom' },
     { key: 'email', label: 'Email' },
     { key: 'phone', label: 'Téléphone' },
@@ -89,12 +89,14 @@ export class Vendor implements OnInit {
   ngOnInit() {
     this.getLatestData();
 
-    this.searchControl.valueChanges.pipe(debounceTime(250))
-      .subscribe((value: string | null) => {
-        this.filter.search = value;
-        this.filter.pageIndex = 0;
-        this.getLatestData();
-      });
+    this.searchControl.valueChanges.pipe(
+      debounceTime(250),
+      distinctUntilChanged()
+    ).subscribe((value: string | null) => {
+      this.filter.search = value;
+      this.filter.pageIndex = 0;
+      this.getLatestData();
+    });
   }
 
   getLatestData() {
@@ -119,12 +121,40 @@ export class Vendor implements OnInit {
   }
 
   delete(vendor: IVendor) {
-    if (confirm(`Voulez-vous vraiment supprimer le vendeur "${vendor.name}"?`)) {
-      this.httpService.deleteVendor(vendor.id).subscribe(() => {
-        alert("Vendeur supprimé avec succès");
-        this.getLatestData();
-      });
-    }
+    Swal.fire({
+      title: 'Confirmation',
+      text: `Voulez-vous vraiment supprimer le vendeur "${vendor.name}" ?`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#3085d6',
+      confirmButtonText: 'Oui, supprimer',
+      cancelButtonText: 'Annuler'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        this.httpService.deleteVendor(vendor.id).subscribe({
+          next: () => {
+            Swal.fire({
+              icon: 'success',
+              title: 'Succès',
+              text: 'Vendeur supprimé avec succès',
+              timer: 2000,
+              showConfirmButton: false
+            });
+            this.getLatestData();
+          },
+          error: (err) => {
+            console.error('Error deleting vendor:', err);
+            Swal.fire({
+              icon: 'error',
+              title: 'Erreur',
+              text: err?.error?.message || 'Impossible de supprimer le vendeur',
+              confirmButtonText: 'OK'
+            });
+          }
+        });
+      }
+    });
   }
 
   openDialog(): void {
