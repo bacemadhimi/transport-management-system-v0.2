@@ -1,17 +1,12 @@
 <div class="fuel-vendor-page">
   <div class="fuel-vendor-header">
-    <h1 class="fuel-vendor-title">La liste des fournisseurs de carburant</h1>
+    
+    <h1 class="fuel-vendor-title">{{ t('FUEL_VENDOR_LIST_TITLE') }}</h1>
 
     <div class="fuel-vendor-header__actions">
       <div class="fuel-vendor-header__left">
-        <mat-form-field appearance="outline" class="fuel-vendor-search">
-          <mat-label>Chercher fournisseur</mat-label>
-          <input
-            matInput
-            type="text"
-            [formControl]="searchControl"
-            placeholder="Nom du fournisseur"
-          />
+        <mat-form-field appearance="outline" floatLabel="always" class="fuel-vendor-search">
+          <input matInput type="text" [formControl]="searchControl" [placeholder]="t('SEARCH_FUEL_VENDOR_PLACEHOLDER')" />
         </mat-form-field>
 
         <div class="export-actions" aria-label="Export actions">
@@ -39,8 +34,8 @@
       </div>
 
       <div class="fuel-vendor-header__right">
-        <button *ngIf="auth.hasPermission('FUEL_VENDOR_ADD')"  mat-flat-button class="fuel-vendor-add-btn" (click)="add()" type="button">
-          Ajouter
+        <button *ngIf="auth.hasPermission('FUEL_VENDOR_ADD')" mat-flat-button class="fuel-vendor-add-btn" (click)="add()" type="button">
+          {{ t('ADD_FUEL_VENDOR') }}
         </button>
       </div>
     </div>

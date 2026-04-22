@@ -1,18 +1,32 @@
 <div class="dayoff-page">
   <div class="dayoff-header">
-    <h1 class="dayoff-title">Gestion des Jours Fériés</h1>
+    
+    <h1 class="dayoff-title">{{ t('DAYOFF_MANAGEMENT_TITLE') }}</h1>
 
     <div class="dayoff-header__actions">
       <div class="dayoff-header__left">
-        <mat-form-field appearance="outline" class="dayoff-search">
-          <mat-label>Rechercher</mat-label>
-          <input
-            matInput
-            type="text"
-            [formControl]="searchControl"
-            placeholder="Nom, description"
-          />
+        <mat-form-field appearance="outline" floatLabel="always" class="dayoff-search">
+          <input matInput type="text" [formControl]="searchControl" [placeholder]="t('SEARCH_DAYOFF_PLACEHOLDER')" />
         </mat-form-field>
+
+        <div class="filter-row">
+          <mat-form-field appearance="outline" class="country-filter">
+            <mat-select [formControl]="countryControl" [placeholder]="t('FILTER_BY_COUNTRY')">
+              <mat-option [value]="''">{{ t('ALL_COUNTRIES') }}</mat-option>
+              <mat-option value="Tunisie">{{ t('TUNISIA') }}</mat-option>
+              <mat-option value="France">{{ t('FRANCE') }}</mat-option>
+              <mat-option value="Algérie">{{ t('ALGERIA') }}</mat-option>
+              <mat-option value="Maroc">{{ t('MOROCCO') }}</mat-option>
+            </mat-select>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="year-filter">
+            <mat-select [formControl]="yearControl" [placeholder]="t('FILTER_BY_YEAR')">
+              <mat-option [value]="null">{{ t('ALL_YEARS') }}</mat-option>
+              <mat-option *ngFor="let year of yearOptions" [value]="year">{{ year }}</mat-option>
+            </mat-select>
+          </mat-form-field>
+        </div>
 
         <div class="export-actions" aria-label="Export actions">
           <button mat-icon-button class="export-btn export-excel" (click)="exportExcel()" title="Export Excel">
@@ -39,8 +53,8 @@
       </div>
 
       <div class="dayoff-header__right">
-        <button *ngIf="auth.hasPermission('DAYOFF_ADD')"  mat-flat-button class="dayoff-add-btn" (click)="add()" type="button">
-          Ajouter un jour férié
+        <button *ngIf="auth.hasPermission('DAYOFF_ADD')" mat-flat-button class="dayoff-add-btn" (click)="add()" type="button">
+          {{ t('ADD_DAYOFF') }}
         </button>
       </div>
     </div>

@@ -1,45 +1,59 @@
-<mat-card class="form-card p-8">
-  <mat-card-title>
-    {{ data.typeTruckId ? 'Modifier type de véhicule' : 'Ajouter type de véhicule' }}
-  </mat-card-title>
-
-  <form [formGroup]="typeTruckForm" (ngSubmit)="onSubmit()">
-
-    <!-- Type (Nom du type) -->
-    <mat-form-field class="w-full">
-      <mat-label>Type de véhicule</mat-label>
-      <input matInput formControlName="type" placeholder="Ex: Camion, Tracteur, Remorque, etc." />
-      <mat-error *ngIf="typeTruckForm.get('type')?.hasError('required')">
-        Le type est obligatoire
-      </mat-error>
-    </mat-form-field>
-
-    <!-- Capacité -->
-    <mat-form-field class="w-full">
-      <mat-label>Capacité</mat-label>
-      <input matInput type="number" formControlName="capacity" placeholder="Ex: 20" />
-      <mat-error *ngIf="typeTruckForm.get('capacity')?.hasError('required')">
-        La capacité est obligatoire
-      </mat-error>
-      <mat-error *ngIf="typeTruckForm.get('capacity')?.hasError('min')">
-        La capacité doit être supérieure à 0
-      </mat-error>
-    </mat-form-field>
-
-    <div class="flex justify-center mt-4 gap-2">
-      <button
-        mat-raised-button
-        color="primary"
-        type="submit"
-        [disabled]="typeTruckForm.invalid || isSubmitting"
-      >
-        {{ data.typeTruckId ? 'Modifier' : 'Ajouter' }}
-      </button>
-
-      <button mat-button type="button" (click)="onCancel()">
-        Annuler
-      </button>
+<mat-card class="type-truck-form-card">
+  <header class="type-truck-form-card__header">
+    <div>
+      <h2>{{ data.typeTruckId ? t('TYPE_TRUCK_EDIT_TITLE') : t('TYPE_TRUCK_ADD_TITLE') }}</h2>
     </div>
+  </header>
 
+  <form [formGroup]="typeTruckForm" class="type-truck-form">
+    <div class="form-grid">
+      
+      <!-- Type -->
+      <div class="form-row full-width">
+        <div class="form-field full-width">
+          <mat-label>{{ t('TYPE_LABEL') }} <span class="required-star">*</span></mat-label>
+          <mat-form-field appearance="outline" class="full-width type-truck-field">
+            <input matInput formControlName="type" [placeholder]="t('TYPE_PLACEHOLDER')" />
+            <mat-error *ngIf="typeTruckForm.get('type')?.hasError('required')">
+              {{ t('TYPE_REQUIRED') }}
+            </mat-error>
+          </mat-form-field>
+        </div>
+      </div>
+
+      <!-- Capacity -->
+      <div class="form-row full-width">
+        <div class="form-field full-width">
+          <mat-label>{{ t('CAPACITY_LABEL') }} <span class="required-star">*</span></mat-label>
+          <mat-form-field appearance="outline" class="full-width type-truck-field">
+            <input matInput type="number" formControlName="capacity" min="0.1" step="0.1" [placeholder]="t('CAPACITY_PLACEHOLDER')" />
+            <mat-error *ngIf="typeTruckForm.get('capacity')?.hasError('required')">
+              {{ t('CAPACITY_REQUIRED') }}
+            </mat-error>
+            <mat-error *ngIf="typeTruckForm.get('capacity')?.hasError('min')">
+              {{ t('CAPACITY_MIN_ERROR') }}
+            </mat-error>
+          </mat-form-field>
+        </div>
+      </div>
+
+      <!-- Form Actions -->
+      <div class="form-row full-width">
+        <div class="form-field full-width">
+          <div class="form-footer">
+            <button 
+              mat-flat-button 
+              color="primary" 
+              type="submit" 
+              [disabled]="typeTruckForm.invalid || isSubmitting"
+              (click)="onSubmit()">
+              <span>{{ data.typeTruckId ? t('SAVE') : t('ADD') }}</span>
+            </button>
+            <button mat-button type="button" (click)="onCancel()">{{ t('CANCEL') }}</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
   </form>
 </mat-card>

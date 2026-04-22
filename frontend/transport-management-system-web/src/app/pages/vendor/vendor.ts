@@ -14,7 +14,13 @@ import { debounceTime, distinctUntilChanged } from 'rxjs';
 import { PagedData } from '../../types/paged-data';
 import { Auth } from '../../services/auth';
 import { CommonModule } from '@angular/common';
+import { Translation } from '../../services/Translation';
 import Swal from 'sweetalert2';
+import { MatIconModule } from '@angular/material/icon';
+import * as XLSX from 'xlsx';
+import { saveAs } from 'file-saver';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 @Component({
   selector: 'app-vendor',
@@ -28,7 +34,8 @@ import Swal from 'sweetalert2';
     MatSelectModule,
     MatCardModule,
     MatInputModule,
-    MatFormFieldModule
+    MatFormFieldModule,
+    MatIconModule
   ],
   templateUrl: './vendor.html',
   styleUrls: ['./vendor.scss']
@@ -36,24 +43,12 @@ import Swal from 'sweetalert2';
 export class Vendor implements OnInit {
   constructor(public auth: Auth) {}
 
-  getActions(row: any, actions: string[]) {
-    const permittedActions: string[] = [];
-
-    for (const a of actions) {
-      if (a === 'Modifier' && this.auth.hasPermission('VENDOR_EDIT')) {
-        permittedActions.push(a);
-      }
-      if (a === 'Supprimer' && this.auth.hasPermission('VENDOR_DISABLE')) {
-        permittedActions.push(a);
-      }
-    }
-
-    return permittedActions;
-  }
-
   httpService = inject(Http);
   pagedvendorData!: PagedData<IVendor>;
   totalData!: number;
+
+  private translation = inject(Translation);
+  t(key: string): string { return this.translation.t(key); }
 
   filter: any = {
     pageIndex: 0,
@@ -63,28 +58,45 @@ export class Vendor implements OnInit {
   searchControl = new FormControl('');
   readonly dialog = inject(MatDialog);
 
-  showCols = [
-    { key: 'name', label: 'Nom' },
-    { key: 'email', label: 'Email' },
-    { key: 'phone', label: 'Téléphone' },
-    {
-      key: 'createdDate',
-      label: 'Date de Création',
-      format: (row: IVendor) => {
-        if (!row.createdDate) return 'N/A';
-        const date = new Date(row.createdDate);
-        return date.toLocaleDateString('fr-FR', {
-          day: '2-digit',
-          month: '2-digit',
-          year: 'numeric'
-        });
+  get showCols() {
+    return [
+      { key: 'name', label: this.t('NAME') },
+      { key: 'email', label: this.t('EMAIL') },
+      { key: 'phone', label: this.t('PHONE') },
+      {
+        key: 'createdDate',
+        label: this.t('CREATED_DATE'),
+        format: (row: IVendor) => {
+          if (!row.createdDate) return this.t('NOT_AVAILABLE');
+          const date = new Date(row.createdDate);
+          return date.toLocaleDateString('fr-FR', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric'
+          });
+        }
+      },
+      {
+        key: 'Action',
+        format: () => [this.t('ACTION_EDIT'), this.t('ACTION_DELETE')]
       }
-    },
-    {
-      key: 'Action',
-      format: () => ["Modifier", "Supprimer"]
+    ];
+  }
+
+  getActions(row: any, actions: string[]) {
+    const permittedActions: string[] = [];
+
+    for (const a of actions) {
+      if (a === this.t('ACTION_EDIT') && this.auth.hasPermission('VENDOR_EDIT')) {
+        permittedActions.push(a);
+      }
+      if (a === this.t('ACTION_DELETE') && this.auth.hasPermission('VENDOR_DISABLE')) {
+        permittedActions.push(a);
+      }
     }
-  ];
+
+    return permittedActions;
+  }
 
   ngOnInit() {
     this.getLatestData();
@@ -122,22 +134,22 @@ export class Vendor implements OnInit {
 
   delete(vendor: IVendor) {
     Swal.fire({
-      title: 'Confirmation',
-      text: `Voulez-vous vraiment supprimer le vendeur "${vendor.name}" ?`,
+      title: this.t('CONFIRMATION'),
+      text: `${this.t('VENDOR_DELETE_CONFIRM')} "${vendor.name}" ?`,
       icon: 'warning',
       showCancelButton: true,
       confirmButtonColor: '#d33',
       cancelButtonColor: '#3085d6',
-      confirmButtonText: 'Oui, supprimer',
-      cancelButtonText: 'Annuler'
+      confirmButtonText: this.t('YES_DELETE'),
+      cancelButtonText: this.t('CANCEL')
     }).then((result) => {
       if (result.isConfirmed) {
         this.httpService.deleteVendor(vendor.id).subscribe({
           next: () => {
             Swal.fire({
               icon: 'success',
-              title: 'Succès',
-              text: 'Vendeur supprimé avec succès',
+              title: this.t('SUCCESS'),
+              text: this.t('VENDOR_DELETE_SUCCESS'),
               timer: 2000,
               showConfirmButton: false
             });
@@ -147,9 +159,9 @@ export class Vendor implements OnInit {
             console.error('Error deleting vendor:', err);
             Swal.fire({
               icon: 'error',
-              title: 'Erreur',
-              text: err?.error?.message || 'Impossible de supprimer le vendeur',
-              confirmButtonText: 'OK'
+              title: this.t('ERROR'),
+              text: err?.error?.message || this.t('VENDOR_DELETE_ERROR'),
+              confirmButtonText: this.t('OK')
             });
           }
         });
@@ -173,7 +185,98 @@ export class Vendor implements OnInit {
   }
 
   onRowClick(event: any) {
-    if (event.btn === "Modifier") this.edit(event.rowData);
-    if (event.btn === "Supprimer") this.delete(event.rowData);
+    const editLabel = this.t('ACTION_EDIT');
+    const deleteLabel = this.t('ACTION_DELETE');
+    
+    if (event.btn === editLabel) {
+      this.edit(event.rowData);
+    }
+    if (event.btn === deleteLabel) {
+      this.delete(event.rowData);
+    }
+  }
+
+  exportCSV() {
+    const rows = this.pagedvendorData?.data || [];
+
+    const escape = (v: any) => {
+      if (v === null || v === undefined) return '""';
+      const s = String(v).replace(/"/g, '""');
+      return `"${s}"`;
+    };
+
+    const csvContent = [
+      ['ID', this.t('NAME'), this.t('EMAIL'), this.t('PHONE'), this.t('CREATED_DATE')],
+      ...rows.map(v => [
+        v.id,
+        v.name,
+        v.email,
+        v.phone,
+        v.createdDate ? new Date(v.createdDate).toLocaleDateString('fr-FR') : this.t('NOT_AVAILABLE')
+      ])
+    ]
+      .map(row => row.map(escape).join(','))
+      .join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = 'vendeurs.csv';
+    link.click();
+  }
+
+  exportExcel() {
+    const data = this.pagedvendorData?.data.map(v => ({
+      ID: v.id,
+      [this.t('NAME')]: v.name,
+      [this.t('EMAIL')]: v.email,
+      [this.t('PHONE')]: v.phone,
+      [this.t('CREATED_DATE')]: v.createdDate ? new Date(v.createdDate).toLocaleDateString('fr-FR') : this.t('NOT_AVAILABLE')
+    })) || [];
+
+    const worksheet = XLSX.utils.json_to_sheet(data);
+    const workbook = {
+      Sheets: { Vendeurs: worksheet },
+      SheetNames: ['Vendeurs']
+    };
+
+    const excelBuffer = XLSX.write(workbook, {
+      bookType: 'xlsx',
+      type: 'array'
+    });
+
+    const blob = new Blob([excelBuffer], {
+      type: 'application/octet-stream'
+    });
+
+    saveAs(blob, 'vendeurs.xlsx');
+  }
+
+  exportPDF() {
+    const doc = new jsPDF();
+
+    doc.setFontSize(16);
+    doc.text(this.t('VENDOR_LIST_TITLE'), 14, 22);
+    doc.setFontSize(10);
+    doc.text(`${this.t('GENERATED_ON')}: ${new Date().toLocaleDateString('fr-FR')}`, 14, 30);
+
+    const rows = this.pagedvendorData?.data || [];
+
+    autoTable(doc, {
+      startY: 35,
+      head: [['ID', this.t('NAME'), this.t('EMAIL'), this.t('PHONE'), this.t('CREATED_DATE')]],
+      body: rows.map(v => [
+        v.id,
+        v.name,
+        v.email,
+        v.phone,
+        v.createdDate ? new Date(v.createdDate).toLocaleDateString('fr-FR') : this.t('NOT_AVAILABLE')
+      ]),
+      theme: 'grid',
+      styles: { fontSize: 8 },
+      headStyles: { fillColor: [41, 128, 185] }
+    });
+
+    doc.save('vendeurs.pdf');
   }
 }

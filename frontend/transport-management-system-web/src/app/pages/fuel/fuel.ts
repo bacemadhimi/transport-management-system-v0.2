@@ -20,6 +20,7 @@ import { FuelForm } from './fuel-form/fuel-form';
 import { Auth } from '../../services/auth';
 import { CommonModule } from '@angular/common';
 import { IMarque } from '../../types/marque';
+import { Translation } from '../../services/Translation';
 import Swal from 'sweetalert2';
 import { MatIconModule } from '@angular/material/icon';
 
@@ -50,6 +51,9 @@ export class Fuel implements OnInit {
   router = inject(Router);
   readonly dialog = inject(MatDialog);
   
+  private translation = inject(Translation);
+  t(key: string): string { return this.translation.t(key); }
+  
   marques: IMarque[] = [];
   marqueMap: Map<number, string> = new Map();
 
@@ -64,10 +68,10 @@ export class Fuel implements OnInit {
     const permittedActions: string[] = [];
 
     for (const a of actions) {
-      if (a === 'Modifier' && this.auth.hasPermission('FUEL_EDIT')) {
+      if (a === this.t('ACTION_EDIT') && this.auth.hasPermission('FUEL_EDIT')) {
         permittedActions.push(a);
       }
-      if (a === 'Supprimer' && this.auth.hasPermission('FUEL_DISABLE')) {
+      if (a === this.t('ACTION_DELETE') && this.auth.hasPermission('FUEL_DISABLE')) {
         permittedActions.push(a);
       }
     }
@@ -76,8 +80,8 @@ export class Fuel implements OnInit {
   }
 
   getMarqueName(marqueId?: number): string {
-    if (!marqueId) return 'N/A';
-    return this.marqueMap.get(marqueId) || `Marque #${marqueId}`;
+    if (!marqueId) return this.t('NOT_AVAILABLE');
+    return this.marqueMap.get(marqueId) || `${this.t('BRAND')} #${marqueId}`;
   }
 
   getTruckDisplayName(row: IFuel): string {
@@ -86,26 +90,26 @@ export class Fuel implements OnInit {
       const brandName = this.getMarqueName(truck.marqueTruckId || truck.typeTruck?.marqueTruckId);
       return `${brandName} - ${truck.immatriculation}`;
     }
-    return `Camion #${row.truckId}`;
+    return `${this.t('TRUCK')} #${row.truckId}`;
   }
 
   get showCols() {
     return [
       {
         key: 'truck',
-        label: 'Camion',
+        label: this.t('TRUCK'),
         format: (row: IFuel) => this.getTruckDisplayName(row)
       },
       {
         key: 'driver',
-        label: 'Chauffeur',
-        format: (row: IFuel) => row.driver ? row.driver.name : `Chauffeur #${row.driverId}`
+        label: this.t('DRIVER'),
+        format: (row: IFuel) => row.driver ? row.driver.name : `${this.t('DRIVER')} #${row.driverId}`
       },
       {
         key: 'fillDate',
-        label: 'Date Remplissage',
+        label: this.t('FILL_DATE'),
         format: (row: IFuel) => {
-          if (!row.fillDate) return 'N/A';
+          if (!row.fillDate) return this.t('NOT_AVAILABLE');
           const date = new Date(row.fillDate);
           return date.toLocaleDateString('fr-FR', {
             day: '2-digit',
@@ -114,22 +118,22 @@ export class Fuel implements OnInit {
           });
         }
       },
-      { key: 'quantity', label: 'Quantité (L)' },
-      { key: 'odometerReading', label: 'Compteur KM' },
+      { key: 'quantity', label: this.t('QUANTITY_L') },
+      { key: 'odometerReading', label: this.t('ODOMETER_KM') },
       { 
         key: 'amount', 
-        label: 'Montant (€)',
-        format: (row: IFuel) => row.amount ? row.amount.toFixed(2) + ' €' : 'N/A'
+        label: this.t('AMOUNT_EUR'),
+        format: (row: IFuel) => row.amount ? row.amount.toFixed(2) + ' €' : this.t('NOT_AVAILABLE')
       },
-      { key: 'fuelTank', label: 'Type Carburant' },
+      { key: 'fuelTank', label: this.t('FUEL_TYPE') },
       {
         key: 'fuelVendor',
-        label: 'Fournisseur',
-        format: (row: IFuel) => row.fuelVendor ? row.fuelVendor.name : `Fournisseur #${row.fuelVendorId}`
+        label: this.t('VENDOR'),
+        format: (row: IFuel) => row.fuelVendor ? row.fuelVendor.name : `${this.t('VENDOR')} #${row.fuelVendorId}`
       },
       {
         key: 'Action',
-        format: () => ["Modifier", "Supprimer"]
+        format: () => [this.t('ACTION_EDIT'), this.t('ACTION_DELETE')]
       }
     ];
   }
@@ -197,22 +201,22 @@ export class Fuel implements OnInit {
     const truckInfo = this.getTruckDisplayName(fuel);
     
     Swal.fire({
-      title: 'Confirmation',
-      text: `Voulez-vous vraiment supprimer le remplissage de carburant pour ${truckInfo} ?`,
+      title: this.t('CONFIRMATION'),
+      text: `${this.t('FUEL_DELETE_CONFIRM')} ${truckInfo} ?`,
       icon: 'warning',
       showCancelButton: true,
       confirmButtonColor: '#d33',
       cancelButtonColor: '#3085d6',
-      confirmButtonText: 'Oui, supprimer',
-      cancelButtonText: 'Annuler'
+      confirmButtonText: this.t('YES_DELETE'),
+      cancelButtonText: this.t('CANCEL')
     }).then((result) => {
       if (result.isConfirmed) {
         this.httpService.deleteFuel(fuel.id).subscribe({
           next: () => {
             Swal.fire({
               icon: 'success',
-              title: 'Succès',
-              text: 'Remplissage de carburant supprimé avec succès',
+              title: this.t('SUCCESS'),
+              text: this.t('FUEL_DELETE_SUCCESS'),
               timer: 2000,
               showConfirmButton: false
             });
@@ -221,9 +225,9 @@ export class Fuel implements OnInit {
           error: (err) => {
             Swal.fire({
               icon: 'error',
-              title: 'Erreur',
-              text: err?.message || 'Impossible de supprimer le remplissage',
-              confirmButtonText: 'OK'
+              title: this.t('ERROR'),
+              text: err?.message || this.t('FUEL_DELETE_ERROR'),
+              confirmButtonText: this.t('OK')
             });
           }
         });
@@ -247,25 +251,32 @@ export class Fuel implements OnInit {
   }
 
   onRowClick(event: any) {
-    if (event.btn === "Modifier") this.edit(event.rowData);
-    if (event.btn === "Supprimer") this.delete(event.rowData);
+    const editLabel = this.t('ACTION_EDIT');
+    const deleteLabel = this.t('ACTION_DELETE');
+    
+    if (event.btn === editLabel) {
+      this.edit(event.rowData);
+    }
+    if (event.btn === deleteLabel) {
+      this.delete(event.rowData);
+    }
   }
 
   exportCSV() {
     const rows = this.pagedFuelData?.data || [];
 
     const csvContent = [
-      ['ID', 'Camion', 'Chauffeur', 'Date Remplissage', 'Quantité (L)', 'Compteur KM', 'Montant (€)', 'Type Carburant', 'Fournisseur', 'Commentaire'],
+      ['ID', this.t('TRUCK'), this.t('DRIVER'), this.t('FILL_DATE'), this.t('QUANTITY_L'), this.t('ODOMETER_KM'), this.t('AMOUNT_EUR'), this.t('FUEL_TYPE'), this.t('VENDOR'), this.t('COMMENT')],
       ...rows.map(f => [
         f.id,
         this.getTruckDisplayName(f),
-        f.driver ? f.driver.name : `Chauffeur #${f.driverId}`,
-        f.fillDate ? new Date(f.fillDate).toLocaleDateString('fr-FR') : 'N/A',
+        f.driver ? f.driver.name : `${this.t('DRIVER')} #${f.driverId}`,
+        f.fillDate ? new Date(f.fillDate).toLocaleDateString('fr-FR') : this.t('NOT_AVAILABLE'),
         f.quantity,
         f.odometerReading,
         f.amount,
         f.fuelTank,
-        f.fuelVendor ? f.fuelVendor.name : `Fournisseur #${f.fuelVendorId}`,
+        f.fuelVendor ? f.fuelVendor.name : `${this.t('VENDOR')} #${f.fuelVendorId}`,
         f.comment || ''
       ])
     ]
@@ -282,15 +293,15 @@ export class Fuel implements OnInit {
   exportExcel() {
     const data = this.pagedFuelData?.data.map(f => ({
       ID: f.id,
-      Camion: this.getTruckDisplayName(f),
-      Chauffeur: f.driver ? f.driver.name : `Chauffeur #${f.driverId}`,
-      'Date Remplissage': f.fillDate ? new Date(f.fillDate).toLocaleDateString('fr-FR') : 'N/A',
-      'Quantité (L)': f.quantity,
-      'Compteur KM': f.odometerReading,
-      'Montant (€)': f.amount,
-      'Type Carburant': f.fuelTank,
-      Fournisseur: f.fuelVendor ? f.fuelVendor.name : `Fournisseur #${f.fuelVendorId}`,
-      Commentaire: f.comment || ''
+      [this.t('TRUCK')]: this.getTruckDisplayName(f),
+      [this.t('DRIVER')]: f.driver ? f.driver.name : `${this.t('DRIVER')} #${f.driverId}`,
+      [this.t('FILL_DATE')]: f.fillDate ? new Date(f.fillDate).toLocaleDateString('fr-FR') : this.t('NOT_AVAILABLE'),
+      [this.t('QUANTITY_L')]: f.quantity,
+      [this.t('ODOMETER_KM')]: f.odometerReading,
+      [this.t('AMOUNT_EUR')]: f.amount,
+      [this.t('FUEL_TYPE')]: f.fuelTank,
+      [this.t('VENDOR')]: f.fuelVendor ? f.fuelVendor.name : `${this.t('VENDOR')} #${f.fuelVendorId}`,
+      [this.t('COMMENT')]: f.comment || ''
     })) || [];
 
     const worksheet = XLSX.utils.json_to_sheet(data);
@@ -315,25 +326,25 @@ export class Fuel implements OnInit {
     const doc = new jsPDF();
 
     doc.setFontSize(16);
-    doc.text('Rapport des Remplissages Carburant', 14, 22);
+    doc.text(this.t('FUEL_REPORT_TITLE'), 14, 22);
     doc.setFontSize(10);
-    doc.text(`Généré le: ${new Date().toLocaleDateString('fr-FR')}`, 14, 30);
+    doc.text(`${this.t('GENERATED_ON')}: ${new Date().toLocaleDateString('fr-FR')}`, 14, 30);
 
     const rows = this.pagedFuelData?.data || [];
 
     autoTable(doc, {
       startY: 35,
-      head: [['ID', 'Camion', 'Chauffeur', 'Date', 'Quantité (L)', 'KM', 'Montant (€)', 'Type', 'Fournisseur']],
+      head: [['ID', this.t('TRUCK'), this.t('DRIVER'), this.t('DATE'), this.t('QUANTITY_L'), this.t('KM'), this.t('AMOUNT_EUR'), this.t('TYPE'), this.t('VENDOR')]],
       body: rows.map(f => [
         f.id,
         this.getTruckDisplayName(f),
-        f.driver ? f.driver.name : `Chauffeur #${f.driverId}`,
-        f.fillDate ? new Date(f.fillDate).toLocaleDateString('fr-FR') : 'N/A',
+        f.driver ? f.driver.name : `${this.t('DRIVER')} #${f.driverId}`,
+        f.fillDate ? new Date(f.fillDate).toLocaleDateString('fr-FR') : this.t('NOT_AVAILABLE'),
         f.quantity,
         f.odometerReading,
         f.amount.toFixed(2),
         f.fuelTank,
-        f.fuelVendor ? f.fuelVendor.name : `Fournisseur #${f.fuelVendorId}`
+        f.fuelVendor ? f.fuelVendor.name : `${this.t('VENDOR')} #${f.fuelVendorId}`
       ]),
       theme: 'grid',
       styles: { fontSize: 8 },
@@ -345,8 +356,8 @@ export class Fuel implements OnInit {
 
     const finalY = (doc as any).lastAutoTable.finalY || 100;
     doc.setFontSize(10);
-    doc.text(`Total Quantité: ${totalQuantity} L`, 14, finalY + 10);
-    doc.text(`Total Montant: ${totalAmount.toFixed(2)} €`, 14, finalY + 20);
+    doc.text(`${this.t('TOTAL_QUANTITY')}: ${totalQuantity} L`, 14, finalY + 10);
+    doc.text(`${this.t('TOTAL_AMOUNT')}: ${totalAmount.toFixed(2)} €`, 14, finalY + 20);
 
     doc.save('carburants.pdf');
   }

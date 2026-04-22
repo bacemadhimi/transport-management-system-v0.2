@@ -1,17 +1,12 @@
 <div class="fuel-page">
   <div class="fuel-header">
-    <h1 class="fuel-title">La liste des remplissages carburant</h1>
+    
+    <h1 class="fuel-title">{{ t('FUEL_LIST_TITLE') }}</h1>
 
     <div class="fuel-header__actions">
       <div class="fuel-header__left">
-        <mat-form-field appearance="outline" class="fuel-search">
-          <mat-label>Chercher remplissage</mat-label>
-          <input
-            matInput
-            type="text"
-            [formControl]="searchControl"
-            placeholder="Camion, chauffeur, fournisseur"
-          />
+        <mat-form-field appearance="outline" floatLabel="always" class="fuel-search">
+          <input matInput type="text" [formControl]="searchControl" [placeholder]="t('SEARCH_FUEL_PLACEHOLDER')" />
         </mat-form-field>
 
         <div class="export-actions" aria-label="Export actions">
@@ -39,8 +34,8 @@
       </div>
 
       <div class="fuel-header__right">
-        <button *ngIf="auth.hasPermission('FUEL_ADD')"  mat-flat-button class="fuel-add-btn" (click)="add()" type="button">
-          Ajouter
+        <button *ngIf="auth.hasPermission('FUEL_ADD')" mat-flat-button class="fuel-add-btn" (click)="add()" type="button">
+          {{ t('ADD_FUEL') }}
         </button>
       </div>
     </div>

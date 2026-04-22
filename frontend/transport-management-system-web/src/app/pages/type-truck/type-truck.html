@@ -1,21 +1,44 @@
 <div class="type-truck-page">
   <div class="type-truck-header">
-    <h1 class="type-truck-title">Liste des types de véhicules</h1>
-
+    
+    <h1 class="type-truck-title">{{ t('TYPE_TRUCK_LIST_TITLE') }}</h1>
+    
     <div class="type-truck-header__actions">
-      <mat-form-field appearance="outline" class="type-truck-search">
-        <mat-label>Chercher type</mat-label>
-        <input
-          matInput
-          type="text"
-          [formControl]="searchControl"
-          placeholder="Type de véhicule"
-        />
-      </mat-form-field>
+      <div class="type-truck-header__left">
+        <mat-form-field appearance="outline" floatLabel="always" class="type-truck-search">
+          <input matInput type="text" [formControl]="searchControl" [placeholder]="t('SEARCH_TYPE_TRUCK_PLACEHOLDER')" />
+        </mat-form-field>
 
-      <button *ngIf="auth.hasPermission('TYPE_VEHICULE_ADD')" mat-flat-button class="type-truck-add-btn" (click)="add()" type="button">
-        Ajouter
-      </button>
+        <div class="export-actions" aria-label="Export actions">
+          <button mat-icon-button class="export-btn export-excel" (click)="exportExcel()" title="Export Excel">
+            <svg viewBox="0 0 24 24" class="export-icon" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <rect x="2" y="3" width="20" height="18" rx="2" fill="#107C10"></rect>
+              <text x="12" y="16" text-anchor="middle" font-size="10" font-weight="700" fill="#fff">XLS</text>
+            </svg>
+          </button>
+
+          <button mat-icon-button class="export-btn export-csv" (click)="exportCSV()" title="Export CSV">
+            <svg viewBox="0 0 24 24" class="export-icon" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <rect x="2" y="3" width="20" height="18" rx="2" fill="#1E90FF"></rect>
+              <text x="12" y="16" text-anchor="middle" font-size="9" font-weight="700" fill="#fff">CSV</text>
+            </svg>
+          </button>
+
+          <button mat-icon-button class="export-btn export-pdf" (click)="exportPDF()" title="Export PDF">
+            <svg viewBox="0 0 24 24" class="export-icon" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <rect x="2" y="3" width="20" height="18" rx="2" fill="#D32F2F"></rect>
+              <text x="12" y="16" text-anchor="middle" font-size="9" font-weight="700" fill="#fff">PDF</text>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="type-truck-header__right">
+        <button *ngIf="auth.hasPermission('TYPE_VEHICULE_ADD')" mat-flat-button class="type-truck-add-btn" (click)="add()" type="button">
+          {{ t('ADD_TYPE_TRUCK') }}
+        </button>
+      </div>
+
     </div>
   </div>
 

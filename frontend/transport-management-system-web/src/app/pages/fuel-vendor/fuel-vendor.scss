@@ -14,12 +14,14 @@
 }
 
 .fuel-vendor-page {
-  max-width: 1200px;
+  max-width: none;
+  width: 100%;
+  padding: 24px;
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.06);
+  border: 1px solid #eef2f6;
+  border-radius: 12px;
+  background: #fff;
   margin: 0 auto;
-  background: var(--card-bg);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow);
-  padding: 1.75rem 2rem;
 }
 
 .fuel-vendor-header {
@@ -46,7 +48,7 @@
   flex: 1 1 auto;
 }
 
-/* rounded pill search like user/truck */
+/* rounded pill search */
 ::ng-deep .fuel-vendor-search .mdc-text-field {
   border-radius: 999px;
   background: #edf3ff;
@@ -100,23 +102,53 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 8px 20px rgba(15,23,42,0.06);
-  border: 1px solid rgba(15,23,42,0.04);
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06);
+  border: 1px solid rgba(15, 23, 42, 0.04);
   transition: transform 0.12s ease, box-shadow 0.12s ease;
   background: #fff;
 }
 
-.export-btn:hover { transform: translateY(-2px); box-shadow: 0 14px 30px rgba(15,23,42,0.12); }
+.export-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 30px rgba(15, 23, 42, 0.12);
+}
 
-.export-icon { width: 28px; height: 28px; display: block; }
+.export-icon {
+  width: 28px;
+  height: 28px;
+  display: block;
+}
 
-.export-excel .export-icon rect { fill: #107C10; }
-.export-csv .export-icon rect { fill: #1E90FF; }
-.export-pdf .export-icon rect { fill: #D32F2F; }
+.export-excel .export-icon rect {
+  fill: #107C10;
+}
 
-.fuel-vendor-header__actions { display: flex; justify-content: space-between; gap: 1rem; align-items: flex-start; }
-.fuel-vendor-header__left { display: flex; flex-direction: column; align-items: flex-start; flex: 1 1 auto; }
-.fuel-vendor-header__right { display: flex; align-items: center; }
+.export-csv .export-icon rect {
+  fill: #1E90FF;
+}
+
+.export-pdf .export-icon rect {
+  fill: #D32F2F;
+}
+
+.fuel-vendor-header__actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+.fuel-vendor-header__left {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  flex: 1 1 auto;
+}
+
+.fuel-vendor-header__right {
+  display: flex;
+  align-items: center;
+}
 
 @media (max-width: 640px) {
   :host {
@@ -137,5 +169,3 @@
     text-align: center;
   }
 }
-
-
