@@ -1,4 +1,4 @@
-﻿
+
 import { Routes } from '@angular/router';
 import { Home } from './pages/home/home';
 import { Login } from './pages/login/login';
@@ -27,6 +27,7 @@ import { OrdersComponent } from './pages/order/order';
 import { TruckAvailabilityComponent } from './pages/truck-availability/truck-availability';
 import { SyncComponent } from './pages/sync/sync';
 import { StatisticsComponent } from './pages/statistics/statistics.component';
+import { DriverStatisticsComponent } from './pages/driver-statistics/driver-statistics.component';
 import { TripCreatePageComponent } from './pages/trip-create-page.component/trip-create-page.component';
 import { TripEditPageComponent } from './pages/trip-edit-page.component/trip-edit-page.component';
 import { TypeTruck } from './pages/type-truck/type-truck';
@@ -179,6 +180,11 @@ export const routes: Routes = [
   component: StatisticsComponent,
   canActivate: [AuthGuard]
 },
+  {
+    path: 'driver-statistics',
+    component: DriverStatisticsComponent,
+    canActivate: [AuthGuard]
+  },
   {
     path: 'trips/create',
     component: TripCreatePageComponent,

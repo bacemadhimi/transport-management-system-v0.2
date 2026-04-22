@@ -1,12 +1,11 @@
-﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using TransportManagementSystem.DTOs;
+using TransportManagementSystem.Services;
 
 namespace TransportManagementSystem.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-[Authorize]
 public class StatisticsController : ControllerBase
 {
     private readonly IStatisticsService _statisticsService;
@@ -18,25 +17,14 @@ public class StatisticsController : ControllerBase
 
     [HttpGet("trip-statistics")]
     public async Task<ActionResult<TripStatisticsDto>> GetTripStatistics(
-        [FromQuery] DateTime? startDate,
-        [FromQuery] DateTime? endDate,
-        [FromQuery] int? truckId,
-        [FromQuery] int? driverId)
+        [FromQuery] StatisticsFilterDto filter)
     {
-        var filter = new StatisticsFilterDto
-        {
-            StartDate = startDate,
-            EndDate = endDate,
-            TruckId = truckId,
-            DriverId = driverId
-        };
-
         var statistics = await _statisticsService.GetTripStatisticsAsync(filter);
         return Ok(statistics);
     }
 
-    [HttpGet("trip-status-distribution")]
-    public async Task<ActionResult<List<PieChartData>>> GetTripStatusDistribution(
+    [HttpGet("status-distribution")]
+    public async Task<ActionResult<List<PieChartData>>> GetStatusDistribution(
         [FromQuery] StatisticsFilterDto filter)
     {
         var data = await _statisticsService.GetTripStatusDistributionAsync(filter);
@@ -57,5 +45,57 @@ public class StatisticsController : ControllerBase
     {
         var data = await _statisticsService.GetOrdersByTypeAsync(filter);
         return Ok(data);
+    }
+
+    [HttpGet("driver-statistics")]
+    public async Task<ActionResult<List<DriverStatisticsDto>>> GetDriverStatistics(
+        [FromQuery] DateTime? startDate,
+        [FromQuery] DateTime? endDate)
+    {
+        try
+        {
+            var filter = new StatisticsFilterDto
+            {
+                StartDate = startDate,
+                EndDate = endDate
+            };
+
+            var statistics = await _statisticsService.GetDriverStatisticsAsync(filter);
+            return Ok(statistics);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { message = "Error fetching driver statistics", error = ex.Message });
+        }
+    }
+
+    [HttpGet("driver-statistics/{driverId}")]
+    public async Task<ActionResult<DriverDetailedStatisticsDto>> GetDriverDetailedStatistics(
+        int driverId,
+        [FromQuery] DateTime? startDate,
+        [FromQuery] DateTime? endDate)
+    {
+        try
+        {
+            var filter = new StatisticsFilterDto
+            {
+                DriverId = driverId,
+                StartDate = startDate,
+                EndDate = endDate
+            };
+
+            var statistics = await _statisticsService.GetDriverDetailedStatisticsAsync(filter);
+
+            if (statistics == null)
+            {
+                return NotFound(new { message = $"Driver with ID {driverId} not found" });
+            }
+
+            return Ok(statistics);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { message = "Error fetching driver detailed statistics", error = ex.Message });
+        }
     }
 }
