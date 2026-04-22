@@ -329,10 +329,14 @@ getDrivers(): Observable<IDriver[]> {
     return this.http.delete(environment.apiUrl + '/api/Mechanic/' + id);
   }
 
-  getMechanics() {
-    return this.http.get<IMechanic[]>(environment.apiUrl + '/api/Mechanic/All');
-  }
-
+getMechanics(): Observable<IEmployee[]> {
+  return this.http.get<IEmployee[]>(`${environment.apiUrl}/api/Employee/by-category/MECHANIC`).pipe(
+    catchError(error => {
+      console.error('Error loading mechanics:', error);
+      return of([]);
+    })
+  );
+}
   getVendorsList(filter: any) {
     const params = new HttpParams({ fromObject: filter });
     return this.http.get<PagedData<IVendor>>(
