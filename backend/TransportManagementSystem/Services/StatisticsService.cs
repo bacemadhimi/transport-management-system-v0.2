@@ -222,8 +222,8 @@ public class StatisticsService : IStatisticsService
 
                 var tripsPerDay = Math.Round((decimal)totalTrips / totalDays, 2);
 
-                // Calcul du temps d'arrêt estimé (20% du temps total)
-                var stopTimeHours = Math.Round(totalDuration * 0.2m, 2);
+                // ✅ CALCUL RÉEL du temps d'arrêt depuis les données GPS
+                var stopTimeHours = await CalculateRealStopTimeFromGPS(driver.Id, filter.StartDate, filter.EndDate);
                 var stopTimePercentage = totalDuration > 0
                     ? Math.Round((stopTimeHours * 100m) / totalDuration, 2)
                     : 0;
@@ -268,6 +268,95 @@ public class StatisticsService : IStatisticsService
             Console.WriteLine($"Stack trace: {ex.StackTrace}");
             throw;
         }
+    }
+
+    /// <summary>
+    /// Calcule le temps d'arrêt RÉEL en analysant les points GPS
+    /// Un arrêt est détecté quand la vitesse entre deux points consécutifs est < 5 km/h pendant > 5 minutes
+    /// </summary>
+    private async Task<decimal> CalculateRealStopTimeFromGPS(int driverId, DateTime? startDate, DateTime? endDate)
+    {
+        try
+        {
+            // Récupérer tous les points GPS du chauffeur pour la période
+            var query = _context.PositionsGPS.AsQueryable()
+                .Where(p => p.DriverId == driverId);
+
+            if (startDate.HasValue)
+                query = query.Where(p => p.Timestamp >= startDate.Value);
+            if (endDate.HasValue)
+                query = query.Where(p => p.Timestamp <= endDate.Value.AddDays(1)); // Inclure toute la journée de fin
+
+            var positions = await query.OrderBy(p => p.Timestamp).ToListAsync();
+
+            if (positions.Count < 2)
+            {
+                return 0; // Pas assez de données pour calculer
+            }
+
+            decimal totalStopTimeMinutes = 0;
+            const double stopThresholdSpeed = 5.0; // km/h - en dessous = arrêt
+            const double minStopDuration = 5.0; // minutes - durée minimum pour considérer un arrêt
+
+            for (int i = 1; i < positions.Count; i++)
+            {
+                var prevPos = positions[i - 1];
+                var currentPos = positions[i];
+
+                // Calculer le temps écoulé entre deux points (en minutes)
+                var timeDiff = (currentPos.Timestamp - prevPos.Timestamp).TotalMinutes;
+
+                if (timeDiff < 1) continue; // Ignorer les points trop rapprochés
+
+                // Calculer la distance entre deux points (en km)
+                var distance = CalculateDistance(
+                    (double)prevPos.Latitude, (double)prevPos.Longitude,
+                    (double)currentPos.Latitude, (double)currentPos.Longitude
+                );
+
+                // Calculer la vitesse moyenne (km/h)
+                var speedKmh = (distance / timeDiff) * 60;
+
+                // Si la vitesse est inférieure au seuil ET la durée est suffisante
+                if (speedKmh < stopThresholdSpeed && timeDiff >= minStopDuration)
+                {
+                    totalStopTimeMinutes += (decimal)timeDiff;
+                }
+            }
+
+            // Convertir en heures
+            var totalStopTimeHours = totalStopTimeMinutes / 60;
+            return Math.Round(totalStopTimeHours, 2);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error calculating stop time from GPS: {ex.Message}");
+            return 0; // En cas d'erreur, retourner 0
+        }
+    }
+
+    /// <summary>
+    /// Calcule la distance entre deux points GPS en utilisant la formule de Haversine
+    /// </summary>
+    private double CalculateDistance(double lat1, double lon1, double lat2, double lon2)
+    {
+        const double EarthRadiusKm = 6371.0;
+
+        var dLat = ToRadians(lat2 - lat1);
+        var dLon = ToRadians(lon2 - lon1);
+
+        var a = Math.Sin(dLat / 2) * Math.Sin(dLat / 2) +
+                Math.Cos(ToRadians(lat1)) * Math.Cos(ToRadians(lat2)) *
+                Math.Sin(dLon / 2) * Math.Sin(dLon / 2);
+
+        var c = 2 * Math.Atan2(Math.Sqrt(a), Math.Sqrt(1 - a));
+
+        return EarthRadiusKm * c;
+    }
+
+    private double ToRadians(double degrees)
+    {
+        return degrees * Math.PI / 180;
     }
 
     public async Task<DriverDetailedStatisticsDto?> GetDriverDetailedStatisticsAsync(StatisticsFilterDto filter)
