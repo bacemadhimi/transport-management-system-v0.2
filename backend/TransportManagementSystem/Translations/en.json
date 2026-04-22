@@ -616,7 +616,27 @@
   "UNCHECK": "Uncheck",
   "SELECTED": "Selected",
   "TRUE": "True",
-  "FALSE": "False"
-
+  "FALSE": "False",
+  "TYPE_TRUCK_ADD_SUCCESS": "Vehicle type added successfully",
+  "TYPE_TRUCK_EDIT_SUCCESS": "Vehicle type updated successfully",
+  "TYPE_REQUIRED": "Type is required",
+  "UNIT_REQUIRED": "Unit is required",
+  "CAPACITY_MIN_ERROR": "Capacity must be greater than 0",
+  "OPERATION_ERROR": "An error occurred during the operation",
+  "TYPE_TRUCK_ADD_TITLE": "Add Vehicle Type",
+  "TYPE_TRUCK_EDIT_TITLE": "Edit Vehicle Type",
+  "TYPE_LABEL": "Type",
+  "TYPE_TRUCK_LIST_TITLE": "Vehicle Types List",
+  "SEARCH_TYPE_TRUCK": "Search type",
+  "SEARCH_TYPE_TRUCK_PLACEHOLDER": "Vehicle type",
+  "ADD_TYPE_TRUCK": "Add",
+  "UNIT_LABEL": "Unit",
+  "TONNES": "Tons",
+  "PALETTES": "Pallets",
+  "CARTONS": "Boxes",
+  "KG": "KG",
+  "TYPE_TRUCK_DELETE_CONFIRM": "Are you sure you want to delete type",
+  "TYPE_TRUCK_DELETE_SUCCESS": "Vehicle type deleted successfully",
+  "TYPE_TRUCK_DELETE_ERROR": "An error occurred while deleting"
 
 }

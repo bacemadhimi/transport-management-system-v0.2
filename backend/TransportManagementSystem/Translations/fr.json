@@ -620,7 +620,28 @@
   "TRUE": "Vrai",
   "FALSE": "Faux",
   "RESTORE": "Restaurer",
-  "DEFAULT": "Par défaut"
+  "DEFAULT": "Par défaut",
+  "TYPE_TRUCK_ADD_SUCCESS": "Type de camion ajouté avec succès",
+  "TYPE_TRUCK_EDIT_SUCCESS": "Type de camion modifié avec succès",
+  "TYPE_REQUIRED": "Le type est obligatoire",
+  "UNIT_REQUIRED": "L'unité est obligatoire",
+  "CAPACITY_MIN_ERROR": "La capacité doit être supérieure à 0",
+  "OPERATION_ERROR": "Une erreur est survenue lors de l'opération",
+  "TYPE_TRUCK_ADD_TITLE": "Ajouter Type de camion",
+  "TYPE_TRUCK_EDIT_TITLE": "Modifier Type de camion",
+  "TYPE_LABEL": "Type",
+  "TYPE_TRUCK_LIST_TITLE": "Liste des types de camions",
+  "SEARCH_TYPE_TRUCK": "Chercher type",
+  "SEARCH_TYPE_TRUCK_PLACEHOLDER": "Type de camion",
+  "ADD_TYPE_TRUCK": "Ajouter",
+  "UNIT_LABEL": "Unité",
+  "TONNES": "Tonnes",
+  "PALETTES": "Palettes",
+  "CARTONS": "Cartons",
+  "KG": "KG",
+  "TYPE_TRUCK_DELETE_CONFIRM": "Voulez-vous vraiment supprimer le type",
+  "TYPE_TRUCK_DELETE_SUCCESS": "Le type de camion a été supprimé avec succès",
+  "TYPE_TRUCK_DELETE_ERROR": "Une erreur est survenue lors de la suppression"
 }
 
 
