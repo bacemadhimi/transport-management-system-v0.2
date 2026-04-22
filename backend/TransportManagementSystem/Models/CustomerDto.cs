@@ -19,6 +19,9 @@ namespace TransportManagementSystem.Models
         public string? PhoneCountry { get; set; }
         public string? Email { get; set; }
         public string Matricule { get; set; } = string.Empty;
+        public double? Latitude { get; set; }
+        public double? Longitude { get; set; }
+        public string? Address { get; set; }
         public string? Contact { get; set; }
         public string SourceSystem { get; set; } = "TMS";
         public List<CustomerGeographicalEntityDto> GeographicalEntities { get; set; } = new();
