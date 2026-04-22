@@ -19,6 +19,7 @@ import autoTable from 'jspdf-autotable';
 import { FuelForm } from './fuel-form/fuel-form';
 import { Auth } from '../../services/auth';
 import { CommonModule } from '@angular/common';
+import { IMarque } from '../../types/marque'; 
 
 @Component({
   selector: 'app-fuel',
@@ -38,26 +39,15 @@ import { CommonModule } from '@angular/common';
   styleUrls: ['./fuel.scss']
 })
 export class Fuel implements OnInit {
-      constructor(public auth: Auth) {}
-
-      getActions(row: any, actions: string[]) {
-        const permittedActions: string[] = [];
-
-        for (const a of actions) {
-          if (a === 'Modifier' && this.auth.hasPermission('FUEL_EDIT')) {
-            permittedActions.push(a);
-          }
-          if (a === 'Supprimer' && this.auth.hasPermission('FUEL_DISABLE')) {
-            permittedActions.push(a);
-          }
-        }
-
-        return permittedActions;
-      }
+  constructor(public auth: Auth) {}
 
   httpService = inject(Http);
   pagedFuelData!: PagedData<IFuel>;
   totalData!: number;
+  
+  
+  marques: IMarque[] = [];
+  marqueMap: Map<number, string> = new Map();
 
   filter: any = {
     pageIndex: 0,
@@ -68,12 +58,41 @@ export class Fuel implements OnInit {
   router = inject(Router);
   readonly dialog = inject(MatDialog);
 
-  showCols = [
+ 
+  getMarqueName(marqueId?: number): string {
+    if (!marqueId) return 'N/A';
+    return this.marqueMap.get(marqueId) || `Marque #${marqueId}`;
+  }
 
+  
+  getTruckDisplayName(row: IFuel): string {
+    if (row.truck) {
+      const brandName = this.getMarqueName(row.truck.marqueTruckId);
+      return `${brandName} - ${row.truck.immatriculation}`;
+    }
+    return `Camion #${row.truckId}`;
+  }
+
+  getActions(row: any, actions: string[]) {
+    const permittedActions: string[] = [];
+
+    for (const a of actions) {
+      if (a === 'Modifier' && this.auth.hasPermission('FUEL_EDIT')) {
+        permittedActions.push(a);
+      }
+      if (a === 'Supprimer' && this.auth.hasPermission('FUEL_DISABLE')) {
+        permittedActions.push(a);
+      }
+    }
+
+    return permittedActions;
+  }
+
+  showCols = [
     {
       key: 'truck',
       label: 'Camion',
-      format: (row: IFuel) => row.truck ? `${row.truck.brand} - ${row.truck.immatriculation}` : `Camion #${row.truckId}`
+      format: (row: IFuel) => this.getTruckDisplayName(row) 
     },
     {
       key: 'driver',
@@ -109,6 +128,7 @@ export class Fuel implements OnInit {
   ];
 
   ngOnInit() {
+    this.loadMarques(); 
     this.getLatestData();
     this.searchControl.valueChanges.pipe(debounceTime(250))
       .subscribe((value: string | null) => {
@@ -116,6 +136,40 @@ export class Fuel implements OnInit {
         this.filter.pageIndex = 0;
         this.getLatestData();
       });
+  }
+
+  
+  private loadMarques(): void {
+    this.httpService.getMarqueTrucks().subscribe({
+      next: (response) => {
+        let marquesData: IMarque[];
+
+        if (response && typeof response === 'object' && 'data' in response) {
+          marquesData = (response as any).data;
+        } else if (Array.isArray(response)) {
+          marquesData = response;
+        } else {
+          marquesData = [];
+        }
+
+        this.marques = marquesData;
+
+        this.marqueMap.clear();
+        this.marques.forEach(marque => {
+          this.marqueMap.set(marque.id, marque.name);
+        });
+
+        console.log('✅ Marques loaded for Fuel:', this.marques.length);
+        
+        // Refresh table data after marques are loaded to update display
+        if (this.pagedFuelData) {
+          this.pagedFuelData = { ...this.pagedFuelData };
+        }
+      },
+      error: (error) => {
+        console.error('Error loading marques:', error);
+      }
+    });
   }
 
   getLatestData() {
@@ -140,7 +194,7 @@ export class Fuel implements OnInit {
   }
 
   delete(fuel: IFuel) {
-    const truckInfo = fuel.truck ? `${fuel.truck.brand} - ${fuel.truck.immatriculation}` : `Camion #${fuel.truckId}`;
+    const truckInfo = this.getTruckDisplayName(fuel); 
     if (confirm(`Voulez-vous vraiment supprimer le remplissage de carburant pour ${truckInfo}?`)) {
       this.httpService.deleteFuel(fuel.id).subscribe(() => {
         alert("Remplissage de carburant supprimé avec succès");
@@ -176,7 +230,7 @@ export class Fuel implements OnInit {
       ['ID', 'Camion', 'Chauffeur', 'Date Remplissage', 'Quantité (L)', 'Compteur KM', 'Montant (€)', 'Type Carburant', 'Fournisseur', 'Commentaire'],
       ...rows.map(f => [
         f.id,
-        f.truck ? `${f.truck.brand} - ${f.truck.immatriculation}` : `Camion #${f.truckId}`,
+        this.getTruckDisplayName(f), 
         f.driver ? f.driver.name : `Chauffeur #${f.driverId}`,
         f.fillDate ? new Date(f.fillDate).toLocaleDateString('fr-FR') : 'N/A',
         f.quantity,
@@ -200,7 +254,7 @@ export class Fuel implements OnInit {
   exportExcel() {
     const data = this.pagedFuelData?.data.map(f => ({
       ID: f.id,
-      Camion: f.truck ? `${f.truck.brand} - ${f.truck.immatriculation}` : `Camion #${f.truckId}`,
+      Camion: this.getTruckDisplayName(f), 
       Chauffeur: f.driver ? f.driver.name : `Chauffeur #${f.driverId}`,
       'Date Remplissage': f.fillDate ? new Date(f.fillDate).toLocaleDateString('fr-FR') : 'N/A',
       'Quantité (L)': f.quantity,
@@ -232,7 +286,6 @@ export class Fuel implements OnInit {
   exportPDF() {
     const doc = new jsPDF();
 
-
     doc.setFontSize(16);
     doc.text('Rapport des Remplissages Carburant', 14, 22);
     doc.setFontSize(10);
@@ -245,7 +298,7 @@ export class Fuel implements OnInit {
       head: [['ID', 'Camion', 'Chauffeur', 'Date', 'Quantité (L)', 'KM', 'Montant (€)', 'Type', 'Fournisseur']],
       body: rows.map(f => [
         f.id,
-        f.truck ? `${f.truck.brand}\n${f.truck.immatriculation}` : `Camion #${f.truckId}`,
+        this.getTruckDisplayName(f), 
         f.driver ? f.driver.name : `Chauffeur #${f.driverId}`,
         f.fillDate ? new Date(f.fillDate).toLocaleDateString('fr-FR') : 'N/A',
         f.quantity,
@@ -258,7 +311,6 @@ export class Fuel implements OnInit {
       styles: { fontSize: 8 },
       headStyles: { fillColor: [41, 128, 185] }
     });
-
 
     const totalQuantity = rows.reduce((sum, f) => sum + (f.quantity || 0), 0);
     const totalAmount = rows.reduce((sum, f) => sum + (f.amount || 0), 0);
