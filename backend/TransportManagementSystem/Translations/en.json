@@ -717,7 +717,17 @@
   "TOTAL_COST": "Total Cost",
   "ACTIVE_MAINTENANCES": "Active Maintenances",
   "COMPLETED_MAINTENANCES": "Completed Maintenances",
-  "COST_EUR": "Cost (Dt)"
+  "COST_EUR": "Cost (Dt)",
+  "IMPORT_HOLIDAYS": "Import Holidays",
+  "IMPORT_HOLIDAYS_TITLE": "Import Public Holidays",
+  "IMPORT_HOLIDAYS_DESC": "Select the year and country to import official public holidays from the Nager.Date API.",
+  "FETCHING_HOLIDAYS": "Fetching holidays...",
+  "HOLIDAYS_FOUND": "holidays found",
+  "MORE_HOLIDAYS": "more",
+  "AND": "and",
+  "IMPORT_FETCH_ERROR": "Error fetching holidays from external API.",
+  "PLEASE_SELECT_YEAR_COUNTRY": "Please select a year and country",
+  "YEAR": "Year"
 
 
 
