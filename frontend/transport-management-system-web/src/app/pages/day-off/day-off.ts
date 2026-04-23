@@ -1,5 +1,6 @@
 ﻿import { Component, OnInit, inject } from '@angular/core';
 import { Http } from '../../services/http';
+import { HttpClient } from '@angular/common/http';
 import { Table } from '../../components/table/table';
 import { MatButtonModule } from '@angular/material/button';
 import { FormControl, FormsModule, ReactiveFormsModule } from '@angular/forms';
@@ -23,6 +24,7 @@ import { CommonModule } from '@angular/common';
 import { Translation } from '../../services/Translation';
 import Swal from 'sweetalert2';
 import { MatIconModule } from '@angular/material/icon';
+import { environment } from '../../../environments/environment';
 
 @Component({
   selector: 'app-dayoff',
@@ -48,6 +50,7 @@ export class DayOff implements OnInit {
   constructor(public auth: Auth) {}
 
   httpService = inject(Http);
+  private httpClient = inject(HttpClient);
   pagedDayOffData!: PagedData<IDayOff>;
   totalData!: number;
 
@@ -241,6 +244,167 @@ export class DayOff implements OnInit {
       this.delete(event.rowData);
     }
   }
+
+  // ==================== IMPORT PUBLIC HOLIDAYS ====================
+
+  openImportDialog() {
+    Swal.fire({
+      title: this.t('IMPORT_HOLIDAYS_TITLE'),
+      html: `
+        <div style="text-align: left;">
+          <p style="margin-bottom: 16px; color: #6b7280;">${this.t('IMPORT_HOLIDAYS_DESC')}</p>
+          <div style="margin: 16px 0;">
+            <label style="display: block; margin-bottom: 8px; font-weight: 500; color: #374151;">${this.t('YEAR')}</label>
+            <select id="importYear" class="swal2-input" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #d1d5db;">
+              <option value="${this.currentYear}">${this.currentYear}</option>
+              <option value="${this.currentYear + 1}">${this.currentYear + 1}</option>
+            </select>
+          </div>
+          <div style="margin: 16px 0;">
+            <label style="display: block; margin-bottom: 8px; font-weight: 500; color: #374151;">${this.t('COUNTRY')}</label>
+            <select id="importCountry" class="swal2-input" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #d1d5db;">
+              <option value="TN">${this.t('TUNISIA')}</option>
+              <option value="FR">${this.t('FRANCE')}</option>
+              <option value="DZ">${this.t('ALGERIA')}</option>
+              <option value="MA">${this.t('MOROCCO')}</option>
+            </select>
+          </div>
+        </div>
+      `,
+      showCancelButton: true,
+      confirmButtonText: this.t('IMPORT'),
+      cancelButtonText: this.t('CANCEL'),
+      confirmButtonColor: '#10b981',
+      preConfirm: () => {
+        const year = (document.getElementById('importYear') as HTMLSelectElement)?.value;
+        const country = (document.getElementById('importCountry') as HTMLSelectElement)?.value;
+        if (!year || !country) {
+          Swal.showValidationMessage(this.t('PLEASE_SELECT_YEAR_COUNTRY'));
+          return false;
+        }
+        return { year, country };
+      }
+    }).then((result) => {
+      if (result.isConfirmed && result.value) {
+        this.fetchPublicHolidays(result.value.year, result.value.country);
+      }
+    });
+  }
+
+  fetchPublicHolidays(year: string, countryCode: string) {
+    Swal.fire({
+      title: this.t('FETCHING_HOLIDAYS'),
+      text: this.t('PLEASE_WAIT'),
+      allowOutsideClick: false,
+      didOpen: () => {
+        Swal.showLoading();
+      }
+    });
+
+    const url = `https://date.nager.at/api/v3/PublicHolidays/${year}/${countryCode}`;
+    
+    this.httpClient.get<any[]>(url).subscribe({
+      next: (holidays) => {
+        Swal.close();
+        
+        if (!holidays || holidays.length === 0) {
+          Swal.fire({
+            icon: 'info',
+            title: this.t('NO_HOLIDAYS_FOUND'),
+            text: this.t('NO_HOLIDAYS_FOUND_DESC'),
+            confirmButtonText: this.t('OK')
+          });
+          return;
+        }
+
+        const previewHtml = holidays.slice(0, 10).map(h => 
+          `<tr>
+            <td style="padding: 8px; border-bottom: 1px solid #e5e7eb;">${h.localName || h.name}</td>
+            <td style="padding: 8px; border-bottom: 1px solid #e5e7eb;">${new Date(h.date).toLocaleDateString('fr-FR')}</td>
+          </tr>`
+        ).join('');
+
+        Swal.fire({
+          title: `${holidays.length} ${this.t('HOLIDAYS_FOUND')}`,
+          html: `
+            <div style="text-align: left;">
+              <p style="margin-bottom: 12px; color: #6b7280;">${this.t('IMPORT_CONFIRM_DESC')}</p>
+              <div style="max-height: 250px; overflow-y: auto; margin: 12px 0;">
+                <table style="width: 100%; font-size: 14px; border-collapse: collapse;">
+                  <thead>
+                    <tr style="background: #f9fafb;">
+                      <th style="padding: 8px; text-align: left; font-weight: 600;">${this.t('NAME')}</th>
+                      <th style="padding: 8px; text-align: left; font-weight: 600;">${this.t('DATE')}</th>
+                    </tr>
+                  </thead>
+                  <tbody>${previewHtml}</tbody>
+                </table>
+                ${holidays.length > 10 ? `<p style="text-align: center; margin-top: 8px; color: #6b7280;">... ${this.t('AND')} ${holidays.length - 10} ${this.t('MORE_HOLIDAYS')}</p>` : ''}
+              </div>
+            </div>
+          `,
+          showCancelButton: true,
+          confirmButtonText: this.t('IMPORT'),
+          cancelButtonText: this.t('CANCEL'),
+          confirmButtonColor: '#10b981'
+        }).then((result) => {
+          if (result.isConfirmed) {
+            this.importHolidaysToBackend(year, countryCode);
+          }
+        });
+      },
+      error: (error) => {
+        Swal.close();
+        console.error('Error fetching holidays:', error);
+        Swal.fire({
+          icon: 'error',
+          title: this.t('ERROR'),
+          text: this.t('IMPORT_FETCH_ERROR'),
+          confirmButtonText: this.t('OK')
+        });
+      }
+    });
+  }
+
+  importHolidaysToBackend(year: string, countryCode: string) {
+    Swal.fire({
+      title: this.t('IMPORTING'),
+      text: this.t('PLEASE_WAIT'),
+      allowOutsideClick: false,
+      didOpen: () => {
+        Swal.showLoading();
+      }
+    });
+
+    this.httpClient.post(`${environment.apiUrl}/api/DayOff/import-public-holidays`, {
+      year: parseInt(year),
+      countryCode: countryCode
+    }).subscribe({
+      next: (response: any) => {
+        Swal.close();
+        Swal.fire({
+          icon: 'success',
+          title: this.t('IMPORT_SUCCESS'),
+          text: `${this.t('IMPORTED')}: ${response.importedCount} | ${this.t('SKIPPED')}: ${response.skippedCount}`,
+          confirmButtonText: this.t('OK')
+        }).then(() => {
+          this.getLatestData();
+        });
+      },
+      error: (error) => {
+        Swal.close();
+        console.error('Error importing holidays:', error);
+        Swal.fire({
+          icon: 'error',
+          title: this.t('ERROR'),
+          text: this.t('IMPORT_SAVE_ERROR'),
+          confirmButtonText: this.t('OK')
+        });
+      }
+    });
+  }
+
+  // ==================== EXPORTS ====================
 
   exportCSV() {
     const rows = this.pagedDayOffData?.data || [];

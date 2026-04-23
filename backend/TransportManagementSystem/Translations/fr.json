@@ -721,7 +721,17 @@
   "TOTAL_COST": "Coût Total",
   "ACTIVE_MAINTENANCES": "Maintenances Actives",
   "COMPLETED_MAINTENANCES": "Maintenances Terminées",
-  "COST_EUR": "Coût (Dt)"
+  "COST_EUR": "Coût (Dt)",
+  "IMPORT_HOLIDAYS": "Importer Jours Fériés",
+  "IMPORT_HOLIDAYS_TITLE": "Importer des Jours Fériés",
+  "IMPORT_HOLIDAYS_DESC": "Sélectionnez l'année et le pays pour importer les jours fériés officiels depuis l'API Nager.Date.",
+  "FETCHING_HOLIDAYS": "Récupération des jours fériés...",
+  "HOLIDAYS_FOUND": "jours fériés trouvés",
+  "MORE_HOLIDAYS": "autres",
+  "AND": "et",
+  "IMPORT_FETCH_ERROR": "Erreur lors de la récupération des jours fériés depuis l'API externe.",
+  "PLEASE_SELECT_YEAR_COUNTRY": "Veuillez sélectionner une année et un pays",
+  "YEAR": "Année"
 }
 
 
