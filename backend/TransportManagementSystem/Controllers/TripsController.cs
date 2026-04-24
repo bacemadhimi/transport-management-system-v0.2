@@ -547,8 +547,29 @@ public class TripsController : ControllerBase
                 var destination = model.DestinationAddress;
                 if (string.IsNullOrEmpty(destination))
                 {
+                    // Try to get address from last delivery customer
                     var lastDelivery = trip.Deliveries?.LastOrDefault();
-                    destination = lastDelivery?.DeliveryAddress ?? "Non définie";
+                    if (lastDelivery != null && lastDelivery.CustomerId > 0)
+                    {
+                        var customer = await context.Customers.FindAsync(lastDelivery.CustomerId);
+                        if (customer != null)
+                        {
+                            // Use customer address if available, otherwise use name
+                            destination = !string.IsNullOrEmpty(customer.Address) 
+                                ? customer.Address 
+                                : customer.Name ?? "Non définie";
+                            
+                            _logger.LogInformation($"📍 Notification destination set from customer: {destination}");
+                        }
+                        else
+                        {
+                            destination = lastDelivery.DeliveryAddress ?? "Non définie";
+                        }
+                    }
+                    else
+                    {
+                        destination = lastDelivery?.DeliveryAddress ?? "Non définie";
+                    }
                 }
 
                 _logger.LogInformation($"🔔 Step 1: Preparing notification for driver {model.DriverId}...");

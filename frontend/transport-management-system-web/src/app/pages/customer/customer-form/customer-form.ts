@@ -103,7 +103,7 @@ export class CustomerFormComponent implements OnInit, AfterViewInit, OnDestroy {
     address: ['', [Validators.maxLength(255)]],
     latitude: ['', [Validators.maxLength(50)]],
     longitude: ['', [Validators.maxLength(50)]],
-    geographicalEntityIds: [[], [Validators.required, Validators.minLength(1)]]
+    geographicalEntityIds: [[]] // Removed Validators - will be validated conditionally in onSubmit
   });
 
   ngOnInit() {
@@ -509,11 +509,12 @@ export class CustomerFormComponent implements OnInit, AfterViewInit, OnDestroy {
       return;
     }
 
-    if (this.selectedEntities.length === 0) {
+    // Validate geographical entities ONLY in manual mode
+    if (!this.isAutoAddressMode && this.selectedEntities.length === 0) {
       Swal.fire({
         icon: 'error',
         title: 'Erreur',
-        text: 'Au moins une localisation doit être sélectionnée'
+        text: 'Au moins une localisation doit être sélectionnée en mode manuel'
       });
       return;
     }

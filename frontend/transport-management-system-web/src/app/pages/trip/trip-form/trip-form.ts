@@ -1378,7 +1378,45 @@ private async checkAndDisplayTrajectStatus(trajectId: number): Promise<void> {
       deliveryGroup.get('orderId')?.setValue('');
 
       const customer = this.customers.find(c => c.id === customerId);
-
+      
+      // ✅ AUTO-LOAD customer GPS coordinates when customer is selected
+      if (customer && customer.latitude != null && customer.longitude != null) {
+        console.log(`✅ Customer ${customer.name} has GPS coordinates:`, {
+          lat: customer.latitude,
+          lng: customer.longitude,
+          address: customer.address
+        });
+        
+        // Update geolocation field
+        const geolocationValue = `${parseFloat(customer.latitude.toString()).toFixed(6)},${parseFloat(customer.longitude.toString()).toFixed(6)}`;
+        deliveryGroup.patchValue({
+          geolocation: geolocationValue,
+          deliveryAddress: customer.address || ''
+        }, { emitEvent: false });
+        
+        // IMPORTANT: Set destination coords for trip creation
+        this.selectedDestinationCoords = {
+          lat: parseFloat(customer.latitude.toString()),
+          lng: parseFloat(customer.longitude.toString()),
+          address: customer.address || ''
+        };
+        
+        console.log(`📍 Destination coords auto-loaded from customer:`, this.selectedDestinationCoords);
+        
+        this.snackBar.open(`✅ Coordonnées GPS du client chargées automatiquement`, 'Fermer', {
+          duration: 3000,
+          horizontalPosition: 'right',
+          verticalPosition: 'top'
+        });
+      } else {
+        console.warn(`⚠️ Customer ${customer?.name || 'ID:' + customerId} has NO GPS coordinates`);
+        this.snackBar.open(`⚠️ Ce client n'a pas de coordonnées GPS. Veuillez sélectionner une adresse.`, 'Fermer', {
+          duration: 5000,
+          horizontalPosition: 'right',
+          verticalPosition: 'top',
+          panelClass: ['warning-snackbar']
+        });
+      }
     }
   }
 
