@@ -1,4 +1,4 @@
-﻿import { Component, inject, OnInit } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
 import { Http } from '../../services/http';
 import { Table } from '../../components/table/table';
 import { ICustomer } from '../../types/customer';
@@ -128,6 +128,22 @@ loadGeographicalEntities() {
   getEntityName(entityId: number): string {
     const entity = this.geographicalEntities.find(e => e.id === entityId);
     return entity?.name || '';
+  }
+
+  /**
+   * Vérifie si un client a des coordonnées GPS valides
+   * @param customer Le client à vérifier
+   * @returns true si le client a latitude ET longitude non null
+   */
+  hasValidGpsCoordinates(customer: ICustomer): boolean {
+    return customer.latitude != null && 
+           customer.longitude != null && 
+           !isNaN(customer.latitude) && 
+           !isNaN(customer.longitude) &&
+           customer.latitude >= -90 && 
+           customer.latitude <= 90 &&
+           customer.longitude >= -180 && 
+           customer.longitude <= 180;
   }
 
   getLatestData() {

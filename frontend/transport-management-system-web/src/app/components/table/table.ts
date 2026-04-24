@@ -1,4 +1,4 @@
-﻿import { Component, EventEmitter, Input, Output, output, ViewChild } from '@angular/core';
+import { Component, EventEmitter, Input, Output, output, ViewChild } from '@angular/core';
 import { MatTableModule } from '@angular/material/table';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
@@ -154,5 +154,24 @@ getActionIcon(action: string): string {
 
     default: return action.toLowerCase();
   }
+}
+
+/**
+ * Vérifie si la ligne doit être surlignée en rouge (client sans GPS)
+ * Cette méthode est appelée pour chaque ligne du tableau
+ */
+shouldHighlightMissingGps(row: any): boolean {
+  // Vérifier si c'est un objet customer avec latitude/longitude
+  if (row && typeof row === 'object') {
+    // Si l'objet a latitude et longitude, vérifier s'ils sont valides
+    if ('latitude' in row || 'longitude' in row) {
+      const hasLat = row.latitude != null && !isNaN(row.latitude);
+      const hasLon = row.longitude != null && !isNaN(row.longitude);
+      
+      // Retourner true si les coordonnées manquent (à surligner en rouge)
+      return !(hasLat && hasLon);
+    }
+  }
+  return false;
 }
 }
