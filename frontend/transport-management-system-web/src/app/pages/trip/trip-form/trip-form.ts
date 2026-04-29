@@ -187,6 +187,10 @@ export class TripForm implements OnInit {
   showTripStopsPreview = false; // Contrôle l'affichage de la carte récapitulative
   recapMap: any = null; // Référence pour la carte Leaflet de récapitulation
   recapMarkerLayer: any = null; // Couche de marqueurs pour la carte récapitulative
+  
+  // ✅ NOUVEAU: Carte récapitulative avant création du voyage
+  showRecapMap = false; // Contrôle l'affichage de la section carte récapitulative
+  allTripStops: any[] = []; // Tous les arrêts du voyage pour affichage récapitulatif
 
   // Filtres hiérarchiques pour camions
   truckSelectedLevelIds: (number | null)[] = [];
@@ -9927,5 +9931,291 @@ private geocodeAndSaveDestination(tripId: number, address: string): void {
     .catch(error => {
       console.error('❌ Error geocoding address:', error);
     });
+}
+
+// ✅ NOUVEAU: Méthodes pour la carte récapitulative avant création
+
+/**
+ * Basculer l'affichage de la carte récapitulative
+ */
+toggleRecapMap(): void {
+  this.showRecapMap = !this.showRecapMap;
+  
+  if (this.showRecapMap) {
+    // Préparer les données des arrêts
+    this.prepareTripStopsForPreview();
+    
+    // Initialiser la carte après un court délai pour s'assurer que le DOM est prêt
+    setTimeout(() => {
+      this.initializeRecapMap();
+    }, 100);
+  } else {
+    // Nettoyer la carte si elle existe
+    if (this.recapMap) {
+      this.recapMap.remove();
+      this.recapMap = null;
+    }
+  }
+}
+
+/**
+ * Préparer les données des arrêts pour la carte récapitulative
+ */
+prepareTripStopsForPreview(): void {
+  this.allTripStops = [];
+  
+  console.log('🔍 DEBUG - prepareTripStopsForPreview called');
+  console.log('🔍 Deliveries length:', this.deliveries.length);
+  console.log('🔍 Customers count:', this.customers.length);
+  console.log('🔍 All orders count:', this.allOrders?.length || 0);
+  
+  // Récupérer toutes les commandes sélectionnées dans les deliveries
+  const deliveries = this.deliveries.value || [];
+  
+  if (deliveries.length === 0) {
+    console.warn('⚠️ No deliveries found! Cannot prepare trip stops.');
+    return;
+  }
+  
+  deliveries.forEach((delivery: any, index: number) => {
+    console.log(`🔍 Delivery ${index}:`, delivery);
+    
+    // Essayer différentes structures possibles
+    const customerId = delivery.customerId || delivery.customer?.id;
+    const orderId = delivery.orderId || delivery.orderIds?.[0];
+    
+    // 🔑 CLÉ : Récupérer l'adresse et les coordonnées depuis la COMMANDE
+    let address = delivery.deliveryAddress || delivery.address || delivery.destinationAddress;
+    let latitude = delivery.latitude || delivery.geolocation?.lat;
+    let longitude = delivery.longitude || delivery.geolocation?.lng;
+    let customerName = delivery.customer?.name || delivery.customerName;
+    
+    // Si pas d'adresse dans le delivery, la chercher depuis la commande
+    if ((!address || !latitude || !longitude) && orderId) {
+      console.log(`🔍 Searching for order ${orderId} in allOrders...`);
+      const order = this.allOrders?.find(o => o.id === orderId);
+      
+      if (order) {
+        console.log(`✅ Found order ${orderId}:`, order);
+        address = address || order.deliveryAddress;
+        
+        // 🔑 Les coordonnées GPS viennent du CLIENT de la commande
+        if (order.customer) {
+          latitude = latitude || order.customer.latitude;
+          longitude = longitude || order.customer.longitude;
+          customerName = customerName || order.customer.name;
+          console.log(`📍 Using customer coordinates from order: Lat=${latitude}, Lng=${longitude}`);
+        }
+        
+        console.log(`📍 Extracted from order - Address: ${address}, Lat: ${latitude}, Lng: ${longitude}`);
+      } else {
+        console.warn(`⚠️ Order ${orderId} not found in allOrders`);
+      }
+    }
+    
+    // Si toujours pas d'adresse, essayer depuis le client
+    if (!address && customerId) {
+      const customer = this.customers.find(c => c.id === customerId);
+      if (customer) {
+        address = customer.address;
+        latitude = customer.latitude;
+        longitude = customer.longitude;
+        customerName = customer.name;
+        console.log(`📍 Using customer address: ${address}`);
+      }
+    }
+    
+    console.log(`🔍 Final extracted - customerId: ${customerId}, address: ${address}, lat: ${latitude}, lng: ${longitude}`);
+    
+    if (customerId && address && latitude && longitude) {
+      // Trouver le client pour obtenir plus d'informations
+      const customer = this.customers.find(c => c.id === customerId);
+      console.log(`🔍 Customer for delivery ${index}:`, customer);
+      
+      // Trouver les commandes associées à ce delivery
+      const orderRefs = orderId ? `ORD${orderId}` : '';
+      
+      this.allTripStops.push({
+        sequence: index + 1,
+        customerId: customerId,
+        customerName: customerName || customer?.name || 'Client inconnu',
+        address: address,
+        latitude: latitude,
+        longitude: longitude,
+        orderReference: orderRefs,
+        orderId: orderId || null
+      });
+    } else {
+      console.warn(`⚠️ Delivery ${index} missing required data after extraction:`, {
+        customerId: customerId,
+        address: address,
+        latitude: latitude,
+        longitude: longitude,
+        delivery: delivery
+      });
+    }
+  });
+  
+  console.log('✅ Trip stops prepared for recap:', this.allTripStops.length, 'stops');
+  console.log('✅ All trip stops data:', this.allTripStops);
+}
+
+/**
+ * Initialiser la carte Leaflet pour la récapitulation
+ */
+initializeRecapMap(): void {
+  if (!this.allTripStops || this.allTripStops.length === 0) {
+    console.warn('⚠️ No stops to display on recap map');
+    return;
+  }
+  
+  // Vérifier si le conteneur existe
+  const mapContainer = document.getElementById('recapMapContainer');
+  if (!mapContainer) {
+    console.error('❌ Map container not found');
+    return;
+  }
+  
+  // Si la carte existe déjà, la supprimer
+  if (this.recapMap) {
+    this.recapMap.remove();
+  }
+  
+  // Créer la carte Leaflet
+  this.recapMap = L.map('recapMapContainer').setView([36.8, 10.2], 7);
+  
+  // Ajouter la couche OpenStreetMap
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap contributors',
+    maxZoom: 19
+  }).addTo(this.recapMap);
+  
+  // Créer un groupe de marqueurs
+  this.recapMarkerLayer = L.layerGroup().addTo(this.recapMap);
+  
+  // Ajouter les marqueurs pour chaque arrêt
+  const bounds = L.latLngBounds([]);
+  
+  this.allTripStops.forEach((stop, index) => {
+    if (stop.latitude && stop.longitude) {
+      // Couleur différente selon la position
+      let markerColor = '#0ea5e9'; // Bleu par défaut
+      let markerLabel = '📍';
+      if (index === 0) {
+        markerColor = '#10b981'; // Vert pour le premier arrêt
+        markerLabel = '🚀';
+      } else if (index === this.allTripStops.length - 1) {
+        markerColor = '#ef4444'; // Rouge pour le dernier arrêt
+        markerLabel = '🏁';
+      }
+      
+      // ✅ Créer un marqueur style Google Maps (pin SVG)
+      const pinIcon = L.divIcon({
+        className: 'custom-pin-marker',
+        html: `
+          <svg width="40" height="52" viewBox="0 0 40 52" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="grad${index}" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" style="stop-color:${markerColor};stop-opacity:1" />
+                <stop offset="100%" style="stop-color:${markerColor}dd;stop-opacity:1" />
+              </linearGradient>
+              <filter id="shadow${index}" x="-50%" y="-50%" width="200%" height="200%">
+                <feDropShadow dx="0" dy="2" stdDeviation="3" flood-opacity="0.3"/>
+              </filter>
+            </defs>
+            <!-- Pin shape -->
+            <path d="M20 0C8.954 0 0 8.954 0 20c0 15 20 32 20 32s20-17 20-32C40 8.954 31.046 0 20 0z" 
+                  fill="url(#grad${index})" 
+                  filter="url(#shadow${index})"
+                  stroke="white" 
+                  stroke-width="2"/>
+            <!-- Center circle -->
+            <circle cx="20" cy="18" r="10" fill="white" opacity="0.9"/>
+            <!-- Number or icon -->
+            <text x="20" y="22" text-anchor="middle" font-size="14" font-weight="bold" fill="${markerColor}">
+              ${index + 1}
+            </text>
+          </svg>
+        `,
+        iconSize: [40, 52],
+        iconAnchor: [20, 52],
+        popupAnchor: [0, -52]
+      });
+      
+      // Créer le marqueur
+      const marker = L.marker([stop.latitude, stop.longitude], { icon: pinIcon })
+        .addTo(this.recapMarkerLayer);
+      
+      // ✅ Popup amélioré avec tous les détails
+      const popupContent = `
+        <div style="min-width: 280px; padding: 8px;">
+          <div style="background: linear-gradient(135deg, ${markerColor}, ${markerColor}cc); padding: 12px; margin: -8px -8px 12px -8px; border-radius: 8px 8px 0 0; color: white;">
+            <h4 style="margin: 0; font-size: 16px; font-weight: 700; display: flex; align-items: center; gap: 8px;">
+              <span>${markerLabel}</span>
+              <span>Arrêt ${index + 1}</span>
+            </h4>
+          </div>
+          
+          <div style="margin-bottom: 12px;">
+            <div style="display: flex; align-items: flex-start; gap: 8px; margin-bottom: 8px;">
+              <span style="font-size: 18px;">📍</span>
+              <div>
+                <div style="font-size: 11px; color: #64748b; font-weight: 600; margin-bottom: 2px;">ADRESSE</div>
+                <div style="font-size: 13px; color: #1e293b; line-height: 1.4;">${stop.address}</div>
+              </div>
+            </div>
+            
+            ${stop.customerName ? `
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+              <span style="font-size: 18px;">👤</span>
+              <div>
+                <div style="font-size: 11px; color: #64748b; font-weight: 600; margin-bottom: 2px;">CLIENT</div>
+                <div style="font-size: 13px; color: #1e293b;">${stop.customerName}</div>
+              </div>
+            </div>
+            ` : ''}
+            
+            ${stop.orderReference ? `
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+              <span style="font-size: 18px;">📦</span>
+              <div>
+                <div style="font-size: 11px; color: #64748b; font-weight: 600; margin-bottom: 2px;">COMMANDE</div>
+                <div style="font-size: 13px; color: #1e293b; font-family: monospace; background: #f1f5f9; padding: 4px 8px; border-radius: 4px;">${stop.orderReference}</div>
+              </div>
+            </div>
+            ` : ''}
+            
+            ${stop.latitude && stop.longitude ? `
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="font-size: 18px;">🌐</span>
+              <div>
+                <div style="font-size: 11px; color: #64748b; font-weight: 600; margin-bottom: 2px;">COORDONNÉES GPS</div>
+                <div style="font-size: 12px; color: #475569; font-family: monospace;">${stop.latitude.toFixed(6)}, ${stop.longitude.toFixed(6)}</div>
+              </div>
+            </div>
+            ` : ''}
+          </div>
+        </div>
+      `;
+      
+      marker.bindPopup(popupContent, {
+        maxWidth: 320,
+        className: 'custom-popup'
+      });
+      
+      // Étendre les bounds pour inclure ce point
+      bounds.extend([stop.latitude, stop.longitude]);
+    }
+  });
+  
+  // Ajuster la vue pour montrer tous les marqueurs
+  if (bounds.isValid()) {
+    this.recapMap.fitBounds(bounds, {
+      padding: [50, 50],
+      maxZoom: 14
+    });
+  }
+  
+  console.log('✅ Recap map initialized with', this.allTripStops.length, 'stops');
 }
 }

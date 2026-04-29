@@ -1320,11 +1320,7 @@
               [class.selected]="isOrderSelected(order.id)"
               (click)="toggleOrderSelection(order)">
             
-            <div class="order-select-checkbox">
-              <mat-checkbox [checked]="isOrderSelected(order.id)"
-                          (click)="$event.stopPropagation(); toggleOrderSelection(order)">
-              </mat-checkbox>
-            </div>
+            <!-- ✅ Suppression checkbox - sélection directe par clic -->
             
             <div class="order-details">
               <div class="order-ref">{{ order.reference }}</div>
@@ -2761,6 +2757,73 @@
           </button>
         </div>
       </div>
+    </div>
+
+    <!-- ✅ Section: Carte récapitulative avant création -->
+    <div *ngIf="showRecapMap" class="recap-map-section" style="margin: 24px 0; padding: 24px; background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); border-radius: 16px; border: 2px solid #0ea5e9;">
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <div style="background: linear-gradient(135deg, #0ea5e9, #0284c7); padding: 12px; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+            <mat-icon style="color: white; font-size: 28px; width: 28px; height: 28px;">map</mat-icon>
+          </div>
+          <div>
+            <h4 style="margin: 0; font-size: 18px; font-weight: 700; color: #0c4a6e;">🗺️ Carte Récapitulative des Arrêts</h4>
+            <p style="margin: 4px 0 0 0; font-size: 13px; color: #0369a1;">Vérifiez la position exacte de tous les arrêts avant de créer le voyage</p>
+          </div>
+        </div>
+        <button mat-icon-button (click)="showRecapMap = false" style="background: rgba(255,255,255,0.8);">
+          <mat-icon style="color: #0c4a6e;">close</mat-icon>
+        </button>
+      </div>
+
+      <!-- Map Container -->
+      <div id="recapMapContainer" style="width: 100%; height: 500px; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.1); border: 2px solid #cbd5e1;"></div>
+
+      <!-- Stops Info Summary -->
+      <div *ngIf="allTripStops && allTripStops.length > 0" style="margin-top: 20px; padding: 20px; background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+        <h5 style="margin: 0 0 16px 0; font-size: 16px; font-weight: 600; color: #0c4a6e; display: flex; align-items: center; gap: 8px;">
+          <mat-icon style="font-size: 20px; color: #0ea5e9;">list</mat-icon>
+          Résumé des {{ allTripStops.length }} arrêt(s)
+        </h5>
+        
+        <div style="display: grid; gap: 12px;">
+          <div *ngFor="let stop of allTripStops; let i = index" 
+               style="padding: 12px 16px; background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); border-radius: 10px; border-left: 4px solid #0ea5e9; display: flex; align-items: center; gap: 12px;">
+            <div style="background: linear-gradient(135deg, #0ea5e9, #0284c7); color: white; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; flex-shrink: 0;">
+              {{ i + 1 }}
+            </div>
+            <div style="flex: 1; min-width: 0;">
+              <div style="font-weight: 600; color: #0c4a6e; font-size: 14px; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                {{ stop.address || 'Adresse non disponible' }}
+              </div>
+              <div style="font-size: 12px; color: #64748b; display: flex; gap: 16px; flex-wrap: wrap;">
+                <span *ngIf="stop.customerName" style="display: flex; align-items: center; gap: 4px;">
+                  <mat-icon style="font-size: 14px; width: 14px; height: 14px;">person</mat-icon>
+                  {{ stop.customerName }}
+                </span>
+                <span *ngIf="stop.orderReference" style="display: flex; align-items: center; gap: 4px;">
+                  <mat-icon style="font-size: 14px; width: 14px; height: 14px;">inventory_2</mat-icon>
+                  {{ stop.orderReference }}
+                </span>
+                <span *ngIf="stop.latitude && stop.longitude" style="display: flex; align-items: center; gap: 4px; font-family: monospace;">
+                  <mat-icon style="font-size: 14px; width: 14px; height: 14px;">location_on</mat-icon>
+                  {{ stop.latitude | number:'1.6-6' }}, {{ stop.longitude | number:'1.6-6' }}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bouton pour afficher/masquer la carte récapitulative -->
+    <div style="text-align: center; margin: 16px 0;">
+      <button mat-stroked-button (click)="toggleRecapMap()" type="button" 
+              [color]="showRecapMap ? 'warn' : 'primary'"
+              style="font-size: 15px; padding: 12px 24px; font-weight: 600;">
+        <mat-icon style="margin-right: 8px;">{{ showRecapMap ? 'visibility_off' : 'visibility' }}</mat-icon>
+        {{ showRecapMap ? 'Masquer la carte' : '🗺️ Voir la carte récapitulative des arrêts' }}
+      </button>
     </div>
 
     <!-- Form Footer -->
