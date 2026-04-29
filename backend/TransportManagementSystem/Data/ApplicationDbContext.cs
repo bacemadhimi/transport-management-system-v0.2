@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using TransportManagementSystem.Entity;
 using TransportManagementSystem.Entity.PlantIt;
 using TransportManagementSystem.Entity.PlantIt.TMS.Models;
@@ -29,6 +29,7 @@ namespace TransportManagementSystem.Data
         public DbSet<UserGroup2Right> UserGroup2Rights { get; set; }
 
         public DbSet<Delivery> Deliveries { get; set; }
+        public DbSet<TripStop> TripStops { get; set; }
         public DbSet<Order> Orders { get; set; }
         public DbSet<Traject> Trajects { get; set; }
         public DbSet<TrajectPoint> TrajectPoints { get; set; }
@@ -112,6 +113,15 @@ namespace TransportManagementSystem.Data
                 .Property(o => o.Status)
                 .HasConversion<string>();
 
+            // TripStop enum conversions
+            modelBuilder.Entity<TripStop>()
+                .Property(ts => ts.Type)
+                .HasConversion<string>();
+
+            modelBuilder.Entity<TripStop>()
+                .Property(ts => ts.Status)
+                .HasConversion<string>();
+
             modelBuilder.Entity<Truck>()
                 .Property(t => t.ImagesJson)
                 .HasColumnType("nvarchar(max)");
@@ -190,6 +200,25 @@ namespace TransportManagementSystem.Data
                 .WithMany(o => o.Deliveries)
                 .HasForeignKey(d => d.OrderId)
                 .OnDelete(DeleteBehavior.NoAction);
+
+            // TripStop configuration - Multi-stop support
+            modelBuilder.Entity<TripStop>()
+                .HasOne(ts => ts.Trip)
+                .WithMany(t => t.TripStops)
+                .HasForeignKey(ts => ts.TripId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<TripStop>()
+                .HasOne(ts => ts.Order)
+                .WithMany()
+                .HasForeignKey(ts => ts.OrderId)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            modelBuilder.Entity<TripStop>()
+                .HasOne(ts => ts.Customer)
+                .WithMany()
+                .HasForeignKey(ts => ts.CustomerId)
+                .OnDelete(DeleteBehavior.Restrict);
 
             modelBuilder.Entity<SyncHistoryDetail>()
                .HasOne(d => d.SyncHistory)

@@ -1250,3 +1250,153 @@
     }
   }
 }
+
+/* ═══════════════════════════════════════════
+   ✅ Section: Tous les arrêts du voyage
+   Professional orange gradient style
+   ═══════════════════════════════════════════ */
+.stops-section {
+  margin-top: 16px;
+  border-top: 2px solid #f0e6dd;
+  padding-top: 16px;
+}
+
+.stops-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  font-weight: 700;
+  color: #d35400;
+  margin-bottom: 12px;
+  padding: 0 4px;
+
+  ion-icon {
+    font-size: 20px;
+    color: #FF6B35;
+  }
+}
+
+.stops-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.stop-item {
+  display: flex;
+  gap: 12px;
+  padding: 12px 0;
+  position: relative;
+  
+  &:not(:last-child) {
+    border-bottom: 1px dashed #e8ddd3;
+  }
+}
+
+.stop-sequence {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  min-width: 32px;
+}
+
+.stop-badge {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 700;
+  font-size: 14px;
+  box-shadow: 0 2px 8px rgba(255, 107, 53, 0.3);
+  z-index: 2;
+  position: relative;
+  background: linear-gradient(135deg, #FF6B35 0%, #F7931E 100%);
+}
+
+.stop-connector {
+  width: 2px;
+  flex: 1;
+  background: linear-gradient(to bottom, #FFA500 0%, #FFE5CC 100%);
+  margin-top: 4px;
+  min-height: 20px;
+}
+
+.stop-details {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 4px;
+}
+
+.stop-address {
+  font-size: 13px;
+  font-weight: 600;
+  color: #2c3e50;
+  line-height: 1.4;
+}
+
+.stop-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  font-size: 11px;
+  color: #7f8c8d;
+
+  .stop-customer,
+  .stop-order {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+
+    ion-icon {
+      font-size: 13px;
+      color: #FF6B35;
+    }
+  }
+}
+
+.stop-route-info {
+  display: flex;
+  gap: 16px;
+  font-size: 11px;
+  color: #d35400;
+  font-weight: 600;
+  margin-top: 4px;
+  padding: 6px 10px;
+  background: linear-gradient(135deg, #fff5eb 0%, #ffe8d6 100%);
+  border-radius: 8px;
+  border-left: 3px solid #FF6B35;
+
+  .stop-distance,
+  .stop-duration {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+
+    ion-icon {
+      font-size: 13px;
+      color: #FF6B35;
+    }
+  }
+}
+
+// First and last stop special styling
+.stop-item-first {
+  .stop-badge {
+    background: linear-gradient(135deg, #FF6B35 0%, #FF8C42 100%);
+    box-shadow: 0 3px 12px rgba(255, 107, 53, 0.4);
+  }
+}
+
+.stop-item-last {
+  .stop-badge {
+    background: linear-gradient(135deg, #F7931E 0%, #FFA500 100%);
+    box-shadow: 0 3px 12px rgba(247, 147, 30, 0.4);
+  }
+}

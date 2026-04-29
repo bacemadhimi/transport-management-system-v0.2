@@ -1,4 +1,4 @@
-﻿
+
 using System.Text.Json.Serialization;
 
 namespace TransportManagementSystem.Entity;
@@ -34,6 +34,9 @@ public class Trip
     public string? Message { get; set; } 
 
     public ICollection<Delivery> Deliveries { get; set; } = new List<Delivery>();
+
+    // Multi-stops support for multi-client and multi-point trips
+    public ICollection<TripStop> TripStops { get; set; } = new List<TripStop>();
 
     public int? TrajectId { get; set; }
     public Traject? Traject { get; set; }

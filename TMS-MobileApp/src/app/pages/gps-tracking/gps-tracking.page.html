@@ -136,16 +136,6 @@
 
       <div class="trip-detail-row">
         <div class="detail-icon">
-          <ion-icon name="location"></ion-icon>
-        </div>
-        <div class="detail-content">
-          <div class="detail-label">Destination</div>
-          <div class="detail-value">{{ destinationAddress }}</div>
-        </div>
-      </div>
-
-      <div class="trip-detail-row">
-        <div class="detail-icon">
           <ion-icon name="car"></ion-icon>
         </div>
         <div class="detail-content">
@@ -201,6 +191,42 @@
         <div class="detail-content">
           <div class="detail-label">Statut Actuel</div>
           <div class="detail-value status-text status-{{ missionStatus }}">{{ getStatusText() }}</div>
+        </div>
+      </div>
+
+      <!-- ✅ Section: Tous les arrêts du voyage -->
+      <div *ngIf="allTripStops && allTripStops.length > 0" class="stops-section">
+        <div class="stops-header">
+          <ion-icon name="list"></ion-icon>
+          <span>{{ allTripStops.length }} Arrêt(s) - Itinéraire Complet</span>
+        </div>
+        
+        <div class="stops-list">
+          <div *ngFor="let stop of allTripStops; let i = index" 
+               class="stop-item"
+               [class.stop-item-first]="i === 0"
+               [class.stop-item-last]="i === allTripStops.length - 1">
+            
+            <div class="stop-sequence">
+              <div class="stop-badge" [style.background]="getStopBadgeColor(i)">
+                {{ stop.sequence }}
+              </div>
+              <div *ngIf="i < allTripStops.length - 1" class="stop-connector"></div>
+            </div>
+            
+            <div class="stop-details">
+              <div class="stop-address">{{ stop.address || 'Adresse non disponible' }}</div>
+              
+              <div class="stop-meta">
+                <span *ngIf="stop.customerName" class="stop-customer">
+                  <ion-icon name="person"></ion-icon> {{ stop.customerName }}
+                </span>
+                <span *ngIf="stop.orderReference" class="stop-order">
+                  <ion-icon name="cube"></ion-icon> {{ stop.orderReference }}
+                </span>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 

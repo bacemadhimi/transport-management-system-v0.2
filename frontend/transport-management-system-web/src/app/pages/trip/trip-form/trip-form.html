@@ -1,4 +1,4 @@
-﻿<div class="trip-form-wrapper">
+<div class="trip-form-wrapper">
   <div class="loading-overlay" *ngIf="loading">
     <mat-spinner diameter="50"></mat-spinner>
     <span>Chargement...</span>
@@ -1845,6 +1845,17 @@
                 Charger la météo
               </button>
             </div>
+            
+            <button 
+              *ngIf="deliveries.length > 0"
+              mat-raised-button 
+              color="primary"
+              (click)="calculateAndDisplayTripStops()"
+              class="preview-stops-btn"
+              matTooltip="Afficher la carte récapitulative">
+              <mat-icon>map</mat-icon>
+              Aperçu ({{ deliveries.length }})
+            </button>
           </div>
 
           <div class="weather-prompt" *ngIf="!shouldShowWeather() && shouldShowWeatherPrompt()">

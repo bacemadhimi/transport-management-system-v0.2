@@ -45,6 +45,26 @@ export class GPSTrackingPage implements OnInit, OnDestroy {
 
   currentLocation: { lat: number, lng: number } | null = null;
   destination: { lat: number, lng: number, address: string } | null = null;
+  
+  // ✅ NOUVEAU: Tous les arrêts du voyage (TripStops)
+  allTripStops: Array<{
+    id: number;
+    sequence: number;
+    type: string;
+    customerId: number;
+    customerName?: string;
+    orderId?: number;
+    orderReference?: string;
+    address: string;
+    latitude?: number;
+    longitude?: number;
+    geolocation?: string;
+    status?: string;
+    notes?: string;
+  }> = [];
+  
+  stopMarkers: L.Marker[] = []; // ✅ NOUVEAU: Tableau pour stocker tous les marqueurs d'arrêts
+  
   isTracking: boolean = false;
   speed: number = 0;
   accuracy: number = 0;
@@ -59,6 +79,10 @@ export class GPSTrackingPage implements OnInit, OnDestroy {
 
   // Mission status
   missionStatus: string = 'pending'; // pending, accepted, loading, delivery, completed
+
+  // ✅ Store destination coords from notification params to avoid overriding with TripStops
+  private destLatFromParams: string | null = null;
+  private destLngFromParams: string | null = null;
 
   // Voice Navigation
   voiceNavigationEnabled: boolean = false;
@@ -104,6 +128,10 @@ export class GPSTrackingPage implements OnInit, OnDestroy {
     // Read destination coordinates from query params (if available)
     const destLat = this.route.snapshot.queryParamMap.get('destinationLat');
     const destLng = this.route.snapshot.queryParamMap.get('destinationLng');
+    
+    // ✅ Store for later use in fetchTripDetails
+    this.destLatFromParams = destLat;
+    this.destLngFromParams = destLng;
 
     console.log('🗺️ GPS Tracking - Trip ID:', this.tripId);
     console.log('🏁 Destination from params:', this.destinationAddress);
@@ -122,16 +150,11 @@ export class GPSTrackingPage implements OnInit, OnDestroy {
         };
       }
     }
-    // If we have destination address but no coordinates, geocode it immediately
-    else if (this.destinationAddress && this.destinationAddress.trim() !== '' && this.destinationAddress !== 'Non définie') {
-      console.log('📍 Geocoding destination from address:', this.destinationAddress);
-      this.geocodeAddress(this.destinationAddress);
-    }
-    // If destination is still empty, try to fetch it from the trip details
-    else {
-      console.log('⚠️ No destination coords in params, will fetch from trip details');
-      this.fetchTripDetails();
-    }
+    
+    // ✅ TOUJOURS charger les détails du trip pour obtenir TOUS les TripStops
+    // Même si on a déjà une adresse ou des coordonnées dans les params
+    console.log('📡 Always fetching trip details to load ALL TripStops...');
+    this.fetchTripDetails();
 
     // Subscribe to connection status
     this.gpsService.getConnectionStatus().subscribe(status => {
@@ -203,6 +226,11 @@ export class GPSTrackingPage implements OnInit, OnDestroy {
 
         console.log('📦 Trip data received:', trip);
         console.log('📊 Trip status from API:', trip.tripStatus);
+        
+        // ✅ DEBUG: Log all property names to see the exact format
+        console.log('🔍 ALL properties in trip object:', Object.keys(trip));
+        console.log('🔍 Does trip have "tripStops"?', 'tripStops' in trip);
+        console.log('🔍 Does trip have "TripStops"?', 'TripStops' in trip);
 
         // ✅ CHARGER les données réelles du véhicule et chauffeur assignés
         this.truckImmatriculation = trip.truckImmatriculation || trip.vehiclePlate || trip.truck?.immatriculation || 'Non défini';
@@ -215,18 +243,68 @@ export class GPSTrackingPage implements OnInit, OnDestroy {
 
         console.log('🔍 Searching for destination in trip data...');
 
-        // Strategy 1: Use trip destination coordinates (MOST ACCURATE - from backend)
-        if (trip.destinationLatitude && trip.destinationLongitude) {
-          this.destination = {
-            lat: parseFloat(trip.destinationLatitude),
-            lng: parseFloat(trip.destinationLongitude),
-            address: trip.destination || `Destination: ${trip.tripReference}`
-          };
+        // ✅ NOUveau: Strategy 0 - Load ALL TripStops (multi-client, multi-point support)
+        // Try both camelCase and PascalCase
+        const stops = trip.tripStops || trip.TripStops;
+        if (stops && stops.length > 0) {
+          console.log('✅ Loading ALL TripStops:', stops.length, 'stops found');
+          
+          // Store all trip stops
+          this.allTripStops = stops.map((stop: any) => ({
+            id: stop.id,
+            sequence: stop.sequence,
+            type: stop.type,
+            customerId: stop.customerId,
+            customerName: stop.customerName,
+            orderId: stop.orderId,
+            orderReference: stop.orderReference,
+            address: stop.address,
+            latitude: stop.latitude,
+            longitude: stop.longitude,
+            geolocation: stop.geolocation,
+            status: stop.status,
+            notes: stop.notes
+          }));
+
+          // Sort by sequence to ensure correct order
+          this.allTripStops.sort((a, b) => a.sequence - b.sequence);
+
+          console.log('📍 All stops sorted by sequence:', this.allTripStops.map(s => `${s.sequence}: ${s.address}`));
+
+          // Add all stop markers to the map
+          if (this.map) {
+            this.addAllStopsMarkers();
+            
+            // ✅ Set destination to the LAST stop (final destination)
+            // BUT only if we don't already have coordinates from notification params
+            const lastStop = this.allTripStops[this.allTripStops.length - 1];
+            if (lastStop.latitude && lastStop.longitude) {
+              // Only override destination if we don't have coords from notification
+              const hasCoordsFromNotification = this.destLatFromParams && this.destLngFromParams && 
+                !isNaN(parseFloat(this.destLatFromParams)) && !isNaN(parseFloat(this.destLngFromParams));
+              
+              if (!hasCoordsFromNotification) {
+                this.destination = {
+                  lat: lastStop.latitude,
+                  lng: lastStop.longitude,
+                  address: lastStop.address || `Arrêt ${lastStop.sequence}`
+                };
+                
+                console.log('✅ Final destination set to last stop:', this.destination);
+              } else {
+                console.log('✅ Keeping destination from notification params, but loaded ALL TripStops');
+              }
+              
+              setTimeout(() => {
+                this.updateRoute();
+              }, 500);
+            }
+          }
 
           console.log('✅ Destination loaded from trip coordinates:', this.destination);
 
           if (this.map) {
-            this.addDestinationMarker();
+            this.addAllStopsMarkers();
             setTimeout(() => {
               this.updateRoute();
             }, 500);
@@ -242,6 +320,7 @@ export class GPSTrackingPage implements OnInit, OnDestroy {
           // Try to get coordinates from geolocation field
           if (lastDelivery.geolocation) {
             const parts = lastDelivery.geolocation.split(',');
+
             if (parts.length >= 2) {
               const lat = parseFloat(parts[0].trim());
               const lng = parseFloat(parts[1].trim());
@@ -256,7 +335,7 @@ export class GPSTrackingPage implements OnInit, OnDestroy {
                 console.log('✅ Destination loaded from geolocation:', this.destination);
 
                 if (this.map) {
-                  this.addDestinationMarker();
+                  this.addAllStopsMarkers();
                   setTimeout(() => {
                     this.updateRoute();
                   }, 500);
@@ -320,7 +399,7 @@ export class GPSTrackingPage implements OnInit, OnDestroy {
         };
         
         if (this.map) {
-          this.addDestinationMarker();
+          this.addAllStopsMarkers();
           setTimeout(() => {
             this.updateRoute();
           }, 500);
@@ -369,9 +448,160 @@ export class GPSTrackingPage implements OnInit, OnDestroy {
     }, 300);
   }
 
+  /**
+   * ✅ NOUVEAU: Add ALL trip stops markers to the map (multi-client, multi-point)
+   */
+  private addAllStopsMarkers() {
+    if (!this.map || this.allTripStops.length === 0) {
+      console.log('⚠️ Cannot add stop markers: map not ready or no stops');
+      return;
+    }
+
+    console.log('📍 Adding', this.allTripStops.length, 'stop markers to map...');
+
+    // Clear existing stop markers
+    this.stopMarkers.forEach(marker => marker.remove());
+    this.stopMarkers = [];
+
+    // Add marker for each stop - Professional 3D style (same as old destination marker)
+    this.allTripStops.forEach((stop, index) => {
+      if (!stop.latitude || !stop.longitude) {
+        console.warn(`⚠️ Stop ${stop.sequence} has no coordinates, skipping...`);
+        return;
+      }
+
+      // Determine color based on position
+      const isFirst = index === 0;
+      const isLast = index === this.allTripStops.length - 1;
+      
+      // Create professional 3D marker icon (same style as destination marker)
+      const stopIcon = L.divIcon({
+        className: 'stop-marker-3d',
+        html: `
+          <div style="
+            position: relative;
+            width: 50px;
+            height: 65px;
+          ">
+            <!-- Pin marker 3D -->
+            <svg width="50" height="65" viewBox="0 0 50 65">
+              <defs>
+                <!-- Gradient 3D ORANGE - varies by position -->
+                <linearGradient id="stopGrad-${stop.sequence}" x1="0%" y1="0%" x2="100%" y2="100%">
+                  ${isFirst ? `
+                  <stop offset="0%" style="stop-color:#FF6B35;stop-opacity:1" />
+                  <stop offset="50%" style="stop-color:#FF8C42;stop-opacity:1" />
+                  <stop offset="100%" style="stop-color:#FFA500;stop-opacity:1" />
+                  ` : isLast ? `
+                  <stop offset="0%" style="stop-color:#F7931E;stop-opacity:1" />
+                  <stop offset="50%" style="stop-color:#FFA500;stop-opacity:1" />
+                  <stop offset="100%" style="stop-color:#FFB84D;stop-opacity:1" />
+                  ` : `
+                  <stop offset="0%" style="stop-color:#FFA500;stop-opacity:1" />
+                  <stop offset="50%" style="stop-color:#FFB84D;stop-opacity:1" />
+                  <stop offset="100%" style="stop-color:#FFCC80;stop-opacity:1" />
+                  `}
+                </linearGradient>
+                <!-- Reflet 3D haut -->
+                <linearGradient id="stopShine-${stop.sequence}" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" style="stop-color:#ffffff;stop-opacity:0.5" />
+                  <stop offset="100%" style="stop-color:#ffffff;stop-opacity:0" />
+                </linearGradient>
+                <!-- Ombre 3D bas -->
+                <radialGradient id="stopShadow-${stop.sequence}" cx="50%" cy="80%" r="50%">
+                  <stop offset="0%" style="stop-color:#000000;stop-opacity:0.3" />
+                  <stop offset="100%" style="stop-color:#000000;stop-opacity:0" />
+                </radialGradient>
+              </defs>
+
+              <!-- Ombre au sol -->
+              <ellipse cx="25" cy="60" rx="16" ry="4" fill="rgba(0,0,0,0.25)"/>
+
+              <!-- Corps épingle 3D -->
+              <path d="M 25 2
+                       C 12 2 2 12 2 25
+                       C 2 42 25 62 25 62
+                       C 25 62 48 42 48 25
+                       C 48 12 38 2 25 2 Z"
+                    fill="url(#stopGrad-${stop.sequence})"
+                    stroke="#cc8400"
+                    stroke-width="2.5"/>
+
+              <!-- Reflet 3D haut gauche -->
+              <path d="M 10 10 Q 15 5 25 5 Q 35 5 40 10 Q 30 8 25 8 Q 18 8 10 10 Z"
+                    fill="url(#stopShine-${stop.sequence})" opacity="0.6"/>
+
+              <!-- Ombre 3D bas -->
+              <path d="M 8 35 Q 25 55 42 35 Q 40 40 25 58 Q 10 40 8 35 Z"
+                    fill="url(#stopShadow-${stop.sequence})" opacity="0.5"/>
+
+              <!-- Bordure intérieure effet 3D -->
+              <path d="M 25 6
+                       C 14 6 6 14 6 25
+                       C 6 40 25 58 25 58
+                       C 25 58 44 40 44 25
+                       C 44 14 36 6 25 6 Z"
+                    fill="none"
+                    stroke="rgba(255,255,255,0.2)"
+                    stroke-width="1"/>
+
+              <!-- Cercle central 3D avec numéro -->
+              <circle cx="25" cy="25" r="12" fill="#ffffff" opacity="0.95"/>
+              <circle cx="25" cy="25" r="12" fill="url(#stopShine-${stop.sequence})" opacity="0.4"/>
+              <circle cx="25" cy="25" r="12" fill="none" stroke="rgba(0,0,0,0.1)" stroke-width="1"/>
+
+              <!-- Numéro de séquence -->
+              <text x="25" y="25" text-anchor="middle" dominant-baseline="central" 
+                    font-size="14" font-weight="bold" fill="#d35400" font-family="Arial, sans-serif">
+                ${stop.sequence}
+              </text>
+            </svg>
+          </div>
+        `,
+        iconSize: [50, 65],
+        iconAnchor: [25, 65],
+        popupAnchor: [0, -65]
+      });
+
+      const marker = L.marker(
+        [stop.latitude, stop.longitude],
+        { icon: stopIcon }
+      ).addTo(this.map);
+
+      // Enhanced popup with all details
+      marker.bindPopup(`
+        <div style="min-width: 200px; padding: 8px;">
+          <div style="font-weight: bold; color: #FF6B35; margin-bottom: 8px; font-size: 14px;">
+            📍 Arrêt ${stop.sequence} ${isFirst ? '(Départ)' : isLast ? '(Destination Finale)' : ''}
+          </div>
+          <div style="color: #666; font-size: 12px; margin-bottom: 4px;">
+            ${stop.address || 'Adresse non disponible'}
+          </div>
+          ${stop.customerName ? `
+          <div style="color: #333; font-size: 11px; margin-top: 4px;">
+            👤 ${stop.customerName}
+          </div>
+          ` : ''}
+          ${stop.orderReference ? `
+          <div style="color: #333; font-size: 11px;">
+            📦 ${stop.orderReference}
+          </div>
+          ` : ''}
+        </div>
+      `);
+
+      this.stopMarkers.push(marker);
+    });
+  }
+
   ngOnDestroy() {
     this.gpsService.stopTracking();
     this.stopIntelligentNavigationCheck();
+    
+    // ✅ NOUVEAU: Clean up all stop markers
+    this.stopMarkers.forEach(marker => marker.remove());
+    this.stopMarkers = [];
+    
     if (this.map) {
       this.map.remove();
     }
@@ -419,7 +649,7 @@ export class GPSTrackingPage implements OnInit, OnDestroy {
         // Check if destination was already loaded (geocoded before map was ready)
         if (this.destination) {
           console.log('✅ Destination already loaded, adding marker now...');
-          this.addDestinationMarker();
+          this.addAllStopsMarkers();
         }
       }
     }, 300);
@@ -610,7 +840,7 @@ export class GPSTrackingPage implements OnInit, OnDestroy {
           };
 
           if (this.map) {
-            this.addDestinationMarker();
+            this.addAllStopsMarkers();
             setTimeout(() => {
               this.updateRoute();
             }, 500);
@@ -1024,20 +1254,47 @@ export class GPSTrackingPage implements OnInit, OnDestroy {
   }
 
   /**
-   * Mettre à jour la route avec OSRM - Style PROFESSIONNEL BLEU
-   * Ligne bleue fine et élégante
+   * ✅ MODIFIÉ: Mettre à jour la route avec TOUS les arrêts (multi-points optimisé)
+   * Route complète: Camion → Arrêt 1 → Arrêt 2 → ... → Dernier arrêt
    */
   private async updateRoute() {
-    if (!this.currentLocation || !this.destination) {
-      console.log('⚠️ Missing location or destination for route');
+    if (!this.currentLocation) {
+      console.log('⚠️ Missing current location for route');
+      return;
+    }
+
+    // Vérifier si on a des arrêts
+    if (!this.allTripStops || this.allTripStops.length === 0) {
+      console.log('⚠️ No trip stops available, cannot calculate multi-point route');
       return;
     }
 
     try {
-      // Fetch route from OSRM - TOUJOURS chemin optimisé et optimal
-      const osrmUrl = `https://router.project-osrm.org/route/v1/driving/${this.currentLocation.lng},${this.currentLocation.lat};${this.destination.lng},${this.destination.lat}?overview=full&geometries=geojson`;
+      // Construire l'URL OSRM avec TOUS les points dans l'ordre
+      // Format: lon,lat;lon,lat;lon,lat...
+      const waypoints = [];
+      
+      // Point de départ: Position actuelle du camion
+      waypoints.push(`${this.currentLocation.lng},${this.currentLocation.lat}`);
+      
+      // Ajouter TOUS les arrêts dans l'ordre de séquence
+      const sortedStops = [...this.allTripStops].sort((a, b) => a.sequence - b.sequence);
+      sortedStops.forEach(stop => {
+        if (stop.latitude && stop.longitude) {
+          waypoints.push(`${stop.longitude},${stop.latitude}`);
+        }
+      });
 
-      console.log('🗺️ Fetching OPTIMIZED route from OSRM:', osrmUrl);
+      const waypointsString = waypoints.join(';');
+      const osrmUrl = `https://router.project-osrm.org/route/v1/driving/${waypointsString}?overview=full&geometries=geojson`;
+
+      console.log('🗺️ Fetching MULTI-POINT optimized route from OSRM:', osrmUrl);
+      console.log(`📍 Total waypoints: ${waypoints.length} (camion + ${sortedStops.length} arrêts)`);
+      console.log(`📍 Waypoints details:`, waypoints.map((wp, i) => {
+        if (i === 0) return `0: Camion (${wp})`;
+        const stop = sortedStops[i - 1];
+        return `${i}: Arrêt ${stop?.sequence || '?'} (${wp})`;
+      }));
 
       const response = await fetch(osrmUrl);
       const data = await response.json();
@@ -1048,15 +1305,16 @@ export class GPSTrackingPage implements OnInit, OnDestroy {
 
         const distanceKm = (route.distance / 1000).toFixed(1);
         const durationMin = Math.round(route.duration / 60);
-        console.log(`✅ Route optimisée: ${distanceKm} km, ${durationMin} min`);
+        console.log(`✅ Route complète optimisée: ${distanceKm} km, ${durationMin} min`);
+        console.log(`📊 Détails: ${sortedStops.length} arrêts connectés en un seul itinéraire`);
 
-        // Remove ONLY the old route polyline (NOT destination marker)
+        // Remove ONLY the old route polyline (NOT markers)
         if (this.routePolyline && this.map) {
           this.map.removeLayer(this.routePolyline);
           this.routePolyline = undefined;
         }
 
-        // CHEMIN OPTIMISÉ BLEU - Route réelle OSRM
+        // CHEMIN OPTIMISÉ BLEU - Route réelle OSRM multi-points
         this.routePolyline = L.polyline(coordinates, {
           color: '#1a73e8',
           weight: 6,
@@ -1066,10 +1324,14 @@ export class GPSTrackingPage implements OnInit, OnDestroy {
           className: 'optimized-route'
         }).addTo(this.map);
 
-        // Ajuster les bornes pour montrer tout le chemin
+        console.log('✅ Route polyline created and added to map');
+        console.log(`📏 Polyline coordinates count: ${coordinates.length}`);
+        console.log(`🗺️ Map has routePolyline: ${!!this.routePolyline}`);
+
+        // Ajuster les bornes pour montrer TOUT le chemin complet
         const bounds = L.latLngBounds(coordinates);
 
-        // Padding dynamique selon la distance
+        // Padding dynamique selon la distance totale
         let padding: [number, number] = [60, 60];
         let maxZoom = 15;
 
@@ -1091,12 +1353,12 @@ export class GPSTrackingPage implements OnInit, OnDestroy {
           duration: 0.5
         });
 
-        // Ensure destination marker exists
-        if (!this.destinationMarker && this.destination) {
-          this.addDestinationMarker();
+        // Ensure all stop markers exist
+        if (this.allTripStops.length > 0) {
+          this.addAllStopsMarkers();
         }
 
-        // Update route info
+        // Update route info with complete distance and duration
         this.routeInfo = {
           distance: route.distance,
           duration: route.duration
@@ -1106,11 +1368,11 @@ export class GPSTrackingPage implements OnInit, OnDestroy {
         this.lastRouteUpdate = Date.now();
 
       } else {
-        console.warn('⚠️ OSRM ne peut pas calculer le chemin optimisé');
+        console.warn('⚠️ OSRM ne peut pas calculer le chemin multi-points optimisé');
         this.routeInfo = this.routeInfo || { distance: 0, duration: 0 };
       }
     } catch (error) {
-      console.error('❌ Error fetching route:', error);
+      console.error('❌ Error fetching multi-point route:', error);
       // PAS de ligne droite - afficher info uniquement
       this.routeInfo = this.routeInfo || { distance: 0, duration: 0 };
     }
@@ -1146,6 +1408,14 @@ export class GPSTrackingPage implements OnInit, OnDestroy {
 
           // Mettre à jour le camion IMMÉDIATEMENT sur la carte
           this.updateTruckPosition(lat, lng);
+
+          // ✅ TRACER LA ROUTE COMPLÈTE dès qu'on a la position GPS
+          if (this.allTripStops && this.allTripStops.length > 0) {
+            console.log('🗺️ GPS position obtained, calculating complete multi-point route...');
+            setTimeout(() => {
+              this.updateRoute();
+            }, 500);
+          }
 
           // Démarrer le tracking continu SignalR (toutes les 5 secondes)
           this.gpsService.startTracking(
@@ -2498,5 +2768,29 @@ export class GPSTrackingPage implements OnInit, OnDestroy {
 
   private toDeg(rad: number): number {
     return rad * 180 / Math.PI;
+  }
+
+  /**
+   * ✅ Get badge color for stop based on position - Professional orange gradient
+   */
+  public getStopBadgeColor(index: number): string {
+    if (index === 0) return '#FF6B35'; // Premier arrêt - Orange vif
+    if (index === this.allTripStops.length - 1) return '#F7931E'; // Dernier arrêt - Orange dégradé
+    return '#FFA500'; // Arrêts intermédiaires - Orange standard
+  }
+
+  /**
+   * ✅ Format duration from seconds to readable format
+   */
+  public formatDuration(seconds: number): string {
+    if (!seconds || seconds <= 0) return '';
+    
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    
+    if (hours > 0) {
+      return `${hours}h ${minutes}min`;
+    }
+    return `${minutes} min`;
   }
 }

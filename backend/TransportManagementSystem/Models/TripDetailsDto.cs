@@ -1,4 +1,4 @@
-﻿using TransportManagementSystem.Entity;
+using TransportManagementSystem.Entity;
 
 namespace TransportManagementSystem.Models;
 
@@ -29,6 +29,9 @@ public class TripDetailsDto
 
     // Deliveries
     public List<DeliveryDetailsDto> Deliveries { get; set; }
+
+    // Multi-stops for multi-client and multi-point trips
+    public List<TripStopDto>? TripStops { get; set; }
 
     // Traject information
     public int? TrajectId { get; set; }

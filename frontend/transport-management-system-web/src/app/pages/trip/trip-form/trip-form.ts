@@ -44,6 +44,7 @@ import { IGeographicalEntity } from '../../../types/general-settings';
 import { GpsAddressService } from '../../../services/gps-address.service';
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import * as L from 'leaflet';
+import { TripStopsHelper } from './trip-stops-helper';
 
 interface DialogData {
   tripId?: number;
@@ -180,6 +181,12 @@ export class TripForm implements OnInit {
   mapReady = false;
   searchMarkers: any[] = []; // Array to store search result markers
   searchResultMarkers: any[] = []; // Array to store search result point markers
+
+  // ===== ÉTAPE 3: TripStops pour support multi-clients et multi-points =====
+  tripStopsForPreview: any[] = []; // Stocke les stops calculés pour aperçu avant création
+  showTripStopsPreview = false; // Contrôle l'affichage de la carte récapitulative
+  recapMap: any = null; // Référence pour la carte Leaflet de récapitulation
+  recapMarkerLayer: any = null; // Couche de marqueurs pour la carte récapitulative
 
   // Filtres hiérarchiques pour camions
   truckSelectedLevelIds: (number | null)[] = [];
@@ -334,10 +341,12 @@ selectedDateStats: any = {
     private dialog: MatDialog,
     private settingsService: SettingsService,
     private gpsAddressService: GpsAddressService,
+    private tripStopsHelper: TripStopsHelper,
     @Optional() private dialogRef?: MatDialogRef<TripForm>,
     @Optional() @Inject(MAT_DIALOG_DATA) public data?: DialogData
   ) {
     this.deliveries = this.fb.array([]);
+
     this.loadingUnit = 'palette';
   }
 
@@ -2038,6 +2047,51 @@ async confirmAddOrders(): Promise<void> {
     if (!this.showDeliveriesSection) {
       this.showDeliveriesSection = true;
     }
+  }
+
+  // ===== ÉTAPE 3: Méthodes pour TripStops et carte récapitulative =====
+
+  /**
+   * Calculer et afficher l'aperçu des TripStops avec carte OpenStreetMap
+   */
+  async calculateAndDisplayTripStops(): Promise<void> {
+    const deliveryControls = this.deliveryControls;
+    
+    if (!deliveryControls || deliveryControls.length === 0) {
+      this.snackBar.open('Aucune livraison à afficher', 'Fermer', { duration: 3000 });
+      return;
+    }
+
+    // Calculer les stops via le helper
+    this.tripStopsForPreview = await this.tripStopsHelper.calculateTripStops(
+      deliveryControls,
+      this.customers,
+      (orderId: number) => this.getOrderReference(orderId),
+      this.gpsAddressService
+    );
+
+    if (this.tripStopsForPreview.length === 0) {
+      this.snackBar.open('Impossible de calculer les arrêts', 'Fermer', { duration: 3000 });
+      return;
+    }
+
+    // Afficher la carte récapitulative
+    this.showTripStopsPreview = true;
+    
+    // Attendre que le DOM soit mis à jour avant d'initialiser la carte
+    setTimeout(() => {
+      this.recapMap = this.tripStopsHelper.initializeRecapMap('recap-map-container', this.tripStopsForPreview);
+    }, 100);
+  }
+
+  /**
+   * Fermer l'aperçu des TripStops
+   */
+  closeTripStopsPreview(): void {
+    this.showTripStopsPreview = false;
+    this.tripStopsForPreview = [];
+    this.tripStopsHelper.cleanupMap('recap-map-container');
+    this.recapMap = null;
   }
 
   previewOrder(order: IOrder): void {

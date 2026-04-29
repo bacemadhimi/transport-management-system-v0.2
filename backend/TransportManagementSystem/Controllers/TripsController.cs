@@ -259,6 +259,10 @@ public class TripsController : ControllerBase
                 .ThenInclude(d => d.Customer)
             .Include(t => t.Deliveries)
                 .ThenInclude(d => d.Order)
+            .Include(t => t.TripStops)
+                .ThenInclude(ts => ts.Customer)
+            .Include(t => t.TripStops)
+                .ThenInclude(ts => ts.Order)
             .FirstOrDefaultAsync(t => t.Id == id);
 
         if (trip == null)
@@ -341,6 +345,31 @@ public class TripsController : ControllerBase
                     ActualDepartureTime = d.ActualDepartureTime,
                     Status = d.Status,
                     Notes = d.Notes
+                }).ToList(),
+
+            // Multi-stops support for multi-client and multi-point trips
+            TripStops = trip.TripStops?
+                .OrderBy(ts => ts.Sequence)
+                .Select(ts => new TripStopDto
+                {
+                    Id = ts.Id,
+                    TripId = ts.TripId,
+                    Sequence = ts.Sequence,
+                    Type = ts.Type.ToString(),
+                    OrderId = ts.OrderId,
+                    OrderReference = ts.Order?.Reference,
+                    CustomerId = ts.CustomerId,
+                    CustomerName = ts.Customer?.Name,
+                    CustomerPhone = ts.Customer?.Phone,
+                    Address = ts.Address,
+                    Latitude = ts.Latitude,
+                    Longitude = ts.Longitude,
+                    Geolocation = ts.Geolocation,
+                    Notes = ts.Notes,
+                    Status = ts.Status.ToString(),
+                    EstimatedArrivalTime = ts.EstimatedArrivalTime,
+                    ActualArrivalTime = ts.ActualArrivalTime,
+                    ActualDepartureTime = ts.ActualDepartureTime
                 }).ToList()
         };
 
@@ -522,6 +551,66 @@ public class TripsController : ControllerBase
             });
 
             await deliveryRepository.AddRangeAsync(deliveries);
+        }
+
+        // Create TripStops for multi-client and multi-point support
+        if (model.Deliveries?.Any() == true)
+        {
+            var tripStops = new List<TripStop>();
+            int sequence = 1;
+
+            foreach (var delivery in model.Deliveries.OrderBy(d => d.Sequence))
+            {
+                var customer = await context.Customers.FindAsync(delivery.CustomerId);
+                if (customer != null)
+                {
+                    double? stopLatitude = null;
+                    double? stopLongitude = null;
+                    string? stopGeolocation = null;
+
+                    // Try to get GPS coordinates from customer
+                    if (customer.Latitude.HasValue && customer.Longitude.HasValue)
+                    {
+                        stopLatitude = customer.Latitude;
+                        stopLongitude = customer.Longitude;
+                        stopGeolocation = $"{customer.Latitude},{customer.Longitude}";
+                    }
+                    else if (!string.IsNullOrEmpty(customer.Address))
+                    {
+                        // Try to geocode the address
+                        var geoResult = await GeocodeAddressWithNominatim(customer.Address);
+                        if (geoResult.HasValue)
+                        {
+                            stopLatitude = geoResult.Value.lat;
+                            stopLongitude = geoResult.Value.lng;
+                            stopGeolocation = $"{geoResult.Value.lat},{geoResult.Value.lng}";
+                        }
+                    }
+
+                    var tripStop = new TripStop
+                    {
+                        TripId = trip.Id,
+                        Sequence = sequence++,
+                        Type = StopType.Commande,
+                        OrderId = delivery.OrderId,
+                        CustomerId = delivery.CustomerId,
+                        Address = customer.Address ?? customer.Name,
+                        Latitude = stopLatitude,
+                        Longitude = stopLongitude,
+                        Geolocation = stopGeolocation,
+                        Status = StopStatus.EnAttente,
+                        Notes = delivery.Notes,
+                        CreatedAt = DateTime.UtcNow
+                    };
+
+                    tripStops.Add(tripStop);
+                }
+            }
+
+            if (tripStops.Any())
+            {
+                await context.TripStops.AddRangeAsync(tripStops);
+            }
         }
 
         await context.SaveChangesAsync();
