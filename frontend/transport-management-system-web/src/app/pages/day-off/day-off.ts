@@ -1,5 +1,6 @@
 ﻿import { Component, OnInit, inject } from '@angular/core';
 import { Http } from '../../services/http';
+import { HttpClient } from '@angular/common/http';
 import { Table } from '../../components/table/table';
 import { MatButtonModule } from '@angular/material/button';
 import { FormControl, FormsModule, ReactiveFormsModule } from '@angular/forms';
@@ -8,19 +9,22 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatCardModule } from '@angular/material/card';
 import { MatInputModule } from '@angular/material/input';
 import { MatFormFieldModule } from '@angular/material/form-field';
-import { debounceTime } from 'rxjs';
+import { debounceTime, distinctUntilChanged } from 'rxjs';
 import { PagedData } from '../../types/paged-data';
 import { IDayOff } from '../../types/dayoff';
 import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatNativeDateModule } from '@angular/material/core';
 import { DayOffForm } from './day-off-form/day-off-form';
 import { Auth } from '../../services/auth';
 import { CommonModule } from '@angular/common';
+import { Translation } from '../../services/Translation';
+import Swal from 'sweetalert2';
+import { MatIconModule } from '@angular/material/icon';
+import { environment } from '../../../environments/environment';
 
 @Component({
   selector: 'app-dayoff',
@@ -36,32 +40,22 @@ import { CommonModule } from '@angular/common';
     MatInputModule,
     MatFormFieldModule,
     MatDatepickerModule,
-    MatNativeDateModule
+    MatNativeDateModule,
+    MatIconModule
   ],
   templateUrl: './day-off.html',
   styleUrls: ['./day-off.scss']
 })
 export class DayOff implements OnInit {
-      constructor(public auth: Auth) {}
-
-      getActions(row: any, actions: string[]) {
-        const permittedActions: string[] = [];
-
-        for (const a of actions) {
-          if (a === 'Modifier' && this.auth.hasPermission('DAYOFF_EDIT')) {
-            permittedActions.push(a);
-          }
-          if (a === 'Supprimer' && this.auth.hasPermission('DAYOFF_DISABLE')) {
-            permittedActions.push(a);
-          }
-        }
-
-        return permittedActions;
-      }
+  constructor(public auth: Auth) {}
 
   httpService = inject(Http);
+  private httpClient = inject(HttpClient);
   pagedDayOffData!: PagedData<IDayOff>;
   totalData!: number;
+
+  private translation = inject(Translation);
+  t(key: string): string { return this.translation.t(key); }
 
   filter: any = {
     pageIndex: 0,
@@ -77,32 +71,46 @@ export class DayOff implements OnInit {
 
   readonly dialog = inject(MatDialog);
 
-  showCols = [
+  get showCols() {
+    return [
+      { key: 'name', label: this.t('NAME') },
+      { key: 'country', label: this.t('COUNTRY') },
+      {
+        key: 'date',
+        label: this.t('DATE'),
+        format: (row: any) => {
+          if (!row || !row.date) return '-';
+          const date = new Date(row.date);
+          if (isNaN(date.getTime())) return '-';
+          return date.toLocaleDateString('fr-FR', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric'
+          });
+        }
+      },
+      { key: 'description', label: this.t('DESCRIPTION') },
+      {
+        key: 'Action',
+        format: () => [this.t('ACTION_EDIT'), this.t('ACTION_DELETE')]
+      }
+    ];
+  }
 
-    { key: 'name', label: 'Nom' },
-    { key: 'country', label: 'Pays' },
-    {
-    key: 'date',
-    label: 'Date',
-    format: (row: any) => {
-      if (!row || !row.date) return '-';
+  getActions(row: any, actions: string[]) {
+    const permittedActions: string[] = [];
 
-      const date = new Date(row.date);
-      if (isNaN(date.getTime())) return '-';
-
-      return date.toLocaleDateString('fr-FR', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric'
-      });
+    for (const a of actions) {
+      if (a === this.t('ACTION_EDIT') && this.auth.hasPermission('DAYOFF_EDIT')) {
+        permittedActions.push(a);
+      }
+      if (a === this.t('ACTION_DELETE') && this.auth.hasPermission('DAYOFF_DISABLE')) {
+        permittedActions.push(a);
+      }
     }
-  },
-    { key: 'description', label: 'Description' },
-    {
-      key: 'Action',
-      format: () => ["Modifier", "Supprimer"]
-    }
-  ];
+
+    return permittedActions;
+  }
 
   currentYear = new Date().getFullYear();
   yearOptions = Array.from({length: 10}, (_, i) => this.currentYear - 5 + i);
@@ -110,26 +118,32 @@ export class DayOff implements OnInit {
   ngOnInit() {
     this.getLatestData();
 
-    this.searchControl.valueChanges.pipe(debounceTime(250))
-      .subscribe((value: string | null) => {
-        this.filter.search = value;
-        this.filter.pageIndex = 0;
-        this.getLatestData();
-      });
+    this.searchControl.valueChanges.pipe(
+      debounceTime(250),
+      distinctUntilChanged()
+    ).subscribe((value: string | null) => {
+      this.filter.search = value;
+      this.filter.pageIndex = 0;
+      this.getLatestData();
+    });
 
-    this.countryControl.valueChanges.pipe(debounceTime(250))
-      .subscribe((value: string | null) => {
-        this.filter.country = value;
-        this.filter.pageIndex = 0;
-        this.getLatestData();
-      });
+    this.countryControl.valueChanges.pipe(
+      debounceTime(250),
+      distinctUntilChanged()
+    ).subscribe((value: string | null) => {
+      this.filter.country = value;
+      this.filter.pageIndex = 0;
+      this.getLatestData();
+    });
 
-    this.yearControl.valueChanges.pipe(debounceTime(250))
-      .subscribe((value: number | null) => {
-        this.filter.year = value;
-        this.filter.pageIndex = 0;
-        this.getLatestData();
-      });
+    this.yearControl.valueChanges.pipe(
+      debounceTime(250),
+      distinctUntilChanged()
+    ).subscribe((value: number | null) => {
+      this.filter.year = value;
+      this.filter.pageIndex = 0;
+      this.getLatestData();
+    });
   }
 
   getLatestData() {
@@ -160,6 +174,7 @@ export class DayOff implements OnInit {
   edit(dayOff: IDayOff) {
     const ref = this.dialog.open(DayOffForm, {
       panelClass: 'm-auto',
+      width: '500px',
       data: { dayOffId: dayOff.id }
     });
 
@@ -167,17 +182,46 @@ export class DayOff implements OnInit {
   }
 
   delete(dayOff: IDayOff) {
-    if (confirm(`Voulez-vous vraiment supprimer le jour férié "${dayOff.name}"?`)) {
-      this.httpService.deleteDayOff(dayOff.id).subscribe(() => {
-        alert("Jour férié supprimé avec succès");
-        this.getLatestData();
-      });
-    }
+    Swal.fire({
+      title: this.t('CONFIRMATION'),
+      text: `${this.t('DAYOFF_DELETE_CONFIRM')} "${dayOff.name}" ?`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#3085d6',
+      confirmButtonText: this.t('YES_DELETE'),
+      cancelButtonText: this.t('CANCEL')
+    }).then((result) => {
+      if (result.isConfirmed) {
+        this.httpService.deleteDayOff(dayOff.id).subscribe({
+          next: () => {
+            Swal.fire({
+              icon: 'success',
+              title: this.t('SUCCESS'),
+              text: this.t('DAYOFF_DELETE_SUCCESS'),
+              timer: 2000,
+              showConfirmButton: false
+            });
+            this.getLatestData();
+          },
+          error: (err) => {
+            console.error('Error deleting day off:', err);
+            Swal.fire({
+              icon: 'error',
+              title: this.t('ERROR'),
+              text: err?.error?.message || this.t('DAYOFF_DELETE_ERROR'),
+              confirmButtonText: this.t('OK')
+            });
+          }
+        });
+      }
+    });
   }
 
   openDialog(): void {
     const ref = this.dialog.open(DayOffForm, {
       panelClass: 'm-auto',
+      width: '500px',
       data: {}
     });
 
@@ -190,14 +234,182 @@ export class DayOff implements OnInit {
   }
 
   onRowClick(event: any) {
-    if (event.btn === "Modifier") this.edit(event.rowData);
-    if (event.btn === "Supprimer") this.delete(event.rowData);
+    const editLabel = this.t('ACTION_EDIT');
+    const deleteLabel = this.t('ACTION_DELETE');
+    
+    if (event.btn === editLabel) {
+      this.edit(event.rowData);
+    }
+    if (event.btn === deleteLabel) {
+      this.delete(event.rowData);
+    }
   }
+
+  // ==================== IMPORT PUBLIC HOLIDAYS ====================
+
+  openImportDialog() {
+    Swal.fire({
+      title: this.t('IMPORT_HOLIDAYS_TITLE'),
+      html: `
+        <div style="text-align: left;">
+          <p style="margin-bottom: 16px; color: #6b7280;">${this.t('IMPORT_HOLIDAYS_DESC')}</p>
+          <div style="margin: 16px 0;">
+            <label style="display: block; margin-bottom: 8px; font-weight: 500; color: #374151;">${this.t('YEAR')}</label>
+            <select id="importYear" class="swal2-input" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #d1d5db;">
+              <option value="${this.currentYear}">${this.currentYear}</option>
+              <option value="${this.currentYear + 1}">${this.currentYear + 1}</option>
+            </select>
+          </div>
+          <div style="margin: 16px 0;">
+            <label style="display: block; margin-bottom: 8px; font-weight: 500; color: #374151;">${this.t('COUNTRY')}</label>
+            <select id="importCountry" class="swal2-input" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #d1d5db;">
+              <option value="TN">${this.t('TUNISIA')}</option>
+              <option value="FR">${this.t('FRANCE')}</option>
+              <option value="DZ">${this.t('ALGERIA')}</option>
+              <option value="MA">${this.t('MOROCCO')}</option>
+            </select>
+          </div>
+        </div>
+      `,
+      showCancelButton: true,
+      confirmButtonText: this.t('IMPORT'),
+      cancelButtonText: this.t('CANCEL'),
+      confirmButtonColor: '#10b981',
+      preConfirm: () => {
+        const year = (document.getElementById('importYear') as HTMLSelectElement)?.value;
+        const country = (document.getElementById('importCountry') as HTMLSelectElement)?.value;
+        if (!year || !country) {
+          Swal.showValidationMessage(this.t('PLEASE_SELECT_YEAR_COUNTRY'));
+          return false;
+        }
+        return { year, country };
+      }
+    }).then((result) => {
+      if (result.isConfirmed && result.value) {
+        this.fetchPublicHolidays(result.value.year, result.value.country);
+      }
+    });
+  }
+
+  fetchPublicHolidays(year: string, countryCode: string) {
+    Swal.fire({
+      title: this.t('FETCHING_HOLIDAYS'),
+      text: this.t('PLEASE_WAIT'),
+      allowOutsideClick: false,
+      didOpen: () => {
+        Swal.showLoading();
+      }
+    });
+
+    const url = `https://date.nager.at/api/v3/PublicHolidays/${year}/${countryCode}`;
+    
+    this.httpClient.get<any[]>(url).subscribe({
+      next: (holidays) => {
+        Swal.close();
+        
+        if (!holidays || holidays.length === 0) {
+          Swal.fire({
+            icon: 'info',
+            title: this.t('NO_HOLIDAYS_FOUND'),
+            text: this.t('NO_HOLIDAYS_FOUND_DESC'),
+            confirmButtonText: this.t('OK')
+          });
+          return;
+        }
+
+        const previewHtml = holidays.slice(0, 10).map(h => 
+          `<tr>
+            <td style="padding: 8px; border-bottom: 1px solid #e5e7eb;">${h.localName || h.name}</td>
+            <td style="padding: 8px; border-bottom: 1px solid #e5e7eb;">${new Date(h.date).toLocaleDateString('fr-FR')}</td>
+          </tr>`
+        ).join('');
+
+        Swal.fire({
+          title: `${holidays.length} ${this.t('HOLIDAYS_FOUND')}`,
+          html: `
+            <div style="text-align: left;">
+              <p style="margin-bottom: 12px; color: #6b7280;">${this.t('IMPORT_CONFIRM_DESC')}</p>
+              <div style="max-height: 250px; overflow-y: auto; margin: 12px 0;">
+                <table style="width: 100%; font-size: 14px; border-collapse: collapse;">
+                  <thead>
+                    <tr style="background: #f9fafb;">
+                      <th style="padding: 8px; text-align: left; font-weight: 600;">${this.t('NAME')}</th>
+                      <th style="padding: 8px; text-align: left; font-weight: 600;">${this.t('DATE')}</th>
+                    </tr>
+                  </thead>
+                  <tbody>${previewHtml}</tbody>
+                </table>
+                ${holidays.length > 10 ? `<p style="text-align: center; margin-top: 8px; color: #6b7280;">... ${this.t('AND')} ${holidays.length - 10} ${this.t('MORE_HOLIDAYS')}</p>` : ''}
+              </div>
+            </div>
+          `,
+          showCancelButton: true,
+          confirmButtonText: this.t('IMPORT'),
+          cancelButtonText: this.t('CANCEL'),
+          confirmButtonColor: '#10b981'
+        }).then((result) => {
+          if (result.isConfirmed) {
+            this.importHolidaysToBackend(year, countryCode);
+          }
+        });
+      },
+      error: (error) => {
+        Swal.close();
+        console.error('Error fetching holidays:', error);
+        Swal.fire({
+          icon: 'error',
+          title: this.t('ERROR'),
+          text: this.t('IMPORT_FETCH_ERROR'),
+          confirmButtonText: this.t('OK')
+        });
+      }
+    });
+  }
+
+  importHolidaysToBackend(year: string, countryCode: string) {
+    Swal.fire({
+      title: this.t('IMPORTING'),
+      text: this.t('PLEASE_WAIT'),
+      allowOutsideClick: false,
+      didOpen: () => {
+        Swal.showLoading();
+      }
+    });
+
+    this.httpClient.post(`${environment.apiUrl}/api/DayOff/import-public-holidays`, {
+      year: parseInt(year),
+      countryCode: countryCode
+    }).subscribe({
+      next: (response: any) => {
+        Swal.close();
+        Swal.fire({
+          icon: 'success',
+          title: this.t('IMPORT_SUCCESS'),
+          text: `${this.t('IMPORTED')}: ${response.importedCount} | ${this.t('SKIPPED')}: ${response.skippedCount}`,
+          confirmButtonText: this.t('OK')
+        }).then(() => {
+          this.getLatestData();
+        });
+      },
+      error: (error) => {
+        Swal.close();
+        console.error('Error importing holidays:', error);
+        Swal.fire({
+          icon: 'error',
+          title: this.t('ERROR'),
+          text: this.t('IMPORT_SAVE_ERROR'),
+          confirmButtonText: this.t('OK')
+        });
+      }
+    });
+  }
+
+  // ==================== EXPORTS ====================
 
   exportCSV() {
     const rows = this.pagedDayOffData?.data || [];
     const csvContent = [
-      ['ID', 'Nom', 'Pays', 'Date', 'Description'],
+      ['ID', this.t('NAME'), this.t('COUNTRY'), this.t('DATE'), this.t('DESCRIPTION')],
       ...rows.map(d => [
         d.id,
         d.name,
@@ -217,10 +429,10 @@ export class DayOff implements OnInit {
   exportExcel() {
     const data = this.pagedDayOffData?.data.map(d => ({
       ID: d.id,
-      Nom: d.name,
-      Pays: d.country,
-      Date: new Date(d.date).toLocaleDateString('fr-FR'),
-      Description: d.description || ''
+      [this.t('NAME')]: d.name,
+      [this.t('COUNTRY')]: d.country,
+      [this.t('DATE')]: new Date(d.date).toLocaleDateString('fr-FR'),
+      [this.t('DESCRIPTION')]: d.description || ''
     })) || [];
 
     const worksheet = XLSX.utils.json_to_sheet(data);
@@ -243,17 +455,27 @@ export class DayOff implements OnInit {
 
   exportPDF() {
     const doc = new jsPDF();
+    
+    doc.setFontSize(16);
+    doc.text(this.t('DAYOFF_LIST_TITLE'), 14, 22);
+    doc.setFontSize(10);
+    doc.text(`${this.t('GENERATED_ON')}: ${new Date().toLocaleDateString('fr-FR')}`, 14, 30);
+
     const rows = this.pagedDayOffData?.data || [];
 
     autoTable(doc, {
-      head: [['ID', 'Nom', 'Pays', 'Date', 'Description']],
+      startY: 35,
+      head: [['ID', this.t('NAME'), this.t('COUNTRY'), this.t('DATE'), this.t('DESCRIPTION')]],
       body: rows.map(d => [
         d.id.toString(),
         d.name,
         d.country,
         new Date(d.date).toLocaleDateString('fr-FR'),
         d.description || ''
-      ])
+      ]),
+      theme: 'grid',
+      styles: { fontSize: 8 },
+      headStyles: { fillColor: [41, 128, 185] }
     });
 
     doc.save('jours-feries.pdf');

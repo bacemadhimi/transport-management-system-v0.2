@@ -71,6 +71,48 @@ export class HomePage implements OnInit, OnDestroy {
     await this.loadTrips();
     this.setupSignalR();
 
+    // ✅ Écouter les changements de statut en temps réel via SignalR - MISE À JOUR EN MÉMOIRE
+    this.subscriptions.push(
+      this.signalRService.tripStatusChanged$.subscribe((update: any) => {
+        if (update && (update.TripId || update.tripId)) {
+          const tripId = update.TripId || update.tripId;
+          const newStatus = update.NewStatus || update.newStatus || update.status;
+          console.log('🏠 Home page received TripStatusChanged:', tripId, '→', newStatus);
+          
+          // ✅ Mettre à jour DIRECTEMENT dans localStorage sans recharger l'API
+          const offlineTrips = localStorage.getItem('offlineTrips');
+          if (offlineTrips) {
+            try {
+              const trips = JSON.parse(offlineTrips);
+              const tripIndex = trips.findIndex((t: any) => t.id === tripId);
+              if (tripIndex !== -1) {
+                trips[tripIndex].tripStatus = newStatus;
+                localStorage.setItem('offlineTrips', JSON.stringify(trips));
+                console.log(`✅ Home: Trip ${tripId} status updated in localStorage to ${newStatus}`);
+                
+                // ✅ Recharger les trajets depuis localStorage (pas l'API)
+                this.loadTrips();
+              } else {
+                console.warn(`⚠️ Home: Trip ${tripId} not found in localStorage, reloading from API`);
+                this.loadTrips();
+              }
+            } catch (e) {
+              console.error('❌ Home: Error updating localStorage:', e);
+              this.loadTrips();
+            }
+          }
+        }
+      }),
+      this.chatService.unreadCount$.subscribe(count => {
+        this.unreadMessagesCount = count;
+      }),
+      // Subscribe to notification storage unread count for new trip assignments
+      this.notificationStorageService.unreadCount$.subscribe(count => {
+        this.notificationBadgeCount = count;
+        console.log('🔔 Notification badge updated:', count);
+      })
+    );
+
     // ===== ADDED: Connect to GPS Hub for real-time notifications =====
     const user = this.authService.currentUser();
     if (user && user.role === 'Driver') {
@@ -232,14 +274,20 @@ export class HomePage implements OnInit, OnDestroy {
 
   async loadTrips() {
     const userEmail = this.authService.currentUser()?.email;
-    
+
     if (this.isOnline) {
       this.trips$ = this.tripService.getAllTrips().pipe(
         map(trips => {
-          if (userEmail) {
-            return trips.filter(trip => trip.driver?.email === userEmail);
-          }
-          return trips;
+          let filteredTrips = userEmail
+            ? trips.filter(trip => trip.driver?.email === userEmail)
+            : trips;
+          // ✅ Trier par date: le plus récent en PREMIER
+          filteredTrips.sort((a, b) => {
+            const dateA = new Date(a.estimatedStartDate || 0).getTime();
+            const dateB = new Date(b.estimatedStartDate || 0).getTime();
+            return dateB - dateA;
+          });
+          return filteredTrips;
         }),
         catchError(error => {
           console.error('Error loading trips online, falling back to offline:', error);
@@ -251,7 +299,7 @@ export class HomePage implements OnInit, OnDestroy {
     }
 
     this.trips$.subscribe(trips => {
-      console.log('Trips loaded:', trips.length, 'mode:', this.isOnline ? 'online' : 'offline');
+      console.log('Trips loaded (sorted newest first):', trips.length, 'mode:', this.isOnline ? 'online' : 'offline');
       this.totalDistance = this.calculateTotalDistance(trips);
       this.saveTripsOffline(trips);
     });
@@ -265,6 +313,12 @@ export class HomePage implements OnInit, OnDestroy {
         if (userEmail) {
           trips = trips.filter(trip => trip.driver?.email === userEmail);
         }
+        // ✅ Trier par date: le plus récent en premier
+        trips.sort((a, b) => {
+          const dateA = new Date(a.estimatedStartDate || 0).getTime();
+          const dateB = new Date(b.estimatedStartDate || 0).getTime();
+          return dateB - dateA;
+        });
         return of(trips);
       }
     } catch (error) {
@@ -325,15 +379,84 @@ export class HomePage implements OnInit, OnDestroy {
   }
 
   async viewTripDetails(trip: ITrip) {
-    const modal = await this.modalController.create({
-      component: TripDetailsModalComponent,
-      componentProps: { 
-        trip,
-        offlineMode: this.offlineMode 
-      },
-      cssClass: 'trip-details-modal'
+    // ✅ REDIRECTION DIRECTE VERS GPS TRACKING
+    this.router.navigate(['/gps-tracking'], {
+      queryParams: {
+        tripId: trip.id,
+        tripReference: trip.tripReference,
+        destination: this.getTripDestination(trip)
+      }
     });
-    await modal.present();
+  }
+
+  async refuseTrip(trip: ITrip) {
+    const alert = await this.alertController.create({
+      header: '❌ Refuser la Mission',
+      message: `Veuillez sélectionner la raison pour laquelle vous refusez la mission ${trip.tripReference}:`,
+      inputs: [
+        {
+          name: 'reason',
+          type: 'radio',
+          label: '🌧️ Mauvais temps',
+          value: 'BadWeather',
+          checked: true
+        },
+        {
+          name: 'reason',
+          type: 'radio',
+          label: '🚛 Camion non disponible',
+          value: 'Unavailable'
+        },
+        {
+          name: 'reason',
+          type: 'radio',
+          label: '⚙️ Problème technique',
+          value: 'Technical'
+        },
+        {
+          name: 'reason',
+          type: 'radio',
+          label: '🏥 Raison médicale',
+          value: 'Medical'
+        },
+        {
+          name: 'reason',
+          type: 'radio',
+          label: '📋 Autre raison',
+          value: 'Other'
+        }
+      ],
+      buttons: [
+        {
+          text: 'Annuler',
+          role: 'cancel',
+          cssClass: 'secondary'
+        },
+        {
+          text: 'Confirmer Refus',
+          cssClass: 'danger',
+          handler: async (selectedReason) => {
+            trip.updating = true;
+            
+            // ✅ NOTIFIER ADMIN EN TEMPS RÉEL via SignalR
+            try {
+              await this.gpsService.rejectTrip(trip.id, selectedReason, selectedReason);
+              console.log('✅ Refus envoyé à admin en temps réel');
+            } catch (e) {
+              console.warn('⚠️ SignalR non connecté, refus sera synchronisé');
+            }
+
+            // Enregistrer la raison dans le trajet
+            (trip as any).refusalReason = selectedReason;
+            await this.updateTripStatus(trip, 'Cancelled');
+
+            this.showToast('✅ Refus enregistré - Admin notifié', 2000, 'success');
+          }
+        }
+      ]
+    });
+
+    await alert.present();
   }
 
   logout() {
@@ -602,10 +725,15 @@ export class HomePage implements OnInit, OnDestroy {
         type: 'status',
         status: newStatus
       });
-      
+
       trip.tripStatus = newStatus as TripStatus;
       trip.updating = false;
       this.updateTripInLocalStorage(trip);
+      
+      // ✅ Sauvegarder aussi le missionStatus pour la page GPS
+      const missionStatus = this.convertToMissionStatus(newStatus);
+      localStorage.setItem(`missionStatus_${trip.id}`, missionStatus);
+      
       this.showToast('Statut mis à jour (hors ligne) - Synchronisation à la reconnexion', 3000, 'warning');
       return;
     }
@@ -616,7 +744,26 @@ export class HomePage implements OnInit, OnDestroy {
         trip.updating = false;
         trip.tripStatus = newStatus as TripStatus;
         this.updateTripInLocalStorage(trip);
-        this.showToast('Statut du trajet mis à jour avec succès', 2000, 'success');
+        
+        // ✅ NOTIFIER ADMIN EN TEMPS RÉEL via SignalR
+        try {
+          if (newStatus === 'Accepted') {
+            await this.gpsService.acceptTrip(trip.id);
+            console.log('✅ Acceptation envoyée à admin en temps réel');
+          } else if (newStatus === 'Cancelled') {
+            await this.gpsService.rejectTrip(trip.id, (trip as any).refusalReason || 'Cancelled', (trip as any).refusalReason || 'Cancelled');
+            console.log('✅ Refus envoyé à admin en temps réel');
+          }
+        } catch (e) {
+          console.warn('⚠️ SignalR non connecté, notification sera synchronisée');
+        }
+
+        // ✅ Sauvegarder aussi le missionStatus pour la page GPS
+        const missionStatus = this.convertToMissionStatus(newStatus);
+        localStorage.setItem(`missionStatus_${trip.id}`, missionStatus);
+        console.log('💾 Mission status saved for GPS page:', missionStatus);
+        
+        this.showToast('✅ Statut mis à jour - Admin notifié en temps réel', 2000, 'success');
       },
       error: async (err) => {
         console.error('Error updating trip status', err);
@@ -749,6 +896,33 @@ export class HomePage implements OnInit, OnDestroy {
       this.showToast('Mode hors ligne - Le chatbot utilise un fallback intelligent', 2000, 'warning');
     }
     this.router.navigate(['/chatbot']);
+  }
+
+  /**
+   * Convertir le statut du trajet en statut de mission pour la page GPS
+   */
+  private convertToMissionStatus(tripStatus: string): string {
+    switch (tripStatus) {
+      case 'Pending':
+      case 'Planned':
+        return 'pending';
+      case 'Accepted':
+        return 'accepted';
+      case 'Loading':
+      case 'LoadingInProgress':
+        return 'loading';
+      case 'InDelivery':
+      case 'DeliveryInProgress':
+        return 'delivery';
+      case 'Receipt':
+      case 'Completed':
+        return 'completed';
+      case 'Cancelled':
+      case 'Refused':
+        return 'refused';
+      default:
+        return 'pending';
+    }
   }
 
   private async showToast(message: string, duration: number, color: string) {

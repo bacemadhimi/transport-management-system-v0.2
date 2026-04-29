@@ -127,17 +127,19 @@ export class NotificationsPage implements OnInit, OnDestroy {
 
   loadNotifications() {
     if (!this.isOnline) {
-      // Still show cached data when offline
       this.showToast('Offline - Showing cached notifications', 'warning');
       return;
     }
 
     this.isLoading = true;
-    
+
     this._sub = this.tripService.getAllTrips().subscribe({
       next: (trips) => {
-        this.processTrips(trips);
-        this.cacheNotifications(trips);
+        // Filtrer les trips supprimés AVANT de les traiter
+        const filteredTrips = trips.filter(t => !this.notificationStorage.isDeleted(t.id));
+        console.log('📡 Server trips:', trips.length, '-> after filter:', filteredTrips.length);
+        this.processTrips(filteredTrips);
+        this.cacheNotifications(filteredTrips);
         this.lastSyncTime = new Date();
         this.isLoading = false;
       },
@@ -168,16 +170,18 @@ export class NotificationsPage implements OnInit, OnDestroy {
     try {
       const cached = localStorage.getItem('cachedNotifications');
       const syncTime = localStorage.getItem('notificationsSyncTime');
-      
+
       if (cached) {
         const trips = JSON.parse(cached) as ITrip[];
-        this.processTrips(trips);
-        
+        // Filtrer les trips supprimés
+        const filteredTrips = trips.filter(t => !this.notificationStorage.isDeleted(t.id));
+        this.processTrips(filteredTrips);
+
         if (syncTime) {
           this.lastSyncTime = new Date(parseInt(syncTime));
         }
-        
-        console.log('Loaded notifications from cache:', trips.length);
+
+        console.log('Loaded notifications from cache:', filteredTrips.length, '(filtered from', trips.length, ')');
       }
     } catch (error) {
       console.error('Error loading from cache:', error);

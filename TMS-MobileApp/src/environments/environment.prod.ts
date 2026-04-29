@@ -1,4 +1,5 @@
 export const environment = {
   production: true,
-  apiUrl: 'https://localhost:7287'
+  apiUrl: 'http://51.178.65.32:45880',
+  weatherApiKey: ''
 };

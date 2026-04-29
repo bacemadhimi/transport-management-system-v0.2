@@ -14,12 +14,14 @@
 }
 
 .dayoff-page {
-  max-width: 1200px;
+  max-width: none;
+  width: 100%;
+  padding: 24px;
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.06);
+  border: 1px solid #eef2f6;
+  border-radius: 12px;
+  background: #fff;
   margin: 0 auto;
-  background: var(--card-bg);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow);
-  padding: 1.75rem 2rem;
 }
 
 .dayoff-header {
@@ -38,29 +40,53 @@
 
 .dayoff-header__actions {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 1rem;
 }
 
 .dayoff-search {
   flex: 1 1 auto;
+  min-width: 250px;
 }
 
+.filter-row {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-top: 0.5rem;
+}
 
-::ng-deep .dayoff-search .mdc-text-field {
+.country-filter,
+.year-filter {
+  flex: 1;
+  min-width: 150px;
+}
+
+/* rounded pill search */
+::ng-deep .dayoff-search .mdc-text-field,
+::ng-deep .country-filter .mdc-text-field,
+::ng-deep .year-filter .mdc-text-field {
   border-radius: 999px;
   background: #edf3ff;
   box-shadow: inset 0 0 0 1px rgba(94, 162, 255, 0.25);
 }
 
-::ng-deep .dayoff-search .mdc-notched-outline {
+::ng-deep .dayoff-search .mdc-notched-outline,
+::ng-deep .country-filter .mdc-notched-outline,
+::ng-deep .year-filter .mdc-notched-outline {
   border-radius: 999px;
   border-color: transparent;
 }
 
 ::ng-deep .dayoff-search .mdc-notched-outline__leading,
 ::ng-deep .dayoff-search .mdc-notched-outline__trailing,
-::ng-deep .dayoff-search .mdc-notched-outline__notch {
+::ng-deep .dayoff-search .mdc-notched-outline__notch,
+::ng-deep .country-filter .mdc-notched-outline__leading,
+::ng-deep .country-filter .mdc-notched-outline__trailing,
+::ng-deep .country-filter .mdc-notched-outline__notch,
+::ng-deep .year-filter .mdc-notched-outline__leading,
+::ng-deep .year-filter .mdc-notched-outline__trailing,
+::ng-deep .year-filter .mdc-notched-outline__notch {
   border-color: transparent !important;
   border-width: 0 !important;
 }
@@ -74,6 +100,7 @@
   font-weight: 500;
   box-shadow: 0 10px 25px rgba(16, 185, 129, 0.35);
   transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+  white-space: nowrap;
 }
 
 .dayoff-add-btn:hover {
@@ -86,7 +113,6 @@
   outline: 3px solid rgba(94, 162, 255, 0.6);
   outline-offset: 3px;
 }
-
 
 .export-actions {
   display: flex;
@@ -101,29 +127,71 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 8px 20px rgba(15,23,42,0.06);
-  border: 1px solid rgba(15,23,42,0.04);
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06);
+  border: 1px solid rgba(15, 23, 42, 0.04);
   transition: transform 0.12s ease, box-shadow 0.12s ease;
   background: #fff;
 }
 
-.export-btn:hover { transform: translateY(-2px); box-shadow: 0 14px 30px rgba(15,23,42,0.12); }
+.export-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 30px rgba(15, 23, 42, 0.12);
+}
 
-.export-icon { width: 28px; height: 28px; display: block; }
+.export-icon {
+  width: 28px;
+  height: 28px;
+  display: block;
+}
 
-.export-excel .export-icon rect { fill: #107C10; }
-.export-csv .export-icon rect { fill: #1E90FF; }
-.export-pdf .export-icon rect { fill: #D32F2F; }
+.export-excel .export-icon rect {
+  fill: #107C10;
+}
 
+.export-csv .export-icon rect {
+  fill: #1E90FF;
+}
 
-.dayoff-header__actions { display: flex; justify-content: space-between; gap: 1rem; align-items: flex-start; }
-.dayoff-header__left { display: flex; flex-direction: column; align-items: flex-start; flex: 1 1 auto; }
-.dayoff-header__right { display: flex; align-items: center; }
+.export-pdf .export-icon rect {
+  fill: #D32F2F;
+}
+
+.dayoff-header__actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+.dayoff-header__left {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  flex: 1 1 auto;
+}
+
+.dayoff-header__right {
+  display: flex;
+  align-items: center;
+}
 
 @media (max-width: 768px) {
-  .dayoff-header__actions { flex-direction: column; align-items: stretch; }
-  .dayoff-header__right { justify-content: flex-end; }
-  .export-actions { margin-top: 0.5rem; }
+  .dayoff-header__actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .dayoff-header__right {
+    justify-content: flex-end;
+  }
+  
+  .export-actions {
+    margin-top: 0.5rem;
+  }
+
+  .filter-row {
+    flex-direction: column;
+  }
 }
 
 @media (max-width: 640px) {
@@ -145,5 +213,32 @@
     text-align: center;
   }
 }
+.import-export-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
 
+.import-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-radius: 999px !important;
+  padding: 0.5rem 1.25rem !important;
+  border-color: #5ea2ff !important;
+  color: #5ea2ff !important;
+  font-weight: 500;
+  transition: all 0.2s ease;
 
+  &:hover {
+    background: rgba(94, 162, 255, 0.1) !important;
+    border-color: #3b82f6 !important;
+  }
+
+  mat-icon {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+  }
+}

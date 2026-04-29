@@ -29,14 +29,19 @@ export interface TripNotification {
 })
 export class NotificationStorageService {
   private notificationsKey = 'tms_notifications';
+  private deletedNotificationsKey = 'tms_notifications_deleted_ids';
   private unreadCountSubject = new BehaviorSubject<number>(0);
   private notificationsSubject = new BehaviorSubject<TripNotification[]>([]);
-  
+
   public unreadCount$ = this.unreadCountSubject.asObservable();
   public notifications$ = this.notificationsSubject.asObservable();
 
+  // IDs de notifications supprimées (persisté dans localStorage)
+  private deletedNotificationIds: Set<number> = new Set();
+
   constructor() {
     this.loadFromStorage();
+    this.loadDeletedIds();
   }
 
   /**
@@ -141,12 +146,21 @@ export class NotificationStorageService {
   }
 
   /**
-   * Clear all notifications
+   * Clear all notifications from storage
    */
   clearAll(): void {
+    // Stocker les tripIds des notifications supprimées
+    const currentNotifications = this.getAll();
+    currentNotifications.forEach(n => this.deletedNotificationIds.add(n.tripId));
+    this.saveDeletedIds();
+
+    // Supprimer aussi le cache des trips pour éviter qu'ils réapparaissent
+    localStorage.removeItem('cachedNotifications');
+    localStorage.removeItem('notificationsSyncTime');
+
     localStorage.removeItem(this.notificationsKey);
     this.updateSubjects([]);
-    console.log('🗑️ All notifications cleared');
+    console.log('🗑️ All notifications and cache cleared');
   }
 
   /**
@@ -174,9 +188,17 @@ export class NotificationStorageService {
    * Delete specific notification
    */
   delete(notificationId: number): void {
-    const notifications = this.getAll().filter(n => n.id !== notificationId);
-    this.saveToStorage(notifications);
-    this.updateSubjects(notifications);
+    // Trouver la notification pour récupérer son tripId
+    const notifications = this.getAll();
+    const notification = notifications.find(n => n.id === notificationId);
+    if (notification) {
+      this.deletedNotificationIds.add(notification.tripId);
+      this.saveDeletedIds();
+    }
+
+    const filtered = notifications.filter(n => n.id !== notificationId);
+    this.saveToStorage(filtered);
+    this.updateSubjects(filtered);
     console.log('🗑️ Notification deleted:', notificationId);
   }
 
@@ -259,7 +281,6 @@ export class NotificationStorageService {
 
       console.log('🔄 Syncing notifications from server...');
 
-      // Fetch unread notifications from server
       const response = await fetch(`${environment.apiUrl}/api/Notifications?pageIndex=0&pageSize=10`, {
         method: 'GET',
         headers: {
@@ -274,19 +295,22 @@ export class NotificationStorageService {
         const result = await response.json();
         console.log('📦 Server notifications response:', JSON.stringify(result, null, 2));
 
-        // Structure: { data: { notifications: [...], unreadCount: N, totalCount: N } }
         if (result.data && result.data.notifications) {
           const notifications = result.data.notifications;
           console.log('📋 Notifications count:', notifications.length);
 
-          // Add each notification to local storage
           notifications.forEach((serverNotif: any) => {
             try {
-              // Handle both nested and flat structures
               const notif = serverNotif.notification || serverNotif;
-              
+
               if (!notif.type) {
                 console.warn('⚠️ Skipping notification without type:', serverNotif);
+                return;
+              }
+
+              // Ignorer si déjà supprimée localement
+              if (this.deletedNotificationIds.has(notif.tripId)) {
+                console.log('⏭️ Skipping deleted notification for trip:', notif.tripId);
                 return;
               }
 
@@ -323,4 +347,42 @@ export class NotificationStorageService {
       console.error('❌ Error syncing notifications:', error);
     }
   }
+
+  // ===== Gestion des notifications supprimées (localStorage) =====
+  private loadDeletedIds(): void {
+    try {
+      const stored = localStorage.getItem(this.deletedNotificationsKey);
+      if (stored) {
+        const ids = JSON.parse(stored) as number[];
+        this.deletedNotificationIds = new Set(ids);
+        console.log('📖 Loaded deleted notification IDs:', this.deletedNotificationIds.size);
+      }
+    } catch (e) {
+      console.error('Error loading deleted notification IDs:', e);
+    }
+  }
+
+  private saveDeletedIds(): void {
+    try {
+      localStorage.setItem(this.deletedNotificationsKey, JSON.stringify(Array.from(this.deletedNotificationIds)));
+    } catch (e) {
+      console.error('Error saving deleted notification IDs:', e);
+    }
+  }
+
+  /**
+   * Filtrer les notifications supprimées (appelé après le chargement serveur)
+   */
+  filterDeletedNotifications(notifications: TripNotification[]): TripNotification[] {
+    return notifications.filter(n => !this.deletedNotificationIds.has(n.id));
+  }
+
+  /**
+   * Vérifier si une notification/trip a été supprimée
+   */
+  isDeleted(id: number): boolean {
+    return this.deletedNotificationIds.has(id);
+  }
+
+  // ============================================================
 }

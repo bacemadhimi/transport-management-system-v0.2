@@ -1,130 +1,161 @@
-<mat-card class="form-card p-8">
-  <mat-card-title>
-    {{ data.fuelId ? 'Modifier Remplissage' : 'Ajouter Remplissage' }}
-  </mat-card-title>
-
-  <form [formGroup]="fuelForm" (ngSubmit)="onSubmit()">
-
-    <!-- Camion -->
-    <mat-form-field class="w-full">
-      <mat-label>Camion</mat-label>
-      <mat-select formControlName="truckId">
-        <mat-option *ngFor="let truck of trucks" [value]="truck.id">
-          {{ truck.immatriculation }} - {{ truck.brand }}
-        </mat-option>
-      </mat-select>
-      <mat-error *ngIf="fuelForm.get('truckId')?.hasError('required')">
-        La sélection d'un camion est obligatoire
-      </mat-error>
-    </mat-form-field>
-
-    <!-- Chauffeur -->
-    <mat-form-field class="w-full">
-      <mat-label>Chauffeur</mat-label>
-      <mat-select formControlName="driverId">
-        <mat-option *ngFor="let driver of drivers" [value]="driver.id">
-          {{ driver.name }} - {{ driver.permisNumber }}
-        </mat-option>
-      </mat-select>
-      <mat-error *ngIf="fuelForm.get('driverId')?.hasError('required')">
-        La sélection d'un chauffeur est obligatoire
-      </mat-error>
-    </mat-form-field>
-
-    <!-- Date de Remplissage -->
-    <mat-form-field class="w-full">
-      <mat-label>Date de Remplissage</mat-label>
-      <input 
-        matInput
-        [matDatepicker]="fillDatePicker"
-        formControlName="fillDate"
-      />
-      <mat-datepicker-toggle matSuffix [for]="fillDatePicker"></mat-datepicker-toggle>
-      <mat-datepicker #fillDatePicker></mat-datepicker>
-      <mat-error *ngIf="fuelForm.get('fillDate')?.hasError('required')">
-        La date de remplissage est obligatoire
-      </mat-error>
-    </mat-form-field>
-
-    <!-- Quantité -->
-    <mat-form-field class="w-full">
-      <mat-label>Quantité (Litres)</mat-label>
-      <input matInput type="number" formControlName="quantity" min="1" />
-      <mat-error *ngIf="fuelForm.get('quantity')?.hasError('required')">
-        La quantité est obligatoire
-      </mat-error>
-      <mat-error *ngIf="fuelForm.get('quantity')?.hasError('min')">
-        La quantité doit être supérieure à 0
-      </mat-error>
-    </mat-form-field>
-
-    <!-- Compteur KM -->
-    <mat-form-field class="w-full">
-      <mat-label>Compteur Kilométrique</mat-label>
-      <input matInput formControlName="odometerReading" />
-      <mat-error *ngIf="fuelForm.get('odometerReading')?.hasError('required')">
-        Le compteur kilométrique est obligatoire
-      </mat-error>
-    </mat-form-field>
-
-    <!-- Montant -->
-    <mat-form-field class="w-full">
-      <mat-label>Montant (€)</mat-label>
-      <input matInput type="number" formControlName="amount" min="0" step="0.01" />
-      <mat-error *ngIf="fuelForm.get('amount')?.hasError('required')">
-        Le montant est obligatoire
-      </mat-error>
-      <mat-error *ngIf="fuelForm.get('amount')?.hasError('min')">
-        Le montant doit être positif
-      </mat-error>
-    </mat-form-field>
-
-    <!-- Type de Carburant -->
-    <mat-form-field class="w-full">
-      <mat-label>Type de Carburant</mat-label>
-      <mat-select formControlName="fuelTank">
-        <mat-option *ngFor="let type of fuelTypes" [value]="type">
-          {{ type }}
-        </mat-option>
-      </mat-select>
-      <mat-error *ngIf="fuelForm.get('fuelTank')?.hasError('required')">
-        Le type de carburant est obligatoire
-      </mat-error>
-    </mat-form-field>
-
-    <!-- Fournisseur -->
-    <mat-form-field class="w-full">
-      <mat-label>Fournisseur</mat-label>
-      <mat-select formControlName="fuelVendorId">
-        <mat-option *ngFor="let vendor of fuelVendors" [value]="vendor.id">
-          {{ vendor.name }}
-        </mat-option>
-      </mat-select>
-      <mat-error *ngIf="fuelForm.get('fuelVendorId')?.hasError('required')">
-        La sélection d'un fournisseur est obligatoire
-      </mat-error>
-    </mat-form-field>
-
-    <!-- Commentaire -->
-    <mat-form-field class="w-full">
-      <mat-label>Commentaire</mat-label>
-      <textarea matInput formControlName="comment" rows="3"></textarea>
-    </mat-form-field>
-
-    <div class="flex justify-center mt-4">
-      <button
-        mat-raised-button
-        color="primary"
-        type="submit"
-        [disabled]="fuelForm.invalid"
-      >
-        {{ data.fuelId ? 'Modifier' : 'Ajouter' }}
-      </button>
-
-      <button mat-button type="button" (click)="onCancel()">
-        Annuler
-      </button>
+<mat-card class="fuel-form-card">
+  <header class="fuel-form-card__header">
+    <div>
+      <h2>{{ data.fuelId ? 'Modifier Remplissage' : 'Ajouter Remplissage' }}</h2>
     </div>
+  </header>
 
+  <form [formGroup]="fuelForm" class="fuel-form">
+    <div class="form-grid">
+      
+      <!-- Row 1: Camion and Chauffeur -->
+      <div class="form-row">
+        <div class="form-field">
+          <mat-label>Camion <span class="required-star">*</span></mat-label>
+          <mat-form-field appearance="outline" class="full-width fuel-field">
+            <mat-select formControlName="truckId" placeholder="Sélectionner un camion">
+              <mat-option *ngFor="let truck of trucks" [value]="truck.id">
+                {{ getTruckDisplayName(truck) }}
+              </mat-option>
+            </mat-select>
+            <mat-error *ngIf="fuelForm.get('truckId')?.hasError('required')">
+              Le camion est requis
+            </mat-error>
+          </mat-form-field>
+        </div>
+
+        <div class="form-field">
+          <mat-label>Chauffeur <span class="required-star">*</span></mat-label>
+          <mat-form-field appearance="outline" class="full-width fuel-field">
+            <mat-select formControlName="driverId" placeholder="Sélectionner un chauffeur">
+              <mat-option *ngFor="let driver of drivers" [value]="driver.id">
+                {{ driver.name }} {{ driver.idNumber ? '- ' + driver.idNumber : '' }}
+              </mat-option>
+            </mat-select>
+            <mat-error *ngIf="fuelForm.get('driverId')?.hasError('required')">
+              Le chauffeur est requis
+            </mat-error>
+          </mat-form-field>
+        </div>
+      </div>
+
+      <!-- Row 2: Date and Quantity -->
+      <div class="form-row">
+        <div class="form-field">
+          <mat-label>Date de Remplissage <span class="required-star">*</span></mat-label>
+          <mat-form-field appearance="outline" class="full-width fuel-field">
+            <input 
+              matInput
+              [matDatepicker]="fillDatePicker"
+              formControlName="fillDate"
+              placeholder="JJ/MM/AAAA"
+            />
+            <mat-datepicker-toggle matSuffix [for]="fillDatePicker"></mat-datepicker-toggle>
+            <mat-datepicker #fillDatePicker></mat-datepicker>
+            <mat-error *ngIf="fuelForm.get('fillDate')?.hasError('required')">
+              La date de remplissage est obligatoire
+            </mat-error>
+          </mat-form-field>
+        </div>
+
+        <div class="form-field">
+          <mat-label>Quantité (Litres) <span class="required-star">*</span></mat-label>
+          <mat-form-field appearance="outline" class="full-width fuel-field">
+            <input matInput type="number" formControlName="quantity" min="1" placeholder="Ex: 50" />
+            <mat-error *ngIf="fuelForm.get('quantity')?.hasError('required')">
+              La quantité est obligatoire
+            </mat-error>
+            <mat-error *ngIf="fuelForm.get('quantity')?.hasError('min')">
+              La quantité doit être supérieure à 0
+            </mat-error>
+          </mat-form-field>
+        </div>
+      </div>
+
+      <!-- Row 3: Odometer and Amount -->
+      <div class="form-row">
+        <div class="form-field">
+          <mat-label>Compteur Kilométrique <span class="required-star">*</span></mat-label>
+          <mat-form-field appearance="outline" class="full-width fuel-field">
+            <input matInput formControlName="odometerReading" placeholder="Ex: 125000" />
+            <mat-error *ngIf="fuelForm.get('odometerReading')?.hasError('required')">
+              Le compteur kilométrique est obligatoire
+            </mat-error>
+          </mat-form-field>
+        </div>
+
+        <div class="form-field">
+          <mat-label>Montant (€) <span class="required-star">*</span></mat-label>
+          <mat-form-field appearance="outline" class="full-width fuel-field">
+            <input matInput type="number" formControlName="amount" min="0" step="0.01" placeholder="Ex: 75.50" />
+            <mat-error *ngIf="fuelForm.get('amount')?.hasError('required')">
+              Le montant est obligatoire
+            </mat-error>
+            <mat-error *ngIf="fuelForm.get('amount')?.hasError('min')">
+              Le montant doit être positif
+            </mat-error>
+          </mat-form-field>
+        </div>
+      </div>
+
+      <!-- Row 4: Fuel Type and Vendor -->
+      <div class="form-row">
+        <div class="form-field">
+          <mat-label>Type de Carburant <span class="required-star">*</span></mat-label>
+          <mat-form-field appearance="outline" class="full-width fuel-field">
+            <mat-select formControlName="fuelTank" placeholder="Sélectionner un type">
+              <mat-option *ngFor="let type of fuelTypes" [value]="type">
+                {{ type }}
+              </mat-option>
+            </mat-select>
+            <mat-error *ngIf="fuelForm.get('fuelTank')?.hasError('required')">
+              Le type de carburant est obligatoire
+            </mat-error>
+          </mat-form-field>
+        </div>
+
+        <div class="form-field">
+          <mat-label>Fournisseur <span class="required-star">*</span></mat-label>
+          <mat-form-field appearance="outline" class="full-width fuel-field">
+            <mat-select formControlName="fuelVendorId" placeholder="Sélectionner un fournisseur">
+              <mat-option *ngFor="let vendor of fuelVendors" [value]="vendor.id">
+                {{ vendor.name }}
+              </mat-option>
+            </mat-select>
+            <mat-error *ngIf="fuelForm.get('fuelVendorId')?.hasError('required')">
+              Le fournisseur est obligatoire
+            </mat-error>
+          </mat-form-field>
+        </div>
+      </div>
+
+      <!-- Row 5: Comment -->
+      <div class="form-row full-width">
+        <div class="form-field full-width">
+          <mat-label>Commentaire</mat-label>
+          <mat-form-field appearance="outline" class="full-width fuel-field">
+            <textarea matInput formControlName="comment" rows="3" placeholder="Commentaire optionnel..."></textarea>
+          </mat-form-field>
+        </div>
+      </div>
+
+      <!-- Row 6: Form Actions -->
+      <div class="form-row full-width">
+        <div class="form-field full-width">
+          <div class="form-footer">
+            <button 
+              mat-flat-button 
+              color="primary" 
+              type="submit" 
+              [disabled]="fuelForm.invalid"
+              (click)="onSubmit()">
+              <span>{{ data.fuelId ? 'Modifier' : 'Ajouter' }}</span>
+            </button>
+            <button mat-button type="button" (click)="onCancel()">Annuler</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
   </form>
 </mat-card>

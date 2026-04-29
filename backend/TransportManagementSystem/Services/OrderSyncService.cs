@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
+using System.Text.Json;
 using TransportManagementSystem.Data;
 using TransportManagementSystem.Entity;
 
@@ -8,11 +9,13 @@ namespace TransportManagementSystem.Services
     {
         private readonly QadDbContext _qad;
         private readonly ApplicationDbContext _tms;
+        private readonly IHttpClientFactory _httpClientFactory;
 
-        public OrderSyncService(QadDbContext qad, ApplicationDbContext tms)
+        public OrderSyncService(QadDbContext qad, ApplicationDbContext tms, IHttpClientFactory httpClientFactory)
         {
             _qad = qad;
             _tms = tms;
+            _httpClientFactory = httpClientFactory;
         }
 
         public async Task<SyncHistory> SyncSalesOrdersAsync()
@@ -154,7 +157,7 @@ namespace TransportManagementSystem.Services
 
                 if (exists == null)
                 {
-                    _tms.Customers.Add(new Customer
+                    var customer = new Customer
                     {
                         SourceSystem = DataSource.QAD,
                         ExternalId = externalId,
@@ -163,11 +166,86 @@ namespace TransportManagementSystem.Services
                         Phone = "",
                         Email = "",
                         Contact = "",
-                    });
+                    };
+
+                    // Try to geocode customer address if available
+                    // Note: QAD CmMstr may not have address fields, so this is optional
+                    // You can add address fields from QAD if they exist in CmMstr
+                    /*
+                    if (!string.IsNullOrWhiteSpace(qc.Address))
+                    {
+                        try
+                        {
+                            var geocodeResult = await GeocodeAddress(qc.Address);
+                            if (geocodeResult != null)
+                            {
+                                customer.Latitude = Convert.ToDouble(geocodeResult["lat"]);
+                                customer.Longitude = Convert.ToDouble(geocodeResult["lon"]);
+                                Console.WriteLine($"✅ QAD Customer '{customer.Name}' geocoded: {customer.Latitude}, {customer.Longitude}");
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine($"⚠️ Failed to geocode QAD customer '{customer.Name}': {ex.Message}");
+                        }
+                    }
+                    */
+
+                    _tms.Customers.Add(customer);
                 }
             }
 
             await _tms.SaveChangesAsync();
+        }
+
+        /// <summary>
+        /// Géocode une adresse via Nominatim
+        /// </summary>
+        private async Task<Dictionary<string, string>?> GeocodeAddress(string address)
+        {
+            if (string.IsNullOrWhiteSpace(address))
+                return null;
+
+            try
+            {
+                var client = _httpClientFactory.CreateClient();
+                client.DefaultRequestHeaders.Clear();
+                client.DefaultRequestHeaders.Add("User-Agent", "TMS-QAD-Sync/1.0");
+                client.Timeout = TimeSpan.FromSeconds(5);
+
+                var url = $"https://nominatim.openstreetmap.org/search?q={Uri.EscapeDataString(address)}&format=json&limit=1&countrycodes=tn&accept-language=fr";
+                
+                var response = await client.GetAsync(url);
+                
+                if (!response.IsSuccessStatusCode)
+                    return null;
+
+                var content = await response.Content.ReadAsStringAsync();
+                var results = JsonSerializer.Deserialize<List<JsonElement>>(content);
+
+                if (results != null && results.Count > 0)
+                {
+                    var result = results[0];
+                    var lat = result.GetProperty("lat").GetString();
+                    var lon = result.GetProperty("lon").GetString();
+
+                    if (!string.IsNullOrEmpty(lat) && !string.IsNullOrEmpty(lon))
+                    {
+                        return new Dictionary<string, string>
+                        {
+                            { "lat", lat },
+                            { "lon", lon }
+                        };
+                    }
+                }
+
+                return null;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Error geocoding address: {ex.Message}");
+                return null;
+            }
         }
 
         public async Task<SyncHistory?> GetLastSyncAsync()

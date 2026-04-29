@@ -1,9 +1,10 @@
-﻿import { Component, inject, signal, OnInit, OnDestroy, HostListener, ElementRef, ViewChild } from '@angular/core';
-import { RouterLink, RouterOutlet } from '@angular/router';
+﻿import { Component, inject, signal, OnInit, OnDestroy, ViewChild, ElementRef, HostListener } from '@angular/core';
+import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
+import { NavigationEnd, Router, RouterLink, RouterOutlet } from '@angular/router';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
-import { MatSidenavModule } from '@angular/material/sidenav';
+import { MatSidenavModule, MatDrawer } from '@angular/material/sidenav';
 import { MatListModule } from '@angular/material/list';
 import { MatExpansionModule } from '@angular/material/expansion';
 import { CommonModule } from '@angular/common';
@@ -14,12 +15,14 @@ import { Theme, ThemeService } from './services/theme.service';
 import { SignalRService, TripNotification } from './services/signalr.service';
 import { MatBadgeModule } from '@angular/material/badge';
 import { MatMenuModule } from '@angular/material/menu';
-import { Subscription } from 'rxjs';
+import { Subscription, Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
 import { Translation } from './services/Translation';
 import { environment } from '../environments/environment';
 import { IGeneralSettings } from './types/general-settings';
 import { LogoService } from './services/logo.service';
-import { Router } from '@angular/router';
+import { MenuManagerService, MenuType } from './services/menu-manager.service';
+import { RefreshService } from './services/refresh.service';
 
 @Component({
   selector: 'app-root',
@@ -43,7 +46,14 @@ import { Router } from '@angular/router';
 })
 export class App implements OnInit, OnDestroy {
   protected readonly title = signal('transport-management-system-web');
-  showThemePicker = false;
+  
+  // Références aux éléments du DOM
+  @ViewChild('permissionsMenu') permissionsMenu!: ElementRef;
+  @ViewChild('notificationsPanel') notificationsPanel!: ElementRef;
+  @ViewChild('languageMenu') languageMenu!: ElementRef;
+  @ViewChild('themePicker') themePicker!: ElementRef;
+  @ViewChild('drawer') drawer!: MatDrawer;
+
   themes!: Theme[];
   allNotifications: TripNotification[] = [];
   currentTheme!: Theme;
@@ -52,13 +62,17 @@ export class App implements OnInit, OnDestroy {
   signalRService = inject(SignalRService);
   private http = inject(HttpClient);
   private translation = inject(Translation);
+  private menuManager: MenuManagerService = inject(MenuManagerService);
+  private logoService = inject(LogoService);
+  
+  // ✅ ADD: BreakpointObserver for mobile detection
+  private breakpointObserver = inject(BreakpointObserver);
+  private destroy$ = new Subject<void>();
   private router = inject(Router);
   currentPage = 0;
   pageSize = 20;
   totalNotifications = 0;
   hasMoreNotifications = true;
-  showPermissions = false;
-  showLanguageMenu: boolean = false;
   currentLanguage = 'fr';
   maintenanceOpen = false;
   userMenuOpen = false;
@@ -67,27 +81,39 @@ export class App implements OnInit, OnDestroy {
   cancelledTripsCount = 0;
   notifications: TripNotification[] = [];
   unreadNotificationsCount = 0;
-  showNotificationsPanel = false;
+  private readNotificationIds: Set<string> = new Set();
   refreshNotificationInterval: any;
-
   selectedNotificationTab: 'all' | 'unread' = 'all';
-
-  // ViewChild references for click outside detection
-  @ViewChild('permissionsMenu') permissionsMenu!: ElementRef;
-  @ViewChild('notificationsPanel') notificationsPanel!: ElementRef;
-  @ViewChild('themePicker') themePicker!: ElementRef;
-  @ViewChild('languageMenu') languageMenu!: ElementRef;
-
-  private logoService = inject(LogoService);
   showOnlineDot = true;
+
+  // ✅ ADD: Mobile detection properties
+  isMobile = false;
+  isTablet = false;
 
   private notificationsSubscription!: Subscription;
   private cancelledTripsSubscription!: Subscription;
   private connectionStatusSubscription!: Subscription;
+  private refreshService = inject(RefreshService);
 
-  constructor(
-    private themeService: ThemeService
-  ) {
+  // Getters pour l'état des menus
+  get showPermissions(): boolean {
+    return this.menuManager.isMenuOpen('permissions');
+  }
+
+  get showNotificationsPanel(): boolean {
+    return this.menuManager.isMenuOpen('notifications');
+  }
+
+  get showLanguageMenu(): boolean {
+    return this.menuManager.isMenuOpen('language');
+  }
+
+  get showThemePicker(): boolean {
+    return this.menuManager.isMenuOpen('theme');
+  }
+
+  constructor(private themeService: ThemeService) {
+    
     this.themes = this.themeService.getThemes();
     this.currentTheme = this.themeService.getCurrentTheme();
     this.logoService.logo$.subscribe(logo => {
@@ -95,49 +121,173 @@ export class App implements OnInit, OnDestroy {
     });
   }
 
-  // HostListener to close menus when clicking outside
-  @HostListener('document:click', ['$event'])
-  onClickOutside(event: MouseEvent) {
-    const target = event.target as HTMLElement;
+
+@HostListener('document:click', ['$event'])
+onDocumentClick(event: MouseEvent): void {
+  const target = event.target as HTMLElement;
+
+  // Handle drawer closing on mobile when clicking outside
+  if (this.isMobile && this.drawer?.opened) {
+    const drawerElement = document.querySelector('mat-drawer');
+    const menuButton = target.closest('.hamburger-menu');
+    const logoButton = target.closest('.cursor-pointer');
     
-    // Close permissions menu if clicked outside
-    if (this.showPermissions && this.permissionsMenu) {
-      const clickedInside = this.permissionsMenu.nativeElement.contains(target);
-      const clickedOnButton = target.closest('[mat-icon-button]')?.querySelector('mat-icon')?.textContent === 'settings';
-      
-      if (!clickedInside && !clickedOnButton) {
-        this.showPermissions = false;
+    // Check if click is outside drawer and not on toggle buttons
+    if (drawerElement && 
+        !drawerElement.contains(target) && 
+        !menuButton && 
+        !logoButton) {
+      this.drawer.close();
+      document.body.classList.remove('menu-open');
+    }
+  }
+
+  // Existing menu close logic
+  const clickedInsidePermission = this.isClickInsideMenu(target, 'permissions');
+  const clickedInsideNotification = this.isClickInsideMenu(target, 'notifications');
+  const clickedInsideLanguage = this.isClickInsideMenu(target, 'language');
+  const clickedInsideTheme = this.isClickInsideMenu(target, 'theme');
+
+  if (!clickedInsidePermission && !clickedInsideNotification && 
+      !clickedInsideLanguage && !clickedInsideTheme) {
+    this.menuManager.closeAllMenus();
+    
+    if (this.isMobile) {
+      document.body.classList.remove('menu-open');
+    }
+  }
+}
+  // ✅ ADD: Window resize handler
+  @HostListener('window:resize', ['$event'])
+  onResize(event: any) {
+    if (window.innerWidth <= 768 && this.drawer?.opened) {
+      this.drawer.close();
+      document.body.classList.remove('menu-open');
+    }
+  }
+
+  // ✅ ADD: Back button handler for mobile
+  @HostListener('window:popstate', ['$event'])
+  onPopState(event: PopStateEvent) {
+    if (this.isMobile) {
+      this.menuManager.closeAllMenus();
+      document.body.classList.remove('menu-open');
+    }
+  }
+
+  private isClickInsideMenu(target: HTMLElement, menuType: string): boolean {
+    // Vérifier les data-attributs
+    if (target.closest(`[data-menu="${menuType}"]`)) {
+      return true;
+    }
+
+    // Vérifier les éléments du DOM référencés
+    switch (menuType) {
+      case 'permissions':
+        return this.permissionsMenu?.nativeElement?.contains(target) || false;
+      case 'notifications':
+        return this.notificationsPanel?.nativeElement?.contains(target) || false;
+      case 'language':
+        return this.languageMenu?.nativeElement?.contains(target) || false;
+      case 'theme':
+        return this.themePicker?.nativeElement?.contains(target) || false;
+      default:
+        return false;
+    }
+  }
+
+  // ✅ ENHANCED: Toggle menu with mobile optimization
+  toggleMenu(menuType: MenuType): void {
+    this.menuManager.toggleMenu(menuType);
+    
+    // ✅ ADD: Add body class when menu is open on mobile
+    if (this.isMobile) {
+      const isAnyMenuOpen = this.showPermissions || this.showNotificationsPanel || 
+                           this.showLanguageMenu || this.showThemePicker;
+      if (isAnyMenuOpen) {
+        document.body.classList.add('menu-open');
+      } else {
+        document.body.classList.remove('menu-open');
       }
     }
+  }
+
+  openNotificationPanel(): void {
+    this.toggleMenu('notifications');
+  }
+
+  // ✅ ENHANCED: Close all menus with mobile cleanup
+  closeAllMenus(): void {
+    this.menuManager.closeAllMenus();
     
-    // Close notifications panel if clicked outside
-    if (this.showNotificationsPanel && this.notificationsPanel) {
-      const clickedInside = this.notificationsPanel.nativeElement.contains(target);
-      const clickedOnButton = target.closest('[mat-icon-button]')?.querySelector('mat-icon')?.textContent === 'notifications';
-      
-      if (!clickedInside && !clickedOnButton) {
-        this.showNotificationsPanel = false;
+    // ✅ ADD: Remove body class on mobile
+    if (this.isMobile) {
+      document.body.classList.remove('menu-open');
+    }
+  }
+
+toggleDrawer() {
+  if (this.drawer) {
+    this.drawer.toggle();
+    
+    // Update body class based on drawer state
+    if (this.isMobile) {
+      if (this.drawer.opened) {
+        document.body.classList.add('menu-open');
+        // Close any open dropdown menus when opening drawer
+        this.menuManager.closeAllMenus();
+      } else {
+        document.body.classList.remove('menu-open');
       }
     }
-    
-    // Close theme picker if clicked outside
-    if (this.showThemePicker && this.themePicker) {
-      const clickedInside = this.themePicker.nativeElement.contains(target);
-      const clickedOnButton = target.closest('.theme-picker-btn');
-      
-      if (!clickedInside && !clickedOnButton) {
-        this.showThemePicker = false;
-      }
+  }
+}
+
+private setupRouterEvents() {
+  this.router.events.pipe(takeUntil(this.destroy$)).subscribe(event => {
+    if (event instanceof NavigationEnd && this.isMobile && this.drawer?.opened) {
+      this.drawer.close();
+      document.body.classList.remove('menu-open');
     }
-    
-    // Close language menu if clicked outside
-    if (this.showLanguageMenu && this.languageMenu) {
-      const clickedInside = this.languageMenu.nativeElement.contains(target);
-      const clickedOnButton = target.closest('.language-selector');
+  });
+}
+private initializeMobileDetection() {
+  this.breakpointObserver
+    .observe([
+      Breakpoints.Handset,
+      Breakpoints.Tablet,
+      '(max-width: 768px)'
+    ])
+    .pipe(takeUntil(this.destroy$))
+    .subscribe(result => {
+      const wasMobile = this.isMobile;
+      this.isMobile = result.breakpoints['(max-width: 768px)'] || 
+                     result.breakpoints[Breakpoints.Handset];
+      this.isTablet = result.breakpoints[Breakpoints.Tablet];
       
-      if (!clickedInside && !clickedOnButton) {
-        this.showLanguageMenu = false;
+      // Close drawer when switching to mobile
+      if (this.isMobile && !wasMobile && this.drawer) {
+        this.drawer.close();
+        document.body.classList.remove('menu-open');
       }
+      
+      // Add/remove mobile class to body
+      if (this.isMobile) {
+        document.body.classList.add('is-mobile');
+      } else {
+        document.body.classList.remove('is-mobile');
+        document.body.classList.remove('menu-open');
+      }
+    });
+
+  this.detectIOS();
+}
+
+  // ✅ ADD: iOS detection
+  private detectIOS() {
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
+    if (isIOS) {
+      document.body.classList.add('ios-device');
     }
   }
 
@@ -148,112 +298,91 @@ export class App implements OnInit, OnDestroy {
     return this.notifications;
   }
 
-// app.ts - Modifiez ngOnInit
-
 ngOnInit() {
-  // 1. D'abord, charger les traductions (accessible sans auth)
+  this.refreshService.refresh$.subscribe(() => {
+  console.log('🔄 Refresh triggered from service');
+  this.refreshAllDataAfterLogin();
+});
+  this.initializeMobileDetection();
+  this.setupRouterEvents();
   this.httpService.getTranslations(this.currentLanguage).subscribe({
     next: data => this.translation.setTranslations(data),
     error: err => console.error('Error loading translations', err)
   });
-
-  // 2. Vérifier si l'utilisateur est sur la page de login
-  const currentUrl = this.router?.url || window.location.pathname;
-  const isLoginPage = currentUrl.includes('/login');
+  this.loadReadNotificationIds();
   
-  console.log('📍 Page actuelle:', currentUrl);
-  console.log('🔐 isLoggedIn:', this.authService.isLoggedIn);
-  console.log('🔐 Token valide:', this.authService.isTokenValid?.());
+  if (this.authService.isLoggedIn) {
+    this.authService.loadLoggedInUser();
+    this.loadCompanyLogo();
+    
+   
+    this.loadNotificationsFromDatabase(0, this.pageSize);
+    this.loadCancelledTrips();
+    
   
-  // 3. NE RIEN charger si on est sur la page de login ou si non authentifié
-  if (isLoginPage) {
-    console.log('📄 Page de login - aucun chargement de données authentifiées');
-    return;
+    setTimeout(() => {
+      this.initializeSignalR();
+    }, 500);
   }
-  
-  // 4. Si on n'est pas sur login mais pas authentifié, rediriger
-  if (!this.authService.isLoggedIn || !this.authService.isTokenValid?.()) {
-    console.warn('🔒 Non authentifié et pas sur login, redirection');
-    this.authService.logout();
-    return;
-  }
-  
-  // 5. Ici, on est authentifié ET pas sur la page de login
-  console.log('✅ Utilisateur authentifié, chargement des données');
-  this.authService.loadLoggedInUser();
-  this.initializeSignalR();
-  this.loadCompanyLogo(); 
-  this.loadNotificationsFromDatabase(0, this.pageSize);
-  this.loadCancelledTrips();
 
-  // 6. Intervalle de rafraîchissement (seulement si authentifié)
   this.refreshNotificationInterval = setInterval(() => {
-    if (this.authService.isLoggedIn && this.authService.isTokenValid?.()) {
-      if (!this.signalRService['connectionStatusSubject']?.value) {
-        this.loadCancelledTrips();
-        this.refreshNotifications();
-      }
+    if (!this.signalRService['connectionStatusSubject']?.value) {
+      this.loadCancelledTrips();
+      this.refreshNotifications();
     }
   }, 30000);
 }
 
-loadCompanyLogo() {
-  // Ne pas charger si non authentifié
-  if (!this.authService.isLoggedIn || !this.authService.isTokenValid?.()) {
-    console.log('⏭️ Skip company logo loading - not authenticated');
-    return;
-  }
-  
-  this.httpService.getAllSettingsByType('COMPANY').subscribe({
-    next: (settings: IGeneralSettings[]) => {
-      const companyRecord = settings.find(s => 
-        s.parameterCode === 'COMPANY_LOGO'
-      );
-      
-      if (companyRecord?.logoBase64) {
-        this.companyLogo = companyRecord.logoBase64;
-      } else {
+  loadCompanyLogo() {
+    this.httpService.getAllSettingsByType('COMPANY').subscribe({
+      next: (settings: IGeneralSettings[]) => {
+        const companyRecord = settings.find(s => 
+          s.parameterCode === 'COMPANY_LOGO'
+        );
+        
+        if (companyRecord?.logoBase64) {
+          this.companyLogo = companyRecord.logoBase64;
+        } else {
+          this.companyLogo = null;
+        }
+      },
+      error: (error) => {
+        console.error('Error loading company logo:', error);
         this.companyLogo = null;
       }
-    },
-    error: (error) => {
-      console.error('Error loading company logo:', error);
-      this.companyLogo = null;
-    }
-  });
-}
+    });
+  }
 
 loadNotificationsFromDatabase(pageIndex: number = 0, pageSize: number = 20) {
-  // Vérifier d'abord si l'utilisateur est authentifié avec token valide
-  if (!this.authService.isLoggedIn || !this.authService.isTokenValid()) {
-    console.warn('⚠️ Token invalide ou expiré, impossible de charger les notifications');
-    this.notifications = [];
-    this.allNotifications = [];
-    this.unreadNotificationsCount = 0;
+  const token = localStorage.getItem('token');
+  
+  console.log('🔑 loadNotificationsFromDatabase - Token:', token ? 'PRESENT' : 'MISSING');
+  
+  if (!token) {
+    console.log('⏸️ Skipping notifications load - no token available, retrying...');
+    setTimeout(() => this.loadNotificationsFromDatabase(pageIndex, pageSize), 500);
     return;
   }
 
-  const token = this.authService.getToken();
-  const headers = { 'Authorization': `Bearer ${token}` };
-  
-  this.http.get(`${environment.apiUrl}/api/notifications?pageIndex=${pageIndex}&pageSize=${pageSize}`, { headers }).subscribe({
+ 
+  this.httpService.getNotifications({ pageIndex, pageSize }).subscribe({
     next: (response: any) => {
-      if (response?.success) {
+      console.log('✅ Notifications loaded successfully');
+      if (response.success) {
         const allDbNotifications = (response.data.notifications as any[]).map((n: any) => ({
           ...n,
-          isRead: n.isRead === true || n.isRead === 1 || n.isRead === 'true',
+          isRead: n.isRead === true || n.isRead === 1 || n.isRead === 'true' || this.readNotificationIds.has(String(n.id)),
           timestamp: new Date(n.timestamp)
         })) as TripNotification[];
-
+        
+        const unreadNotifications = allDbNotifications.filter((n: TripNotification) => !n.isRead); 
         this.allNotifications = allDbNotifications;
 
-
-        // Show ALL notification types (not just TRIP_CANCELLED)
         if (pageIndex === 0) {
-          this.notifications = allDbNotifications;
+          this.notifications = unreadNotifications;
         } else {
           const existingIds = new Set(this.notifications.map((n: TripNotification) => n.id));
-          const uniqueNewNotifications = allDbNotifications.filter((n: TripNotification) => !existingIds.has(n.id));
+          const uniqueNewNotifications = unreadNotifications.filter((n: TripNotification) => !existingIds.has(n.id));
           this.notifications = [...this.notifications, ...uniqueNewNotifications];
         }
 
@@ -263,19 +392,14 @@ loadNotificationsFromDatabase(pageIndex: number = 0, pageSize: number = 20) {
 
         console.log('📚 DB Load - All notifications:', this.notifications.length);
         console.log('📚 Unread count:', this.unreadNotificationsCount);
-      } else {
-        console.warn('⚠️ Invalid notification response:', response);
-        this.notifications = [];
-        this.allNotifications = [];
-        this.unreadNotificationsCount = 0;
       }
     },
     error: (err) => {
-      if (err.status === 401) {
-        console.error('❌ Session expirée, veuillez vous reconnecter');
-        this.authService.logout();
+      console.error('❌ Error loading notifications:', err.status, err.message);
+      if (err.status === 401 && pageIndex === 0) {
+        console.log('🔄 Retrying once after 1 second...');
+        setTimeout(() => this.loadNotificationsFromDatabase(pageIndex, pageSize), 1000);
       } else {
-        console.error('❌ Error loading notifications from database:', err);
         this.notifications = [];
         this.allNotifications = [];
         this.unreadNotificationsCount = 0;
@@ -289,15 +413,32 @@ loadNotificationsFromDatabase(pageIndex: number = 0, pageSize: number = 20) {
     this.loadNotificationsFromDatabase(this.currentPage, this.pageSize);
   }
 
-      // Add ALL notification types (not just TRIP_CANCELLED)
+  refreshNotifications() {
+    this.currentPage = 0;
+    this.loadNotificationsFromDatabase(0, this.pageSize);
+  }
+
+initializeSignalR() {
+  
+  this.notificationsSubscription = this.signalRService.notifications$.subscribe(
+    (realtimeNotifications: TripNotification[]) => {
+      console.log('📬 Raw real-time notifications:', realtimeNotifications);
+
+      const processedNotifications = realtimeNotifications.map(n => ({
+        ...n,
+        isRead: n.isRead === true || this.readNotificationIds.has(String(n.id)),
+        timestamp: new Date(n.timestamp)
+      }));
+      const unreadRealtimeNotifications = processedNotifications.filter((n: TripNotification) => !n.isRead);
+      this.allNotifications = [...this.allNotifications, ...processedNotifications];
+
       const existingIds = new Set(this.notifications.map((n: TripNotification) => n.id));
-      const uniqueNewNotifications = processedNotifications.filter((n: TripNotification) => !existingIds.has(n.id));
+      const uniqueNewNotifications = unreadRealtimeNotifications.filter((n: TripNotification) => !existingIds.has(n.id));
 
       if (uniqueNewNotifications.length > 0) {
         this.notifications = [...uniqueNewNotifications, ...this.notifications];
         console.log('✅ Added new real-time notifications:', uniqueNewNotifications.length);
       }
-
 
       this.unreadNotificationsCount = this.notifications.filter((n: TripNotification) => !n.isRead).length;
 
@@ -305,46 +446,56 @@ loadNotificationsFromDatabase(pageIndex: number = 0, pageSize: number = 20) {
       console.log('📋 Unread count:', this.unreadNotificationsCount);
     }
   );
+
+  setTimeout(() => {
+    console.log('🔄 Refreshing notifications after SignalR init...');
+    this.refreshNotifications();
+    this.loadCancelledTrips();
+  }, 1500);
 }
 
-  loadCancelledTrips() {
-     if (!this.authService.isLoggedIn || !this.authService.isTokenValid()) {
+loadCancelledTrips() {
+  if (!this.authService.isLoggedIn || !this.authService.getToken()) {
     this.cancelledTripsCount = 0;
     this.cancelledTrips = [];
     return;
   }
-  
-    this.httpService.getTripsList({ pageIndex: 0, pageSize: 1000 }).subscribe({
-      next: (res: any) => {
-        const tripsData = res?.data?.data || res?.data || res || [];
-        this.cancelledTrips = Array.isArray(tripsData) 
-          ? tripsData.filter((t: any) => t.tripStatus === 'Cancelled') 
-          : [];
-        this.cancelledTripsCount = this.cancelledTrips.length;
-      },
-      error: (err) => {
-        console.error('Erreur loading cancelled trips:', err);
-        this.cancelledTrips = [];
-        this.cancelledTripsCount = 0;
-      }
-    });
-  }
 
-  openNotificationPanel() {
-    this.showNotificationsPanel = !this.showNotificationsPanel;
-  }
+  this.httpService.getTripsList({ pageIndex: 0, pageSize: 1000 }).subscribe({
+    next: (res: any) => {
+      const tripsData = res?.data?.data || res?.data || res || [];
+      this.cancelledTrips = Array.isArray(tripsData) 
+        ? tripsData.filter((t: any) => t.tripStatus === 'Cancelled') 
+        : [];
+      this.cancelledTripsCount = this.cancelledTrips.length;
+    },
+    error: (err) => {
+      if (err.status !== 401) {
+        console.error('Erreur loading cancelled trips:', err);
+      }
+      this.cancelledTrips = [];
+      this.cancelledTripsCount = 0;
+    }
+  });
+}
 
   openNotification() {
     if (this.cancelledTripsCount === 0) {
       alert('Aucun voyage annulé');
       return;
     }
-    this.showNotificationsPanel = true;
+    this.menuManager.openMenu('notifications');
   }
 
   viewTripDetails(tripId?: number) {
     if (tripId) {
-      this.showNotificationsPanel = false;
+      // Navigation vers les détails du voyage
+      this.menuManager.closeAllMenus();
+      
+      // ✅ ADD: Remove body class on mobile
+      if (this.isMobile) {
+        document.body.classList.remove('menu-open');
+      }
     }
   }
 
@@ -366,6 +517,10 @@ loadNotificationsFromDatabase(pageIndex: number = 0, pageSize: number = 20) {
     if (!notification.isRead) {
       await this.signalRService.markAsRead(notification.id);
       notification.isRead = true;
+      this.readNotificationIds.add(String(notification.id));
+      this.saveReadNotificationIds();
+
+      this.notifications = this.notifications.filter(n => n.id !== notification.id);
       this.unreadNotificationsCount = this.notifications.filter((n: TripNotification) => !n.isRead).length;
     }
   }
@@ -414,6 +569,12 @@ loadNotificationsFromDatabase(pageIndex: number = 0, pageSize: number = 20) {
 
   viewAllNotifications() {
     console.log('View all notifications');
+    this.menuManager.closeAllMenus();
+    
+    // ✅ ADD: Remove body class on mobile
+    if (this.isMobile) {
+      document.body.classList.remove('menu-open');
+    }
   }
 
   onFooterButtonMouseEnter(event: MouseEvent) {
@@ -426,44 +587,141 @@ loadNotificationsFromDatabase(pageIndex: number = 0, pageSize: number = 20) {
     element.style.color = 'var(--primary-color)';
   }
 
-  ngOnDestroy() {
-    if (this.refreshNotificationInterval) {
-      clearInterval(this.refreshNotificationInterval);
-    }
-
-    this.notificationsSubscription?.unsubscribe();
-    this.cancelledTripsSubscription?.unsubscribe();
-    this.connectionStatusSubscription?.unsubscribe();
-
-    this.signalRService.disconnect();
+ngOnDestroy() {
+  if (this.refreshNotificationInterval) {
+    clearInterval(this.refreshNotificationInterval);
   }
 
-  toggleMaintenance() { this.maintenanceOpen = !this.maintenanceOpen; }
-  toggleUserMenu() { this.userMenuOpen = !this.userMenuOpen; }
+  this.notificationsSubscription?.unsubscribe();
+  this.cancelledTripsSubscription?.unsubscribe();
+  this.connectionStatusSubscription?.unsubscribe();
+  
+  // Complete destroy subject
+  this.destroy$.next();
+  this.destroy$.complete();
 
-  logout() {
-    this.signalRService.disconnect();
-    this.authService.logout();
+  if (!this.authService.isLoggedIn) {
+    this.signalRService.cleanupOnLogout();
   }
+}
+
+  toggleMaintenance() { 
+    this.maintenanceOpen = !this.maintenanceOpen; 
+  }
+  
+  toggleUserMenu() { 
+    this.userMenuOpen = !this.userMenuOpen; 
+  }
+
+logout() {
+ 
+  this.signalRService.cleanupOnLogout();
+  
+  
+  localStorage.removeItem('readNotificationIds');
+  
+  
+  this.notifications = [];
+  this.allNotifications = [];
+  this.unreadNotificationsCount = 0;
+  this.cancelledTrips = [];
+  this.cancelledTripsCount = 0;
+  
+  
+  if (this.refreshNotificationInterval) {
+    clearInterval(this.refreshNotificationInterval);
+    this.refreshNotificationInterval = null;
+  }
+  
+ 
+  this.authService.logout();
+  this.menuManager.closeAllMenus();
+  
+  
+  if (this.isMobile) {
+    document.body.classList.remove('menu-open');
+  }
+}
 
   changeLanguage(lang: string) {
     this.currentLanguage = lang;
-    this.showLanguageMenu = false;
     this.httpService.getTranslations(lang).subscribe({
       next: data => this.translation.setTranslations(data),
       error: err => console.error('Error loading translations', err)
     });
+    this.menuManager.closeAllMenus();
+    
+    // ✅ ADD: Remove body class on mobile
+    if (this.isMobile) {
+      document.body.classList.remove('menu-open');
+    }
   }
 
-  t(key: string): string { return this.translation.t(key); }
+  t(key: string): string { 
+    return this.translation.t(key); 
+  }
 
   changeTheme(theme: Theme) {
     this.themeService.setTheme(theme);
     this.currentTheme = theme;
-    this.showThemePicker = false;
+    this.menuManager.closeAllMenus();
+    
+    // ✅ ADD: Remove body class on mobile
+    if (this.isMobile) {
+      document.body.classList.remove('menu-open');
+    }
   }
 
   resetToDefaultTheme() {
     this.changeTheme(this.themes[0]);
   }
+
+  private loadReadNotificationIds() {
+    try {
+      const stored = localStorage.getItem('readNotificationIds');
+      if (stored) {
+        const ids = JSON.parse(stored) as string[];
+        this.readNotificationIds = new Set(ids);
+        console.log('📖 Loaded read notification IDs:', this.readNotificationIds.size);
+      }
+    } catch (e) {
+      console.error('Error loading read notification IDs:', e);
+    }
+  }
+
+  private saveReadNotificationIds() {
+    try {
+      localStorage.setItem('readNotificationIds', JSON.stringify(Array.from(this.readNotificationIds)));
+    } catch (e) {
+      console.error('Error saving read notification IDs:', e);
+    }
+  }
+  
+public refreshAllDataAfterLogin(): void {
+  console.log('🔄 Refreshing all data after login...');
+  
+  // Reset pagination
+  this.currentPage = 0;
+  
+  // Reset notifications arrays
+  this.notifications = [];
+  this.allNotifications = [];
+  this.unreadNotificationsCount = 0;
+  
+  // Load fresh data
+  this.loadCompanyLogo();
+  this.loadNotificationsFromDatabase(0, this.pageSize);
+  this.loadCancelledTrips();
+  
+  // Ensure SignalR is initialized
+  if (this.authService.isLoggedIn) {
+    // Small delay to ensure token is fully saved
+    setTimeout(() => {
+      if (!this.notificationsSubscription || this.notificationsSubscription.closed) {
+        console.log('🔄 Initializing SignalR subscription...');
+        this.initializeSignalR();
+      }
+    }, 500);
+  }
+}
 }

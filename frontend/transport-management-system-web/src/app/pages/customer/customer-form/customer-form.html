@@ -58,8 +58,129 @@
         </mat-error>
       </mat-form-field>
 
+      <!-- ===== Smart Address Search with Geocoding ===== -->
+      <div class="form-row full-width" style="grid-column: span 2; margin-top: 16px;" *ngIf="isAutoAddressMode">
+        <div style="padding: 20px; background: linear-gradient(135deg, #667eea15 0%, #764ba215 100%); border-radius: 12px; border: 1px solid #e2e8f0;">
+          <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
+            <div style="background: linear-gradient(135deg, #667eea, #764ba2); padding: 10px; border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+              <mat-icon style="color: white; font-size: 24px; width: 24px; height: 24px;">location_on</mat-icon>
+            </div>
+            <div>
+              <h4 style="margin: 0; font-size: 16px; font-weight: 600; color: #1e293b;">Adresse du client</h4>
+              <p style="margin: 4px 0 0 0; font-size: 13px; color: #64748b;">Recherche intelligente avec géocodage automatique</p>
+            </div>
+          </div>
+
+          <mat-form-field appearance="fill" style="width: 100%;">
+            <mat-label>
+              <mat-icon style="font-size: 18px; width: 18px; height: 18px; margin-right: 6px;">my_location</mat-icon>
+              Rechercher l'adresse du client
+            </mat-label>
+            <input
+              matInput
+              [formControl]="customerAddressSearch"
+              placeholder="Ex: 123 Avenue Habib Bourguiba, Tunis, Tunisie"
+              autocomplete="off"
+              (input)="onCustomerAddressInput($event)"
+            >
+            <button mat-icon-button matSuffix type="button" 
+                    (click)="searchCustomerAddress()"
+                    [disabled]="isGeocoding"
+                    matTooltip="Rechercher l'adresse">
+              <mat-icon *ngIf="!isGeocoding">search</mat-icon>
+              <mat-spinner diameter="20" *ngIf="isGeocoding"></mat-spinner>
+            </button>
+          </mat-form-field>
+
+          <!-- Address Suggestions -->
+          <div *ngIf="customerAddressSuggestions.length > 0" class="address-suggestions" 
+               style="border-radius: 12px; max-height: 240px; overflow-y: auto; background: white; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08); margin-top: 8px;">
+            <div style="padding: 12px 16px; background: linear-gradient(135deg, #667eea, #764ba2); font-size: 13px; font-weight: 600; color: white; border-radius: 12px 12px 0 0;">
+              <mat-icon style="font-size: 16px; width: 16px; height: 16px; vertical-align: middle; margin-right: 6px; color: white;">location_on</mat-icon>
+              Suggestions d'adresses
+            </div>
+            <div
+              *ngFor="let suggestion of customerAddressSuggestions; let last = last"
+              class="suggestion-item"
+              (click)="onCustomerAddressSelected(suggestion)"
+              style="padding: 14px 16px; cursor: pointer; transition: all 0.2s; border-bottom: none;"
+              [style.background]="hoveredCustomerSuggestion === suggestion ? '#f0f9ff' : 'white'"
+              (mouseenter)="hoveredCustomerSuggestion = suggestion"
+              (mouseleave)="hoveredCustomerSuggestion = null"
+            >
+              <div style="display: flex; align-items: center; gap: 12px;">
+                <div style="background: #e0e7ff; padding: 8px; border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                  <mat-icon style="font-size: 20px; width: 20px; height: 20px; color: #667eea;">location_on</mat-icon>
+                </div>
+                <div style="flex: 1; min-width: 0;">
+                  <div style="font-weight: 500; color: #1e293b; font-size: 14px; line-height: 1.4; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ suggestion.display_name }}</div>
+                  <div style="font-size: 12px; color: #64748b; margin-top: 2px;">📍 {{ suggestion.lat }}, {{ suggestion.lon }}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Selected Address Display -->
+          <div *ngIf="selectedCustomerAddress" 
+               style="margin-top: 16px; padding: 16px; background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%); border-radius: 10px; border-left: 4px solid #3b82f6;">
+            <div style="display: flex; align-items: flex-start; gap: 12px;">
+              <div style="background: linear-gradient(135deg, #3b82f6, #2563eb); padding: 8px; border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                <mat-icon style="color: white; font-size: 20px; width: 20px; height: 20px;">check_circle</mat-icon>
+              </div>
+              <div style="flex: 1; min-width: 0;">
+                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+                  <div style="font-weight: 600; color: #1e40af; font-size: 14px;">✅ Adresse sélectionnée</div>
+                  <span style="padding: 3px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; background: #dbeafe; color: #1e40af; display: inline-flex; align-items: center; gap: 4px;">
+                    <mat-icon style="font-size: 14px; width: 14px; height: 14px;">gps_fixed</mat-icon>
+                    Position GPS définie
+                  </span>
+                </div>
+                
+                <div style="font-size: 13px; color: #1e40af; line-height: 1.5; word-break: break-word; margin-bottom: 8px;">
+                  {{ selectedCustomerAddress }}
+                </div>
+                
+                <div style="font-size: 12px; color: #1e40af; font-family: monospace; background: rgba(255,255,255,0.5); padding: 6px 10px; border-radius: 6px; display: inline-block;">
+                  📍 Lat: {{ customerForm.get('latitude')?.value | number:'1.6-6' }}, Lng: {{ customerForm.get('longitude')?.value | number:'1.6-6' }}
+                </div>
+              </div>
+              
+              <button mat-raised-button (click)="clearCustomerAddress()" 
+                      style="background: #fee2e2; color: #dc2626; font-weight: 500; min-width: auto; flex-shrink: 0;">
+                <mat-icon style="font-size: 18px; margin-right: 4px;">delete</mat-icon>
+                Effacer
+              </button>
+            </div>
+          </div>
+
+          <!-- Map Adjustment Button -->
+          <button 
+            *ngIf="hasGpsCoordinates()"
+            mat-raised-button 
+            color="primary"
+            type="button" 
+            (click)="openGpsMapPicker()"
+            [disabled]="isSubmitting"
+            style="width: 100%; margin-top: 12px; height: 48px;"
+          >
+            <mat-icon>map</mat-icon>
+            Ajuster la position sur la carte
+          </button>
+          
+          <p style="color: var(--text-muted); font-size: 12px; margin-top: 12px; margin-bottom: 0;">
+            💡 Ces coordonnées GPS seront utilisées automatiquement comme destination dans les voyages (Mode Automatique)
+          </p>
+        </div>
+      </div>
+      <!-- ===== END: Smart Address Search ===== -->
+
+      <!-- Hidden fields for form submission -->
+      <input type="hidden" formControlName="address">
+      <input type="hidden" formControlName="latitude">
+      <input type="hidden" formControlName="longitude">
+
       <!-- Geographical Entities - Hierarchical Dropdowns (like truck form) -->
-      <div class="form-row full-width" style="grid-column: span 2;">
+      <div class="form-row full-width" style="grid-column: span 2;" *ngIf="!isAutoAddressMode">
         <div class="form-field-group" style="width: 100%;">
           <mat-label>{{ t('GEOGRAPHICAL_ENTITIES_LABEL') || 'Localisations' }}</mat-label>
           

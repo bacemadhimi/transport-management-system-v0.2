@@ -329,10 +329,14 @@ getDrivers(): Observable<IDriver[]> {
     return this.http.delete(environment.apiUrl + '/api/Mechanic/' + id);
   }
 
-  getMechanics() {
-    return this.http.get<IMechanic[]>(environment.apiUrl + '/api/Mechanic/All');
-  }
-
+getMechanics(): Observable<IEmployee[]> {
+  return this.http.get<IEmployee[]>(`${environment.apiUrl}/api/Employee/by-category/MECHANIC`).pipe(
+    catchError(error => {
+      console.error('Error loading mechanics:', error);
+      return of([]);
+    })
+  );
+}
   getVendorsList(filter: any) {
     const params = new HttpParams({ fromObject: filter });
     return this.http.get<PagedData<IVendor>>(
@@ -1471,4 +1475,39 @@ getTodayTripCount(): Observable<any> {
   return this.http.get(`${environment.apiUrl}/api/trips/today-count`);
 }
 
+getNotifications(filter: { pageIndex?: number; pageSize?: number; isRead?: boolean }): Observable<any> {
+  let params = new HttpParams();
+  
+  if (filter.pageIndex !== undefined) {
+    params = params.set('pageIndex', filter.pageIndex.toString());
+  }
+  if (filter.pageSize !== undefined) {
+    params = params.set('pageSize', filter.pageSize.toString());
+  }
+  if (filter.isRead !== undefined) {
+    params = params.set('isRead', filter.isRead.toString());
+  }
+  
+  return this.http.get<any>(`${environment.apiUrl}/api/notifications`, { params });
+}
+
+markNotificationAsRead(notificationId: number): Observable<any> {
+  return this.http.put(`${environment.apiUrl}/api/notifications/${notificationId}/read`, {});
+}
+
+markAllNotificationsAsRead(): Observable<any> {
+  return this.http.put(`${environment.apiUrl}/api/notifications/mark-all-read`, {});
+}
+
+deleteNotification(notificationId: number): Observable<any> {
+  return this.http.delete(`${environment.apiUrl}/api/notifications/${notificationId}`);
+}
+
+deleteAllNotifications(): Observable<any> {
+  return this.http.delete(`${environment.apiUrl}/api/notifications/all`);
+}
+
+getUnreadNotificationsCount(): Observable<{ unreadCount: number }> {
+  return this.http.get<{ unreadCount: number }>(`${environment.apiUrl}/api/notifications/unread-count`);
+}
 }

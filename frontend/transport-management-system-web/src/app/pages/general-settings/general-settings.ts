@@ -1,4 +1,4 @@
-﻿import { Component, inject, OnInit, ViewChild, ElementRef } from '@angular/core';
+import { Component, inject, OnInit, ViewChild, ElementRef } from '@angular/core';
 import { Http } from '../../services/http';
 import { IGeneralSettings, IGeographicalLevel, IGeographicalEntity } from '../../types/general-settings';
 import { MatButtonModule } from '@angular/material/button';
@@ -160,6 +160,7 @@ hasAtLeastOneActiveEntity(): boolean {
     'ALLOW_EXCEED_MAX_CAPACITY': 'ALLOW_EXCEED_MAX_CAPACITY',
     'MAX_CAPACITY_PERCENTAGE': 'MAX_CAPACITY_PERCENTAGE',
     'USE_GPS_IN_TRIPS': 'USE_GPS_IN_TRIPS',
+    'MODE_ADRESSE_TRIP': 'MODE_ADRESSE_TRIP',
   };
 
   ngOnInit() {
@@ -194,6 +195,7 @@ hasAtLeastOneActiveEntity(): boolean {
       USE_GPS_IN_TRIPS: [true], // ✅ Checked by default
       ALLOW_EXCEED_MAX_CAPACITY: [false],
       MAX_CAPACITY_PERCENTAGE: [{ value: 100, disabled: true }, [Validators.min(1), Validators.max(200)]],
+      MODE_ADRESSE_TRIP: ['MANUEL'], // ✅ Default to MANUAL mode
     });
 
     this.geographicalLevelsForm = this.fb.group({
@@ -766,39 +768,61 @@ hasAtLeastOneActiveEntity(): boolean {
     }
 
     this.isSaving = true;
-    const formValue = this.orderSettingsForm.value;
-    const updates: IGeneralSettings[] = [];
+    
+    // Recharger les settings frais depuis le serveur
+    this.httpService.getAllSettingsByType('ORDER').subscribe({
+      next: (freshSettings) => {
+        this.orderSettings = freshSettings;
+        console.log('🔄 Refreshed order settings from server:', freshSettings.length);
+        
+        const formValue = this.orderSettingsForm.value;
+        const updates: IGeneralSettings[] = [];
 
-    Object.keys(formValue).forEach(key => {
-      const parameterCode = Object.keys(this.orderControlMap).find(
-        code => this.orderControlMap[code] === key
-      );
+        Object.keys(formValue).forEach(key => {
+          const parameterCode = Object.keys(this.orderControlMap).find(
+            code => this.orderControlMap[code] === key
+          );
 
-      if (!parameterCode) return;
+          if (!parameterCode) return;
 
-      const value = this.formatSettingValue(formValue[key]);
-      const fullParameterCode = `${parameterCode}=${value}`;
+          const value = this.formatSettingValue(formValue[key]);
+          const fullParameterCode = `${parameterCode}=${value}`;
 
-      const existing = this.orderSettings.find(s =>
-        s.parameterCode.startsWith(parameterCode + '=')
-      );
+          // Recherche dans les données FRAÎCHES
+          const existing = this.orderSettings.find(s => {
+            const [existingCode] = this.parseParameterCode(s.parameterCode);
+            return existingCode === parameterCode;
+          });
 
-      if (existing) {
-        updates.push({
-          ...existing,
-          parameterCode: fullParameterCode
+          if (existing) {
+            updates.push({
+              ...existing,
+              parameterCode: fullParameterCode
+            });
+          } else {
+            updates.push({
+              id: 0,
+              parameterType: 'ORDER',
+              parameterCode: fullParameterCode,
+              description: this.getDescriptionForKey(key)
+            });
+          }
         });
-      } else {
-        updates.push({
-          id: 0,
-          parameterType: 'ORDER',
-          parameterCode: fullParameterCode,
-          description: this.getDescriptionForKey(key)
-        });
+
+        console.log('📝 Order settings to save:', updates.map(u => ({
+          id: u.id,
+          code: u.parameterCode,
+          action: u.id ? 'UPDATE' : 'CREATE'
+        })));
+
+        this.saveSettings(updates, 'Paramètres de commande enregistrés avec succès');
+      },
+      error: (error) => {
+        console.error('❌ Error refreshing settings:', error);
+        this.showError('Erreur lors du rechargement des paramètres');
+        this.isSaving = false;
       }
     });
-
-    this.saveSettings(updates, 'Paramètres de commande enregistrés avec succès');
   }
 
   saveTripSettings() {
@@ -808,64 +832,134 @@ hasAtLeastOneActiveEntity(): boolean {
     }
 
     this.isSaving = true;
-    const formValue = this.tripSettingsForm.value;
-    const updates: IGeneralSettings[] = [];
+    
+    // Recharger les settings frais depuis le serveur pour éviter les conflits
+    this.httpService.getAllSettingsByType('TRIP').subscribe({
+      next: (freshSettings) => {
+        this.tripSettings = freshSettings;
+        console.log('🔄 Refreshed trip settings from server:', freshSettings.length);
+        
+        const formValue = this.tripSettingsForm.value;
+        const updates: IGeneralSettings[] = [];
 
-    Object.keys(formValue).forEach(key => {
-      const parameterCode = Object.keys(this.tripControlMap).find(
-        code => this.tripControlMap[code] === key
-      );
+        Object.keys(formValue).forEach(key => {
+          const parameterCode = Object.keys(this.tripControlMap).find(
+            code => this.tripControlMap[code] === key
+          );
 
-      if (!parameterCode) return;
+          if (!parameterCode) return;
 
-      const value = this.formatSettingValue(formValue[key]);
-      const fullParameterCode = `${parameterCode}=${value}`;
+          const value = this.formatSettingValue(formValue[key]);
+          const fullParameterCode = `${parameterCode}=${value}`;
 
-      const existing = this.tripSettings.find(s =>
-        s.parameterCode.startsWith(parameterCode + '=')
-      );
+          // Recherche dans les données FRAÎCHES
+          const existing = this.tripSettings.find(s => {
+            const [existingCode] = this.parseParameterCode(s.parameterCode);
+            return existingCode === parameterCode;
+          });
 
-      if (existing) {
-        updates.push({
-          ...existing,
-          parameterCode: fullParameterCode
+          if (existing) {
+            updates.push({
+              ...existing,
+              parameterCode: fullParameterCode
+            });
+          } else {
+            updates.push({
+              id: 0,
+              parameterType: 'TRIP',
+              parameterCode: fullParameterCode,
+              description: this.getDescriptionForKey(key)
+            });
+          }
         });
-      } else {
-        updates.push({
-          id: 0,
-          parameterType: 'TRIP',
-          parameterCode: fullParameterCode,
-          description: this.getDescriptionForKey(key)
+
+        console.log('📝 Trip settings to save:', updates.map(u => ({
+          id: u.id,
+          parameterType: u.parameterType,
+          parameterCode: u.parameterCode,
+          action: u.id ? 'UPDATE' : 'CREATE'
+        })));
+        
+        // Vérifier les doublons dans ce qu'on va envoyer
+        const codeCheck = new Map<string, number[]>();
+        updates.forEach((u, idx) => {
+          const key = `${u.parameterType}::${u.parameterCode.split('=')[0]}`;
+          if (!codeCheck.has(key)) {
+            codeCheck.set(key, []);
+          }
+          codeCheck.get(key)!.push(idx);
         });
+        
+        codeCheck.forEach((indices, code) => {
+          if (indices.length > 1) {
+            console.error('⚠️ DUPLICATE CODE DETECTED in updates:', code, 'at indices:', indices, 
+              indices.map(i => updates[i]));
+          }
+        });
+
+        this.saveSettings(updates, 'Paramètres de voyage enregistrés avec succès');
+      },
+      error: (error) => {
+        console.error('❌ Error refreshing settings:', error);
+        this.showError('Erreur lors du rechargement des paramètres');
+        this.isSaving = false;
       }
     });
-
-    this.saveSettings(updates, 'Paramètres de voyage enregistrés avec succès');
   }
 
-  saveSettings(updates: IGeneralSettings[], successMessage: string) {
-    const updatePromises = updates.map(setting => {
-      if (!setting.id || setting.id === 0) {
-        const { id, ...newSetting } = setting;
-        console.log(setting)
-        return this.httpService.addGeneralSettings(newSetting).toPromise();
+  async saveSettings(updates: IGeneralSettings[], successMessage: string) {
+    console.log('📦 Settings to save:', updates);
+    
+    // Vérifier les doublons AVANT d'envoyer
+    const codeMap = new Map<string, IGeneralSettings>();
+    const duplicates: string[] = [];
+    
+    updates.forEach(setting => {
+      const key = `${setting.parameterType}_${setting.parameterCode}`;
+      if (codeMap.has(key)) {
+        duplicates.push(key);
+        console.error('❌ DUPLICATE DETECTED:', key, 'Existing:', codeMap.get(key), 'New:', setting);
       } else {
-        return this.httpService.updateGeneralSettings(setting.id, setting).toPromise();
+        codeMap.set(key, setting);
       }
     });
-
-    Promise.all(updatePromises)
-      .then(() => {
-        this.showSuccess(successMessage);
-        this.loadAllSettings();
-      })
-      .catch((error) => {
-        console.error('Error saving settings:', error);
-        this.showError('Erreur lors de l\'enregistrement');
-      })
-      .finally(() => {
-        this.isSaving = false;
-      });
+    
+    if (duplicates.length > 0) {
+      console.error('❌ Duplicate settings detected:', duplicates);
+      this.showError(`Erreur: Paramètres en double détectés: ${duplicates.join(', ')}`);
+      this.isSaving = false;
+      return;
+    }
+    
+    try {
+      // Traiter les mises à jour SÉQUENTIELLEMENT pour éviter les conflits
+      for (const setting of updates) {
+        console.log('🔄 Processing:', {
+          id: setting.id,
+          parameterCode: setting.parameterCode,
+          action: (!setting.id || setting.id === 0) ? 'CREATE' : 'UPDATE'
+        });
+        
+        if (!setting.id || setting.id === 0) {
+          const { id, ...newSetting } = setting;
+          await this.httpService.addGeneralSettings(newSetting).toPromise();
+          console.log('✅ Created:', setting.parameterCode);
+        } else {
+          await this.httpService.updateGeneralSettings(setting.id, setting).toPromise();
+          console.log('✅ Updated ID:', setting.id);
+        }
+      }
+      
+      console.log('✅ All settings saved successfully');
+      this.showSuccess(successMessage);
+      this.loadAllSettings();
+    } catch (error: any) {
+      console.error('❌ Error saving settings:', error);
+      console.error('Error details:', error.error);
+      this.showError('Erreur lors de l\'enregistrement: ' + (error.error?.message || error.message));
+    } finally {
+      this.isSaving = false;
+    }
   }
 
   getDescriptionForKey(key: string): string {
@@ -887,7 +981,8 @@ hasAtLeastOneActiveEntity(): boolean {
       'LINK_DRIVER_TO_TRUCK': 'Driver must match truck',
       'ALLOW_EXCEED_MAX_CAPACITY': 'Allow exceeding max capacity',
       'MAX_CAPACITY_PERCENTAGE': 'Maximum capacity percentage',
-      'USE_GPS_IN_TRIPS': 'Use GPS in trips (auto coordinates)'
+      'USE_GPS_IN_TRIPS': 'Use GPS in trips (auto coordinates)',
+      'MODE_ADRESSE_TRIP': 'Mode de gestion des destinations (MANUEL/AUTOMATIQUE)'
     };
     return descriptions[key] || key;
   }

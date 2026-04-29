@@ -1,10 +1,11 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { IonicModule } from '@ionic/angular';
+import { IonicModule, ToastController } from '@ionic/angular';
 import { Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
-import { HttpClient } from '@angular/common/http';
-import { environment } from 'src/environments/environment.prod';
+import { TripService } from '../../services/trip.service';
+import { SignalRService } from '../../services/signalr.service';
+import { Subscription } from 'rxjs';
 
 interface MyTrip {
   id: number;
@@ -30,24 +31,60 @@ interface MyTrip {
     IonicModule
   ]
 })
-export class MyTripsPage implements OnInit {
+export class MyTripsPage implements OnInit, OnDestroy {
+  private authService = inject(AuthService);
+  private router = inject(Router);
+  private tripService = inject(TripService);
+  private toastController = inject(ToastController);
+  private signalRService = inject(SignalRService);
+
   trips: MyTrip[] = [];
   activeTrips: MyTrip[] = [];
   historyTrips: MyTrip[] = [];
   loading: boolean = true;
-  driverId: number | null = null;
   error: string | null = null;
-
-  private readonly API_URL = `${environment.apiUrl}/api/Trips`;
-
-  constructor(
-    private authService: AuthService,
-    private router: Router,
-    private http: HttpClient
-  ) {}
+  private signalRSubscription?: Subscription;
 
   ngOnInit() {
     this.loadMyTrips();
+
+    // ✅ Écouter les changements de statut en temps réel via BehaviorSubject - MISE À JOUR EN MÉMOIRE
+    this.signalRSubscription = this.signalRService.tripStatusChanged$.subscribe((update: any) => {
+      if (update && (update.TripId || update.tripId)) {
+        const tripId = update.TripId || update.tripId;
+        const newStatus = update.NewStatus || update.newStatus || update.status;
+        console.log('🚗 My Trips received TripStatusChanged:', tripId, '→', newStatus);
+        
+        // ✅ Mettre à jour DIRECTEMENT dans localStorage
+        const offlineTrips = localStorage.getItem('offlineTrips');
+        if (offlineTrips) {
+          try {
+            const trips = JSON.parse(offlineTrips);
+            const tripIndex = trips.findIndex((t: any) => t.id === tripId);
+            if (tripIndex !== -1) {
+              trips[tripIndex].tripStatus = newStatus;
+              localStorage.setItem('offlineTrips', JSON.stringify(trips));
+              console.log(`✅ My Trips: Trip ${tripId} status updated in localStorage to ${newStatus}`);
+              
+              // ✅ Recharger depuis localStorage (pas l'API)
+              this.loadMyTrips();
+            } else {
+              console.warn(`⚠️ My Trips: Trip ${tripId} not found, reloading from API`);
+              this.loadMyTrips();
+            }
+          } catch (e) {
+            console.error('❌ My Trips: Error updating localStorage:', e);
+            this.loadMyTrips();
+          }
+        }
+      }
+    });
+  }
+
+  ngOnDestroy() {
+    if (this.signalRSubscription) {
+      this.signalRSubscription.unsubscribe();
+    }
   }
 
   async loadMyTrips() {
@@ -56,86 +93,123 @@ export class MyTripsPage implements OnInit {
 
     try {
       const user = this.authService.currentUser();
-      if (!user) {
+      const token = localStorage.getItem('token');
+      
+      if (!user || !token) {
         this.error = 'Utilisateur non connecté';
         this.loading = false;
+        await this.showToast('Veuillez vous connecter', 'danger');
         return;
       }
 
-      this.driverId = (user as any).driverId || user.id;
-      console.log('📦 Loading trips for driver:', this.driverId);
+      console.log('📡 Loading trips from API...');
 
-      const token = localStorage.getItem('token');
-      const headers = {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      };
+      // Charger depuis l'API directement
+      this.tripService.getAllTrips().subscribe({
+        next: (trips: any[]) => {
+          console.log('📦 Trips received from API:', trips.length);
+          console.log('🔍 Sample trip structure:', trips[0]);
 
-      this.http.get<any[]>(`${this.API_URL}?status=all`, { headers })
-        .subscribe({
-          next: (trips) => {
-            console.log('📦 Trips received:', trips.length);
-            
-            const driverTrips = trips.filter(trip => 
-              trip.driverId === this.driverId || 
-              (trip.driver && trip.driver.id === this.driverId)
-            );
+          // Filtrer les trajets du conducteur
+          const driverId = (user as any).driverId || user.id;
+          const userEmail = user.email;
+          
+          const userTrips = trips.filter((trip: any) => {
+            const tripData = trip.data || trip;
+            return tripData.driverId === driverId || 
+                   tripData.driver?.id === driverId ||
+                   tripData.driver?.email === userEmail;
+          });
 
-            console.log('🚛 Driver trips:', driverTrips.length);
+          console.log('🚗 User trips:', userTrips.length);
 
-            this.trips = driverTrips.map(trip => ({
+          // Mapper avec les VRAIES données
+          this.trips = userTrips.map((trip: any) => {
+            let destination = 'Destination';
+            let distance = 0;
+            let deliveriesCount = 0;
+            let driverName = '';
+            let truckImmat = '';
+
+            // Destination et livraisons
+            if (trip.deliveries && trip.deliveries.length > 0) {
+              const lastDelivery = trip.deliveries[trip.deliveries.length - 1];
+              destination = lastDelivery.customerName || 
+                           lastDelivery.customer?.companyName ||
+                           lastDelivery.customer?.name ||
+                           lastDelivery.deliveryAddress || 
+                           `Livraison #${lastDelivery.sequence}`;
+              deliveriesCount = trip.deliveries.length;
+            } else if (trip.destination) {
+              destination = trip.destination;
+            } else if (trip.dropoffLocation) {
+              destination = trip.dropoffLocation.address || trip.dropoffLocation.name || 'Destination';
+            }
+
+            // Distance
+            distance = trip.estimatedDistance || 0;
+
+            // Durée
+            const duration = trip.estimatedDuration || 0;
+
+            // Chauffeur
+            driverName = trip.driver?.name || trip.driverName || '';
+
+            // Véhicule
+            truckImmat = trip.truck?.immatriculation || trip.truckImmatriculation || '';
+
+            return {
               id: trip.id,
               tripReference: trip.tripReference || `TRIP-${trip.id}`,
-              status: trip.status || trip.tripStatus || 'Planned',
-              destination: this.getDestination(trip),
-              estimatedDistance: trip.estimatedDistance || 0,
-              estimatedDuration: trip.estimatedDuration || 0,
-              deliveriesCount: trip.deliveriesCount || trip.deliveries?.length || 0,
-              isActive: this.isActiveStatus(trip.status || trip.tripStatus),
-              driverName: trip.driver?.name,
-              truckImmatriculation: trip.truck?.immatriculation,
+              status: trip.tripStatus || trip.status || 'Planned',
+              destination: destination,
+              estimatedDistance: distance,
+              estimatedDuration: duration,
+              deliveriesCount: deliveriesCount,
+              isActive: this.isActiveStatus(trip.tripStatus || trip.status),
+              driverName: driverName,
+              truckImmatriculation: truckImmat,
               startDate: trip.estimatedStartDate
-            }));
+            };
+          });
 
-            this.activeTrips = this.trips.filter(t => t.isActive);
-            this.historyTrips = this.trips.filter(t => !t.isActive);
+          // Trier par date (plus récent en premier)
+          this.trips.sort((a, b) => {
+            const dateA = new Date(a.startDate || 0).getTime();
+            const dateB = new Date(b.startDate || 0).getTime();
+            return dateB - dateA;
+          });
 
-            console.log('✅ Active trips:', this.activeTrips.length);
-            console.log('📚 History trips:', this.historyTrips.length);
-            
-            this.loading = false;
-          },
-          error: (err) => {
-            console.error('❌ Error loading trips:', err);
-            this.error = 'Erreur de chargement des trajets';
-            this.trips = [];
-            this.activeTrips = [];
-            this.historyTrips = [];
-            this.loading = false;
+          // Séparer les trajets actifs et historiques
+          this.activeTrips = this.trips.filter(t => t.isActive);
+          this.historyTrips = this.trips.filter(t => !t.isActive);
+
+          console.log('✅ Active trips:', this.activeTrips.length);
+          console.log('📚 History trips:', this.historyTrips.length);
+          console.log('📋 Sample trip:', this.trips[0]);
+
+          this.loading = false;
+          
+          if (this.trips.length === 0) {
+            this.error = 'Aucun trajet assigné pour le moment';
           }
-        });
-
+        },
+        error: (err) => {
+          console.error('❌ Error loading trips:', err);
+          this.error = 'Erreur de chargement des trajets';
+          this.loading = false;
+        }
+      });
     } catch (error) {
-      console.error('Error loading trips:', error);
+      console.error('❌ Error:', error);
       this.error = 'Erreur inattendue';
-      this.trips = [];
-      this.activeTrips = [];
-      this.historyTrips = [];
       this.loading = false;
     }
   }
 
-  private getDestination(trip: any): string {
-    if (trip.deliveries && trip.deliveries.length > 0) {
-      const lastDelivery = trip.deliveries[trip.deliveries.length - 1];
-      return lastDelivery.customerName || lastDelivery.deliveryAddress || 'Destination inconnue';
-    }
-    return 'Destination inconnue';
-  }
-
   private isActiveStatus(status: string): boolean {
-    const activeStatuses = ['Pending', 'Planned', 'Accepted', 'LoadingInProgress', 'DeliveryInProgress', 'InDelivery', 'Loading'];
-    return activeStatuses.includes(status);
+    const inactiveStatuses = ['Receipt', 'Completed', 'Cancelled', 'Refused'];
+    return !inactiveStatuses.includes(status);
   }
 
   /**
@@ -202,33 +276,16 @@ export class MyTripsPage implements OnInit {
       'Receipt': 'checkmark-done',
       'Completed': 'checkmark-done',
       'Cancelled': 'close',
-      'Refused': 'close',
+      'Refused': 'ban',
       'Pending': 'time',
       'Planned': 'calendar',
       'Accepted': 'checkmark',
       'Loading': 'cube',
       'LoadingInProgress': 'cube',
-      'InDelivery': 'boat',
-      'DeliveryInProgress': 'boat'
+      'InDelivery': 'truck',
+      'DeliveryInProgress': 'truck'
     };
     return iconMap[status] || 'help';
-  }
-
-  getStatusColor(status: string): string {
-    const colors: Record<string, string> = {
-      'Planned': 'medium',
-      'Pending': 'warning',
-      'Accepted': 'primary',
-      'LoadingInProgress': 'warning',
-      'Loading': 'warning',
-      'DeliveryInProgress': 'primary',
-      'InDelivery': 'primary',
-      'Completed': 'success',
-      'Receipt': 'success',
-      'Cancelled': 'danger',
-      'Refused': 'danger'
-    };
-    return colors[status] || 'medium';
   }
 
   getStatusText(status: string): string {
@@ -249,6 +306,7 @@ export class MyTripsPage implements OnInit {
   }
 
   viewTrip(trip: MyTrip) {
+    localStorage.setItem('selectedTrip', JSON.stringify(trip));
     this.router.navigate([`/trip/${trip.id}`]);
   }
 
@@ -256,12 +314,24 @@ export class MyTripsPage implements OnInit {
     this.router.navigate([`/gps-tracking`], {
       queryParams: {
         tripId: trip.id,
-        tripReference: trip.tripReference
+        tripReference: trip.tripReference,
+        destination: trip.destination
       }
     });
   }
 
-  refreshData() {
-    this.loadMyTrips();
+  async refreshData() {
+    await this.showToast('Actualisation des trajets...', 'primary', 'bottom');
+    await this.loadMyTrips();
+  }
+
+  private async showToast(message: string, color: string, position: 'top' | 'bottom' | 'middle' = 'top') {
+    const toast = await this.toastController.create({
+      message,
+      duration: 2000,
+      color,
+      position
+    });
+    await toast.present();
   }
 }

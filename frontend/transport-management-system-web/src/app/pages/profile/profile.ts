@@ -123,7 +123,7 @@ loadProfileData() {
         });
       }
     } else {
-      this.imageSrc = '/default-avatar.png';
+      this.imageSrc = 'default-avatar.png';
       this.profileForm.patchValue({
         profileImage: ''
       });
@@ -405,7 +405,7 @@ private extractPureBase64(dataUrl: string): string {
 
 
 private createDataUrl(base64: string): string {
-  if (!base64) return '/default-avatar.png';
+  if (!base64) return 'default-avatar.png';
 
 
   let mimeType = 'image/jpeg';

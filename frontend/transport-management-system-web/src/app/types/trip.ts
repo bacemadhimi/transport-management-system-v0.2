@@ -78,12 +78,12 @@ export enum TripStatus {
 }
 
 export const TripStatusOptions = [
-  { value: TripStatus.Planned, label: 'Planifié' },
-  { value: TripStatus.Accepted, label: 'Accepté' },
-  { value: TripStatus.LoadingInProgress, label: 'En cours de chargement' },
-  { value: TripStatus.DeliveryInProgress, label: 'En cours de livraison' },
-  { value: TripStatus.Receipt, label: 'Reçu' },
-  { value: TripStatus.Cancelled, label: 'Annulé' }
+  { value: TripStatus.Planned, label: '📋 Planifié' },
+  { value: TripStatus.Accepted, label: '✅ Accepté' },
+  { value: TripStatus.LoadingInProgress, label: '📦 Chargement' },
+  { value: TripStatus.DeliveryInProgress, label: '🚚 Livraison' },
+  { value: TripStatus.Receipt, label: '🚚 Terminé' },
+  { value: TripStatus.Cancelled, label: '❌ Annulé' }
 ];
 
 export enum DeliveryStatus {

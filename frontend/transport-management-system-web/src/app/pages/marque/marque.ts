@@ -10,11 +10,17 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatCardModule } from '@angular/material/card';
 import { MatInputModule } from '@angular/material/input';
 import { MatFormFieldModule } from '@angular/material/form-field';
-import { debounceTime } from 'rxjs';
+import { debounceTime, distinctUntilChanged } from 'rxjs';
 import { PagedData } from '../../types/paged-data';
 import { Auth } from '../../services/auth';
 import { CommonModule } from '@angular/common';
+import { Translation } from '../../services/Translation';
 import Swal from 'sweetalert2';
+import { MatIconModule } from '@angular/material/icon';
+import * as XLSX from 'xlsx';
+import { saveAs } from 'file-saver';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 @Component({
   selector: 'app-marque',
@@ -28,7 +34,8 @@ import Swal from 'sweetalert2';
     MatSelectModule,
     MatCardModule,
     MatInputModule,
-    MatFormFieldModule
+    MatFormFieldModule,
+    MatIconModule
   ],
   templateUrl: './marque.html',
   styleUrls: ['./marque.scss']
@@ -36,22 +43,12 @@ import Swal from 'sweetalert2';
 export class Marque implements OnInit {
   constructor(public auth: Auth) {}
 
-  getActions(row: any, actions: string[]) {
-    const permittedActions: string[] = [];
-    for (const a of actions) {
-      if (a === 'Modifier' && this.auth.hasPermission('MARQUE_EDIT')) {
-        permittedActions.push(a);
-      }
-      if (a === 'Supprimer' && this.auth.hasPermission('MARQUE_DISABLE')) {
-        permittedActions.push(a);
-      }
-    }
-    return permittedActions;
-  }
-
   httpService = inject(Http);
   pagedMarqueData!: PagedData<IMarque>;
   totalData!: number;
+
+  private translation = inject(Translation);
+  t(key: string): string { return this.translation.t(key); }
 
   filter: any = {
     pageIndex: 0,
@@ -62,30 +59,47 @@ export class Marque implements OnInit {
   searchControl = new FormControl('');
   readonly dialog = inject(MatDialog);
 
-  showCols = [
-    { key: 'name', label: 'Nom de la Marque' },
-    {
-      key: 'Action',
-      format: () => ["Modifier", "Supprimer"]
+  get showCols() {
+    return [
+      { key: 'name', label: this.t('MARQUE_NAME_LABEL') },
+      {
+        key: 'Action',
+        format: () => [this.t('ACTION_EDIT'), this.t('ACTION_DELETE')]
+      }
+    ];
+  }
+
+  getActions(row: any, actions: string[]) {
+    const permittedActions: string[] = [];
+    for (const a of actions) {
+      if (a === this.t('ACTION_EDIT') && this.auth.hasPermission('MARQUE_EDIT')) {
+        permittedActions.push(a);
+      }
+      if (a === this.t('ACTION_DELETE') && this.auth.hasPermission('MARQUE_DISABLE')) {
+        permittedActions.push(a);
+      }
     }
-  ];
+    return permittedActions;
+  }
 
   ngOnInit() {
     this.getLatestData();
 
-    this.searchControl.valueChanges.pipe(debounceTime(250))
-      .subscribe((value: string | null) => {
-        this.filter.search = value;
-        this.filter.pageIndex = 0;
-        this.getLatestData();
-      });
+    this.searchControl.valueChanges.pipe(
+      debounceTime(250),
+      distinctUntilChanged()
+    ).subscribe((value: string | null) => {
+      this.filter.search = value;
+      this.filter.pageIndex = 0;
+      this.getLatestData();
+    });
   }
 
   getLatestData() {
-   this.httpService.getMarques(this.filter).subscribe(result => {
+    this.httpService.getMarques(this.filter).subscribe(result => {
       this.pagedMarqueData = result;
       this.totalData = result.totalData;
-          console.log('dd'+ this.pagedMarqueData )
+      console.log('Marques loaded:', this.pagedMarqueData);
     });
   }
 
@@ -109,32 +123,35 @@ export class Marque implements OnInit {
 
   delete(marque: IMarque) {
     Swal.fire({
-      title: 'Êtes-vous sûr?',
-      text: `Voulez-vous vraiment supprimer la marque "${marque.name}"?`,
+      title: this.t('CONFIRMATION'),
+      text: `${this.t('MARQUE_DELETE_CONFIRM')} "${marque.name}" ?`,
       icon: 'warning',
       showCancelButton: true,
       confirmButtonColor: '#d33',
       cancelButtonColor: '#3085d6',
-      confirmButtonText: 'Oui, supprimer!',
-      cancelButtonText: 'Annuler'
+      confirmButtonText: this.t('YES_DELETE'),
+      cancelButtonText: this.t('CANCEL')
     }).then((result) => {
       if (result.isConfirmed) {
         this.httpService.deleteMarque(marque.id).subscribe({
           next: () => {
-            Swal.fire(
-              'Supprimée!',
-              'La marque a été supprimée avec succès.',
-              'success'
-            );
+            Swal.fire({
+              icon: 'success',
+              title: this.t('SUCCESS'),
+              text: this.t('MARQUE_DELETE_SUCCESS'),
+              timer: 2000,
+              showConfirmButton: false
+            });
             this.getLatestData();
           },
           error: (error) => {
             console.error('Error deleting marque:', error);
-            Swal.fire(
-              'Erreur!',
-              error.error?.message || 'Une erreur est survenue lors de la suppression.',
-              'error'
-            );
+            Swal.fire({
+              icon: 'error',
+              title: this.t('ERROR'),
+              text: error.error?.message || this.t('MARQUE_DELETE_ERROR'),
+              confirmButtonText: this.t('OK')
+            });
           }
         });
       }
@@ -161,7 +178,74 @@ export class Marque implements OnInit {
   }
 
   onRowClick(event: any) {
-    if (event.btn === "Modifier") this.edit(event.rowData);
-    if (event.btn === "Supprimer") this.delete(event.rowData);
+    const editLabel = this.t('ACTION_EDIT');
+    const deleteLabel = this.t('ACTION_DELETE');
+    
+    if (event.btn === editLabel) {
+      this.edit(event.rowData);
+    }
+    if (event.btn === deleteLabel) {
+      this.delete(event.rowData);
+    }
+  }
+
+  exportCSV() {
+    const rows = this.pagedMarqueData?.data || [];
+    const csvContent = [
+      ['ID', this.t('MARQUE_NAME_LABEL')],
+      ...rows.map(m => [m.id, m.name])
+    ].map(e => e.join(',')).join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = 'marques.csv';
+    link.click();
+  }
+
+  exportExcel() {
+    const data = this.pagedMarqueData?.data.map(m => ({
+      ID: m.id,
+      [this.t('MARQUE_NAME_LABEL')]: m.name
+    })) || [];
+
+    const worksheet = XLSX.utils.json_to_sheet(data);
+    const workbook = {
+      Sheets: { 'Marques': worksheet },
+      SheetNames: ['Marques']
+    };
+
+    const excelBuffer = XLSX.write(workbook, {
+      bookType: 'xlsx',
+      type: 'array'
+    });
+
+    const blob = new Blob([excelBuffer], {
+      type: 'application/octet-stream'
+    });
+
+    saveAs(blob, 'marques.xlsx');
+  }
+
+  exportPDF() {
+    const doc = new jsPDF();
+    
+    doc.setFontSize(16);
+    doc.text(this.t('MARQUE_LIST_TITLE'), 14, 22);
+    doc.setFontSize(10);
+    doc.text(`${this.t('GENERATED_ON')}: ${new Date().toLocaleDateString('fr-FR')}`, 14, 30);
+
+    const rows = this.pagedMarqueData?.data || [];
+
+    autoTable(doc, {
+      startY: 35,
+      head: [['ID', this.t('MARQUE_NAME_LABEL')]],
+      body: rows.map(m => [m.id.toString(), m.name]),
+      theme: 'grid',
+      styles: { fontSize: 10 },
+      headStyles: { fillColor: [41, 128, 185] }
+    });
+
+    doc.save('marques.pdf');
   }
 }

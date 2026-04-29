@@ -96,6 +96,9 @@ builder.Services.AddScoped<IGeocodingService, GeocodingService>();
 // builder.Services.AddScoped<IOptimisationService, OptimisationService>();
 builder.Services.AddHttpClient("Nominatim");
 
+// Memory Cache for geocoding results (24h cache)
+builder.Services.AddMemoryCache();
+
 // Notification Hub Service
 builder.Services.AddSingleton<NotificationHubService>();
 
@@ -187,7 +190,8 @@ app.UseRouting();
 
 app.UseCors("SignalRCors");
 
-app.UseHttpsRedirection();
+// UseHttpsRedirection disabled - mobile app uses HTTP only
+// app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
 

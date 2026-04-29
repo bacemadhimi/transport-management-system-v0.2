@@ -5,12 +5,11 @@ import { IFuelVendor } from '../../types/fuel-vendor';
 import { MatButtonModule } from '@angular/material/button';
 import { FormControl, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { MatDialog } from '@angular/material/dialog';
-
 import { MatSelectModule } from '@angular/material/select';
 import { MatCardModule } from '@angular/material/card';
 import { MatInputModule } from '@angular/material/input';
 import { MatFormFieldModule } from '@angular/material/form-field';
-import { debounceTime } from 'rxjs';
+import { debounceTime, distinctUntilChanged } from 'rxjs';
 import { PagedData } from '../../types/paged-data';
 import { FuelVendorForm } from './fuel-vendor-form/fuel-vendor-form';
 import * as XLSX from 'xlsx';
@@ -19,6 +18,9 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { Auth } from '../../services/auth';
 import { CommonModule } from '@angular/common';
+import { Translation } from '../../services/Translation';
+import Swal from 'sweetalert2';
+import { MatIconModule } from '@angular/material/icon';
 
 @Component({
   selector: 'app-fuel-vendor',
@@ -32,32 +34,21 @@ import { CommonModule } from '@angular/common';
     MatSelectModule,
     MatCardModule,
     MatInputModule,
-    MatFormFieldModule
+    MatFormFieldModule,
+    MatIconModule
   ],
   templateUrl: './fuel-vendor.html',
   styleUrls: ['./fuel-vendor.scss']
 })
 export class FuelVendor implements OnInit {
-      constructor(public auth: Auth) {}
-
-      getActions(row: any, actions: string[]) {
-        const permittedActions: string[] = [];
-
-        for (const a of actions) {
-          if (a === 'Modifier' && this.auth.hasPermission('FUEL_VENDOR_EDIT')) {
-            permittedActions.push(a);
-          }
-          if (a === 'Supprimer' && this.auth.hasPermission('FUEL_VENDOR_DISABLE')) {
-            permittedActions.push(a);
-          }
-        }
-
-        return permittedActions;
-      }
+  constructor(public auth: Auth) {}
 
   httpService = inject(Http);
   pagedFuelVendorData!: PagedData<IFuelVendor>;
   totalData!: number;
+
+  private translation = inject(Translation);
+  t(key: string): string { return this.translation.t(key); }
 
   filter: any = {
     pageIndex: 0,
@@ -67,24 +58,42 @@ export class FuelVendor implements OnInit {
   searchControl = new FormControl('');
   readonly dialog = inject(MatDialog);
 
-  showCols = [
+  get showCols() {
+    return [
+      { key: 'name', label: this.t('VENDOR_NAME') },
+      {
+        key: 'Action',
+        format: () => [this.t('ACTION_EDIT'), this.t('ACTION_DELETE')]
+      }
+    ];
+  }
 
-    { key: 'name', label: 'Nom du Fournisseur' },
-    {
-      key: 'Action',
-      format: () => ["Modifier", "Supprimer"]
+  getActions(row: any, actions: string[]) {
+    const permittedActions: string[] = [];
+
+    for (const a of actions) {
+      if (a === this.t('ACTION_EDIT') && this.auth.hasPermission('FUEL_VENDOR_EDIT')) {
+        permittedActions.push(a);
+      }
+      if (a === this.t('ACTION_DELETE') && this.auth.hasPermission('FUEL_VENDOR_DISABLE')) {
+        permittedActions.push(a);
+      }
     }
-  ];
+
+    return permittedActions;
+  }
 
   ngOnInit() {
     this.getLatestData();
 
-    this.searchControl.valueChanges.pipe(debounceTime(250))
-      .subscribe((value: string | null) => {
-        this.filter.search = value;
-        this.filter.pageIndex = 0;
-        this.getLatestData();
-      });
+    this.searchControl.valueChanges.pipe(
+      debounceTime(250),
+      distinctUntilChanged()
+    ).subscribe((value: string | null) => {
+      this.filter.search = value;
+      this.filter.pageIndex = 0;
+      this.getLatestData();
+    });
   }
 
   getLatestData() {
@@ -109,12 +118,40 @@ export class FuelVendor implements OnInit {
   }
 
   delete(vendor: IFuelVendor) {
-    if (confirm(`Voulez-vous vraiment supprimer le fournisseur "${vendor.name}"?`)) {
-      this.httpService.deleteFuelVendor(vendor.id).subscribe(() => {
-        alert("Fournisseur supprimé avec succès");
-        this.getLatestData();
-      });
-    }
+    Swal.fire({
+      title: this.t('CONFIRMATION'),
+      text: `${this.t('FUEL_VENDOR_DELETE_CONFIRM')} "${vendor.name}" ?`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#3085d6',
+      confirmButtonText: this.t('YES_DELETE'),
+      cancelButtonText: this.t('CANCEL')
+    }).then((result) => {
+      if (result.isConfirmed) {
+        this.httpService.deleteFuelVendor(vendor.id).subscribe({
+          next: () => {
+            Swal.fire({
+              icon: 'success',
+              title: this.t('SUCCESS'),
+              text: this.t('FUEL_VENDOR_DELETE_SUCCESS'),
+              timer: 2000,
+              showConfirmButton: false
+            });
+            this.getLatestData();
+          },
+          error: (err) => {
+            console.error('Error deleting fuel vendor:', err);
+            Swal.fire({
+              icon: 'error',
+              title: this.t('ERROR'),
+              text: err?.error?.message || this.t('FUEL_VENDOR_DELETE_ERROR'),
+              confirmButtonText: this.t('OK')
+            });
+          }
+        });
+      }
+    });
   }
 
   openDialog(): void {
@@ -133,8 +170,15 @@ export class FuelVendor implements OnInit {
   }
 
   onRowClick(event: any) {
-    if (event.btn === "Modifier") this.edit(event.rowData);
-    if (event.btn === "Supprimer") this.delete(event.rowData);
+    const editLabel = this.t('ACTION_EDIT');
+    const deleteLabel = this.t('ACTION_DELETE');
+    
+    if (event.btn === editLabel) {
+      this.edit(event.rowData);
+    }
+    if (event.btn === deleteLabel) {
+      this.delete(event.rowData);
+    }
   }
 
   exportCSV() {
@@ -147,7 +191,7 @@ export class FuelVendor implements OnInit {
     };
 
     const csvContent = [
-      ['ID', 'Nom du Fournisseur'],
+      ['ID', this.t('VENDOR_NAME')],
       ...rows.map(r => [r.id, r.name])
     ]
       .map(row => row.map(escape).join(','))
@@ -163,7 +207,12 @@ export class FuelVendor implements OnInit {
   exportExcel() {
     const data = this.pagedFuelVendorData?.data || [];
 
-    const worksheet = XLSX.utils.json_to_sheet(data);
+    const excelData = data.map(v => ({
+      ID: v.id,
+      [this.t('VENDOR_NAME')]: v.name
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(excelData);
     const workbook = {
       Sheets: { Fournisseurs: worksheet },
       SheetNames: ['Fournisseurs']
@@ -184,11 +233,20 @@ export class FuelVendor implements OnInit {
   exportPDF() {
     const doc = new jsPDF();
 
+    doc.setFontSize(16);
+    doc.text(this.t('FUEL_VENDOR_LIST_TITLE'), 14, 22);
+    doc.setFontSize(10);
+    doc.text(`${this.t('GENERATED_ON')}: ${new Date().toLocaleDateString('fr-FR')}`, 14, 30);
+
     const rows = this.pagedFuelVendorData?.data || [];
 
     autoTable(doc, {
-      head: [['ID', 'Nom du Fournisseur']],
-      body: rows.map(r => [r.id, r.name])
+      startY: 35,
+      head: [['ID', this.t('VENDOR_NAME')]],
+      body: rows.map(r => [r.id, r.name]),
+      theme: 'grid',
+      styles: { fontSize: 10 },
+      headStyles: { fillColor: [41, 128, 185] }
     });
 
     doc.save('fournisseurs_carburant.pdf');

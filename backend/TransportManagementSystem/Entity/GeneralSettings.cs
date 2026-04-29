@@ -24,4 +24,7 @@ public class GeneralSettings
     [Column(TypeName = "nvarchar(MAX)")]
     public string? LogoBase64 { get; set; }
 
+    [Column(TypeName = "nvarchar(MAX)")]
+    public string? Value { get; set; }
+
 }

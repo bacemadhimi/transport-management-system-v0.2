@@ -36,13 +36,20 @@ export class SignalRService {
   private tripUpdateSubject = new BehaviorSubject<TripNotification | null>(null);
   public tripUpdate$ = this.tripUpdateSubject.asObservable();
 
+  // ✅ BehaviorSubject pour les changements de statut en temps réel
+  private tripStatusChangedSubject = new BehaviorSubject<any>(null);
+  public tripStatusChanged$ = this.tripStatusChangedSubject.asObservable();
+
   constructor() {
     this.initializeConnection();
   }
 
   private initializeConnection() {
+    // Remove '/api' suffix for SignalR hub URLs
+    const baseUrl = environment.apiUrl.replace('/api', '');
+    
     this.hubConnection = new signalR.HubConnectionBuilder()
-      .withUrl(`${environment.apiUrl}/triphub`, {  // ✅ Reverted to triphub (gps-tracking.service handles gpshub notifications)
+      .withUrl(`${baseUrl}/triphub`, {  // ✅ Reverted to triphub (gps-tracking.service handles gpshub notifications)
         accessTokenFactory: () => this.authService.getToken() || ''
       })
       .withAutomaticReconnect([0, 2000, 5000, 10000, 30000])
@@ -83,6 +90,31 @@ export class SignalRService {
   }
 
   private registerHandlers() {
+    // ✅ Handler TripStatusChanged - enregistré UNE SEULE FOIS ici (depuis TripHub)
+    this.hubConnection.on('TripStatusChanged', (update: any) => {
+      console.log('📡 TripStatusChanged received from TripHub:', update);
+      this.tripStatusChangedSubject.next(update);
+    });
+
+    // ✅ Poller localStorage pour les événements venant de GPSHub
+    setInterval(() => {
+      const lastChange = localStorage.getItem('lastTripStatusChanged');
+      if (lastChange) {
+        try {
+          const update = JSON.parse(lastChange);
+          // Vérifier si c'est un nouvel événement
+          const lastProcessed = localStorage.getItem('lastProcessedTripId');
+          if (lastProcessed !== `${update.TripId}_${update.NewStatus}`) {
+            console.log('📡 TripStatusChanged received from GPSHub via localStorage:', update);
+            this.tripStatusChangedSubject.next(update);
+            localStorage.setItem('lastProcessedTripId', `${update.TripId}_${update.NewStatus}`);
+          }
+        } catch (e) {
+          console.warn('⚠️ Error parsing TripStatusChanged:', e);
+        }
+      }
+    }, 2000); // Vérifier toutes les 2 secondes
+
     this.hubConnection.on('ReceiveNotification', (notification: TripNotification) => {
       console.log('📬📬📬 ==========================================');
       console.log('📬📬📬 ReceiveNotification received on TripHub!');

@@ -311,14 +311,27 @@ public class GPSHub : Hub
                         ? t.Deliveries.OrderByDescending(d => d.Id).FirstOrDefault().Geolocation
                         : null,
                     // Include last delivery location coordinates if available
-                    LastDeliveryLocationLat = t.Deliveries.OrderByDescending(d => d.Id).FirstOrDefault(d => d.Location != null && d.Location.Latitude.HasValue) != null
-                        ? t.Deliveries.OrderByDescending(d => d.Id).FirstOrDefault(d => d.Location != null && d.Location.Latitude.HasValue).Location.Latitude
-                        : (double?)null,
-                    LastDeliveryLocationLng = t.Deliveries.OrderByDescending(d => d.Id).FirstOrDefault(d => d.Location != null && d.Location.Latitude.HasValue) != null
-                        ? t.Deliveries.OrderByDescending(d => d.Id).FirstOrDefault(d => d.Location != null && d.Location.Latitude.HasValue).Location.Longitude
-                        : (double?)null
-                })
-                .ToListAsync();
+                    LastDeliveryLocationLat = t.Deliveries
+                    .OrderByDescending(d => d.Id)
+                    .Select(d => d.Location.LocationGeographicalEntities
+                        .Select(lge => lge.GeographicalEntity)
+                        .Where(ge => ge != null && ge.Latitude.HasValue && ge.Longitude.HasValue)
+                        .OrderByDescending(ge => ge.LevelId)
+                        .Select(ge => ge.Latitude)
+                        .FirstOrDefault())
+                    .FirstOrDefault(),
+
+                                    LastDeliveryLocationLng = t.Deliveries
+                    .OrderByDescending(d => d.Id)
+                    .Select(d => d.Location.LocationGeographicalEntities
+                        .Select(lge => lge.GeographicalEntity)
+                        .Where(ge => ge != null && ge.Latitude.HasValue && ge.Longitude.HasValue)
+                        .OrderByDescending(ge => ge.LevelId)
+                        .Select(ge => ge.Longitude)
+                        .FirstOrDefault())
+                    .FirstOrDefault(),
+                                })
+                                .ToListAsync();
 
             await Clients.Caller.SendAsync("ActiveTrips", activeTrips);
             
@@ -338,6 +351,8 @@ public class GPSHub : Hub
     {
         try
         {
+            _logger.LogInformation($"📊 [UpdateTripStatus] START - TripId: {tripId}, Status: '{status}', Notes: {notes}");
+
             var trip = await _context.Trips
                 .Include(t => t.Driver)
                 .Include(t => t.Truck)
@@ -345,12 +360,17 @@ public class GPSHub : Hub
 
             if (trip == null)
             {
+                _logger.LogWarning($"⚠️ [UpdateTripStatus] Trip {tripId} not found");
                 await Clients.Caller.SendAsync("Error", "Trip non trouvé");
                 return;
             }
 
-            if (Enum.TryParse<TripStatus>(status, out var newStatus))
+            _logger.LogInformation($"📊 [UpdateTripStatus] Trip found: {trip.TripReference}, Current status: {trip.TripStatus}");
+
+            if (Enum.TryParse<TripStatus>(status, true, out var newStatus))
             {
+                _logger.LogInformation($"✅ [UpdateTripStatus] Status parsed successfully: '{status}' → {newStatus}");
+
                 var oldStatus = trip.TripStatus;
                 trip.TripStatus = newStatus;
 
@@ -459,8 +479,15 @@ public class GPSHub : Hub
                     notes = notes
                 });
 
-                // Also broadcast to AllTrips group for real-time tracking
-                await Clients.Group("AllTrips").SendAsync("TripStatusChanged", notificationData);
+                // Also broadcast to ALL clients for real-time tracking (consistent with AcceptTrip/RejectTrip)
+                await Clients.All.SendAsync("TripStatusChanged", notificationData);
+                
+                _logger.LogInformation($"✅ [UpdateTripStatus] COMPLETE - TripId: {tripId}, Status: {newStatus}");
+            }
+            else
+            {
+                _logger.LogWarning($"❌ [UpdateTripStatus] Failed to parse status: '{status}' for trip {tripId}");
+                await Clients.Caller.SendAsync("Error", $"Statut invalide: {status}");
             }
         }
         catch (Exception ex)
@@ -496,7 +523,7 @@ public class GPSHub : Hub
 
             trip.TripStatus = TripStatus.Accepted;
             await _context.SaveChangesAsync();
-            
+
             _logger.LogInformation($"🔔 [AcceptTrip] Trip status updated to Accepted");
 
             var notificationData = new
@@ -507,8 +534,14 @@ public class GPSHub : Hub
                 DriverName = trip.Driver?.Name,
                 TruckImmatriculation = trip.Truck?.Immatriculation,
                 Status = "Acceptée",
-                Timestamp = DateTime.UtcNow
+                Timestamp = DateTime.UtcNow,
+                NewStatus = "Accepted",
+                OldStatus = "Planned"
             };
+
+            // ✅ Envoyer TripStatusChanged pour synchronisation temps réel (mobile ET web)
+            await Clients.All.SendAsync("TripStatusChanged", notificationData);
+            _logger.LogInformation($"📡 [AcceptTrip] TripStatusChanged broadcasted: {tripId} → Accepted");
 
             // ALSO send TripAccepted event for web compatibility (like sauvegarde-gps branch)
             await Clients.All.SendAsync("TripAccepted", new
@@ -618,8 +651,14 @@ public class GPSHub : Hub
                 Reason = reason,
                 ReasonCode = reasonCode,
                 Status = "Refusée",
-                Timestamp = DateTime.UtcNow
+                Timestamp = DateTime.UtcNow,
+                NewStatus = "Refused",
+                OldStatus = "Planned"
             };
+
+            // ✅ Envoyer TripStatusChanged pour synchronisation temps réel (mobile ET web)
+            await Clients.All.SendAsync("TripStatusChanged", notificationData);
+            _logger.LogInformation($"📡 [RejectTrip] TripStatusChanged broadcasted: {tripId} → Refused");
 
             // ALSO send TripRejected event for web compatibility (like sauvegarde-gps branch)
             await Clients.All.SendAsync("TripRejected", new

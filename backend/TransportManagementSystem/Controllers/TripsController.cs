@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
@@ -413,6 +413,66 @@ public class TripsController : ControllerBase
         var tripReference = $"LIV-{year}-{nextSequence:D3}";
         var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
 
+        // Check Trip Address Mode Setting
+        var tripAddressMode = await context.GeneralSettings
+            .FirstOrDefaultAsync(s => s.ParameterCode == "ModeAdresseTrip");
+        
+        bool isAutoMode = tripAddressMode != null && tripAddressMode.Value == "AUTOMATIQUE";
+
+        double? finalLatitude = model.DestinationLatitude;
+        double? finalLongitude = model.DestinationLongitude;
+        string finalAddress = model.DestinationAddress;
+
+        // AUTOMATIC MODE: Get destination from last delivery customer coordinates
+        if (isAutoMode && model.Deliveries?.Any() == true)
+        {
+            var lastDelivery = model.Deliveries.LastOrDefault();
+            if (lastDelivery != null && lastDelivery.CustomerId > 0)
+            {
+                var customer = await context.Customers.FindAsync(lastDelivery.CustomerId);
+                if (customer != null)
+                {
+                    if (customer.Latitude.HasValue && customer.Longitude.HasValue)
+                    {
+                        // Customer has GPS coordinates - use them directly
+                        finalLatitude = customer.Latitude;
+                        finalLongitude = customer.Longitude;
+                        finalAddress = customer.Address ?? customer.Name;
+                    }
+                    else if (!string.IsNullOrEmpty(customer.Address))
+                    {
+                        // Customer has address but no GPS - try to geocode
+                        _logger.LogInformation($"🔄 Auto mode: Customer '{customer.Name}' has no GPS, trying to geocode address: {customer.Address}");
+                        finalAddress = customer.Address;
+                        
+                        // Try to geocode the address using Nominatim
+                        var geoResult = await GeocodeAddressWithNominatim(customer.Address);
+                        if (geoResult.HasValue)
+                        {
+                            finalLatitude = geoResult.Value.lat;
+                            finalLongitude = geoResult.Value.lng;
+                            _logger.LogInformation($"✅ Successfully geocoded customer address: Lat={finalLatitude}, Lng={finalLongitude}");
+                        }
+                        else
+                        {
+                            _logger.LogWarning($"⚠️ Failed to geocode customer address. Using name only.");
+                            finalAddress = customer.Name ?? "Client sans coordonnées";
+                            finalLatitude = null;
+                            finalLongitude = null;
+                        }
+                    }
+                    else
+                    {
+                        // Customer has neither GPS nor address
+                        _logger.LogWarning($"⚠️ Customer '{customer.Name}' has no GPS coordinates and no address");
+                        finalAddress = customer.Name ?? "Client inconnu";
+                        finalLatitude = null;
+                        finalLongitude = null;
+                    }
+                }
+            }
+        }
+
         var trip = new Trip
         {
             BookingId = $"TMS{nextNumber:D5}",
@@ -429,8 +489,8 @@ public class TripsController : ControllerBase
             EstimatedEndDate = model.EstimatedEndDate,
             TrajectId = model.TrajectId,
             // IMPORTANT: Save destination coordinates for GPS tracking on mobile
-            EndLatitude = model.DestinationLatitude,
-            EndLongitude = model.DestinationLongitude,
+            EndLatitude = finalLatitude,
+            EndLongitude = finalLongitude,
         };
 
         await tripRepository.AddAsync(trip);
@@ -487,8 +547,29 @@ public class TripsController : ControllerBase
                 var destination = model.DestinationAddress;
                 if (string.IsNullOrEmpty(destination))
                 {
+                    // Try to get address from last delivery customer
                     var lastDelivery = trip.Deliveries?.LastOrDefault();
-                    destination = lastDelivery?.DeliveryAddress ?? "Non définie";
+                    if (lastDelivery != null && lastDelivery.CustomerId > 0)
+                    {
+                        var customer = await context.Customers.FindAsync(lastDelivery.CustomerId);
+                        if (customer != null)
+                        {
+                            // Use customer address if available, otherwise use name
+                            destination = !string.IsNullOrEmpty(customer.Address) 
+                                ? customer.Address 
+                                : customer.Name ?? "Non définie";
+                            
+                            _logger.LogInformation($"📍 Notification destination set from customer: {destination}");
+                        }
+                        else
+                        {
+                            destination = lastDelivery.DeliveryAddress ?? "Non définie";
+                        }
+                    }
+                    else
+                    {
+                        destination = lastDelivery?.DeliveryAddress ?? "Non définie";
+                    }
                 }
 
                 _logger.LogInformation($"🔔 Step 1: Preparing notification for driver {model.DriverId}...");
@@ -845,6 +926,15 @@ public class TripsController : ControllerBase
         };
 
         await _notificationService.NotifyTripStatusChanged(statusChange, userId);
+
+        // ✅ Notifier TOUS les clients via GPS Hub (web écoute ce hub)
+        await _gpsHub.Clients.All.SendAsync("TripStatusChanged", statusChange);
+        
+        // ✅ Notifier aussi via TripHub
+        await _tripHub.Clients.All.SendAsync("TripStatusChanged", statusChange);
+        
+        _logger.LogInformation("📡 TripStatusChanged broadcasted via GPSHub+TripHub: Trip {TripId} {OldStatus} → {NewStatus}", 
+            trip.Id, oldStatus, model.Status);
 
         return Ok(new ApiResponse(true,
             $"Statut du trajet mis à jour: {TripStatusTransitions.GetStatusLabel(model.Status)}",
@@ -1293,6 +1383,9 @@ public class TripsController : ControllerBase
         return await context.Trips
             .Include(t => t.Driver)
             .Include(t => t.Convoyeur)
+            .Include(t => t.Truck)
+            .Include(t => t.Deliveries)
+                .ThenInclude(d => d.Customer)
             .ToListAsync();
     }
 
@@ -1875,6 +1968,55 @@ public class TripsController : ControllerBase
         {
             return BadRequest(new { message = "Error loading trips", error = ex.Message });
         }
+    }
+
+    /// <summary>
+    /// Geocode an address using Nominatim (OpenStreetMap) API
+    /// Returns latitude and longitude if successful, null otherwise
+    /// </summary>
+    private async Task<(double lat, double lng)?> GeocodeAddressWithNominatim(string address)
+    {
+        if (string.IsNullOrWhiteSpace(address))
+            return null;
+
+        try
+        {
+            // Use Nominatim API (OpenStreetMap free geocoding service)
+            var encodedAddress = Uri.EscapeDataString(address + ", Tunisia");
+            var url = $"https://nominatim.openstreetmap.org/search?format=json&q={encodedAddress}&limit=1";
+
+            using var httpClient = new HttpClient();
+            httpClient.DefaultRequestHeaders.Add("User-Agent", "TMS-App/1.0");
+            
+            var response = await httpClient.GetStringAsync(url);
+            var results = System.Text.Json.JsonSerializer.Deserialize<List<NominatimResult>>(response);
+
+            if (results != null && results.Count > 0)
+            {
+                var result = results[0];
+                if (double.TryParse(result.Lat, out var lat) && double.TryParse(result.Lon, out var lon))
+                {
+                    _logger.LogInformation($"✅ Geocoded '{address}' to Lat={lat}, Lng={lon}");
+                    return (lat, lon);
+                }
+            }
+
+            _logger.LogWarning($"⚠️ No geocoding result for address: {address}");
+            return null;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, $"❌ Error geocoding address: {address}");
+            return null;
+        }
+    }
+
+    // Helper class for Nominatim API response
+    private class NominatimResult
+    {
+        public string Lat { get; set; } = "";
+        public string Lon { get; set; } = "";
+        public string DisplayName { get; set; } = "";
     }
 }
 

@@ -54,14 +54,14 @@ export class NotificationService {
   }
 
   markAsRead(notificationId: number): Observable<any> {
-    return this.http.post(`${this.apiUrl}/${notificationId}/mark-as-read`, {}, { headers: this.getHeaders() });
+    return this.http.put(`${this.apiUrl}/${notificationId}/read`, {}, { headers: this.getHeaders() });
   }
 
   markAllAsRead(): Observable<any> {
-    return this.http.post(`${this.apiUrl}/mark-all-as-read`, {}, { headers: this.getHeaders() });
+    return this.http.put(`${this.apiUrl}/mark-all-read`, {}, { headers: this.getHeaders() });
   }
 
   deleteAllNotifications(): Observable<any> {
-    return this.http.delete(`${this.apiUrl}`, { headers: this.getHeaders() });
+    return this.http.delete(`${this.apiUrl}/delete-all`, { headers: this.getHeaders() });
   }
 }

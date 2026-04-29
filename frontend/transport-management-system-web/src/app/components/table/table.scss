@@ -311,3 +311,34 @@ td.mat-column-Action button {
   display: flex;
   gap: 6px;
 }
+
+/* =========================================== */
+/* ROW HIGHLIGHTING - Missing GPS Coordinates */
+/* =========================================== */
+
+/* Highlight rows with missing GPS coordinates in red */
+tr.row-missing-gps {
+  background-color: rgba(239, 68, 68, 0.08) !important;
+  border-left: 4px solid #ef4444 !important;
+  
+  &:hover {
+    background-color: rgba(239, 68, 68, 0.15) !important;
+  }
+  
+  td {
+    color: #991b1b !important;
+    
+    &:first-child {
+      position: relative;
+      
+      &::before {
+        content: '⚠️';
+        position: absolute;
+        left: -20px;
+        top: 50%;
+        transform: translateY(-50%);
+        font-size: 0.9rem;
+      }
+    }
+  }
+}

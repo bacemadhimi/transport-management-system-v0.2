@@ -172,3 +172,135 @@
 .profile-field--wide {
 	grid-column: 1 / -1;
 }
+
+@media (max-width: 480px) {
+  .mat-phone-wrapper {
+    height: 48px !important;
+    
+    input {
+      padding: 12px 10px 12px 50px !important;
+      font-size: 14px !important;
+    }
+  }
+  
+  .mat-phone-label {
+    font-size: 11px !important;
+  }
+}
+
+// Fix for profile card on mobile
+@media (max-width: 768px) {
+  .profile-card {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    border-radius: 0 !important;
+  }
+
+  .flex.justify-center.p-6 {
+    padding: 8px !important;
+  }
+
+  // Profile image and form stack
+  .flex.items-start.space-x-6 {
+    flex-direction: column !important;
+    align-items: center !important;
+    gap: 20px !important;
+
+    .flex.flex-col.items-center {
+      width: 100% !important;
+    }
+
+    .flex-1 {
+      width: 100% !important;
+    }
+  }
+
+  // Full width buttons
+  .flex.justify-end {
+    button {
+      width: 100% !important;
+      min-width: unset !important;
+    }
+  }
+
+  // Password action buttons stack
+  .flex.justify-end.space-x-3 {
+    flex-direction: column-reverse !important;
+    gap: 10px !important;
+
+    button {
+      width: 100% !important;
+      margin: 0 !important;
+    }
+  }
+
+  // Tabs full width
+  .profile-tabs ::ng-deep .mat-tab-label {
+    min-width: 50% !important;
+    padding: 0 8px !important;
+  }
+
+  // Security policy box compact
+  .mt-8.p-4 {
+    padding: 12px !important;
+    margin-top: 16px !important;
+
+    ul li {
+      font-size: 12px !important;
+    }
+  }
+}
+
+// Fix for phone field dropdown (intl-tel-input)
+.iti__country-list {
+  max-width: 100vw !important;
+  width: 280px !important;
+  
+  @media (max-width: 480px) {
+    width: 260px !important;
+  }
+}
+
+.iti__country {
+  padding: 8px 10px !important;
+}
+
+// Fix for phone field on mobile
+.mat-phone-wrapper {
+  .iti {
+    width: 100% !important;
+  }
+  
+  .iti__flag-container {
+    padding: 0 !important;
+  }
+  
+  .iti__selected-flag {
+    padding: 0 6px 0 8px !important;
+  }
+}
+
+// Ensure no horizontal scroll on mobile
+::ng-deep {
+  .mat-tab-body-content {
+    overflow-x: hidden !important;
+    padding: 0 4px !important;
+  }
+}
+
+// Fix for very small devices
+@media (max-width: 360px) {
+  .mat-phone-wrapper {
+    height: 44px !important;
+    
+    input {
+      padding: 10px 8px 10px 45px !important;
+      font-size: 13px !important;
+    }
+  }
+  
+  .iti__country-list {
+    width: 240px !important;
+  }
+}

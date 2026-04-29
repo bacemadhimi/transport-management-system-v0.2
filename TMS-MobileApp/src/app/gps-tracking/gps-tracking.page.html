@@ -1,0 +1,107 @@
+<ion-header>
+  <ion-toolbar color="primary">
+    <ion-title>GPS Tracking</ion-title>
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/home"></ion-back-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content>
+  <div *ngIf="currentTrip; else noTrip">
+    <ion-card>
+      <ion-card-header>
+        <ion-card-title>Trip: {{ currentTrip.id }}</ion-card-title>
+        <ion-card-subtitle>
+          Status: <span [class]="getStatusClass(currentTrip.status)">{{ currentTrip.status }}</span>
+        </ion-card-subtitle>
+      </ion-card-header>
+      
+      <ion-card-content>
+        <p><strong>From:</strong> {{ currentTrip.fromLocation }}</p>
+        <p><strong>To:</strong> {{ currentTrip.toLocation }}</p>
+        <p><strong>Customer:</strong> {{ currentTrip.customerName }}</p>
+        <p><strong>Truck:</strong> {{ currentTrip.truckRegistrationNumber }}</p>
+        <p><strong>Scheduled Date:</strong> {{ currentTrip.scheduledDate | date:'short' }}</p>
+      </ion-card-content>
+    </ion-card>
+
+    <!-- Action buttons based on current status -->
+    <div class="action-buttons-container" *ngIf="currentTrip.status !== 'Completed'">
+      <ion-button 
+        expand="block" 
+        *ngIf="currentTrip.status === 'Pending'"
+        (click)="acceptTrip()"
+        color="success">
+        Accept Trip
+      </ion-button>
+      
+      <ion-button 
+        expand="block" 
+        *ngIf="currentTrip.status === 'Pending'"
+        (click)="refuseTrip()"
+        color="danger">
+        Refuse Trip
+      </ion-button>
+      
+      <ion-button 
+        expand="block" 
+        *ngIf="currentTrip.status === 'Accepted'"
+        (click)="startTrip()"
+        color="primary">
+        Start Trip
+      </ion-button>
+      
+      <ion-button 
+        expand="block" 
+        *ngIf="currentTrip.status === 'In Progress'"
+        (click)="startLoading()"
+        color="warning">
+        Start Loading
+      </ion-button>
+      
+      <ion-button 
+        expand="block" 
+        *ngIf="currentTrip.status === 'Loading'"
+        (click)="startDelivery()"
+        color="secondary">
+        Start Delivery
+      </ion-button>
+      
+      <ion-button 
+        expand="block" 
+        *ngIf="currentTrip.status === 'Delivering'"
+        (click)="scanQRCode()"
+        color="success">
+        Scan QR & Complete Trip
+      </ion-button>
+    </div>
+  </div>
+
+  <ng-template #noTrip>
+    <ion-card>
+      <ion-card-content>
+        <h2>No Active Trips</h2>
+        <p>You don't have any active trips at the moment.</p>
+      </ion-card-content>
+    </ion-card>
+  </ng-template>
+</ion-content>
+
+<style>
+  .action-buttons-container {
+    padding: 16px;
+  }
+  
+  .status-completed { color: green; font-weight: bold; }
+  .status-pending { color: orange; font-weight: bold; }
+  .status-accepted { color: blue; font-weight: bold; }
+  .status-in-progress { color: purple; font-weight: bold; }
+  .status-loading { color: brown; font-weight: bold; }
+  .status-delivering { color: teal; font-weight: bold; }
+  .status-rejected { color: red; font-weight: bold; }
+  
+  .getStatusClass(status: string) {
+    return `status-${status.toLowerCase().replace(' ', '-')}`;
+  }
+</style>

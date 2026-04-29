@@ -1,9 +1,18 @@
 
 
+import { Capacitor } from '@capacitor/core';
+
+// Platform-aware API URL detection at runtime
+function getApiUrl(): string {
+  return Capacitor.isNativePlatform()
+    ? 'http://51.178.65.32:45880'
+    : 'http://51.178.65.32:45880';
+}
+
 export const environment = {
   production: false,
-  apiUrl: 'https://localhost:7287',
-  weatherApiKey: '' // OpenWeatherMap API key (optional - leave empty for simulated weather)
+  apiUrl: getApiUrl(),
+  weatherApiKey: ''
 };
 
 

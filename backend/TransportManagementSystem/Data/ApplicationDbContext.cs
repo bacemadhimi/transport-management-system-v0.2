@@ -131,7 +131,11 @@ namespace TransportManagementSystem.Data
 
             modelBuilder.Entity<Maintenance>().Navigation(m => m.Trip).AutoInclude();
             modelBuilder.Entity<Maintenance>().Navigation(m => m.Vendor).AutoInclude();
-            modelBuilder.Entity<Maintenance>().Navigation(m => m.Mechanic).AutoInclude();
+            modelBuilder.Entity<Maintenance>()
+                       .HasOne(m => m.Mechanic)
+                       .WithMany()
+                       .HasForeignKey(m => m.MechanicId)
+                       .OnDelete(DeleteBehavior.Restrict);
 
             // 🔹 User ↔ UserGroup (Many-to-Many)
             modelBuilder.Entity<UserGroup2User>()

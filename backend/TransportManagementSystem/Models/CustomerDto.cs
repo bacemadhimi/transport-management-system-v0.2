@@ -1,4 +1,4 @@
-﻿namespace TransportManagementSystem.Models
+namespace TransportManagementSystem.Models
 {
     public class CustomerGeographicalEntityDto
     {
@@ -10,6 +10,7 @@
         public double? Longitude { get; set; }
     }
 
+    // CRITICAL FIX: Added Address, Latitude, Longitude properties to fix 21 CS0117/CS1061 errors
     public class CustomerDto
     {
         public int Id { get; set; }
@@ -18,6 +19,9 @@
         public string? PhoneCountry { get; set; }
         public string? Email { get; set; }
         public string Matricule { get; set; } = string.Empty;
+        public double? Latitude { get; set; }
+        public double? Longitude { get; set; }
+        public string? Address { get; set; }
         public string? Contact { get; set; }
         public string SourceSystem { get; set; } = "TMS";
         public List<CustomerGeographicalEntityDto> GeographicalEntities { get; set; } = new();

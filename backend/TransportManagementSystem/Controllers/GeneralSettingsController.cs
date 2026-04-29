@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using TransportManagementSystem.Data;
@@ -78,19 +78,44 @@ public class GeneralSettingsController : ControllerBase
     [HttpPut("{id}")]
     public async Task<IActionResult> Update(int id, [FromBody] GeneralSettings model)
     {
+        if (model == null)
+            return BadRequest("Invalid data.");
 
         var existing = await _context.GeneralSettings.FindAsync(id);
         if (existing == null)
             return NotFound();
 
+        // Vérifier si un AUTRE record a déjà ce ParameterCode (conflit de clé unique)
+        var conflict = await _context.GeneralSettings
+            .FirstOrDefaultAsync(s => s.ParameterType == model.ParameterType 
+                                   && s.ParameterCode == model.ParameterCode 
+                                   && s.Id != id);
+        
+        if (conflict != null)
+        {
+            // Un autre record a déjà cette valeur - supprimer le conflit
+            _context.GeneralSettings.Remove(conflict);
+            await _context.SaveChangesAsync();
+        }
+
         existing.ParameterType = model.ParameterType;
         existing.ParameterCode = model.ParameterCode;
         existing.Description = model.Description;
         existing.LogoBase64 = model.LogoBase64;
-
-
-        await _context.SaveChangesAsync();
-        return Ok(existing);
+        
+        try
+        {
+            await _context.SaveChangesAsync();
+            return Ok(existing);
+        }
+        catch (DbUpdateException ex)
+        {
+            // Si toujours un conflit après suppression, retourner une erreur explicite
+            return StatusCode(500, new { 
+                message = "Conflit de données: impossible de sauvegarder",
+                details = ex.InnerException?.Message ?? ex.Message 
+            });
+        }
     }
 
 

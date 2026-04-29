@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
@@ -15,11 +15,16 @@ namespace TransportManagementSystem.Controllers
     {
         private readonly ApplicationDbContext dbContext;
         private readonly IRepository<Customer> customerRepository;
+        private readonly IHttpClientFactory _httpClientFactory;
 
-        public CustomerController(ApplicationDbContext context, IRepository<Customer> customerRepository)
+        public CustomerController(
+            ApplicationDbContext context, 
+            IRepository<Customer> customerRepository,
+            IHttpClientFactory httpClientFactory)
         {
             this.customerRepository = customerRepository;
             dbContext = context;
+            _httpClientFactory = httpClientFactory;
         }
 
         [HttpGet("PaginationAndSearch")]
@@ -70,6 +75,9 @@ namespace TransportManagementSystem.Controllers
                 Email = c.Email,
                 Matricule = c.Matricule,
                 Contact = c.Contact,
+                Address = c.Address,
+                Latitude = c.Latitude,
+                Longitude = c.Longitude,
                 SourceSystem = c.SourceSystem.ToString(),
                 GeographicalEntities = c.CustomerGeographicalEntities?
                     .Where(cg => cg.GeographicalEntity != null && cg.GeographicalEntity.IsActive)
@@ -109,6 +117,9 @@ namespace TransportManagementSystem.Controllers
                 Email = c.Email,
                 Matricule = c.Matricule,
                 Contact = c.Contact,
+                Address = c.Address,
+                Latitude = c.Latitude,
+                Longitude = c.Longitude,
                 SourceSystem = c.SourceSystem.ToString(),
                 GeographicalEntities = c.CustomerGeographicalEntities?
                     .Where(cg => cg.GeographicalEntity != null && cg.GeographicalEntity.IsActive)
@@ -147,6 +158,9 @@ namespace TransportManagementSystem.Controllers
                 Email = customer.Email,
                 Matricule = customer.Matricule,
                 Contact = customer.Contact,
+                Address = customer.Address,
+                Latitude = customer.Latitude,
+                Longitude = customer.Longitude,
                 SourceSystem = customer.SourceSystem.ToString(),
                 GeographicalEntities = customer.CustomerGeographicalEntities?
                     .Where(cg => cg.GeographicalEntity != null && cg.GeographicalEntity.IsActive)
@@ -199,10 +213,108 @@ namespace TransportManagementSystem.Controllers
                 Email = model.Email,
                 Matricule = model.Matricule,
                 Contact = model.Contact,
+                Address = model.Address,
+                Latitude = model.Latitude,
+                Longitude = model.Longitude,
                 CustomerGeographicalEntities = new List<CustomerGeographicalEntity>()
             };
 
-            // Add geographical entities
+            // Auto-geocode address if coordinates are missing and address is provided
+            if ((!customer.Latitude.HasValue || !customer.Longitude.HasValue) && !string.IsNullOrWhiteSpace(customer.Address))
+            {
+                try
+                {
+                    var geocodeResult = await GeocodeAddress(customer.Address);
+                    if (geocodeResult != null && geocodeResult.ContainsKey("lat") && geocodeResult.ContainsKey("lon"))
+                    {
+                        customer.Latitude = Convert.ToDouble(geocodeResult["lat"]);
+                        customer.Longitude = Convert.ToDouble(geocodeResult["lon"]);
+                        Console.WriteLine($"✅ Customer '{customer.Name}' auto-geocoded: {customer.Latitude}, {customer.Longitude}");
+                    }
+                    else
+                    {
+                        Console.WriteLine($"⚠️ Could not geocode address for customer '{customer.Name}': {customer.Address}");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"❌ Error geocoding customer '{customer.Name}': {ex.Message}");
+                    // Continue without coordinates - will be shown in red in UI
+                }
+            }
+
+            // AUTO-ASSIGN geographical entity based on GPS coordinates (for automatic mode)
+            if (customer.Latitude.HasValue && customer.Longitude.HasValue)
+            {
+                try
+                {
+                    Console.WriteLine($"🔍 Auto-assigning geographical entity for customer '{customer.Name}' at coords: {customer.Latitude.Value}, {customer.Longitude.Value}");
+                    
+                    // Find the closest geographical entity to the customer's coordinates
+                    var allEntities = await dbContext.GeographicalEntities
+                        .Where(g => g.IsActive && g.Latitude.HasValue && g.Longitude.HasValue)
+                        .ToListAsync();
+
+                    Console.WriteLine($"📊 Found {allEntities.Count} active geographical entities with GPS coordinates");
+
+                    if (allEntities.Any())
+                    {
+                        // Calculate distance to each entity and find the closest one
+                        var closestEntity = allEntities
+                            .Select(e => new 
+                            { 
+                                Entity = e, 
+                                Distance = Math.Sqrt(
+                                    Math.Pow((double)e.Latitude.Value - customer.Latitude.Value, 2) + 
+                                    Math.Pow((double)e.Longitude.Value - customer.Longitude.Value, 2)
+                                )
+                            })
+                            .OrderBy(x => x.Distance)
+                            .FirstOrDefault();
+
+                        Console.WriteLine($"🎯 Closest entity: '{closestEntity.Entity.Name}' at distance: {closestEntity.Distance:F4} degrees (~{closestEntity.Distance * 111:F1} km)");
+
+                        // If the closest entity is within reasonable distance (< 100km ~ 1.0 degree approx)
+                        if (closestEntity != null && closestEntity.Distance < 1.0)
+                        {
+                            Console.WriteLine($"✅ Auto-assigned geographical entity '{closestEntity.Entity.Name}' to customer '{customer.Name}' (distance: {closestEntity.Distance:F4})");
+                            
+                            // Remove old associations
+                            if (customer.CustomerGeographicalEntities != null && customer.CustomerGeographicalEntities.Any())
+                            {
+                                dbContext.CustomerGeographicalEntities.RemoveRange(customer.CustomerGeographicalEntities);
+                                customer.CustomerGeographicalEntities.Clear();
+                            }
+
+                            // Add new association
+                            customer.CustomerGeographicalEntities = new List<CustomerGeographicalEntity>
+                            {
+                                new CustomerGeographicalEntity
+                                {
+                                    CustomerId = customer.Id,
+                                    GeographicalEntityId = closestEntity.Entity.Id
+                                }
+                            };
+                        }
+                        else
+                        {
+                            Console.WriteLine($"⚠️ No geographical entity found within 100km range for customer '{customer.Name}'. Closest was '{closestEntity?.Entity.Name}' at {closestEntity?.Distance:F4} degrees");
+                        }
+                    }
+                    else
+                    {
+                        Console.WriteLine($"⚠️ NO geographical entities with GPS coordinates found in database!");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"❌ Error auto-assigning geographical entity: {ex.Message}");
+                    Console.WriteLine($"❌ Stack trace: {ex.StackTrace}");
+                    // Continue without geographical entity - not critical
+                }
+            }
+
+            // Add geographical entities (manual mode or override)
             if (model.GeographicalEntities != null && model.GeographicalEntities.Any())
             {
                 foreach (var geoDto in model.GeographicalEntities)
@@ -233,6 +345,9 @@ namespace TransportManagementSystem.Controllers
                 Email = createdCustomer.Email,
                 Matricule = createdCustomer.Matricule,
                 Contact = createdCustomer.Contact,
+                Address = createdCustomer.Address,
+                Latitude = createdCustomer.Latitude,
+                Longitude = createdCustomer.Longitude,
                 SourceSystem = createdCustomer.SourceSystem.ToString(),
                 GeographicalEntities = createdCustomer.CustomerGeographicalEntities?
                     .Where(cg => cg.GeographicalEntity != null && cg.GeographicalEntity.IsActive)
@@ -292,9 +407,102 @@ namespace TransportManagementSystem.Controllers
             customer.Email = model.Email;
             customer.Matricule = model.Matricule;
             customer.Contact = model.Contact;
+            customer.Address = model.Address;
+            
+            // If coordinates are explicitly provided, use them
+            if (model.Latitude.HasValue && model.Longitude.HasValue)
+            {
+                customer.Latitude = model.Latitude;
+                customer.Longitude = model.Longitude;
+            }
+            // Otherwise, try to geocode the address if it changed or coordinates are missing
+            else if (!string.IsNullOrWhiteSpace(model.Address) && 
+                     (model.Address != customer.Address || !customer.Latitude.HasValue || !customer.Longitude.HasValue))
+            {
+                try
+                {
+                    var geocodeResult = await GeocodeAddress(model.Address);
+                    if (geocodeResult != null && geocodeResult.ContainsKey("lat") && geocodeResult.ContainsKey("lon"))
+                    {
+                        customer.Latitude = Convert.ToDouble(geocodeResult["lat"]);
+                        customer.Longitude = Convert.ToDouble(geocodeResult["lon"]);
+                        Console.WriteLine($"✅ Customer '{customer.Name}' auto-geocoded on update: {customer.Latitude}, {customer.Longitude}");
+                    }
+                    else
+                    {
+                        Console.WriteLine($"⚠️ Could not geocode address for customer '{customer.Name}' on update: {model.Address}");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"❌ Error geocoding customer '{customer.Name}' on update: {ex.Message}");
+                    // Continue without coordinates - will be shown in red in UI
+                }
+            }
+            
             customer.UpdatedAt = DateTime.UtcNow;
 
-            // Update geographical entities
+            // AUTO-ASSIGN geographical entity based on GPS coordinates (for automatic mode)
+            if (customer.Latitude.HasValue && customer.Longitude.HasValue)
+            {
+                try
+                {
+                    // Find the closest geographical entity to the customer's coordinates
+                    var allEntities = await dbContext.GeographicalEntities
+                        .Where(g => g.IsActive && g.Latitude.HasValue && g.Longitude.HasValue)
+                        .ToListAsync();
+
+                    if (allEntities.Any())
+                    {
+                        // Calculate distance to each entity and find the closest one
+                        var closestEntity = allEntities
+                            .Select(e => new 
+                            { 
+                                Entity = e, 
+                                Distance = Math.Sqrt(
+                                    Math.Pow((double)e.Latitude.Value - customer.Latitude.Value, 2) + 
+                                    Math.Pow((double)e.Longitude.Value - customer.Longitude.Value, 2)
+                                )
+                            })
+                            .OrderBy(x => x.Distance)
+                            .FirstOrDefault();
+
+                        // If the closest entity is within reasonable distance (< 50km ~ 0.5 degrees approx)
+                        if (closestEntity != null && closestEntity.Distance < 0.5)
+                        {
+                            Console.WriteLine($"✅ Auto-assigned geographical entity '{closestEntity.Entity.Name}' to customer '{customer.Name}' (distance: {closestEntity.Distance:F4})");
+                            
+                            // Remove old associations
+                            if (customer.CustomerGeographicalEntities != null && customer.CustomerGeographicalEntities.Any())
+                            {
+                                dbContext.CustomerGeographicalEntities.RemoveRange(customer.CustomerGeographicalEntities);
+                                customer.CustomerGeographicalEntities.Clear();
+                            }
+
+                            // Add new association
+                            customer.CustomerGeographicalEntities = new List<CustomerGeographicalEntity>
+                            {
+                                new CustomerGeographicalEntity
+                                {
+                                    CustomerId = customer.Id,
+                                    GeographicalEntityId = closestEntity.Entity.Id
+                                }
+                            };
+                        }
+                        else
+                        {
+                            Console.WriteLine($"⚠️ No geographical entity found within range for customer '{customer.Name}'");
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"❌ Error auto-assigning geographical entity: {ex.Message}");
+                    // Continue without geographical entity - not critical
+                }
+            }
+
+            // Update geographical entities (manual mode or override)
             if (model.GeographicalEntities != null)
             {
                 // Remove old associations
@@ -332,6 +540,9 @@ namespace TransportManagementSystem.Controllers
                 Email = updatedCustomer.Email,
                 Matricule = updatedCustomer.Matricule,
                 Contact = updatedCustomer.Contact,
+                Address = updatedCustomer.Address,
+                Latitude = updatedCustomer.Latitude,
+                Longitude = updatedCustomer.Longitude,
                 SourceSystem = updatedCustomer.SourceSystem.ToString(),
                 GeographicalEntities = updatedCustomer.CustomerGeographicalEntities?
                     .Where(cg => cg.GeographicalEntity != null && cg.GeographicalEntity.IsActive)
@@ -438,6 +649,9 @@ namespace TransportManagementSystem.Controllers
                 Email = c.Email,
                 Matricule = c.Matricule,
                 Contact = c.Contact,
+                Address = c.Address,
+                Latitude = c.Latitude,
+                Longitude = c.Longitude,
                 SourceSystem = c.SourceSystem.ToString(),
                 GeographicalEntities = c.CustomerGeographicalEntities?
                     .Where(cg => cg.GeographicalEntity != null && cg.GeographicalEntity.IsActive)
@@ -469,6 +683,48 @@ namespace TransportManagementSystem.Controllers
             return Ok(customer);
         }
 
+        /// <summary>
+        /// Géocoder une adresse en utilisant l'API Nominatim (OpenStreetMap)
+        /// </summary>
+        private async Task<Dictionary<string, string>?> GeocodeAddress(string address)
+        {
+            try
+            {
+                using var httpClient = new HttpClient();
+                httpClient.DefaultRequestHeaders.Add("User-Agent", "TMS-App/1.0");
+                
+                var url = $"https://nominatim.openstreetmap.org/search?q={Uri.EscapeDataString(address)}&format=json&limit=1";
+                var response = await httpClient.GetAsync(url);
+                
+                if (response.IsSuccessStatusCode)
+                {
+                    var json = await response.Content.ReadAsStringAsync();
+                    var results = System.Text.Json.JsonSerializer.Deserialize<List<JsonElement>>(json);
+                    
+                    if (results != null && results.Count > 0)
+                    {
+                        var lat = results[0].GetProperty("lat").GetString();
+                        var lon = results[0].GetProperty("lon").GetString();
+                        
+                        if (!string.IsNullOrEmpty(lat) && !string.IsNullOrEmpty(lon))
+                        {
+                            return new Dictionary<string, string>
+                            {
+                                { "lat", lat },
+                                { "lon", lon }
+                            };
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Error geocoding address '{address}': {ex.Message}");
+            }
+            
+            return null;
+        }
+
         // GET: api/Customer/by-geographical-entity/{entityId}
         [HttpGet("by-geographical-entity/{entityId}")]
         public async Task<IActionResult> GetCustomersByGeographicalEntity(int entityId)
@@ -489,44 +745,13 @@ namespace TransportManagementSystem.Controllers
                 Email = c.Email,
                 Matricule = c.Matricule,
                 Contact = c.Contact,
+                Address = c.Address,
+                Latitude = c.Latitude,
+                Longitude = c.Longitude,
                 SourceSystem = c.SourceSystem.ToString()
             }).ToList();
 
             return Ok(customerDtos);
-        }
-
-        // GET: api/Customer/with-coordinates
-        [HttpGet("with-coordinates")]
-        public async Task<IActionResult> GetCustomersWithCoordinates()
-        {
-            var customers = await dbContext.Customers
-                .Include(c => c.CustomerGeographicalEntities)
-                    .ThenInclude(cg => cg.GeographicalEntity)
-                        .ThenInclude(g => g.Level)
-                .Where(c => c.CustomerGeographicalEntities.Any(cg =>
-                    cg.GeographicalEntity.Latitude != null &&
-                    cg.GeographicalEntity.Longitude != null))
-                .Select(c => new
-                {
-                    c.Id,
-                    c.Name,
-                    c.Matricule,
-                    c.Phone,
-                    c.Email,
-                    GeographicalEntities = c.CustomerGeographicalEntities
-                        .Where(cg => cg.GeographicalEntity.Latitude != null && cg.GeographicalEntity.Longitude != null)
-                        .Select(cg => new
-                        {
-                            cg.GeographicalEntityId,
-                            Name = cg.GeographicalEntity.Name,
-                            Level = cg.GeographicalEntity.Level != null ? cg.GeographicalEntity.Level.Name : null,
-                            cg.GeographicalEntity.Latitude,
-                            cg.GeographicalEntity.Longitude
-                        }).ToList()
-                })
-                .ToListAsync();
-
-            return Ok(customers);
         }
     }
 }

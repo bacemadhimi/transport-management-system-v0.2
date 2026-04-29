@@ -1,96 +1,131 @@
-.gps-tracking-content {
-  --background: #f8fafc;
+/* ==============================================
+   🚚 GPS TRACKING PAGE - PROFESSIONAL MODERN DESIGN
+   Dark orange theme (#d35400) - professional gradient
+   Clean cards, proper spacing, subtle shadows
+   ============================================== */
 
-  // Header toolbar styling - VISIBLE
+// Global content background
+.gps-tracking-content {
+  --background: #f5f0eb;
+  --padding-top: 0;
+  --padding-bottom: 0;
+  overflow: hidden;
+
+  // ═══════════════════════════════════════════
+  // HEADER - Professional Dark Orange Header
+  // ═══════════════════════════════════════════
   ion-header {
+    background: linear-gradient(135deg, #ff8c00 0%, #ff6b00 100%) !important;
+    
     ion-toolbar {
-      --background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      --background: linear-gradient(135deg, #d35400 0%, #e67e22 50%, #d35400 100%);
+      --color: #ffffff;
       --border-width: 0;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-      min-height: 56px;
+      box-shadow: 0 4px 16px rgba(211, 84, 0, 0.35);
+      min-height: 60px;
+
+      ion-title {
+        font-size: 18px;
+        font-weight: 700;
+        letter-spacing: 0.3px;
+        text-align: center;
+        color: #ffffff;
+
+        .title-wrapper {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+
+          .title-icon {
+            font-size: 22px;
+          }
+
+          .title-ref {
+            font-size: 11px;
+            font-weight: 600;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 4px 10px;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            margin-left: 8px;
+          }
+        }
+      }
 
       ion-buttons {
         display: flex;
         align-items: center;
         
         ion-button {
-          --color: white;
-          opacity: 1;
-          margin: 0 4px;
-          min-width: 44px;
-          min-height: 44px;
+          --color: #ffffff;
+          opacity: 0.9;
+
+          &:hover {
+            opacity: 1;
+          }
+
+          ion-icon {
+            color: #ffffff !important;
+            font-size: 22px;
+          }
+        }
+
+        ion-back-button {
+          --color: white !important;
+          --color-activated: white !important;
+          --color-focused: white !important;
           
           ion-icon {
-            font-size: 24px;
             color: white !important;
-            pointer-events: none;
           }
         }
       }
-
-      ion-title {
-        font-weight: 600;
-        font-size: 18px;
-        letter-spacing: 0.3px;
-        text-align: center;
-      }
     }
   }
 
+  // ═══════════════════════════════════════════
+  // CONNECTION STATUS - Modern Badge
+  // ═══════════════════════════════════════════
   .connection-status {
     position: fixed;
-    top: 100px;
+    top: 76px;
     right: 16px;
-    background: white;
-    padding: 8px 16px;
+    background: #ffffff;
+    padding: 6px 12px;
     border-radius: 20px;
     display: flex;
     align-items: center;
-    gap: 8px;
-    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
-    font-size: 13px;
+    gap: 6px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+    font-size: 11px;
     font-weight: 600;
     z-index: 1000;
+    color: #6b7280;
+    border: 1px solid #e5e7eb;
 
-    ion-icon {
-      font-size: 16px;
-      color: #cbd5e1;
+    .status-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #9ca3af;
     }
 
     &.connected {
-      color: #10b981;
+      color: #059669;
+      background: #ecfdf5;
+      border-color: #10b981;
 
-      ion-icon {
-        color: #10b981;
-        animation: pulse 2s infinite;
-      }
-    }
-  }
-
-  .admin-info-card {
-    --background: rgba(255, 255, 255, 0.98);
-    -webkit-backdrop-filter: blur(10px);
-    backdrop-filter: blur(10px);
-    border-radius: 16px;
-    box-shadow: 0 4px 20px rgba(102, 126, 234, 0.2);
-    margin: 0;
-    border: 2px solid rgba(102, 126, 234, 0.1);
-
-    .admin-header {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      margin-bottom: 16px;
-
-      ion-icon {
-        font-size: 28px;
+      .status-dot {
+        background: #10b981;
+        animation: pulse-green 2s infinite;
       }
 
       h3 {
         margin: 0;
         font-size: 18px;
         font-weight: 700;
-        color: #1e293b;
+        color: #ffffff;
       }
     }
 
@@ -105,19 +140,20 @@
         flex-direction: column;
         align-items: center;
         padding: 12px;
-        background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
+        background: linear-gradient(135deg, rgba(255, 140, 0, 0.15), rgba(255, 204, 0, 0.1));
         border-radius: 12px;
+        border: 1px solid rgba(255, 140, 0, 0.2);
 
         .stat-value {
           font-size: 24px;
           font-weight: 800;
-          color: #667eea;
+          color: #ff8c00;
           line-height: 1;
         }
 
         .stat-label {
           font-size: 11px;
-          color: #64748b;
+          color: #cccccc;
           margin-top: 4px;
           text-align: center;
         }
@@ -128,163 +164,116 @@
       display: block;
       text-align: center;
       font-size: 12px;
-      color: #94a3b8;
+      color: #999999;
     }
   }
 
-  .active-trips-section {
-    margin: 16px;
-
-    ion-card {
-      --background: white;
-      border-radius: 16px;
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-
-      ion-card-header {
-        padding-bottom: 12px;
-
-        ion-card-title {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          font-size: 18px;
-          font-weight: 700;
-          color: #1e293b;
-
-          ion-icon {
-            font-size: 22px;
-            color: #667eea;
-          }
-        }
-      }
-
-      ion-list {
-        background: transparent;
-      }
-
-      ion-item {
-        --background: transparent;
-        --padding-top: 12px;
-        --padding-bottom: 12px;
-        --border-width: 0 0 1px 0;
-        --border-color: #f1f5f9;
-        border-radius: 8px;
-        margin-bottom: 8px;
-
-        &:last-child {
-          --border-width: 0;
-        }
-
-        ion-icon[slot="start"] {
-          font-size: 24px;
-          margin-right: 12px;
-        }
-
-        h2 {
-          font-size: 16px;
-          font-weight: 700;
-          color: #1e293b;
-          margin-bottom: 4px;
-        }
-
-        p {
-          font-size: 13px;
-          color: #64748b;
-          margin: 2px 0;
-        }
-      }
-
-      .empty-state {
-        text-align: center;
-        padding: 40px 20px;
-
-        .empty-icon {
-          font-size: 64px;
-          color: #cbd5e1;
-          margin-bottom: 16px;
-        }
-
-        p {
-          font-size: 16px;
-          color: #64748b;
-          margin-bottom: 8px;
-        }
-
-        ion-note {
-          font-size: 13px;
-          color: #94a3b8;
-        }
-      }
-    }
+  @keyframes pulse-green {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.6; transform: scale(1.2); }
   }
 
+  // ═══════════════════════════════════════════
+  // MAP WRAPPER - Clean Professional Map
+  // ═══════════════════════════════════════════
   .map-wrapper {
     position: relative;
-    height: 500px;
-    width: calc(100% - 32px);
-    margin: 16px;
-    border-radius: 16px;
+    height: 45vh;
+    min-height: 300px;
+    width: 100%;
     overflow: hidden;
-    box-shadow: 0 4px 20px rgba(102, 126, 234, 0.2);
-    border: 2px solid rgba(102, 126, 234, 0.1);
-    background: #e5e7eb;
-    display: block;
-    visibility: visible;
-    opacity: 1;
+    background: #ffffff;
+    border-bottom: 2px solid #e5e7eb;
 
     #map {
       width: 100%;
       height: 100%;
       z-index: 1;
-      display: block;
-      visibility: visible;
-      opacity: 1;
-      background: #e5e7eb;
+      background: #f8fafc;
     }
 
+    // Overlay info card - À GAUCHE, cliquable
     .map-overlay {
       position: absolute;
       top: 12px;
       left: 12px;
-      right: 12px;
+      width: auto;
+      max-width: 220px;
       z-index: 1000;
+      cursor: pointer;
 
       .info-card {
-        --background: rgba(255, 255, 255, 0.98);
-        -webkit-backdrop-filter: blur(10px);
-        backdrop-filter: blur(10px);
-        border-radius: 12px;
-        box-shadow: 0 4px 16px rgba(102, 126, 234, 0.2);
+        --background: #ffffff;
+        border-radius: 14px;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
         margin: 0;
-        border: 1px solid rgba(102, 126, 234, 0.1);
+        border: 1px solid #e5e7eb;
+        transition: all 0.3s ease;
+
+        &.collapsed {
+          .info-header {
+            margin-bottom: 0;
+          }
+        }
 
         ion-card-content {
           padding: 12px;
+          overflow: hidden;
+          max-height: 300px;
+          transition: max-height 0.3s ease, padding 0.3s ease;
+
+          &.collapsed {
+            max-height: 0;
+            padding: 0;
+          }
 
           .info-header {
             display: flex;
-            justify-content: space-around;
-            margin-bottom: 8px;
+            flex-direction: column;
+            gap: 8px;
 
             .info-item {
               display: flex;
               align-items: center;
               gap: 8px;
 
-              ion-icon {
-                font-size: 24px;
+              .info-icon-wrapper {
+                width: 36px;
+                height: 36px;
+                background: linear-gradient(135deg, #d35400 0%, #e67e22 100%);
+                border-radius: 10px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                flex-shrink: 0;
+                box-shadow: 0 2px 6px rgba(211, 84, 0, 0.3);
+
+                ion-icon {
+                  font-size: 18px;
+                  color: #ffffff;
+                }
               }
 
               .info-label {
-                font-size: 11px;
-                color: #718096;
-                margin-bottom: 2px;
+                font-size: 9px;
+                color: #6b7280;
+                margin-bottom: 1px;
+                font-weight: 600;
+                text-transform: uppercase;
+                letter-spacing: 0.4px;
               }
 
               .info-value {
-                font-size: 16px;
+                font-size: 14px;
                 font-weight: 700;
-                color: #2d3748;
+                color: #1f2937;
+
+                small {
+                  font-size: 10px;
+                  font-weight: 600;
+                  color: #6b7280;
+                  margin-left: 2px;
+                }
               }
             }
           }
@@ -293,23 +282,46 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 6px;
-            padding: 8px;
-            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
-            border-radius: 8px;
-            margin-bottom: 0;
+            gap: 8px;
+            padding: 12px;
+            background: linear-gradient(135deg, rgba(211, 84, 0, 0.08) 0%, rgba(230, 126, 34, 0.08) 100%);
+            border-radius: 12px;
             font-size: 13px;
-            color: #4a5568;
+            color: #4b5563;
 
             ion-icon {
               font-size: 16px;
-              color: #667eea;
+              color: #d35400;
             }
 
             strong {
               font-size: 14px;
               font-weight: 700;
-              color: #2d3748;
+              color: #1f2937;
+            }
+          }
+
+          .route-info {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 10px 12px;
+            background: rgba(211, 84, 0, 0.08);
+            border-radius: 12px;
+            margin-top: 8px;
+            font-size: 12px;
+            color: #4b5563;
+
+            ion-icon {
+              font-size: 14px;
+              color: #d35400;
+            }
+
+            strong {
+              font-size: 13px;
+              font-weight: 700;
+              color: #1f2937;
             }
           }
 
@@ -317,14 +329,14 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 4px;
-            font-size: 11px;
-            color: #718096;
-            margin-top: 6px;
+            gap: 6px;
+            font-size: 10px;
+            color: #9ca3af;
+            margin-top: 8px;
 
             ion-icon {
               font-size: 12px;
-              color: #48bb78;
+              color: #10b981;
             }
           }
         }
@@ -332,51 +344,709 @@
     }
   }
 
-  .destination-info {
-    margin: 0 16px 16px;
+  // ═══════════════════════════════════════════
+  // TRIP DETAILS CARD - Professional Blue Theme
+  // ═══════════════════════════════════════════
+  .trip-details-card {
+    margin: 16px !important;
+    border-radius: 16px !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08) !important;
+    border: 1px solid #e5e7eb !important;
+    --background: #ffffff;
+    overflow: hidden;
 
-    ion-card {
-      --border-radius: 12px;
-      box-shadow: 0 2px 12px rgba(102, 126, 234, 0.1);
+    ion-card-header {
+      background: linear-gradient(135deg, #d35400 0%, #e67e22 100%);
+      color: #ffffff;
+      padding: 16px 20px;
+      cursor: pointer;
+      user-select: none;
+
+      &:active {
+        filter: brightness(0.95);
+      }
+    }
+
+    ion-card-title {
+      font-size: 16px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: #ffffff;
+
+      ion-icon:first-child {
+        font-size: 20px;
+      }
+
+      ion-icon:last-child {
+        margin-left: auto;
+        font-size: 20px;
+      }
+    }
+
+    ion-card-content {
+      padding: 16px 20px;
+      overflow: hidden;
+      max-height: 1000px;
+      transition: max-height 0.4s ease, padding 0.4s ease;
+
+      &.collapsed {
+        max-height: 0;
+        padding: 0;
+      }
+    }
+
+    .trip-detail-row {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 12px 0;
+      border-bottom: 1px solid #f3f4f6;
+
+      &:last-child {
+        border-bottom: none;
+      }
+
+      &:active {
+        background: #f9fafb;
+        border-radius: 8px;
+        margin: 0 -8px;
+        padding: 12px 8px;
+      }
+    }
+
+    .detail-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, rgba(211, 84, 0, 0.1) 0%, rgba(230, 126, 34, 0.1) 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+
+      ion-icon {
+        font-size: 20px;
+        color: #d35400;
+      }
+    }
+
+    .detail-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .detail-label {
+      font-size: 11px;
+      color: #6b7280;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+    }
+
+    .detail-value {
+      font-size: 14px;
+      color: #1f2937;
+      font-weight: 700;
+    }
+
+    .status-text {
+      padding: 4px 10px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 700;
+      display: inline-block;
+    }
+
+    .status-pending {
+      background: #fef3c7;
+      color: #92400e;
+    }
+
+    .status-accepted {
+      background: #dbeafe;
+      color: #1e40af;
+    }
+
+    .status-loading {
+      background: #cffafe;
+      color: #0e7490;
+    }
+
+    .status-delivery {
+      background: #dcfce7;
+      color: #166534;
+    }
+
+    .status-completed {
+      background: #f3f4f6;
+      color: #374151;
+    }
+
+    .status-refused {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+  }
+
+  // ═══════════════════════════════════════════
+  // MISSION STATUS SECTION - Professional Cards
+  // ═══════════════════════════════════════════
+  .mission-status-section {
+    margin: 16px;
+
+    .mission-card {
+      --background: #ffffff;
+      border-radius: 16px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+      border: 1px solid #e5e7eb;
       margin: 0;
+      overflow: hidden;
 
       ion-card-header {
-        padding-bottom: 12px;
+        padding: 14px 18px 12px;
+        border-bottom: 1px solid #f3f4f6;
 
-        ion-card-title {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          font-size: 16px;
-          font-weight: 600;
-          color: #2d3748;
+        .mission-header {
+          .mission-title {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 15px;
+            font-weight: 700;
+            color: #1f2937;
 
-          ion-icon {
-            color: #667eea;
-            font-size: 20px;
+            ion-icon {
+              font-size: 20px;
+              color: #d35400;
+            }
           }
         }
       }
 
       ion-card-content {
-        .destination-details {
-          .destination-row {
+        padding: 18px;
+
+        .status-indicator {
+          padding: 16px;
+          border-radius: 14px;
+          margin-bottom: 16px;
+          text-align: center;
+
+          .status-icon-wrapper {
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
             display: flex;
             align-items: center;
-            gap: 12px;
-            padding: 8px 0;
-            font-size: 14px;
-            color: #4a5568;
-
-            &:first-child {
-              font-weight: 600;
-              color: #2d3748;
-            }
+            justify-content: center;
+            margin: 0 auto 10px;
+            animation: float 3s ease-in-out infinite;
 
             ion-icon {
+              font-size: 28px;
+              color: #ffffff;
+            }
+          }
+
+          .status-text {
+            font-size: 15px;
+            font-weight: 700;
+          }
+        }
+
+        .status-pending {
+          background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+
+          .status-icon-wrapper {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+          }
+
+          .status-text {
+            color: #92400e;
+          }
+        }
+
+        .status-accepted {
+          background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+
+          .status-icon-wrapper {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+          }
+
+          .status-text {
+            color: #1e40af;
+          }
+        }
+
+        .status-loading {
+          background: linear-gradient(135deg, #cffafe 0%, #a5f3fc 100%);
+
+          .status-icon-wrapper {
+            background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
+            box-shadow: 0 4px 12px rgba(6, 182, 212, 0.3);
+          }
+
+          .status-text {
+            color: #0e7490;
+          }
+        }
+
+        .status-delivery {
+          background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
+
+          .status-icon-wrapper {
+            background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+            box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3);
+          }
+
+          .status-text {
+            color: #166534;
+          }
+        }
+
+        .status-completed {
+          background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+
+          .status-icon-wrapper {
+            background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
+            box-shadow: 0 4px 12px rgba(107, 114, 128, 0.3);
+          }
+
+          .status-text {
+            color: #374151;
+          }
+        }
+
+        .action-btn {
+          --border-radius: 12px;
+          --padding-start: 18px;
+          --padding-end: 18px;
+          --padding-top: 14px;
+          --padding-bottom: 14px;
+          margin-bottom: 10px;
+          font-weight: 700;
+          font-size: 14px;
+          text-transform: none;
+          letter-spacing: 0.3px;
+          transition: all 0.2s ease;
+
+          &:active {
+            transform: scale(0.98);
+          }
+        }
+
+        .btn-accept {
+          --background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+          box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3);
+        }
+
+        .btn-reject {
+          --border-color: #ef4444;
+          --color: #dc2626;
+          border-width: 2px;
+        }
+
+        .btn-loading {
+          --background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+          box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+        }
+
+        .btn-start {
+          --background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+          box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3);
+        }
+
+        .btn-navigate {
+          --background: linear-gradient(135deg, #1e56a0 0%, #2874c2 100%);
+          box-shadow: 0 4px 12px rgba(30, 86, 160, 0.3);
+        }
+
+        .btn-delivery {
+          --background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+          box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+        }
+
+        .btn-complete {
+          --background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+          box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+        }
+
+        .btn-reset {
+          --border-color: #f59e0b;
+          --color: #d97706;
+          border-width: 2px;
+          margin-bottom: 12px;
+        }
+
+        .trip-completed {
+          text-align: center;
+          padding: 24px;
+          background: #f0fdf4;
+          border-radius: 16px;
+          border: 2px solid #86efac;
+          margin-bottom: 12px;
+
+          .completed-icon {
+            margin-bottom: 12px;
+
+            ion-icon {
+              font-size: 64px;
+              color: #22c55e;
+              animation: success-pop 0.6s ease-out;
+            }
+          }
+
+          .completed-content {
+            h4 {
+              margin: 0 0 6px;
               font-size: 18px;
-              color: #667eea;
-              width: 20px;
+              font-weight: 800;
+              color: #166534;
+            }
+
+            p {
+              margin: 0;
+              color: #22c55e;
+              font-weight: 600;
+              font-size: 14px;
+            }
+          }
+
+          .btn-completed {
+            --background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+            --color: #ffffff;
+            --border-radius: 12px;
+            --padding-top: 14px;
+            --padding-bottom: 14px;
+            font-weight: 700;
+            font-size: 14px;
+            height: 48px;
+            text-transform: none;
+            box-shadow: 0 4px 12px rgba(34, 197, 94, 0.35);
+            margin-top: 16px;
+          }
+        }
+
+        .completed-card {
+          --background: #f0fdf4;
+          border-radius: 16px;
+          text-align: center;
+          padding: 20px;
+          border: 2px solid #86efac;
+
+          .completed-icon {
+            margin-bottom: 12px;
+
+            ion-icon {
+              font-size: 56px;
+              color: #22c55e;
+              animation: success-pop 0.6s ease-out;
+            }
+          }
+
+          h3 {
+            margin: 0 0 6px;
+            font-size: 18px;
+            font-weight: 800;
+            color: #166534;
+          }
+
+          p {
+            margin: 0;
+            color: #22c55e;
+            font-weight: 600;
+          }
+        }
+      }
+    }
+  }
+
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-4px); }
+  }
+
+  @keyframes success-pop {
+    0% { transform: scale(0); opacity: 0; }
+    50% { transform: scale(1.15); }
+    100% { transform: scale(1); opacity: 1; }
+  }
+
+  // ═══════════════════════════════════════════
+  // DESTINATION INFO - Clean Card
+  // ═══════════════════════════════════════════
+  .destination-info {
+    margin: 0 16px 20px;
+
+    .destination-card {
+      --background: #ffffff;
+      border-radius: 16px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+      border: 1px solid #e5e7eb;
+      margin: 0;
+      overflow: hidden;
+
+      ion-card-header {
+        background: linear-gradient(135deg, rgba(211, 84, 0, 0.08) 0%, rgba(230, 126, 34, 0.08) 100%);
+        border-bottom: 1px solid #e5e7eb;
+        padding: 14px 18px;
+      }
+
+      ion-card-title {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 15px;
+        font-weight: 700;
+        color: #92400e;
+
+        ion-icon {
+          font-size: 20px;
+          color: #d35400;
+        }
+      }
+    }
+
+      ion-card-content {
+        padding: 16px 18px;
+      }
+    }
+
+    // Delivery Button - Orange/Gold Gradient
+    &.delivery-btn {
+      --background: linear-gradient(135deg, #ff9500 0%, #ff7a00 100%);
+      --background-activated: linear-gradient(135deg, #e08500 0%, #e06a00 100%);
+      color: white;
+
+      &::after {
+        content: '';
+        position: absolute;
+        bottom: -2px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 80%;
+        height: 3px;
+        background: linear-gradient(90deg, transparent, #ffcc00, transparent);
+        border-radius: 2px;
+      }
+    }
+
+      .destination-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 0;
+        font-size: 13px;
+        font-weight: 600;
+        color: #374151;
+
+        ion-icon {
+          font-size: 18px;
+          color: #d35400;
+          flex-shrink: 0;
+        }
+      }
+    }
+  
+
+  // ═══════════════════════════════════════════
+  // QR SCANNER - Professional Modal
+  // ═══════════════════════════════════════════
+  .qr-scanner-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(8px);
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    .qr-scanner-modal {
+      width: 92%;
+      max-width: 380px;
+      max-height: 85vh;
+      background: #ffffff;
+      border-radius: 20px;
+      overflow-y: auto;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+
+      .qr-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 16px;
+        background: linear-gradient(135deg, #d35400 0%, #e67e22 100%);
+        color: #ffffff;
+
+        ion-icon {
+          font-size: 26px;
+          margin-right: 8px;
+        }
+
+        h3 {
+          flex: 1;
+          font-size: 18px;
+          margin: 0;
+          font-weight: 700;
+        }
+
+        .close-scanner {
+          --color: #ffffff;
+          --padding-start: 8px;
+        }
+      }
+
+      .qr-content {
+        padding: 20px;
+
+        .scanner-info {
+          text-align: center;
+          color: #6b7280;
+          font-size: 13px;
+          margin-bottom: 18px;
+          font-weight: 500;
+        }
+
+        .scanner-frame {
+          width: 180px;
+          height: 180px;
+          margin: 0 auto 18px;
+          border: 3px solid #d35400;
+          border-radius: 16px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: #f9fafb;
+          position: relative;
+          overflow: hidden;
+
+          .scanner-animation {
+            width: 100%;
+            height: 3px;
+            background: linear-gradient(90deg, transparent, #d35400, #e67e22, transparent);
+            animation: scan-move 2s ease-in-out infinite;
+          }
+
+          .scanner-success {
+            text-align: center;
+
+            ion-icon {
+              font-size: 44px;
+              color: #22c55e;
+              display: block;
+              margin-bottom: 6px;
+            }
+
+            span {
+              color: #22c55e;
+              font-weight: 700;
+              font-size: 15px;
+            }
+          }
+        }
+
+        .scan-btn {
+          --background: linear-gradient(135deg, #d35400 0%, #e67e22 100%);
+          --color: #ffffff;
+          --border-radius: 12px;
+          margin-bottom: 18px;
+          font-weight: 700;
+          box-shadow: 0 4px 12px rgba(211, 84, 0, 0.3);
+        }
+
+        .manual-section {
+          margin: 10px 0;
+
+          .divider {
+            text-align: center;
+            margin: 8px 0;
+            color: #9ca3af;
+            font-size: 12px;
+            font-weight: 600;
+          }
+        }
+
+        .data-preview {
+          background: #f0fdf4;
+          border-radius: 12px;
+          padding: 12px;
+          margin: 10px 0;
+          border: 1px solid #bbf7d0;
+
+          .preview-header {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            color: #166534;
+            font-weight: 700;
+            margin-bottom: 6px;
+
+            .success-icon {
+              color: #22c55e;
+              font-size: 18px;
+            }
+          }
+
+          .preview-content {
+            .data-row {
+              display: flex;
+              align-items: center;
+              gap: 6px;
+              font-size: 12px;
+              color: #374151;
+              margin: 4px 0;
+
+              .label {
+                font-weight: 700;
+                min-width: 60px;
+                color: #6b7280;
+              }
+
+              .value {
+                color: #1f2937;
+                word-break: break-all;
+                font-weight: 600;
+              }
+            }
+          }
+
+          .clear-btn {
+            --color: #6b7280;
+            font-size: 12px;
+          }
+        }
+
+        .action-buttons {
+          display: flex;
+          gap: 10px;
+          margin-top: 10px;
+
+          .cancel-btn {
+            --border-color: #e5e7eb;
+            --color: #6b7280;
+            flex: 1;
+            font-weight: 600;
+          }
+
+          .confirm-btn {
+            --background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+            --color: #ffffff;
+            flex: 1;
+            font-weight: 700;
+            box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3);
+
+            &:disabled {
+              opacity: 0.5;
             }
           }
         }
@@ -384,74 +1054,245 @@
     }
   }
 
-  .actions-section {
-    padding: 0 16px 32px;
-
-    .action-btn {
-      --border-radius: 12px;
-      --padding-top: 14px;
-      --padding-bottom: 14px;
-      font-size: 15px;
-      font-weight: 600;
-      margin-bottom: 12px;
-      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
-
-      ion-icon {
-        margin-right: 8px;
-        font-size: 20px;
-      }
-    }
-
-    .completed-card {
-      --background: linear-gradient(135deg, #4CAF50, #45a049);
-      --color: white;
-      margin-top: 16px;
-      border-radius: 16px;
-      box-shadow: 0 4px 20px rgba(76, 175, 80, 0.3);
-      animation: celebrate 0.5s ease-in-out;
-    }
+  @keyframes scan-move {
+    0%, 100% { transform: translateY(-70px); }
+    50% { transform: translateY(70px); }
   }
-}
 
-// ==================== CAMION 3D BLANC/GRIS PROFESSIONNEL ====================
 
-.truck-v2 {
+// ═══════════════════════════════════════════
+// VOICE NAVIGATION BUTTON STYLES
+// ═══════════════════════════════════════════
+.voice-btn-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 2px solid;
+  transition: all 0.3s ease;
   position: relative;
-  width: 66px;
+}
+
+.voice-waves {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.voice-wave {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  border: 2px solid rgba(211, 84, 0, 0.6);
+  animation: wave-expand 2s ease-out infinite;
+}
+
+.voice-wave.wave-delayed {
+  animation-delay: 0.5s;
+}
+
+.speaking-dots {
+  position: absolute;
+  bottom: -3px;
+  display: flex;
+  gap: 2px;
+  align-items: center;
+}
+
+.speaking-dot {
+  width: 3px;
+  height: 3px;
+  background: #d35400;
+  border-radius: 50%;
+  animation: dot-bounce 0.6s ease-in-out infinite;
+}
+
+.speaking-dot.dot-delay-1 {
+  animation-delay: 0.2s;
+}
+
+.speaking-dot.dot-delay-2 {
+  animation-delay: 0.4s;
+}
+
+@keyframes wave-expand {
+  0% { width: 100%; height: 100%; opacity: 1; }
+  100% { width: 150%; height: 150%; opacity: 0; }
+}
+
+@keyframes dot-bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+
+// ═══════════════════════════════════════════
+// TRUCK MARKER ANIMATIONS
+// ═══════════════════════════════════════════
+@keyframes truck-spawn {
+  0%   { transform: scale(0) translateY(10px); opacity: 0; }
+  50%  { transform: scale(1.15) translateY(-4px); opacity: 1; }
+  100% { transform: scale(1) translateY(0); }
+}
+
+@keyframes truck-idle {
+  0%, 100% { transform: scale(1); }
+  50%       { transform: scale(1.05); }
+}
+
+@keyframes truck-moving {
+  0%, 100% { transform: translateY(0); }
+  50%       { transform: translateY(-1px); }
+}
+
+@keyframes road-glow {
+  0%, 100% { opacity: 0.3; transform: scale(1); }
+  50%       { opacity: 0.55; transform: scale(1.1); }
+}
+
+@keyframes pulse-move {
+  0%   { transform: scale(0.85); opacity: 0.7; }
+  100% { transform: scale(2); opacity: 0; }
+}
+
+.truck-wrapper {
+  position: relative;
+  width: 72px;
   height: 38px;
+  animation: truck-spawn 0.45s ease-out forwards;
+}
 
-  svg {
-    width: 100%;
-    height: 100%;
-    display: block;
-    filter: drop-shadow(0 1px 3px rgba(0,0,0,0.18));
-    transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-    will-change: transform;
+.truck-wrapper.is-moving { animation: truck-moving 0.35s ease-in-out infinite; }
+.truck-wrapper.is-idle    { animation: truck-idle 2.5s ease-in-out infinite; }
+
+.truck-svg {
+  width: 72px;
+  height: 38px;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.35)) drop-shadow(0 2px 3px rgba(0, 0, 0, 0.2));
+}
+
+.road-glow {
+  position: absolute;
+  bottom: -2px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 48px;
+  height: 5px;
+  border-radius: 50%;
+  background: radial-gradient(ellipse, rgba(211, 84, 0, 0.35) 0%, transparent 70%);
+  animation: road-glow 2s ease-in-out infinite;
+}
+
+.pulse-ring {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 2px solid rgba(211, 84, 0, 0.4);
+  display: none;
+}
+
+.is-moving .pulse-ring {
+  display: block;
+  animation: pulse-move 1.5s ease-out infinite;
+}
+
+// ═══════════════════════════════════════════
+// LEAFLET TOOLTIP - Clean Info Bubble
+// ═══════════════════════════════════════════
+.truck-tooltip-wrapper .leaflet-tooltip {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+}
+
+.truck-tooltip {
+  background: #ffffff;
+  border-radius: 10px;
+  padding: 8px 10px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.2);
+  min-width: 120px;
+  position: relative;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+
+  .tooltip-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
   }
 
-  &.truck-moving svg {
-    transition-duration: 0.3s;
+  .driver-name {
+    font-size: 12px;
+    font-weight: 600;
+    color: #1f2937;
+    white-space: nowrap;
   }
 
-  &.truck-idle svg {
-    transition-duration: 0.7s;
+  .speed-badge {
+    font-size: 10px;
+    font-weight: 700;
+    color: #d35400;
+    background: rgba(211, 84, 0, 0.1);
+    padding: 2px 6px;
+    border-radius: 8px;
   }
 
-  &:hover svg {
-    filter: drop-shadow(0 2px 6px rgba(0,0,0,0.25));
+  .tooltip-status {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-top: 3px;
+  }
+
+  .status-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .status-text {
+    font-size: 10px;
+    color: #6b7280;
+  }
+
+  .tooltip-arrow {
+    position: absolute;
+    bottom: -6px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 12px;
+    height: 6px;
+    background: #ffffff;
+    clip-path: polygon(0 0, 100% 0, 50% 100%);
   }
 }
 
-// Map container - CRITICAL for visibility
+// ═══════════════════════════════════════════
+// MAP CONTAINER
+// ═══════════════════════════════════════════
 #map {
-  background: #e5e7eb;
+  background: #f8fafc;
   width: 100%;
   height: 100%;
   z-index: 1;
   position: relative;
 }
 
-// Destination marker
 .destination-marker-pro {
   transition: transform 0.2s ease;
 
@@ -460,17 +1301,56 @@
   }
 }
 
-// Celebration animation
-@keyframes celebrate {
-  0% {
-    transform: scale(0.8);
-    opacity: 0;
+// ═══════════════════════════════════════════
+// RESPONSIVE
+// ═══════════════════════════════════════════
+@media (max-width: 480px) {
+  .map-wrapper {
+    height: 45vh;
+    min-height: 300px;
   }
-  50% {
-    transform: scale(1.05);
+
+}
+
+  .mission-status-section,
+  .destination-info {
+    margin-left: 12px;
+    margin-right: 12px;
   }
-  100% {
-    transform: scale(1);
-    opacity: 1;
+
+  .trip-details-card {
+    margin: 12px !important;
+  }
+
+
+// Responsive
+@media (max-width: 480px) {
+  .gps-tracking-content {
+    .map-wrapper {
+      height: 50vh;
+      min-height: 300px;
+    }
+
+    .info-card .info-header {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 8px;
+    }
+
+    .admin-stats {
+      grid-template-columns: repeat(3, 1fr) !important;
+      gap: 8px !important;
+    }
+
+    .voice-nav-btn .voice-btn-container {
+      width: 40px !important;
+      height: 40px !important;
+    }
+  }
+
+  .stats-bar {
+    .stat-card {
+      min-width: calc(50% - 8px);
+    }
   }
 }

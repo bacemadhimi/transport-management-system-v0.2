@@ -1,9 +1,13 @@
 <div class="overtime-page">
   <div class="overtime-header">
+    
     <h1 class="overtime-title">{{ t('OVERTIME_MANAGEMENT_TITLE') }}</h1>
 
     <div class="overtime-header__actions">
       <div class="overtime-header__left">
+        <mat-form-field appearance="outline" floatLabel="always" class="overtime-search">
+          <input matInput type="text" [formControl]="searchControl" [placeholder]="t('SEARCH_OVERTIME_PLACEHOLDER')" />
+        </mat-form-field>
 
         <div class="export-actions" aria-label="Export actions">
           <button mat-icon-button class="export-btn export-excel" (click)="exportExcel()" title="Export Excel">
@@ -30,8 +34,8 @@
       </div>
 
       <div class="overtime-header__right">
-        <button *ngIf="auth.hasPermission('OVERTIME_ADD')"  mat-flat-button class="overtime-add-btn" (click)="add()" type="button">
-                 {{ t('ADD_OVERTIME_SETTINGS') }}
+        <button *ngIf="auth.hasPermission('OVERTIME_ADD')" mat-flat-button class="overtime-add-btn" (click)="add()" type="button">
+          {{ t('ADD_OVERTIME_SETTINGS') }}
         </button>
       </div>
     </div>

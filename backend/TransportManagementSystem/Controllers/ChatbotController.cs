@@ -22,49 +22,35 @@ public class ChatbotController : ControllerBase
         _logger = logger;
     }
 
-    /// <summary>
-    /// Send a message to the AI chatbot
-    /// </summary>
     [HttpPost("message")]
     public async Task<IActionResult> SendMessage([FromBody] ChatRequest request)
     {
         try
         {
-            // Log incoming request
-            _logger.LogInformation($"📥 Chatbot API - Incoming request: DriverId={request?.DriverId}, Message={request?.Message}");
+            _logger.LogInformation($"Chatbot API - Incoming request: DriverId={request?.DriverId}, Message={request?.Message}");
 
-            // Get driver ID from JWT token if not provided
             if (request.DriverId == 0)
             {
                 var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
                 var driverIdClaim = User.FindFirst("driverId")?.Value;
-                var emailClaim = User.FindFirst(ClaimTypes.Email)?.Value;
 
-                _logger.LogInformation($"🔑 JWT Claims - UserId: {userIdClaim}, DriverId: {driverIdClaim}, Email: {emailClaim}");
-
-                // Try multiple ways to get driver ID
                 if (int.TryParse(driverIdClaim, out int driverIdFromClaim))
                 {
                     request.DriverId = driverIdFromClaim;
-                    _logger.LogInformation($"✅ Using driverId from JWT driverId claim: {request.DriverId}");
                 }
                 else if (int.TryParse(userIdClaim, out int userId))
                 {
                     request.DriverId = userId;
-                    _logger.LogInformation($"✅ Using driverId from JWT userId claim: {request.DriverId}");
                 }
                 else
                 {
-                    _logger.LogWarning("⚠️ Could not extract driver ID from JWT token");
                     return Unauthorized(new { message = "Driver ID required" });
                 }
             }
 
-            _logger.LogInformation($"💬 Chat message from driver {request.DriverId}: {request.Message}");
+            _logger.LogInformation($"Chat message from driver {request.DriverId}: {request.Message}");
 
             var response = await _chatbotService.GetResponseAsync(request);
-
-            _logger.LogInformation($"🤖 Chatbot response: Source={response.Source}, IsConfident={response.IsConfident}");
 
             return Ok(new ApiResponse(true, "Message sent", response));
         }
@@ -75,9 +61,6 @@ public class ChatbotController : ControllerBase
         }
     }
 
-    /// <summary>
-    /// Get chatbot conversation history for a driver
-    /// </summary>
     [HttpGet("history")]
     public async Task<IActionResult> GetHistory()
     {
@@ -89,9 +72,7 @@ public class ChatbotController : ControllerBase
                 return Unauthorized(new { message = "Driver ID required" });
             }
 
-            // TODO: Implement conversation history storage
             var history = new List<ChatBotMessage>();
-
             return Ok(new ApiResponse(true, "History retrieved", history));
         }
         catch (Exception ex)
@@ -101,9 +82,6 @@ public class ChatbotController : ControllerBase
         }
     }
 
-    /// <summary>
-    /// Get suggested questions for the chatbot
-    /// </summary>
     [HttpGet("suggestions")]
     public IActionResult GetSuggestions()
     {

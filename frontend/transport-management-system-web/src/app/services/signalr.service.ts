@@ -54,7 +54,7 @@ export class SignalRService {
 
   private unreadCountSubject = new BehaviorSubject<number>(0);
   public unreadCount$ = this.unreadCountSubject.asObservable();
-
+  private isInitialized = false; 
   // Connect method for GPS tracking
   public async connect(): Promise<void> {
     if (this.hubConnection) {
@@ -75,8 +75,15 @@ export class SignalRService {
   }
 
   // Listen for trip status changes
+  /**
+   * ✅ Écouter les changements de statut de trajet en temps réel
+   */
   public onTripStatusChanged(callback: (update: any) => void): void {
-    this.hubConnection?.on('TripStatusChanged', callback);
+    if (this.hubConnection?.state === 'Connected') {
+      this.hubConnection.off('TripStatusChanged'); // Éviter les doublons
+      this.hubConnection.on('TripStatusChanged', callback);
+      console.log('✅ Listening for TripStatusChanged events');
+    }
   }
 
   // Invoke server methods
@@ -97,10 +104,15 @@ export class SignalRService {
     await this.invokeGetActiveTrips();
   }
 
-  constructor() {
+constructor() {
+
+  if (this.authService.getToken()) {
     this.initializeConnection();
     this.loadInitialNotifications();
+  } else {
+    console.log('⏸️ SignalR initialization skipped - no auth token');
   }
+}
 
   private async loadInitialNotifications() {
     try {
@@ -125,6 +137,7 @@ export class SignalRService {
 
     this.startConnection();
     this.registerHandlers();
+    this.isInitialized = true; 
   }
 
   private startConnection() {
@@ -152,13 +165,19 @@ export class SignalRService {
           this.startNotificationPolling();
         }, 1000);
       })
-      .catch(err => {
-        console.error('❌❌❌=================================');
-        console.error('❌ Error establishing SignalR connection: ', err);
-        console.error('❌ Hub URL:', `${environment.apiUrl}/gpshub`);
-        console.error('❌❌❌=================================');
-        this.connectionStatusSubject.next(false);
+.catch(err => {
+        // Check if error is 401 (unauthorized)
+        const errorStr = JSON.stringify(err).toLowerCase();
+        if (errorStr.includes('401') || errorStr.includes('unauthorized') || errorStr.includes('403')) {
+          console.log('⏸️ SignalR connection failed - Unauthorized');
+          this.connectionStatusSubject.next(false);
+          this.isInitialized = false;
+          this.hubConnection = null!;
+          return; 
+        }
 
+        console.error('❌ Error establishing SignalR connection: ', err);
+        this.connectionStatusSubject.next(false);
         setTimeout(() => this.startConnection(), 5000);
       });
 
@@ -221,7 +240,7 @@ export class SignalRService {
       setTimeout(() => this.loadInitialNotifications(), 500);
     });
 
-    // Handler for Trip Status Changed (Accepted/Refused) - REAL TIME
+    // Handler for Trip Status Changed (Accepted/Refused/Loading/Delivery/Completed) - REAL TIME
     this.hubConnection.on('TripStatusChanged', (data: any) => {
       console.log('🔄🔄🔄=================================');
       console.log('🔄 Trip Status Changed - REAL TIME SIGNALR!');
@@ -230,42 +249,44 @@ export class SignalRService {
 
       // Determine notification type based on new status
       let type, title, message, newStatus;
+      const status = data.NewStatus || data.status || data.newStatus || '';
 
-      if (data.NewStatus === 'Accepted' || data.status === 'Accepted') {
+      if (status === 'Accepted' || status === 'Accepté') {
         type = 'TRIP_ACCEPTED';
         title = '✅ Mission Acceptée';
-        message = `Le chauffeur ${data.DriverName || 'inconnu'} a accepté la mission ${data.TripReference || ''}`;
-        newStatus = 'Acceptée';
-      } else if (data.NewStatus === 'Refused' || data.status === 'Refused') {
+        message = `Mission ${data.TripReference || ''} acceptée par ${data.DriverName || 'inconnu'}`;
+        newStatus = '✅ Accepté';
+      } else if (status === 'Refused' || status === 'Refusé' || status === 'Cancelled') {
         type = 'TRIP_REJECTED';
-        title = '❌ Mission Refusée';
-        message = `Le chauffeur ${data.DriverName || 'inconnu'} a refusé la mission ${data.TripReference || ''}. Raison: ${data.Reason || 'Non spécifiée'}`;
-        newStatus = 'Refusée';
-      } else if (data.NewStatus === 'Completed' || data.status === 'Completed') {
+        title = '❌ Mission Refusée/Annulée';
+        message = `Mission ${data.TripReference || ''} refusée/annulée par ${data.DriverName || 'inconnu'}. Raison: ${data.Reason || data.Message || 'Non spécifiée'}`;
+        newStatus = status === 'Cancelled' ? '❌ Annulé' : '⛔ Refusé';
+      } else if (status === 'Completed' || status === 'Receipt' || status === 'Terminé') {
         type = 'MISSION_COMPLETED';
-        title = '✅ Mission Terminée';
+        title = '🚚 Mission Terminée';
         message = `Mission ${data.TripReference || ''} terminée par ${data.DriverName || 'inconnu'}`;
-        newStatus = 'Terminée';
-      } else if (data.NewStatus === 'InDelivery' || data.status === 'InDelivery') {
+        newStatus = '🚚 Terminé';
+      } else if (status === 'InDelivery' || status === 'DeliveryInProgress' || status === 'Livraison en cours') {
         type = 'DELIVERY_STARTED';
-        title = '🚚 Livraison démarrée';
+        title = '🚛 Livraison en cours';
         message = `Mission ${data.TripReference || ''} en cours de livraison par ${data.DriverName || 'inconnu'}`;
-        newStatus = 'En livraison';
-      } else if (data.NewStatus === 'Loading' || data.status === 'Loading') {
+        newStatus = '🚛 Livraison en cours';
+      } else if (status === 'Loading' || status === 'LoadingInProgress' || status === 'Chargement') {
         type = 'LOADING_STARTED';
-        title = '📦 Chargement démarré';
-        message = `Mission ${data.TripReference || ''} en chargement par ${data.DriverName || 'inconnu'}`;
-        newStatus = 'Chargement';
-      } else if (data.NewStatus === 'Arrived' || data.status === 'Arrived') {
-        type = 'ARRIVED_AT_DESTINATION';
-        title = '📍 Arrivé à destination';
-        message = `Mission ${data.TripReference || ''} - arrivé à destination`;
-        newStatus = 'Arrivé';
+        title = '📦 Chargement en cours';
+        message = `Mission ${data.TripReference || ''} en cours de chargement par ${data.DriverName || 'inconnu'}`;
+        newStatus = '📦 Chargement';
+      } else if (status === 'Pending' || status === 'Planned' || status === 'En attente') {
+        type = 'TRIP_UPDATED';
+        title = '⏳ Mission en attente';
+        message = `Mission ${data.TripReference || ''} en attente - ${data.DriverName || 'inconnu'}`;
+        newStatus = '⏳ En attente';
       } else {
-        type = 'STATUS_CHANGE';
-        title = '🔄 Status changé';
-        message = `Mission ${data.TripReference || ''} - Nouveau status: ${data.NewStatus || data.status}`;
-        newStatus = data.NewStatus || data.status;
+        // Generic handler for any other status
+        type = 'TRIP_UPDATED';
+        title = `🔄 Mission mise à jour`;
+        message = `Statut de la mission ${data.TripReference || ''} changé: ${status}`;
+        newStatus = status;
       }
 
       const notification: TripNotification = {
@@ -633,4 +654,30 @@ private addNotification(notification: TripNotification, pageSize: number = 20) {
     this.disconnect();
     setTimeout(() => this.startConnection(), 1000);
   }
+public initializeAfterLogin(): void {
+    const token = this.authService.getToken();
+    if (token && !this.isInitialized) {
+      console.log('🔄 Initializing SignalR after login...');
+      this.initializeConnection();
+      this.loadInitialNotifications();
+    }
+  }
+  
+public cleanupOnLogout(): void {
+  console.log('🧹 Cleaning up SignalR on logout...');
+  this.stopNotificationPolling();
+  
+  if (this.hubConnection) {
+    this.hubConnection.stop()
+      .then(() => console.log('✅ SignalR connection stopped on logout'))
+      .catch(err => console.error('Error stopping SignalR:', err));
+    
+    this.hubConnection = null!;
+  }
+  
+  this.isInitialized = false;
+  this.notificationsSubject.next([]);
+  this.unreadCountSubject.next(0);
+  this.connectionStatusSubject.next(false);
+}
 }

@@ -1,4 +1,4 @@
-﻿import { Component, inject, OnInit, AfterViewInit, ViewChild, ElementRef, OnDestroy, ChangeDetectorRef } from '@angular/core';
+import { Component, inject, OnInit, AfterViewInit, ViewChild, ElementRef, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { FormBuilder, Validators, ReactiveFormsModule, FormsModule, FormControl } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
@@ -6,7 +6,7 @@ import { MatCardModule } from '@angular/material/card';
 import { MatSelectModule } from '@angular/material/select';
 import { MatInputModule } from '@angular/material/input';
 import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatDialogModule, MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
+import { MatDialogModule, MAT_DIALOG_DATA, MatDialogRef, MatDialog } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
@@ -16,6 +16,9 @@ import { IGeographicalEntity, IGeographicalLevel } from '../../../types/general-
 import Swal from 'sweetalert2';
 import { Subscription } from 'rxjs';
 import { Translation } from '../../../services/Translation';
+import { GpsAddressService } from '../../../services/gps-address.service';
+import { SettingsService } from '../../../services/settings.service';
+import { GpsMapPickerComponent } from '../gps-map-picker/gps-map-picker';
 
 @Component({
   selector: 'app-customer-form',
@@ -43,6 +46,11 @@ export class CustomerFormComponent implements OnInit, AfterViewInit, OnDestroy {
   dialogRef = inject(MatDialogRef<CustomerFormComponent>);
   data = inject<{ customerId?: number }>(MAT_DIALOG_DATA, { optional: true }) ?? {};
   private cdr = inject(ChangeDetectorRef);
+  private gpsAddressService = inject(GpsAddressService);
+  private settingsService = inject(SettingsService);
+  private dialog = inject(MatDialog);
+  isGeocoding = false;
+  isAutoAddressMode = false;
 
   @ViewChild('phoneInput') phoneInput!: ElementRef<HTMLInputElement>;
   private iti: any;
@@ -78,18 +86,42 @@ export class CustomerFormComponent implements OnInit, AfterViewInit, OnDestroy {
 
   private subscriptions: Subscription[] = [];
 
+  // ===== Smart Address Search Properties =====
+  customerAddressSearch = new FormControl('');
+  customerAddressSuggestions: any[] = [];
+  selectedCustomerAddress: string | null = null;
+  hoveredCustomerSuggestion: any = null;
+  private geocodeDebounceTimer: any = null;
+  // ===== END: Smart Address Search Properties =====
+
   customerForm = this.fb.group({
     matricule: ['', [Validators.maxLength(50)]],
     name: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(100)]],
     phone: ['', [Validators.maxLength(20)]],
     email: ['', [Validators.email, Validators.maxLength(100)]],
     contact: ['', [Validators.maxLength(100)]],
-    geographicalEntityIds: [[], [Validators.required, Validators.minLength(1)]]
+    address: ['', [Validators.maxLength(255)]],
+    latitude: ['', [Validators.maxLength(50)]],
+    longitude: ['', [Validators.maxLength(50)]],
+    geographicalEntityIds: [[]] // Removed Validators - will be validated conditionally in onSubmit
   });
 
   ngOnInit() {
     this.loadGeographicalEntities();
     this.setupLevelControls();
+    
+    // Subscribe to settings to check address mode
+    this.subscriptions.push(
+      this.settingsService.tripSettings$.subscribe(settings => {
+        console.log('📌 Trip Address Mode received:', settings?.tripAddressMode);
+        this.isAutoAddressMode = settings?.tripAddressMode === 'AUTOMATIQUE';
+        this.cdr.markForCheck();
+        this.cdr.detectChanges();
+      })
+    );
+
+    // Force initial load of settings
+    this.settingsService.getTripSettings().subscribe();
 
     if (this.data.customerId) {
       this.loadCustomer(this.data.customerId);
@@ -98,6 +130,9 @@ export class CustomerFormComponent implements OnInit, AfterViewInit, OnDestroy {
 
   ngOnDestroy() {
     this.subscriptions.forEach(sub => sub.unsubscribe());
+    if (this.geocodeDebounceTimer) {
+      clearTimeout(this.geocodeDebounceTimer);
+    }
   }
 
   private setupLevelControls() {
@@ -371,13 +406,29 @@ export class CustomerFormComponent implements OnInit, AfterViewInit, OnDestroy {
 
         this.customerData = customer;
 
+        // Update form values
         this.customerForm.patchValue({
           matricule: customer.matricule || '',
           name: customer.name,
           phone: customer.phone || '',
           email: customer.email || '',
-          contact: customer.contact || ''
+          contact: customer.contact || '',
+          address: customer.address || '',
+          latitude: customer.latitude || '',
+          longitude: customer.longitude || ''
         });
+
+        // Initialize smart address search fields if address exists
+        if (customer.address && customer.address.trim()) {
+          this.customerAddressSearch.setValue(customer.address);
+          this.selectedCustomerAddress = customer.address;
+          
+          console.log('✅ Loaded customer with address:', {
+            address: customer.address,
+            lat: customer.latitude,
+            lng: customer.longitude
+          });
+        }
 
         if (this.geographicalEntities.length > 0 && this.geographicalLevels.length > 0) {
           this.setGeographicalSelections(customer);
@@ -458,11 +509,12 @@ export class CustomerFormComponent implements OnInit, AfterViewInit, OnDestroy {
       return;
     }
 
-    if (this.selectedEntities.length === 0) {
+    // Validate geographical entities ONLY in manual mode
+    if (!this.isAutoAddressMode && this.selectedEntities.length === 0) {
       Swal.fire({
         icon: 'error',
         title: 'Erreur',
-        text: 'Au moins une localisation doit être sélectionnée'
+        text: 'Au moins une localisation doit être sélectionnée en mode manuel'
       });
       return;
     }
@@ -477,6 +529,9 @@ export class CustomerFormComponent implements OnInit, AfterViewInit, OnDestroy {
       phoneCountry: this.iti ? this.iti.getSelectedCountryData().iso2 : 'tn',
       email: formValue.email || '',
       contact: formValue.contact || '',
+      address: formValue.address || '',
+      latitude: formValue.latitude ? Number(formValue.latitude) : null,
+      longitude: formValue.longitude ? Number(formValue.longitude) : null,
       geographicalEntities: this.selectedEntities.map(id => ({
         geographicalEntityId: id
       }))
@@ -556,4 +611,260 @@ export class CustomerFormComponent implements OnInit, AfterViewInit, OnDestroy {
 
   private translation = inject(Translation);
   t(key: string): string { return this.translation.t(key); }
+
+  geocodeAddress(): void {
+    const address = this.customerForm.get('address')?.value?.trim();
+
+    if (!address || address.length < 3) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Attention',
+        text: 'Veuillez entrer une adresse valide (au moins 3 caractères)',
+        timer: 2000,
+        showConfirmButton: false
+      });
+      return;
+    }
+
+    this.isGeocoding = true;
+
+    this.gpsAddressService.validateAndNormalizeAddress(address).subscribe({
+      next: (result: any) => {
+        if (result && result.lat && result.lng) {
+          this.customerForm.patchValue({
+            latitude: result.lat.toString(),
+            longitude: result.lng.toString()
+          });
+
+          Swal.fire({
+            icon: 'success',
+            title: '✅ Géocodage réussi !',
+            html: `Coordonnées récupérées automatiquement:<br><strong>Latitude: ${result.latitude}</strong><br><strong>Longitude: ${result.longitude}</strong>`,
+            timer: 2500,
+            showConfirmButton: false
+          });
+        } else {
+          Swal.fire({
+            icon: 'error',
+            title: 'Erreur',
+            text: 'Impossible de géocoder cette adresse. Veuillez préciser davantage.',
+            confirmButtonText: 'OK'
+          });
+        }
+
+        this.isGeocoding = false;
+      },
+      error: (error: any) => {
+        console.error('Geocoding error:', error);
+        Swal.fire({
+          icon: 'error',
+          title: 'Erreur de géocodage',
+          text: 'Une erreur est survenue lors de la géolocalisation. Veuillez réessayer.',
+          confirmButtonText: 'OK'
+        });
+
+        this.isGeocoding = false;
+      }
+    });
+  }
+
+  /**
+   * Open GPS Map Picker modal to select coordinates on map
+   */
+  openGpsMapPicker(): void {
+    // Get current coordinates if they exist
+    const currentLat = this.customerForm.get('latitude')?.value;
+    const currentLng = this.customerForm.get('longitude')?.value;
+    
+    const initialData: { lat?: number; lng?: number } = {};
+    if (currentLat && currentLng) {
+      initialData.lat = parseFloat(currentLat);
+      initialData.lng = parseFloat(currentLng);
+      console.log('📍 Passing initial coords to map picker:', initialData);
+    }
+
+    const dialogRef = this.dialog.open(GpsMapPickerComponent, {
+      width: '900px',
+      maxWidth: '95vw',
+      panelClass: 'gps-map-picker-dialog',
+      data: initialData
+    });
+
+    dialogRef.afterClosed().subscribe((coords: { lat: number; lng: number } | null) => {
+      if (coords) {
+        // Update form with selected coordinates
+        this.customerForm.patchValue({
+          latitude: coords.lat.toString(),
+          longitude: coords.lng.toString()
+        });
+
+        Swal.fire({
+          icon: 'success',
+          title: '📍 Position GPS définie !',
+          html: `Coordonnées sélectionnées sur la carte:<br><strong>Latitude: ${coords.lat.toFixed(6)}</strong><br><strong>Longitude: ${coords.lng.toFixed(6)}</strong>`,
+          timer: 2500,
+          showConfirmButton: false
+        });
+      }
+    });
+  }
+
+  /**
+   * Check if customer has valid GPS coordinates
+   */
+  hasGpsCoordinates(): boolean {
+    const lat = this.customerForm.get('latitude')?.value;
+    const lng = this.customerForm.get('longitude')?.value;
+    return !!(lat && lng && lat !== '' && lng !== '');
+  }
+
+  // ===== Smart Address Search Methods =====
+  
+  /**
+   * Handle address input with debouncing
+   */
+  onCustomerAddressInput(event: Event): void {
+    const value = (event.target as HTMLInputElement).value;
+    
+    // Clear previous timer
+    if (this.geocodeDebounceTimer) {
+      clearTimeout(this.geocodeDebounceTimer);
+    }
+    
+    // Set new timer for debouncing (500ms)
+    this.geocodeDebounceTimer = setTimeout(() => {
+      if (value && value.trim().length >= 3) {
+        this.searchCustomerAddressAutocomplete(value.trim());
+      } else {
+        this.customerAddressSuggestions = [];
+      }
+    }, 500);
+  }
+
+  /**
+   * Search address with autocomplete using getAddressSuggestions
+   */
+  searchCustomerAddressAutocomplete(query: string): void {
+    this.gpsAddressService.getAddressSuggestions(query).subscribe({
+      next: (results) => {
+        this.customerAddressSuggestions = results.map(r => ({
+          display_name: r.address,
+          lat: r.lat.toString(),
+          lon: r.lng.toString(),
+          address: r.address
+        }));
+      },
+      error: (error) => {
+        console.error('❌ Error searching address:', error);
+        this.customerAddressSuggestions = [];
+      }
+    });
+  }
+
+  /**
+   * Manual search button click
+   */
+  searchCustomerAddress(): void {
+    const query = this.customerAddressSearch.value;
+    if (!query || query.trim().length < 3) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Recherche invalide',
+        text: 'Veuillez entrer au moins 3 caractères pour rechercher une adresse',
+        confirmButtonText: 'OK'
+      });
+      return;
+    }
+
+    this.isGeocoding = true;
+    this.gpsAddressService.getAddressSuggestions(query.trim()).subscribe({
+      next: (results) => {
+        if (results.length > 0) {
+          this.customerAddressSuggestions = results.map(r => ({
+            display_name: r.address,
+            lat: r.lat.toString(),
+            lon: r.lng.toString(),
+            address: r.address
+          }));
+          
+          // Auto-select first result if only one
+          if (results.length === 1) {
+            this.onCustomerAddressSelected(this.customerAddressSuggestions[0]);
+          }
+        } else {
+          Swal.fire({
+            icon: 'info',
+            title: 'Aucun résultat',
+            text: 'Aucune adresse trouvée. Essayez avec une autre recherche.',
+            confirmButtonText: 'OK'
+          });
+          this.customerAddressSuggestions = [];
+        }
+        this.isGeocoding = false;
+      },
+      error: (error) => {
+        console.error('❌ Error searching address:', error);
+        Swal.fire({
+          icon: 'error',
+          title: 'Erreur de recherche',
+          text: 'Une erreur est survenue lors de la recherche. Veuillez réessayer.',
+          confirmButtonText: 'OK'
+        });
+        this.isGeocoding = false;
+      }
+    });
+  }
+
+  /**
+   * Handle address selection from suggestions
+   */
+  onCustomerAddressSelected(suggestion: any): void {
+    const lat = parseFloat(suggestion.lat);
+    const lon = parseFloat(suggestion.lon);
+    
+    if (isNaN(lat) || isNaN(lon)) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Coordonnées invalides',
+        text: 'Les coordonnées GPS de cette adresse ne sont pas valides.',
+        confirmButtonText: 'OK'
+      });
+      return;
+    }
+
+    // Update form fields
+    this.customerForm.patchValue({
+      address: suggestion.display_name || suggestion.address,
+      latitude: lat.toString(),
+      longitude: lon.toString()
+    });
+
+    // Update display values
+    this.selectedCustomerAddress = suggestion.display_name || suggestion.address;
+    this.customerAddressSearch.setValue(suggestion.display_name || suggestion.address);
+    this.customerAddressSuggestions = [];
+
+    console.log('✅ Customer address selected:', {
+      address: this.selectedCustomerAddress,
+      lat: lat,
+      lng: lon
+    });
+  }
+
+  /**
+   * Clear selected address
+   */
+  clearCustomerAddress(): void {
+    this.customerForm.patchValue({
+      address: '',
+      latitude: null,
+      longitude: null
+    });
+    this.customerAddressSearch.setValue('');
+    this.selectedCustomerAddress = null;
+    this.customerAddressSuggestions = [];
+    
+    console.log('🗑️ Customer address cleared');
+  }
+  // ===== END: Smart Address Search Methods =====
 }

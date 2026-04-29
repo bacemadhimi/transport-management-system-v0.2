@@ -80,9 +80,51 @@ public class TripAssignmentsController : ControllerBase
             int userIdForNotification = driverUser?.Id ?? request.DriverId;
             _logger.LogInformation($"🔍 Driver {request.DriverId} ({driver.Email}) -> User ID: {userIdForNotification}");
 
-            // Obtenir la destination
-            var destination = trip.Deliveries.LastOrDefault()?.DeliveryAddress ?? "Non définie";
-            var destinationCoords = await GeocodeAddress(destination);
+            // Obtenir la destination - PRIORITÉ aux coordonnées GPS du trip (mode automatique)
+            string destination = "Non définie";
+            double? destinationLatitude = null;
+            double? destinationLongitude = null;
+
+            // 1️⃣ Si le trip a des coordonnées GPS enregistrées (mode automatique), les utiliser
+            if (trip.EndLatitude.HasValue && trip.EndLongitude.HasValue)
+            {
+                destinationLatitude = trip.EndLatitude;
+                destinationLongitude = trip.EndLongitude;
+                
+                // Essayer de récupérer l'adresse du dernier client
+                var lastDelivery = trip.Deliveries.LastOrDefault();
+                if (lastDelivery != null && lastDelivery.CustomerId > 0)
+                {
+                    var customer = await _context.Customers.FindAsync(lastDelivery.CustomerId);
+                    if (customer != null)
+                    {
+                        destination = customer.Address ?? customer.Name;
+                    }
+                    else
+                    {
+                        destination = lastDelivery.DeliveryAddress ?? "Destination GPS";
+                    }
+                }
+                else
+                {
+                    destination = "Destination GPS";
+                }
+                
+                _logger.LogInformation($"✅ Using trip GPS coordinates: Lat={destinationLatitude}, Lng={destinationLongitude}");
+            }
+            else
+            {
+                // 2️⃣ Sinon, utiliser l'adresse de livraison et géocoder
+                destination = trip.Deliveries.LastOrDefault()?.DeliveryAddress ?? "Non définie";
+                var destinationCoords = await GeocodeAddress(destination);
+                if (destinationCoords.HasValue)
+                {
+                    destinationLatitude = destinationCoords.Value.lat;
+                    destinationLongitude = destinationCoords.Value.lng;
+                }
+                
+                _logger.LogInformation($"📍 Geocoded address: {destination} -> Lat={destinationLatitude}, Lng={destinationLongitude}");
+            }
 
             // Créer la notification complète
             var notification = new
@@ -94,8 +136,8 @@ public class TripAssignmentsController : ControllerBase
                 tripReference = trip.TripReference,
                 assignmentId = assignment.Id,
                 destination = destination,
-                destinationLatitude = destinationCoords?.lat,
-                destinationLongitude = destinationCoords?.lng,
+                destinationLatitude = destinationLatitude,
+                destinationLongitude = destinationLongitude,
                 estimatedDistance = trip.EstimatedDistance,
                 estimatedDuration = trip.EstimatedDuration,
                 expiresAt = assignment.ExpiresAt,

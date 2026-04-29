@@ -1,117 +1,51 @@
 <ion-header>
-  <ion-toolbar color="primary">
+  <ion-toolbar>
     <ion-buttons slot="start">
       <ion-back-button defaultHref="/home"></ion-back-button>
     </ion-buttons>
-    <ion-title>Suivi GPS - {{ tripReference }}</ion-title>
+    <ion-title>
+      <span class="title-wrapper">
+        <span class="title-icon">🗺️</span>
+        <span class="title-text">Suivi GPS</span>
+        <span class="title-ref" *ngIf="tripReference">{{ tripReference }}</span>
+      </span>
+    </ion-title>
     <ion-buttons slot="end">
-      <!-- Voice Navigation Toggle - PROFESSIONAL & SIMPLE -->
+      <!-- Voice Navigation Toggle -->
       <ion-button (click)="toggleVoiceNavigation()"
                   class="voice-nav-btn"
-                  [class.active]="voiceNavigationEnabled"
-                  style="opacity: 1 !important; visibility: visible !important; margin-right: 8px;">
-        <div class="voice-btn-container" 
+                  [class.active]="voiceNavigationEnabled">
+        <div class="voice-btn-container"
           [ngStyle]="{
-            'background': voiceNavigationEnabled ? 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)' : 'rgba(255, 255, 255, 0.15)',
-            'border-color': voiceNavigationEnabled ? '#93c5fd' : 'rgba(255, 255, 255, 0.3)',
-            'box-shadow': voiceNavigationEnabled ? '0 0 20px rgba(59, 130, 246, 0.4)' : '0 4px 12px rgba(0, 0, 0, 0.15)'
-          }"
-          style="
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            width: 48px;
-            height: 48px;
-            border-radius: 50%;
-            border: 2px solid;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            position: relative;
-            overflow: visible;
-          ">
+            'background': voiceNavigationEnabled ? '#ffffff' : 'rgba(0, 0, 0, 0.25)',
+            'border-color': voiceNavigationEnabled ? '#d35400' : 'rgba(255, 255, 255, 0.5)',
+            'box-shadow': voiceNavigationEnabled ? '0 0 12px rgba(211, 84, 0, 0.5)' : '0 2px 8px rgba(0, 0, 0, 0.2)'
+          }">
 
           <!-- Animated waves when active -->
-          <div *ngIf="voiceNavigationEnabled" class="voice-waves" style="
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-          ">
-            <div style="
-              position: absolute;
-              top: 50%;
-              left: 50%;
-              transform: translate(-50%, -50%);
-              width: 100%;
-              height: 100%;
-              border-radius: 50%;
-              border: 2px solid rgba(59, 130, 246, 0.6);
-              animation: wave-expand 2s ease-out infinite;
-            "></div>
-            <div style="
-              position: absolute;
-              top: 50%;
-              left: 50%;
-              transform: translate(-50%, -50%);
-              width: 100%;
-              height: 100%;
-              border-radius: 50%;
-              border: 2px solid rgba(59, 130, 246, 0.4);
-              animation: wave-expand 2s ease-out 0.5s infinite;
-            "></div>
+          <div *ngIf="voiceNavigationEnabled" class="voice-waves">
+            <div class="voice-wave"></div>
+            <div class="voice-wave wave-delayed"></div>
           </div>
 
-          <!-- Icon with modern styling -->
+          <!-- Icon -->
           <ion-icon slot="icon-only"
                     [name]="voiceNavigationEnabled ? 'volume-high' : 'volume-mute'"
                     [ngStyle]="{
-                      'color': voiceNavigationEnabled ? 'white' : 'rgba(255, 255, 255, 0.7)'
-                    }"
-                    style="
-                      font-size: 22px;
-                      transition: all 0.3s ease;
-                    ">
+                      'color': voiceNavigationEnabled ? '#d35400' : '#ffffff'
+                    }">
           </ion-icon>
 
           <!-- Speaking indicator dots -->
-          <div *ngIf="isSpeaking && voiceNavigationEnabled" class="speaking-dots" style="
-            position: absolute;
-            bottom: -4px;
-            display: flex;
-            gap: 2px;
-            align-items: center;
-          ">
-            <div style="
-              width: 3px;
-              height: 3px;
-              background: #60a5fa;
-              border-radius: 50%;
-              animation: dot-bounce 0.6s ease-in-out infinite;
-              box-shadow: 0 0 4px #60a5fa;
-            "></div>
-            <div style="
-              width: 3px;
-              height: 3px;
-              background: #60a5fa;
-              border-radius: 50%;
-              animation: dot-bounce 0.6s ease-in-out 0.2s infinite;
-              box-shadow: 0 0 4px #60a5fa;
-            "></div>
-            <div style="
-              width: 3px;
-              height: 3px;
-              background: #60a5fa;
-              border-radius: 50%;
-              animation: dot-bounce 0.6s ease-in-out 0.4s infinite;
-              box-shadow: 0 0 4px #60a5fa;
-            "></div>
+          <div *ngIf="isSpeaking && voiceNavigationEnabled" class="speaking-dots">
+            <div class="speaking-dot"></div>
+            <div class="speaking-dot dot-delay-1"></div>
+            <div class="speaking-dot dot-delay-2"></div>
           </div>
         </div>
       </ion-button>
-      <ion-button (click)="refreshPosition()" style="opacity: 1 !important; visibility: visible !important;">
-        <ion-icon slot="icon-only" name="refresh" style="color: white !important; font-size: 22px;"></ion-icon>
+      <ion-button (click)="refreshPosition()" class="refresh-btn">
+        <ion-icon slot="icon-only" name="refresh" style="color: #ffffff !important;"></ion-icon>
       </ion-button>
     </ion-buttons>
   </ion-toolbar>
@@ -121,47 +55,51 @@
 
   <!-- Connection Status -->
   <div class="connection-status" [class.connected]="connectionStatus">
-    <ion-icon name="radio-button-on"></ion-icon>
+    <div class="status-dot"></div>
     <span>{{ connectionStatus ? 'Connecté' : 'Déconnecté' }}</span>
   </div>
 
-  <!-- Carte -->
+  <!-- Map -->
   <div class="map-wrapper">
     <div id="map"></div>
 
-    <!-- Overlay infos -->
-    <div class="map-overlay">
-      <ion-card class="info-card">
+    <!-- Overlay info card - À GAUCHE, cliquable pour réduire -->
+    <div class="map-overlay" (click)="toggleInfoCard()">
+      <ion-card class="info-card" [class.collapsed]="!isInfoCardExpanded">
         <ion-card-content>
           <div class="info-header">
             <div class="info-item">
-              <ion-icon name="speedometer" color="primary"></ion-icon>
+              <div class="info-icon-wrapper">
+                <ion-icon name="speedometer"></ion-icon>
+              </div>
               <div>
                 <div class="info-label">Vitesse</div>
-                <div class="info-value">{{ speed | number:'1.0-0' }} km/h</div>
+                <div class="info-value">{{ speed | number:'1.0-0' }} <small>km/h</small></div>
               </div>
             </div>
 
             <div class="info-item">
-              <ion-icon name="navigate" color="secondary"></ion-icon>
+              <div class="info-icon-wrapper">
+                <ion-icon name="navigate"></ion-icon>
+              </div>
               <div>
                 <div class="info-label">Distance</div>
-                <div class="info-value">{{ getDistanceRemaining() }} km</div>
+                <div class="info-value">{{ getDistanceRemaining() }} <small>km</small></div>
               </div>
             </div>
           </div>
 
-          <div class="info-footer">
-            <ion-icon name="time" color="tertiary"></ion-icon>
+          <div class="info-footer" *ngIf="isInfoCardExpanded">
+            <ion-icon name="time"></ion-icon>
             <span>Temps estimé: <strong>{{ getEstimatedTime() }}</strong></span>
           </div>
 
-          <div class="route-info" *ngIf="getRouteDistance()">
-            <ion-icon name="road" color="primary"></ion-icon>
-            <span>Distance du trajet: <strong>{{ getRouteDistance() }}</strong></span>
+          <div class="route-info" *ngIf="isInfoCardExpanded && getRouteDistance()">
+            <ion-icon name="road"></ion-icon>
+            <span>Trajet: <strong>{{ getRouteDistance() }}</strong></span>
           </div>
 
-          <div class="accuracy-info" *ngIf="accuracy">
+          <div class="accuracy-info" *ngIf="isInfoCardExpanded && accuracy">
             <ion-icon name="location"></ion-icon>
             <span>Précision: {{ accuracy | number:'1.0-0' }}m</span>
             <span *ngIf="lastUpdate">• {{ lastUpdate | date:'HH:mm:ss' }}</span>
@@ -171,95 +109,216 @@
     </div>
   </div>
 
-  <!-- Mission Status Section -->
+  <!-- Trip Details Section - Professional Blue Card -->
+  <ion-card class="trip-details-card">
+    <ion-card-header (click)="toggleDetails()">
+      <ion-card-title>
+        <ion-icon name="information-circle"></ion-icon>
+        Détails de la Mission
+        <ion-icon
+          [name]="isDetailsExpanded ? 'chevron-up' : 'chevron-down'"
+          slot="end"
+          style="margin-left: auto; font-size: 20px;">
+        </ion-icon>
+      </ion-card-title>
+    </ion-card-header>
+    <ion-card-content [class.collapsed]="!isDetailsExpanded">
+
+      <div class="trip-detail-row">
+        <div class="detail-icon">
+          <ion-icon name="calendar"></ion-icon>
+        </div>
+        <div class="detail-content">
+          <div class="detail-label">Référence</div>
+          <div class="detail-value">{{ tripReference }}</div>
+        </div>
+      </div>
+
+      <div class="trip-detail-row">
+        <div class="detail-icon">
+          <ion-icon name="location"></ion-icon>
+        </div>
+        <div class="detail-content">
+          <div class="detail-label">Destination</div>
+          <div class="detail-value">{{ destinationAddress }}</div>
+        </div>
+      </div>
+
+      <div class="trip-detail-row">
+        <div class="detail-icon">
+          <ion-icon name="car"></ion-icon>
+        </div>
+        <div class="detail-content">
+          <div class="detail-label">Véhicule</div>
+          <div class="detail-value">{{ truckImmatriculation || 'Non défini' }}</div>
+        </div>
+      </div>
+
+      <div class="trip-detail-row">
+        <div class="detail-icon">
+          <ion-icon name="person"></ion-icon>
+        </div>
+        <div class="detail-content">
+          <div class="detail-label">Chauffeur</div>
+          <div class="detail-value">{{ driverName || authService.currentUser()?.name || 'Non défini' }}</div>
+        </div>
+      </div>
+
+      <div class="trip-detail-row">
+        <div class="detail-icon">
+          <ion-icon name="time"></ion-icon>
+        </div>
+        <div class="detail-content">
+          <div class="detail-label">Heure Actuelle</div>
+          <div class="detail-value">{{ currentTime | date:'HH:mm:ss' }}</div>
+        </div>
+      </div>
+
+      <div class="trip-detail-row">
+        <div class="detail-icon">
+          <ion-icon name="navigate"></ion-icon>
+        </div>
+        <div class="detail-content">
+          <div class="detail-label">Distance Restante</div>
+          <div class="detail-value">{{ getDistanceRemaining() }} km</div>
+        </div>
+      </div>
+
+      <div class="trip-detail-row">
+        <div class="detail-icon">
+          <ion-icon name="speedometer"></ion-icon>
+        </div>
+        <div class="detail-content">
+          <div class="detail-label">Vitesse Actuelle</div>
+          <div class="detail-value">{{ speed | number:'1.0-0' }} km/h</div>
+        </div>
+      </div>
+
+      <div class="trip-detail-row">
+        <div class="detail-icon">
+          <ion-icon name="flag"></ion-icon>
+        </div>
+        <div class="detail-content">
+          <div class="detail-label">Statut Actuel</div>
+          <div class="detail-value status-text status-{{ missionStatus }}">{{ getStatusText() }}</div>
+        </div>
+      </div>
+
+    </ion-card-content>
+  </ion-card>
+
+  <!-- Mission Status Section - Action Buttons -->
   <div class="mission-status-section">
-    <ion-card>
+    <ion-card class="mission-card">
       <ion-card-header>
-        <ion-card-title>
-          <ion-icon name="clipboard"></ion-icon>
-          État de la Mission
-        </ion-card-title>
-        <ion-card-subtitle>{{ tripReference }}</ion-card-subtitle>
+        <div class="mission-header">
+          <div class="mission-title">
+            <ion-icon name="clipboard"></ion-icon>
+            <span>Actions Mission</span>
+          </div>
+        </div>
       </ion-card-header>
       <ion-card-content>
         <div class="status-indicator" [class]="'status-' + missionStatus">
-          <ion-icon 
-            [name]="getStatusIcon()" 
-            [color]="getStatusColor()"
-            class="status-icon"
-          ></ion-icon>
+          <div class="status-icon-wrapper">
+            <ion-icon
+              [name]="getStatusIcon()"
+              class="status-icon"
+            ></ion-icon>
+          </div>
           <span class="status-text">{{ getStatusText() }}</span>
         </div>
 
         <div class="status-actions">
-          <!-- Bouton ACCEPTER - Style Moderne -->
+          <!-- RESET button - Visible during all active states, disappears when completed -->
+          <ion-button
+            *ngIf="missionStatus !== 'completed'"
+            expand="block"
+            class="action-btn btn-reset"
+            fill="outline"
+            (click)="resetMission()"
+          >
+            <ion-icon slot="start" name="refresh-outline"></ion-icon>
+            🔄 Réinitialiser le voyage
+          </ion-button>
+
+          <!-- ACCEPT button -->
           <ion-button
             *ngIf="missionStatus === 'pending'"
             expand="block"
-            class="modern-btn accept-btn"
+            class="action-btn btn-accept"
             (click)="acceptMission()"
           >
             <ion-icon slot="start" name="checkmark-circle-outline"></ion-icon>
             Accepter la Mission
           </ion-button>
 
-          <!-- Bouton REFUSER - Style Moderne -->
+          <!-- REJECT button -->
           <ion-button
             *ngIf="missionStatus === 'pending'"
             expand="block"
-            class="modern-btn reject-btn"
+            class="action-btn btn-reject"
             fill="outline"
             (click)="rejectMission()"
           >
             <ion-icon slot="start" name="close-circle-outline"></ion-icon>
-            Refuser la Mission
+            Refuser
           </ion-button>
 
-          <!-- BOUTON COMMENCER CHARGEMENT - Style Moderne -->
+          <!-- START LOADING button -->
           <ion-button
             *ngIf="missionStatus === 'accepted'"
             expand="block"
-            class="modern-btn loading-btn"
+            class="action-btn btn-start"
             (click)="startLoading()"
           >
             <ion-icon slot="start" name="cube-outline"></ion-icon>
-            Commencer le Chargement
+            Démarrer le voyage
           </ion-button>
 
-          <!-- BOUTON COMMENCER LIVRAISON - Style Moderne -->
+          <!-- Naviguer button -->
+          <ion-button
+            *ngIf="missionStatus === 'accepted' || missionStatus === 'loading' || missionStatus === 'delivery'"
+            expand="block"
+            class="action-btn btn-navigate"
+            (click)="navigateToDestination()"
+          >
+            <ion-icon slot="start" name="navigate"></ion-icon>
+            Naviguer
+          </ion-button>
+
+          <!-- START DELIVERY button -->
           <ion-button
             *ngIf="missionStatus === 'loading'"
             expand="block"
-            class="modern-btn delivery-btn"
+            class="action-btn btn-delivery"
             (click)="startDelivery()"
           >
             <ion-icon slot="start" name="navigate-outline"></ion-icon>
             Commencer la Livraison
           </ion-button>
 
-          <!-- BOUTON TERMINER - Style Moderne -->
+          <!-- COMPLETE button - QR Scanner -->
           <ion-button
             *ngIf="missionStatus === 'delivery'"
             expand="block"
-            class="modern-btn complete-btn"
+            class="action-btn btn-complete"
             (click)="completeMission()"
           >
-            <ion-icon slot="start" name="checkmark-done-circle-outline"></ion-icon>
-            Terminer la Livraison
+            <ion-icon slot="start" name="qr-code-outline"></ion-icon>
+            Scanner QR Code
           </ion-button>
 
-          <!-- Message MISSION TERMINEE -->
-          <ion-card
-            *ngIf="missionStatus === 'completed'"
-            color="success"
-            class="completed-card"
-          >
-            <ion-card-content style="text-align: center;">
-              <ion-icon name="checkmark-done-circle" style="font-size: 48px; margin-bottom: 8px;"></ion-icon>
-              <h3 style="margin: 0;">🎉 Mission Terminée !</h3>
-              <p style="margin: 8px 0 0 0; opacity: 0.8;">Merci pour votre travail</p>
-            </ion-card-content>
-          </ion-card>
+          <!-- COMPLETED message - NO BUTTON HERE -->
+          <div class="trip-completed" *ngIf="missionStatus === 'completed'">
+            <div class="completed-icon">
+              <ion-icon name="checkmark-circle"></ion-icon>
+            </div>
+            <div class="completed-content">
+              <h4>Statut : Terminé</h4>
+              <p>Voyage terminé avec succès! Bien joué!</p>
+            </div>
+          </div>
         </div>
       </ion-card-content>
     </ion-card>
@@ -267,7 +326,7 @@
 
   <!-- Destination Info -->
   <div class="destination-info" *ngIf="destination">
-    <ion-card>
+    <ion-card class="destination-card">
       <ion-card-header>
         <ion-card-title>
           <ion-icon name="location"></ion-icon>
@@ -282,209 +341,100 @@
           </div>
           <div class="destination-row">
             <ion-icon name="navigate"></ion-icon>
-            <span>Coordinates: {{ destination.lat.toFixed(4) }}, {{ destination.lng.toFixed(4) }}</span>
+            <span>Coords: {{ destination.lat.toFixed(4) }}, {{ destination.lng.toFixed(4) }}</span>
           </div>
         </div>
       </ion-card-content>
     </ion-card>
   </div>
 
+  <!-- QR Scanner Modal -->
+  <div class="qr-scanner-overlay" *ngIf="showQRScanner" (click)="closeQRScanner()">
+    <div class="qr-scanner-modal" (click)="$event.stopPropagation()">
+      <div class="qr-header">
+        <ion-icon name="qr-code-outline"></ion-icon>
+        <h3>Scanner QR Code</h3>
+        <ion-button fill="clear" class="close-scanner" (click)="closeQRScanner()">
+          <ion-icon name="close-outline"></ion-icon>
+        </ion-button>
+      </div>
+
+      <div class="qr-content">
+        <p class="scanner-info">Scannez le QR Code du client pour valider la livraison</p>
+
+        <div class="scanner-frame">
+          <div class="scanner-animation" *ngIf="!scannedQRCode"></div>
+          <div class="scanner-success" *ngIf="scannedQRCode">
+            <ion-icon name="checkmark-circle"></ion-icon>
+            <span>QR Code scanné !</span>
+          </div>
+        </div>
+
+        <ion-button
+          expand="block"
+          class="scan-btn"
+          (click)="startQRScan()"
+          [disabled]="isScanning">
+          <ion-icon slot="start" [name]="isScanning ? 'sync-outline' : 'scan-outline'"></ion-icon>
+          {{ isScanning ? 'Scan en cours...' : 'Scanner le QR Code' }}
+        </ion-button>
+
+        <div class="manual-section">
+          <div class="divider"><span>ou</span></div>
+          <ion-item lines="none" class="manual-input">
+            <ion-label position="floating">Saisir manuellement le QR Code</ion-label>
+            <ion-input
+              [(ngModel)]="manualQRCode"
+              placeholder="Entrez le contenu du QR Code"
+              clearInput>
+            </ion-input>
+          </ion-item>
+        </div>
+
+        <div *ngIf="scannedQRCode || manualQRCode" class="data-preview">
+          <div class="preview-header">
+            <ion-icon name="checkmark-circle" class="success-icon"></ion-icon>
+            <span>Données du QR Code</span>
+          </div>
+          <div class="preview-content">
+            <div class="data-row">
+              <ion-icon name="document-text-outline"></ion-icon>
+              <span class="label">Contenu:</span>
+              <span class="value">{{ scannedQRCode?.content || manualQRCode }}</span>
+            </div>
+            <div class="data-row" *ngIf="scannedQRCode?.timestamp">
+              <ion-icon name="time-outline"></ion-icon>
+              <span class="label">Scanné le:</span>
+              <span class="value">{{ scannedQRCode?.timestamp | date:'HH:mm:ss' }}</span>
+            </div>
+          </div>
+          <ion-button
+            fill="clear"
+            size="small"
+            class="clear-btn"
+            (click)="clearQRScan()">
+            <ion-icon name="trash-outline"></ion-icon>
+            Effacer
+          </ion-button>
+        </div>
+
+        <div class="action-buttons">
+          <ion-button
+            fill="outline"
+            class="cancel-btn"
+            (click)="closeQRScanner()">
+            Annuler
+          </ion-button>
+          <ion-button
+            class="confirm-btn"
+            (click)="confirmDeliveryWithQR()"
+            [disabled]="!scannedQRCode && !manualQRCode">
+            <ion-icon slot="start" name="checkmark-done-outline"></ion-icon>
+            Confirmer Livraison
+          </ion-button>
+        </div>
+      </div>
+    </div>
+  </div>
+
 </ion-content>
-
-<style>
-  .mission-status-section {
-    margin: 16px;
-  }
-
-  .status-indicator {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 16px;
-    border-radius: 12px;
-    margin-bottom: 16px;
-    background: #f5f5f5;
-  }
-
-  .status-indicator.status-pending {
-    background: linear-gradient(135deg, #fff3cd, #ffe69c);
-  }
-
-  .status-indicator.status-accepted {
-    background: linear-gradient(135deg, #d1ecf1, #bee5eb);
-  }
-
-  .status-indicator.status-loading {
-    background: linear-gradient(135deg, #d4edda, #c3e6cb);
-  }
-
-  .status-indicator.status-delivery {
-    background: linear-gradient(135deg, #cce5ff, #b8daff);
-  }
-
-  .status-indicator.status-completed {
-    background: linear-gradient(135deg, #d4edda, #c3e6cb);
-  }
-
-  .status-indicator.status-refused {
-    background: linear-gradient(135deg, #f8d7da, #f5c6cb);
-  }
-
-  .status-icon {
-    font-size: 32px;
-  }
-
-  .status-text {
-    font-size: 18px;
-    font-weight: 600;
-    color: #333;
-  }
-
-  .status-actions {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
-
-  .destination-info {
-    margin: 0 16px 16px;
-  }
-
-  /* Modern Button Styles */
-  .modern-btn {
-    --border-radius: 12px;
-    --box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    --padding-start: 16px;
-    --padding-end: 16px;
-    --padding-top: 14px;
-    --padding-bottom: 14px;
-    font-weight: 600;
-    font-size: 15px;
-    letter-spacing: 0.3px;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    border: none;
-    position: relative;
-    overflow: hidden;
-  }
-
-  .modern-btn::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
-    transition: left 0.5s;
-  }
-
-  .modern-btn:active::before {
-    left: 100%;
-  }
-
-  .modern-btn ion-icon {
-    font-size: 20px;
-    margin-right: 8px;
-  }
-
-  /* Accept Button - Green Gradient */
-  .modern-btn.accept-btn {
-    --background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-    --background-activated: linear-gradient(135deg, #059669 0%, #047857 100%);
-    color: white;
-  }
-
-  .modern-btn.accept-btn::after {
-    content: '';
-    position: absolute;
-    bottom: -2px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 80%;
-    height: 3px;
-    background: linear-gradient(90deg, transparent, #34d399, transparent);
-    border-radius: 2px;
-  }
-
-  /* Reject Button - Red Outline */
-  .modern-btn.reject-btn {
-    --background: transparent;
-    --border-color: #ef4444;
-    --color: #ef4444;
-    --border-radius: 12px;
-    border: 2px solid #ef4444;
-  }
-
-  .modern-btn.reject-btn::after {
-    content: '';
-    position: absolute;
-    bottom: -2px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 0%;
-    height: 3px;
-    background: linear-gradient(90deg, transparent, #ef4444, transparent);
-    transition: width 0.3s;
-  }
-
-  .modern-btn.reject-btn:active::after {
-    width: 80%;
-  }
-
-  /* Loading Button - Blue Gradient */
-  .modern-btn.loading-btn {
-    --background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-    --background-activated: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
-    color: white;
-  }
-
-  .modern-btn.loading-btn::after {
-    content: '';
-    position: absolute;
-    bottom: -2px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 80%;
-    height: 3px;
-    background: linear-gradient(90deg, transparent, #60a5fa, transparent);
-    border-radius: 2px;
-  }
-
-  /* Delivery Button - Purple Gradient */
-  .modern-btn.delivery-btn {
-    --background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
-    --background-activated: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
-    color: white;
-  }
-
-  .modern-btn.delivery-btn::after {
-    content: '';
-    position: absolute;
-    bottom: -2px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 80%;
-    height: 3px;
-    background: linear-gradient(90deg, transparent, #a78bfa, transparent);
-    border-radius: 2px;
-  }
-
-  /* Complete Button - Success Gradient */
-  .modern-btn.complete-btn {
-    --background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-    --background-activated: linear-gradient(135deg, #059669 0%, #047857 100%);
-    color: white;
-  }
-
-  .modern-btn.complete-btn::after {
-    content: '';
-    position: absolute;
-    bottom: -2px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 80%;
-    height: 3px;
-    background: linear-gradient(90deg, transparent, #34d399, transparent);
-    border-radius: 2px;
-  }
-</style>

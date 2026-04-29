@@ -768,6 +768,75 @@
   --color: #ff8c00;
 }
 
+/* ✅ BOUTONS ACTIONS MISSION PROFESSIONNELS */
+.trip-action-buttons {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr 1fr;
+  gap: 8px;
+  width: 100%;
+  margin-top: 8px;
+}
+
+.trip-action-buttons ion-button {
+  --border-radius: 8px;
+  --padding-top: 10px;
+  --padding-bottom: 10px;
+  --padding-start: 8px;
+  --padding-end: 8px;
+  font-weight: 600;
+  font-size: 13px;
+  text-transform: none;
+  margin: 0;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  letter-spacing: 0.2px;
+}
+
+.trip-action-buttons ion-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+
+.trip-action-buttons ion-button:active {
+  transform: scale(0.98);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+/* Boutons ACTIONS MISSION - HARMONISÉS AVEC LE PROJET */
+.btn-view-details {
+  --background: #1967d2;
+  --background-hover: #1557b0;
+  --color: #ffffff;
+  --box-shadow: 0 2px 6px rgba(25, 103, 210, 0.35);
+}
+
+.btn-accept {
+  --background: linear-gradient(135deg, #ff8c00, #ffcc00);
+  --background-hover: linear-gradient(135deg, #ff7c00, #ffbc00);
+  --color: #000000;
+  --box-shadow: 0 2px 6px rgba(255, 140, 0, 0.35);
+}
+
+.btn-refuse {
+  --background: #dc362e;
+  --background-hover: #c62828;
+  --color: #ffffff;
+  --box-shadow: 0 2px 6px rgba(220, 54, 46, 0.35);
+}
+
+/* Responsive pour petits écrans */
+@media (max-width: 380px) {
+  .trip-action-buttons {
+    gap: 6px;
+  }
+  
+  .trip-action-buttons ion-button {
+    font-size: 12px;
+    --padding-start: 4px;
+    --padding-end: 4px;
+  }
+}
+
 /* Trip arrow */
 .trip-arrow {
   color: #ff8c00;

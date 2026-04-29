@@ -1,4 +1,4 @@
-﻿import { Component, inject, OnInit } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
 import { Http } from '../../services/http';
 import { Table } from '../../components/table/table';
 import { ICustomer } from '../../types/customer';
@@ -47,7 +47,7 @@ export class Customer implements OnInit {
 
   filter: any = {
     pageIndex: 0,
-    pageSize: 20,
+    pageSize: 10,
     sourceSystem: null
   };
 
@@ -130,6 +130,22 @@ loadGeographicalEntities() {
     return entity?.name || '';
   }
 
+  /**
+   * Vérifie si un client a des coordonnées GPS valides
+   * @param customer Le client à vérifier
+   * @returns true si le client a latitude ET longitude non null
+   */
+  hasValidGpsCoordinates(customer: ICustomer): boolean {
+    return customer.latitude != null && 
+           customer.longitude != null && 
+           !isNaN(customer.latitude) && 
+           !isNaN(customer.longitude) &&
+           customer.latitude >= -90 && 
+           customer.latitude <= 90 &&
+           customer.longitude >= -180 && 
+           customer.longitude <= 180;
+  }
+
   getLatestData() {
     this.httpService.getCustomersList(this.filter).subscribe(result => {
       this.pagedCustomerData = result;
@@ -185,8 +201,9 @@ loadGeographicalEntities() {
     ref.afterClosed().subscribe(() => this.getLatestData());
   }
 
-  pageChange(event: any) {
-    this.filter.pageIndex = event.pageIndex;
+  pageChange(pageEvent: any) {
+    this.filter.pageIndex = pageEvent.pageIndex;
+    this.filter.pageSize = pageEvent.pageSize;
     this.getLatestData();
   }
 

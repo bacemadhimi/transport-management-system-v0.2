@@ -330,6 +330,18 @@
                 <mat-checkbox formControlName="USE_GPS_IN_TRIPS" color="primary">Utiliser le GPS dans les voyages</mat-checkbox>
                 <mat-hint class="field-hint">Si activé, le suivi GPS sera utilisé pour les voyages (coordonnées automatiques)</mat-hint>
               </div>
+
+              <div class="form-field-wrapper mt-3">
+                <mat-form-field appearance="outline" class="full-width">
+                  <mat-label>Mode de gestion des destinations</mat-label>
+                  <mat-select formControlName="MODE_ADRESSE_TRIP">
+                    <mat-option value="MANUEL">📝 MANUEL - Destination choisie manuellement</mat-option>
+                    <mat-option value="AUTOMATIQUE">🤖 AUTOMATIQUE - Destination auto depuis clients</mat-option>
+                  </mat-select>
+                  <mat-icon matSuffix>smart_button</mat-icon>
+                </mat-form-field>
+                <mat-hint class="field-hint">Choisissez entre saisie manuelle ou récupération automatique des destinations depuis les clients des commandes</mat-hint>
+              </div>
             </div>
 
             <mat-divider class="my-2"></mat-divider>

@@ -75,8 +75,11 @@ export class SignalRChatService {
 
     console.log('Initializing chat connection with token:', token.substring(0, 20) + '...');
 
+    // Remove '/api' suffix for SignalR hub URLs
+    const baseUrl = environment.apiUrl.replace('/api', '');
+
     this.chatHubConnection = new signalR.HubConnectionBuilder()
-        .withUrl(`${environment.apiUrl}/chathub`, {
+        .withUrl(`${baseUrl}/chathub`, {
             accessTokenFactory: () => token,
             skipNegotiation: true,
             transport: signalR.HttpTransportType.WebSockets
